@@ -1,0 +1,28 @@
+{
+  "name": "ltijs",
+  "version": "0.0.1",
+  "description": "A simple nodejs tool to facilitate implementing LTI provider and consumer tools",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha",
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Cvmcosta/ltijs.git"
+  },
+  "keywords": [
+    "lti",
+    "lms"
+  ],
+  "author": "cvmcosta",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Cvmcosta/ltijs/issues"
+  },
+  "homepage": "https://github.com/Cvmcosta/ltijs#readme",
+  "dependencies": {
+    "express": "^4.17.1",
+    "mocha": "^6.1.4"
+  }
+}
