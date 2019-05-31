@@ -6,7 +6,6 @@ const Server = require('./Server')
 /** Exposes methods for easy manipualtion of the LTI standard as a LTI Provider */
 class Provider{
     constructor(){
-        this.app = null
         this.server = new Server()
     }
 
@@ -16,9 +15,23 @@ class Provider{
      */
     listen(port){
         port = port || 3000
-        this.server.app.get('/', (req, res)=>{
-            res.send("teste")
+        this.server.app.all('/', (req, res, next)=>{
+
+            next()
         })
+        this.server.app.post('/', (req, res)=>{
+            console.log("post>>")
+            console.log(req.body)
+            res.sendStatus(200)
+           
+        })
+        this.server.app.get('/', (req, res)=>{
+            console.log("get>>")
+            console.log(req.body)
+            res.send("get")
+            
+        })
+       
         this.server.init(port)
     }
 }
