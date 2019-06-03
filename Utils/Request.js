@@ -3,22 +3,22 @@ const crypto = require('crypto');
 const axios  = require('axios')
 
 
+
 class Request{
     /**
      * @description Handles the Lti 1.3 initial login flow (OIDC protocol).
      * @param {object} request - Login request object sent by consumer.
-     * @param {object} [client_id = LTITool] - Client_id of the Tool
+     * @param {object} platform - Platform Object.
      */
-    static lti1_3Login(request, client_id){
-        console.log(request)
+    static lti1_3Login(request, platform){
         console.log("Lti 1.3 initial login request coming from: " + request.iss + " ...")
 
         let response = {
           response_type: 'id_token',
           response_mode: 'form_post',
           scope: 'openid',
-          client_id: '1W8pk8LRuvB1DtO',
-          redirect_uri: 'http://127.0.0.1:3000/',
+          client_id: platform.platformClientId(),
+          redirect_uri: request.target_link_uri,
           login_hint: request.login_hint,
           nonce: crypto.randomBytes(16).toString('base64')
         }
