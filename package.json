@@ -23,8 +23,11 @@
   "homepage": "https://github.com/Cvmcosta/ltijs#readme",
   "dependencies": {
     "body-parser": "^1.19.0",
+    "cookie": "^0.4.0",
     "cryptr": "^4.0.2",
+    "ejs": "^2.6.1",
     "express": "^4.17.1",
+    "express-session": "^1.16.1",
     "got": "^9.6.0",
     "jsonwebtoken": "^8.5.1",
     "lodash.find": "^4.6.0",

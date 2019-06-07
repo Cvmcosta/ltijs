@@ -2,83 +2,56 @@
 //Test for apache2 and php and mysql
 
 
+const fs = require('fs')
 
 const Lti = require("./main").Provider
-const lti = new Lti('1.3', "EXAMPLEKEY")
 
 
 
-const fs = require('fs')
-const jwt = require('jsonwebtoken')
-const got = require('got')
-const Platform = require('./Utils/Platform')
-const find = require('lodash.find')
-const jwk = require('pem-jwk')
+const privateKey  = fs.readFileSync('./ssl/server.key', 'utf8')
+const certificate = fs.readFileSync('./ssl/server.cert', 'utf8')
 
-
-
-
-//lti.registerPlatform("http://localhost/moodle", "Moodle", "1W8pk8LRuvB1DtO", "http://localhost/moodle/mod/lti/auth.php")
-
-//let plat = lti.getPlatform("http://localhost/moodle")
-//console.log(plat.platformPrivateKeyRSA())
-
-console.log(lti.getAllPlatforms())
-
-//lti.deletePlatform("http://localhost/moodle") 
-
-
+const lti = new Lti({lti_version: "1.3", encryptionkey:"EXAMPLEKEY", ssl:{key: privateKey, cert: certificate}})
 
 lti.setAppUrl('/')
 lti.setLoginUrl('/login')
 lti.setKeySetUrl('/keys')
 
-lti.deploy()
+lti.registerPlatform("http://localhost/moodle", "Moodle", "1W8pk8LRuvB1DtO", "http://localhost/moodle/mod/lti/auth.php", {method: "JWK_SET", key: "http://localhost/moodle/mod/lti/certs.php"})
 
-/* lti.server.post('/', (req, res)=>{
-    console.log("\nID_TOKEN >>> \n")
-    let token = res.locals.id_token
-    let kid = jwt.decode(token,{complete: true}).header.kid
-    let alg = jwt.decode(token,{complete: true}).header.alg
-    let keys_endpoint = Platform.findPlatform(jwt.decode(token).iss,"EXAMPLEKEY").platformKeysEndpoint()
+
+console.log(lti.getAllPlatforms())
+
+
+lti.deploy().onConnect((connection, response)=>{
+    console.log(connection)
+/* 
+    lti.server.engine('html', require('ejs').renderFile)
+    lti.server.set('view engine', 'html')
+    lti.server.set('views', __dirname + '/views') */
+
+    response.sendFile('dist/index.html',{ root: './views/teste'})
     
-    got.get(keys_endpoint).then( res => {
-        let keyset = JSON.parse(res.body).keys
-        let key = jwk.jwk2pem(find(keyset, ['kid', kid]))
-        console.log(key)
-        jwt.verify(token, key, { algorithms: [alg] },(err, decoded) => {
-            if (err) console.error(err)
-            else console.log(decoded)
-        })
-    })
-
-}) */
-
-/* let cert = fs.readFileSync('./provider_data/privateKey.key', "ascii");
-console.log(cert)
-let jwk_key = jwk.pem2jwk(cert)
-jwk_key.kid = "Carlos"
-console.log(jwk_key)
-
-let pem_key = jwk.jwk2pem(jwk_key)
-console.log(pem_key) */
+})
 
 
 
 
-/* let cert2 = fs.readFileSync('./data/privateKey.key', "utf8");
-console.log(cert2)
-let key2 = rsaPemToJwk(cert2, {use: 'sig'}, 'public')
-console.log(key2) */
-//lti.generateKeyPair(true) //MAKE SO THAT I GENERATES ONE FOR EACH PLATFORM
+
 
 
 //cache keysets  and add timestamp to better ahndle the caching
-//generate keys for each platform
-//put them in keyset
-//sign jwt with rsa
-//put in jwk the alg
-// rsa, jwt, keyset -> testar no jwt se ele veio com kid
 //aply other validations
-//estudar jwk
-//achar jeit de converter
+/* prompt
+OPTIONAL. Space delimited, case sensitive list of ASCII string values that specifies whether the Authorization Server prompts the End-User for reauthentication and consent. The defined values are:
+none
+The Authorization Server MUST NOT display any authentication or consent user interface pages. An error is returned if an End-User is not already authenticated or the Client does not have pre-configured consent for the requested Claims or does not fulfill other conditions for processing the request. The error code will typically be login_required, interaction_required, or another code defined in Section 3.1.2.6. This can be used as a method to check for existing authentication and/or consent.
+login
+The Authorization Server SHOULD prompt the End-User for reauthentication. If it cannot reauthenticate the End-User, it MUST return an error, typically login_required.
+consent
+The Authorization Server SHOULD prompt the End-User for consent before returning information to the Client. If it cannot obtain consent, it MUST return an error, typically consent_required.
+select_account
+The Authorization Server SHOULD prompt the End-User to select a user account. This enables an End-User who has multiple accounts at the Authorization Server to select amongst the multiple accounts that they might have current sessions for. If it cannot obtain an account selection choice made by the End-User, it MUST return an error, typically account_selection_required. */
+
+
+/* state n stuff */

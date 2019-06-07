@@ -1,16 +1,9 @@
 
 //Utis
-const low = require('lowdb')
-const FileSync = require('lowdb/adapters/FileSync')
-const Cryptr = require('cryptr');
-const fs = require('fs')
+const Database = require('./Database')
 const jwk = require('pem-jwk')
 
 var ENCRYPTIONKEY
-
-var cryptr
-var adapter
-var db
 
 var auth_config = false
 
@@ -31,15 +24,7 @@ class Platform{
 
         ENCRYPTIONKEY = _ENCRYPTIONKEY
 
-        if(!fs.existsSync('./provider_data')) fs.mkdirSync('./provider_data')
-        cryptr = new Cryptr(ENCRYPTIONKEY)
-        adapter = new FileSync('./provider_data/platforms.json', {
-            serialize: (data) => cryptr.encrypt(JSON.stringify(data)),
-            deserialize: (data) => JSON.parse(cryptr.decrypt(data))
-          })
-        db = low(adapter)
         
-        db.defaults({ platforms: []}).write()
 
         if(!name) {
             console.error("Error registering platform. Missing argument.")
@@ -52,62 +37,12 @@ class Platform{
         this.auth_endpoint =  authentication_endpoint 
         this.kid = kid
 
-        
-       
-       
-        if(!db.get('platforms').find({platform_name: this.platform_name}).value()){
-            console.log("Registering new platform >> " + this.platform_name)
-            db.get('platforms').push({platform_name: this.platform_name, platform_url: this.platform_url, client_id: this.client_id, auth_endpoint: this.auth_endpoint, kid: this.kid, auth_config: auth_config}).write()
+        if(!Database.Get(ENCRYPTIONKEY, './provider_data', 'platforms', 'platforms',{platform_url: this.platform_url})){
+            console.log("Registering new platform >> " + this.platform_url)
+            Database.Insert(ENCRYPTIONKEY, './provider_data', 'platforms', 'platforms', {platform_name: this.platform_name, platform_url: this.platform_url, client_id: this.client_id, auth_endpoint: this.auth_endpoint, kid: this.kid, auth_config: auth_config})
         }
         
 
-    }
-
-
-    /**
-     * @description Finds platform by host url
-     * @param {string} url - Url of the host
-     */
-    static findPlatformWithUrl(url, _ENCRYPTIONKEY){
-        let ENCRYPTIONKEY = _ENCRYPTIONKEY
-
-
-        if(!fs.existsSync('./provider_data')) fs.mkdirSync('./provider_data')
-        let cryptr = new Cryptr(ENCRYPTIONKEY)
-        let adapter = new FileSync('./provider_data/platforms.json', {
-            serialize: (data) => cryptr.encrypt(JSON.stringify(data)),
-            deserialize: (data) => JSON.parse(cryptr.decrypt(data))
-          })
-        let db = low(adapter)
-        
-        
-        let obj = db.get('platforms').find({platform_url: url}).value()
-        if(!obj) return false
-        return new Platform(obj.platform_name, obj.platform_url, obj.client_id, obj.auth_endpoint, obj.kid, ENCRYPTIONKEY, obj.auth_config)
-        
-    }
-
-    /**
-     * @description Finds platform by host name
-     * @param {string} name - Name of the host
-     */
-    static findPlatformWithName(name, _ENCRYPTIONKEY){
-        let ENCRYPTIONKEY = _ENCRYPTIONKEY
-
-
-        if(!fs.existsSync('./provider_data')) fs.mkdirSync('./provider_data')
-        let cryptr = new Cryptr(ENCRYPTIONKEY)
-        let adapter = new FileSync('./provider_data/platforms.json', {
-            serialize: (data) => cryptr.encrypt(JSON.stringify(data)),
-            deserialize: (data) => JSON.parse(cryptr.decrypt(data))
-          })
-        let db = low(adapter)
-        
-        
-        let obj = db.get('platforms').find({platform_name: name}).value()
-        if(!obj) return false
-        return new Platform(obj.platform_name, obj.platform_url, obj.client_id, obj.auth_endpoint, obj.kid, ENCRYPTIONKEY, obj.auth_config)
-        
     }
 
 
@@ -119,7 +54,8 @@ class Platform{
     platformName(name){
         if(!name) return this.platform_name
         
-        db.get('platforms').find({platform_name: this.platform_name}).assign({platform_name: name}).write()
+        Database.Modify(ENCRYPTIONKEY, './provider_data', 'platforms', 'platforms', {platform_url: this.platform_url}, {platform_name: name})
+        
         this.platform_name = name
     }
 
@@ -130,8 +66,9 @@ class Platform{
      */
     platformUrl(url){
         if(!url) return this.platform_url
-        
-        db.get('platforms').find({platform_name: this.platform_name}).assign({platform_url: url}).write()
+
+        Database.Modify(ENCRYPTIONKEY, './provider_data', 'platforms', 'platforms', {platform_url: this.platform_url}, {platform_url: url})
+
         this.platform_url = url
     }
 
@@ -145,7 +82,8 @@ class Platform{
     platformClientId(client_id){
         if(!client_id) return this.client_id
         
-        db.get('platforms').find({platform_name: this.platform_name}).assign({client_id: client_id}).write()
+        Database.Modify(ENCRYPTIONKEY, './provider_data', 'platforms', 'platforms', {platform_url: this.platform_url}, {client_id: client_id})
+
         this.client_id = client_id
     }
 
@@ -163,11 +101,7 @@ class Platform{
      *
      */
     platformPublicKeyJwk(){
-        let pb_adapter = new FileSync('./provider_data/publickeyset.json')
-        let pb = low(pb_adapter)
-        pb.defaults({keys: []}).write()
-
-        return pb.get('keys').find({kid: this.kid}).value()
+        return Database.Get(false, './provider_data', 'publickeyset', 'keys', {kid: this.kid})
     }
 
     /**
@@ -175,11 +109,7 @@ class Platform{
      *
      */
     platformPublicKeyRSA(){
-        let pb_adapter = new FileSync('./provider_data/publickeyset.json')
-        let pb = low(pb_adapter)
-        pb.defaults({keys: []}).write()
-
-        return jwk.jwk2pem(pb.get('keys').find({kid: this.kid}).value())
+        return jwk.jwk2pem(Database.Get(false, './provider_data', 'publickeyset', 'keys', {kid: this.kid}))
     }
 
 
@@ -188,11 +118,7 @@ class Platform{
      *
      */
     platformPrivateKeyJwk(){
-        let piv_adapter = new FileSync('./provider_data/privatekeyset.json')
-        let piv = low(piv_adapter)
-        piv.defaults({keys: []}).write()
-
-        return piv.get('keys').find({kid: this.kid}).value()
+        return Database.Get(false, './provider_data', 'privatekeyset', 'keys', {kid: this.kid})
     }
 
     /**
@@ -200,11 +126,7 @@ class Platform{
      *
      */
     platformPrivateKeyRSA(){
-        let piv_adapter = new FileSync('./provider_data/privatekeyset.json')
-        let piv = low(piv_adapter)
-        piv.defaults({keys: []}).write()
-
-        return jwk.jwk2pem(piv.get('keys').find({kid: this.kid}).value())
+        return jwk.jwk2pem(Database.Get(false, './provider_data', 'privatekeyset', 'keys', {kid: this.kid}))
     }
 
 
@@ -230,8 +152,8 @@ class Platform{
             key: key
         }
 
+        Database.Modify(ENCRYPTIONKEY, './provider_data', 'platforms', 'platforms', {platform_url: this.platform_url}, {auth_config: auth_config})
         
-        db.get('platforms').find({platform_name: this.platform_name}).assign({auth_config: auth_config}).write()
        
     }
 
@@ -242,7 +164,8 @@ class Platform{
     platformAuthEndpoint(auth_endpoint){
         if(!auth_endpoint) return this.auth_endpoint
         
-        db.get('platforms').find({platform_name: this.platform_name}).assign({auth_endpoint: auth_endpoint}).write()
+        Database.Modify(ENCRYPTIONKEY, './provider_data', 'platforms', 'platforms', {platform_url: this.platform_url}, {auth_endpoint: auth_endpoint})
+        
         this.auth_endpoint = auth_endpoint
     }
 
@@ -250,21 +173,12 @@ class Platform{
      * @description Deletes a registered platform.
      */
     remove(){
-        db.get('platforms')
-            .remove({ platform_name: this.platform_name })
-            .write()
 
+        Database.Delete(ENCRYPTIONKEY, './provider_data', 'platforms', 'platforms', { platform_url: this.platform_url })
 
-        let pb_adapter = new FileSync('./provider_data/publickeyset.json')
-        let pb = low(pb_adapter)
-        pb.defaults({keys: []}).write()
+        Database.Delete(false, './provider_data', 'publickeyset', 'keys', {kid: this.kid})
 
-        let piv_adapter = new FileSync('./provider_data/privatekeyset.json')
-        let piv = low(piv_adapter)
-        piv.defaults({keys: []}).write()
-
-        pb.get('keys').remove({kid: this.kid}).write()
-        piv.get('keys').remove({kid: this.kid}).write()
+        Database.Delete(false, './provider_data', 'privatekeyset', 'keys', {kid: this.kid})
 
         return true
     }

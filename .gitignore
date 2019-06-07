@@ -1,4 +1,5 @@
 /node_modules
 /provider_data
 /consumer_data
-
+/views
+/ssl

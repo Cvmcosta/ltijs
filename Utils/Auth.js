@@ -1,8 +1,6 @@
 
-const low = require('lowdb')
-const FileSync = require('lowdb/adapters/FileSync')
+const Database = require('./Database')
 const crypto = require("crypto")
-const fs = require("fs")
 const jwk = require('pem-jwk')
 
 /**
@@ -15,18 +13,11 @@ class Auth{
      */
     static generateProviderKeyPair(){
 
-        if(!fs.existsSync('./provider_data')) fs.mkdirSync('./provider_data')
-        
-        let pb_adapter = new FileSync('./provider_data/publickeyset.json')
-        let pb = low(pb_adapter)
-        pb.defaults({keys: []}).write()
-
-        let piv_adapter = new FileSync('./provider_data/privatekeyset.json')
-        let piv = low(piv_adapter)
-        piv.defaults({keys: []}).write()
-
-
         let kid = crypto.randomBytes(16).toString("hex")
+
+        while(Database.Get(false, './provider_data', 'publickeyset','keys',{kid: kid})){
+            kid = crypto.randomBytes(16).toString("hex")
+        }
 
         let keys = crypto.generateKeyPairSync('rsa', {
                                                         modulusLength: 4096,
@@ -52,9 +43,9 @@ class Auth{
         jwk_privateKey.kid = kid
         jwk_privateKey.use = "sig"
         
-        
-        pb.get('keys').push(jwk_publicKey).write()
-        piv.get('keys').push(jwk_privateKey).write()
+        Database.Insert(false, './provider_data', 'publickeyset', 'keys',jwk_publicKey)
+        Database.Insert(false, './provider_data', 'privatekeyset', 'keys',jwk_privateKey)
+   
         
         return kid
     }
