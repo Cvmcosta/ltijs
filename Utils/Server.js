@@ -1,29 +1,35 @@
 //Express server
 const express = require('express')
 const bodyParser = require("body-parser");
-const path = require("path")
 const https = require('https');
-
+const helmet = require('helmet')
+const cookieParser = require('cookie-parser')
 
 class Server{
 
-    constructor(ssl){
+    constructor(https, ssl, ENCRYPTIONKEY){
 
-        this.httpsServer
-        this.app = express()
-        this.ssl = ssl
         
+        this.app = express()
 
+        this.ssl = false
+        if(https) this.ssl = ssl
+        
+        this.app.use(helmet())
         this.app.use(bodyParser.urlencoded({ extended: false }));
         this.app.use(bodyParser.json());
+        this.app.use(cookieParser(ENCRYPTIONKEY))
+
         
-        //mudar endereço estatico
-        var appDir = path.dirname(require.main.filename);
-        this.app.use(express.static(appDir+'/views/teste')) 
     }
 
     listen(port, message){
-        this.httpsServer = https.createServer(this.ssl, this.app).listen(port, () => console.log(message))
+        if(this.ssl) https.createServer(this.ssl, this.app).listen(port, () => console.log(message))
+        else this.app.listen(port, () => console.log(message))
+    }
+
+    setStaticPath(path){
+        this.app.use(express.static(path)) 
     }
 }
 

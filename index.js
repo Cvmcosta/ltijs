@@ -11,7 +11,7 @@ const Lti = require("./main").Provider
 const privateKey  = fs.readFileSync('./ssl/server.key', 'utf8')
 const certificate = fs.readFileSync('./ssl/server.cert', 'utf8')
 
-const lti = new Lti({lti_version: "1.3", encryptionkey:"EXAMPLEKEY", ssl:{key: privateKey, cert: certificate}})
+const lti = new Lti({lti_version: "1.3", encryptionkey:"EXAMPLEKEY", https:true, ssl:{key: privateKey, cert: certificate}})
 
 lti.setAppUrl('/')
 lti.setLoginUrl('/login')
@@ -20,18 +20,14 @@ lti.setKeySetUrl('/keys')
 lti.registerPlatform("http://localhost/moodle", "Moodle", "1W8pk8LRuvB1DtO", "http://localhost/moodle/mod/lti/auth.php", {method: "JWK_SET", key: "http://localhost/moodle/mod/lti/certs.php"})
 
 
+
 console.log(lti.getAllPlatforms())
 
 
 lti.deploy().onConnect((connection, response)=>{
     console.log(connection)
-/* 
-    lti.server.engine('html', require('ejs').renderFile)
-    lti.server.set('view engine', 'html')
-    lti.server.set('views', __dirname + '/views') */
-
-    response.sendFile('dist/index.html',{ root: './views/teste'})
-    
+    lti.server.setStaticPath(__dirname+'/views/teste')
+    response.sendFile('/dist/index.html',{ root: './views/teste'})
 })
 
 

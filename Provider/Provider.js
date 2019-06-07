@@ -25,8 +25,11 @@ const Auth = require('../Utils/Auth')
 // Utils
 const Database = require('../Utils/Database')
 const url = require('url')
-const session = require('express-session')
-const cookie = require('cookie')
+
+
+
+
+
 
 
 
@@ -36,6 +39,14 @@ var appUrl = "/"
 var keysetUrl = "/keys"
 var ltiVersion = 1.3
 var ENCRYPTIONKEY
+var cookies = true
+var cookie_options ={
+    maxAge: 1000*60*60,
+    secure: true,
+    httpOnly: true,
+    signed: true
+}
+
 var connect_callback = ()=>{}
 
 
@@ -46,24 +57,25 @@ class Provider{
     /**
      * @description Exposes methods for easy manipualtion of the LTI standard as a LTI Provider and a "server" object to manipulate the Express instance.
      * @param {Object} options - Lti Provider options.
-     * @param {Object} options.ssl - SSL certificate and key.
-     * @param {Object} options.ssl.key - SSL key.
-     * @param {Object} options.ssl.cert - SSL certificate.
      * @param {String} [options.lti_version = "1.3"]  - Valid versions are "1.1" and "1.3", it affects how the tool will comunicate with the consumer. Default value is "1.3".
      * @param {String} [options.encryptionkey = "ltikey"] - Encryption key to generate the db with platforms.
-     
+     * @param {Boolean} [options.https = false] - Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https. If you really dont want to use https, disable the secure flag in the cookies option, so that it can be passed via http.
+     * @param {Object} [options.ssl] - SSL certificate and key if https is enabled.
+     * @param {Object} [options.ssl.key] - SSL key.
+     * @param {Object} [options.ssl.cert] - SSL certificate. 
      */
     constructor(options){
         
-        if(!options.ssl || !options.ssl.key || !options.ssl.cert){
-            console.error("No ssl Key  or Certificate found.")
+        if(options && options.https && (!options.ssl || !options.ssl.key || !options.ssl.cert)){
+            console.error("No ssl Key  or Certificate found for local https configuration.")
+            return false
         }
 
         ENCRYPTIONKEY = options.encryptionkey || "ltikey"
 
         if(options.lti_version && (parseFloat(options.lti_version) == 1.3 || parseFloat(options.lti_version) == 1.1)) ltiVersion = parseFloat(options.lti_version)
         
-        this.server = new Server(options.ssl)
+        this.server = new Server(options.https, options.ssl, ENCRYPTIONKEY)
         this.app = this.server.app        
         
     }
@@ -115,17 +127,21 @@ class Provider{
                 got.get(keys_endpoint).then( res => {
                     let keyset = JSON.parse(res.body).keys
                     let key = jwk.jwk2pem(find(keyset, ['kid', kid]))
-                    console.log(key)
+                    
                     jwt.verify(token, key, { algorithms: [alg] },(err, decoded) => {
                         if (err) console.error(err)
                         else {
-                            let str_token = JSON.stringify(decoded)
+                            let str_token, id_token
+                            if(cookies){
+                                console.log(req.signedCookies)
+                                //estudar outras encodificações e ver se ja tem, e decodificar para uso
+                                str_token = JSON.stringify(decoded)
+                                id_token = jwt.sign(str_token, ENCRYPTIONKEY)
+                                
+                                console.log(cookie_options)
+                                response.cookie('it', id_token, cookie_options)
+                            }
 
-                            let id_token = jwt.sign(str_token, ENCRYPTIONKEY)
-
-                            response.cookie('id_token', id_token,{})
-                
-                          
                             connect_callback(decoded, response)
                         }
                     })
@@ -155,10 +171,27 @@ class Provider{
 
     /**
      * @description Sets the callback function called whenever theres a sucessfull connection, exposing a Conection object containing the id_token decoded parameters.
-     * @param {function} _connect_callback - Function that is going to be called everytime a platform sucessfully connects to the provider.
-     * @example .onConnect((conection, response)=>{response.send(connection)})
+     * @param {Function} _connect_callback - Function that is going to be called everytime a platform sucessfully connects to the provider.
+     * @param {Object} [options] - Options configuring the usage of cookies to pass the Id Token data to the client. 
+     * @param {Boolean} [options.disabled = false] - True if you dont want the Id Token info to be sent to the client. (Meaning you will most likely only work with the Connection object made available by the callback).
+     * @param {Number} [options.maxAge = 1000 * 60 * 60] - MaxAge of the cookie.
+     * @param {Boolean} [options.secure = true] - Secure property of the cookie.
+     * @example .onConnect((conection, response)=>{response.send(connection)}, {secure: true})
      */
-    onConnect(_connect_callback){
+    onConnect(_connect_callback, options){
+        
+        if(options){
+            if(options.disabled){
+                cookies = false
+            }else{
+                cookie_options.maxAge = options.maxAge || 1000*60*60
+                if(options.secure != undefined) cookie_options.secure = options.secure
+                else cookie_options.secure = true
+            }
+        }
+        
+        
+        
         connect_callback = _connect_callback
     }
 
