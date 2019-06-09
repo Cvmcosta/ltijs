@@ -1,15 +1,5 @@
 /* Main file for the Provider functionalities */
 
-
-
-
-
-const jwt = require('jsonwebtoken')
-const got = require('got')
-const find = require('lodash.find')
-const jwk = require('pem-jwk')
-
-
 // Express server to receive the requests
 const Server = require('../Utils/Server')
 
@@ -25,11 +15,7 @@ const Auth = require('../Utils/Auth')
 // Utils
 const Database = require('../Utils/Database')
 const url = require('url')
-
-
-
-
-
+const jwt = require('jsonwebtoken')
 
 
 
@@ -37,9 +23,11 @@ const url = require('url')
 var loginUrl = "/login"
 var appUrl = "/"
 var keysetUrl = "/keys"
+var sessionTimeoutUrl = '/sessionTimeout'
+var invalidTokenUrl = '/invalidToken'
 var ltiVersion = 1.3
 var ENCRYPTIONKEY
-var cookies = true
+
 var cookie_options ={
     maxAge: 1000*60*60,
     secure: true,
@@ -47,7 +35,16 @@ var cookie_options ={
     signed: true
 }
 
+
 var connect_callback = ()=>{}
+
+var sessionTimedOut = (req, res, next)=>{
+    res.status(401).send("Session timed out. Please reinitiate login.")
+}
+var invalidToken = (req, res, next)=>{
+    res.status(401).send("Invalid token. Please reinitiate login.")
+}
+
 
 
 
@@ -57,12 +54,14 @@ class Provider{
     /**
      * @description Exposes methods for easy manipualtion of the LTI standard as a LTI Provider and a "server" object to manipulate the Express instance.
      * @param {Object} options - Lti Provider options.
+     * @param {String} options.encryptionkey - Encryption key to generate the db with platforms.
      * @param {String} [options.lti_version = "1.3"]  - Valid versions are "1.1" and "1.3", it affects how the tool will comunicate with the consumer. Default value is "1.3".
-     * @param {String} [options.encryptionkey = "ltikey"] - Encryption key to generate the db with platforms.
+     
      * @param {Boolean} [options.https = false] - Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https. If you really dont want to use https, disable the secure flag in the cookies option, so that it can be passed via http.
      * @param {Object} [options.ssl] - SSL certificate and key if https is enabled.
      * @param {Object} [options.ssl.key] - SSL key.
      * @param {Object} [options.ssl.cert] - SSL certificate. 
+     * @param {String} [options.staticPath] - The path for the static files your application might serve (Ex: _dirname+"/public")
      */
     constructor(options){
         
@@ -71,12 +70,64 @@ class Provider{
             return false
         }
 
-        ENCRYPTIONKEY = options.encryptionkey || "ltikey"
+        if(!options || !options.encryptionkey) {
+            console.error("Encryptionkey parameter missing in options")
+            return false
+        }
+        ENCRYPTIONKEY = options.encryptionkey
 
         if(options.lti_version && (parseFloat(options.lti_version) == 1.3 || parseFloat(options.lti_version) == 1.1)) ltiVersion = parseFloat(options.lti_version)
         
         this.server = new Server(options.https, options.ssl, ENCRYPTIONKEY)
-        this.app = this.server.app        
+        this.app = this.server.app
+
+        if(options.staticPath) this.server.setStaticPath(options.staticPath)
+
+
+        //Registers main athentication middleware
+        let sessionValidator = (req, res, next)=>{
+            
+            //Ckeck if request is attempting to initiate oidc login flow
+            if(req.url != loginUrl && req.url!=keysetUrl && req.url != sessionTimeoutUrl && req.url != invalidTokenUrl){
+        
+                //Check if user already has session cookie stored in its browser
+                let it = req.signedCookies.it 
+                if(!it){
+                    
+                    if(req.body.id_token){
+                        Auth.validateToken(req.body.id_token, this.getPlatform).then( valid => {
+                            //Study diferent encodings
+                            valid.exp = (Date.now() / 1000) + (cookie_options.maxAge/1000)
+                            let it = jwt.sign(valid, ENCRYPTIONKEY)
+                            res.cookie('it', it, cookie_options)
+                            res.locals.token = valid
+                            return next()
+                        }).catch(err => {
+                            console.error(err)
+                            return res.redirect(invalidTokenUrl)
+                        }) 
+                    }else{
+                        return res.redirect(sessionTimeoutUrl)
+                    }
+                }else{
+                    jwt.verify(it, ENCRYPTIONKEY, (err, valid)=>{
+                        if (err) {console.log(err);return res.redirect(invalidTokenUrl)}
+                        else{
+                            valid.exp = (Date.now() / 1000) + (cookie_options.maxAge/1000)
+                            let it = jwt.sign(valid, ENCRYPTIONKEY)
+                            res.cookie('it', it, cookie_options)
+                            res.locals.token = valid
+                            return next()
+                        }
+                    })
+                }
+            }else{
+                return next()
+            }
+            
+            
+        }
+        this.app.use(sessionValidator)
         
     }
 
@@ -89,13 +140,12 @@ class Provider{
         port = port || 3000
 
         if(ltiVersion == 1.3){
-            /* Handles the login */
+            
+
+            /* Initiates oidc login flow */
             this.app.post(loginUrl, (req, res)=>{
-                
-                //Remove AUTHENDPOINT and add mention to AUTH_CONFIG
                 let platform = this.getPlatform(req.body.iss)
-                
-                
+                  
                 if (platform) {
                     res.redirect(url.format({
                         pathname: platform.platformAuthEndpoint(),
@@ -105,67 +155,36 @@ class Provider{
                 else console.error("Unregistered platform attempting connection: " + req.body.iss)
             })
 
-            
-            this.app.post(appUrl, (req, res, next)=>{
-                console.log("Receiving POST request on main app route. Attempting to decode IdToken...")
-                //Decode and return the token to the user handler
-                res.locals.token = req.body.id_token
-                next()
-            })
-
-
-            //remover
-            //testar se usuario está conectado
-            this.app.post('/', (req, res)=>{
-                console.log("\nID_TOKEN >>> \n")
-                let response = res
-                let token = res.locals.token
-                let kid = jwt.decode(token,{complete: true}).header.kid
-                let alg = jwt.decode(token,{complete: true}).header.alg
-                let keys_endpoint = this.getPlatform(jwt.decode(token).iss).platformAuthConfig().key
-                
-                got.get(keys_endpoint).then( res => {
-                    let keyset = JSON.parse(res.body).keys
-                    let key = jwk.jwk2pem(find(keyset, ['kid', kid]))
-                    
-                    jwt.verify(token, key, { algorithms: [alg] },(err, decoded) => {
-                        if (err) console.error(err)
-                        else {
-                            let str_token, id_token
-                            if(cookies){
-                                console.log(req.signedCookies)
-                                //estudar outras encodificações e ver se ja tem, e decodificar para uso
-                                str_token = JSON.stringify(decoded)
-                                id_token = jwt.sign(str_token, ENCRYPTIONKEY)
-                                
-                                console.log(cookie_options)
-                                response.cookie('it', id_token, cookie_options)
-                            }
-
-                            connect_callback(decoded, response)
-                        }
-                    })
-                })
-            
-            })
-
-
-
+            //Keyset route
             this.app.get(keysetUrl, (req, res)=>{
                 console.log("Sending public keyset...")
-              
                 let keyset = Database.Get(false, './provider_data', 'publickeyset', 'keys')
                 if(keyset) res.json({keys: keyset})
                 else res.json({keys: []})
-
             })
 
+
+            //Session timeout and invalid token urls
+            this.app.all(sessionTimeoutUrl, (req, res, next)=>{
+                sessionTimedOut(req, res, next)
+            })
+
+            this.app.all(invalidTokenUrl, (req, res, next)=>{
+                invalidToken(req, res, next)
+            })
+
+
+            //Main app 
+            this.app.post(appUrl, (req, res, next)=>{
+                connect_callback(res.locals.token, req, res, next)
+            })
 
         }
 
         //Starts server on given port
-        this.server.listen(port, "Lti Provider tool is listening on port " + port + "!\n\nLTI provider config: \n>Initiate login URL: " + loginUrl +"\n>App Url: " + appUrl + "\n>Keyset Url: " + keysetUrl +"\n>Lti Version: " + ltiVersion)
-
+        this.server.listen(port, "Lti Provider tool is listening on port " + port + "!\n\nLTI provider config: \n>Initiate login URL: " + loginUrl +"\n>App Url: " + appUrl + "\n>Keyset Url: " + keysetUrl + "\n>Session Timeout Url: " + sessionTimeoutUrl + "\n>Invalid Token Url: " + invalidTokenUrl  + "\n>Lti Version: " + ltiVersion)
+   
+        
         return this
     }
 
@@ -173,21 +192,25 @@ class Provider{
      * @description Sets the callback function called whenever theres a sucessfull connection, exposing a Conection object containing the id_token decoded parameters.
      * @param {Function} _connect_callback - Function that is going to be called everytime a platform sucessfully connects to the provider.
      * @param {Object} [options] - Options configuring the usage of cookies to pass the Id Token data to the client. 
-     * @param {Boolean} [options.disabled = false] - True if you dont want the Id Token info to be sent to the client. (Meaning you will most likely only work with the Connection object made available by the callback).
-     * @param {Number} [options.maxAge = 1000 * 60 * 60] - MaxAge of the cookie.
+     * @param {Number} [options.maxAge = 1000 * 60 * 60] - MaxAge of the cookie in miliseconds.
      * @param {Boolean} [options.secure = true] - Secure property of the cookie.
+     * @param {Function} [options.sessionTmeout] - Route function executed everytime the session expires. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}).
+     * @param {Function} [options.invalidToken] - Route function executed everytime the system receives an invalid token or cookie. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}).
      * @example .onConnect((conection, response)=>{response.send(connection)}, {secure: true})
      */
     onConnect(_connect_callback, options){
         
         if(options){
-            if(options.disabled){
-                cookies = false
-            }else{
-                cookie_options.maxAge = options.maxAge || 1000*60*60
-                if(options.secure != undefined) cookie_options.secure = options.secure
-                else cookie_options.secure = true
-            }
+            
+            cookie_options.maxAge = options.maxAge || 1000*60*60
+
+            if(options.secure != undefined) cookie_options.secure = options.secure
+            else cookie_options.secure = true
+
+
+            if(options.sessionTimeout) sessionTimedOut = options.sessionTimeout
+            if(options.invalidToken) invalidToken = options.invalidToken
+            
         }
         
         
@@ -196,32 +219,57 @@ class Provider{
     }
 
     /**
-     * @description Sets login Url responsible for dealing with the OIDC login flow. If no value is set "/login" is used.
+     * @description Gets/Sets login Url responsible for dealing with the OIDC login flow. If no value is set "/login" is used.
      * @param {string} url - Login url.
-     * @example provider.setLoginUrl('/login')
+     * @example provider.loginUrl('/login')
      */
-    setLoginUrl(url){
+    loginUrl(url){
+        if(!url) return loginUrl
         loginUrl = url
     }
 
     /**
-     * @description Sets main application Url that will receive the final decoded Idtoken. If no value is set "/" (root) is used.
+     * @description Gets/Sets main application Url that will receive the final decoded Idtoken. If no value is set "/" (root) is used.
      * @param {string} url - App url.
-     * @example provider.setAppUrl('/app')
+     * @example provider.appUrl('/app')
      */
-    setAppUrl(url){
+    appUrl(url){
+        if(!url) return appUrl
         appUrl = url
     }
 
     /**
-     * @description Sets keyset Url that will return a json containing a set of public keys. If no value is set "/keys" is used.
+     * @description Gets/Sets keyset Url that will return a json containing a set of public keys. If no value is set "/keys" is used.
      * @param {string} url - Keyset url.
-     * @example provider.setKeySetUrl('/keyset')
+     * @example provider.keySetUrl('/keyset')
      */
-    setKeySetUrl(url){
+    keySetUrl(url){
+        if(!url) return keysetUrl
         keysetUrl = url
     }
 
+
+    /**
+     * @description Gets/Sets session timeout Url that will be called whenever the system encounters a session timeout. If no value is set "/sessionTimeout" is used.
+     * @param {string} url - Session timeout url.
+     * @example provider.sessionTimeoutUrl('/sesstimeout')
+     */
+    sessionTimeoutUrl(url){
+        if(!url) return sessionTimeoutUrl
+        sessionTimeoutUrl = url
+    }
+
+    /**
+     * @description Gets/Sets invalid token Url that will be called whenever the system encounters a invalid token or cookie. If no value is set "/invalidToken" is used.
+     * @param {string} url - Invalid token url.
+     * @example provider.invalidTokenUrl('/invtoken')
+     */
+    invalidTokenUrl(url){
+        if(!url) return invalidTokenUrl
+        invalidTokenUrl = url
+    }
+
+    
 
     /**
      * @description Registers a platform.
@@ -229,10 +277,12 @@ class Provider{
      * @param {string} name - Platform nickname.
      * @param {string} client_id - Client Id generated by the platform.
      * @param {string} authentication_endpoint - Authentication endpoint that the tool will use to authenticate within the platform.
-     * @param {object} [auth_config] - Authentication method and key for verifying messages from the platform. {method: "RSA_KEY", key:"PUBLIC KEY..."}
+     * @param {object} auth_config - Authentication method and key for verifying messages from the platform. {method: "RSA_KEY", key:"PUBLIC KEY..."}
+     * @param {String} auth_config.method - Method of authorization "RSA_KEY" or "JWK_KEY" or "JWK_SET".
+     * @param {String} auth_config.key - Either the RSA public key provided by the platform, or the JWK key, or the JWK keyset address.
      */
     registerPlatform(url, name, client_id, authentication_endpoint, auth_config){
-        if(!name || !url || !client_id || !authentication_endpoint) {
+        if(!name || !url || !client_id || !authentication_endpoint || !auth_config) {
             console.error("Error registering platform. Missing argument.")
             return false
         }

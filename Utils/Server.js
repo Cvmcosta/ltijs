@@ -15,7 +15,9 @@ class Server{
         this.ssl = false
         if(https) this.ssl = ssl
         
-        this.app.use(helmet())
+        this.app.use(helmet({
+            frameguard: false
+          }))
         this.app.use(bodyParser.urlencoded({ extended: false }));
         this.app.use(bodyParser.json());
         this.app.use(cookieParser(ENCRYPTIONKEY))

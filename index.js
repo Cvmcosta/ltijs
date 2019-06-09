@@ -11,11 +11,11 @@ const Lti = require("./main").Provider
 const privateKey  = fs.readFileSync('./ssl/server.key', 'utf8')
 const certificate = fs.readFileSync('./ssl/server.cert', 'utf8')
 
-const lti = new Lti({lti_version: "1.3", encryptionkey:"EXAMPLEKEY", https:true, ssl:{key: privateKey, cert: certificate}})
+const lti = new Lti({lti_version: "1.3", encryptionkey:"EXAMPLEKEY", https:true, ssl:{key: privateKey, cert: certificate}, staticPath:__dirname+'/views/teste'})
 
-lti.setAppUrl('/')
-lti.setLoginUrl('/login')
-lti.setKeySetUrl('/keys')
+lti.appUrl('/')
+lti.loginUrl('/login')
+lti.keySetUrl('/keys')
 
 lti.registerPlatform("http://localhost/moodle", "Moodle", "1W8pk8LRuvB1DtO", "http://localhost/moodle/mod/lti/auth.php", {method: "JWK_SET", key: "http://localhost/moodle/mod/lti/certs.php"})
 
@@ -24,12 +24,13 @@ lti.registerPlatform("http://localhost/moodle", "Moodle", "1W8pk8LRuvB1DtO", "ht
 console.log(lti.getAllPlatforms())
 
 
-lti.deploy().onConnect((connection, response)=>{
-    console.log(connection)
-    lti.server.setStaticPath(__dirname+'/views/teste')
-    response.sendFile('/dist/index.html',{ root: './views/teste'})
-})
 
+
+
+lti.deploy().onConnect((connection, request, response, next)=>{
+    console.log(request.query)
+    response.sendFile(__dirname+'/views/teste/dist/index.html')
+},{maxAge: 1000*60*60})
 
 
 
