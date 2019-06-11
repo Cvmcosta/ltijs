@@ -5,6 +5,9 @@ const jwk = require('pem-jwk')
 const got = require('got')
 const find = require('lodash.find')
 const jwt = require('jsonwebtoken')
+const prov_authdebug = require('debug')('provider:auth')
+const cons_authdebug = require('debug')('consumer:auth')
+
 
 
 
@@ -70,6 +73,7 @@ class Auth{
             let kid = decoded_token.header.kid
             let alg = decoded_token.header.alg
 
+            prov_authdebug("Attempting to retrieve registered platform")
             let platform = getPlatform(decoded_token.payload.iss)
             if(!platform) reject("NoPlatformRegistered")
 
@@ -79,7 +83,7 @@ class Auth{
             
             switch(auth_config.method){
                 case "JWK_SET":
-                    
+                    prov_authdebug("Retrieving key from jwk_set")
                     if(!kid) reject("NoKidFoundInToken") 
                     
                     let keys_endpoint = auth_config.key
@@ -92,7 +96,7 @@ class Auth{
                         if(!key) reject('NoKeyFound')
                         
                         
-                        this.verifyToken(token, key, alg).then(verified => {
+                        this.verifyToken(token, key, alg, platform).then(verified => {
                             resolve(verified)
                         }).catch(err => { reject(err) })
 
@@ -100,21 +104,23 @@ class Auth{
 
                     break
                 case "JWK_KEY":
+                    prov_authdebug("Retrieving key from jwk_key")
                     if(!auth_config.key) reject('NoKeyFound')
                     
                     key = jwk.jwk2pem(auth_config.key)
                     
-                    this.verifyToken(token, key, alg).then(verified => {
+                    this.verifyToken(token, key, alg, platform).then(verified => {
                         resolve(verified)
                     }).catch(err => { reject(err) })
 
 
                     break
                 case "RSA_KEY":
+                    prov_authdebug("Retrieving key from rsa_key")
                     key = auth_config.key
                     if(!key) reject('NoKeyFound')
                     
-                    this.verifyToken(token, key, alg).then(verified => {
+                    this.verifyToken(token, key, alg, platform).then(verified => {
                         resolve(verified)
                     }).catch(err => { reject(err) })
                     break
@@ -124,30 +130,94 @@ class Auth{
 
     /**
      * @description Verifies a token.
-     * @param token - Token to be verified.
-     * @param key - Key to verify the token.
-     * @param alg - Algorithm used.
+     * @param {Object} token - Token to be verified.
+     * @param {String} key - Key to verify the token.
+     * @param {String} alg - Algorithm used.
+     * @param {Platform} platform - Issuer platform.
      */
-    static verifyToken(token, key, alg){
+    static verifyToken(token, key, alg, platform){
+        prov_authdebug("Attempting to verify JWT with the given key")
         return new Promise((resolve, reject)=>{
             if(alg){
                 jwt.verify(token, key, { algorithms: [alg] },(err, decoded) => {
                     if (err) reject(err)
                     else {
-                        resolve(decoded)
+                        this.oidcValidationSteps(decoded, platform, alg).then(res=>{
+                            resolve(decoded)
+                        }).catch(err=>{
+                            reject(err)
+                        })
                     }
                 })
             }else{
                 jwt.verify(token, key, (err, decoded) => {
                     if (err) reject(err)
                     else {
-                        resolve(decoded)
+                        resolve(decoded) 
                     }
                 })
             }
         })
         
 
+    }
+
+    /**
+     * @description Validates de token based on the OIDC specifications.
+     * @param {Object} token - Id token you wish to validate.
+     * @param {Platform} platform - Platform object.
+     */
+    static oidcValidationSteps(token, platform, alg){
+        prov_authdebug("Initiating OIDC aditional validation steps")
+        return new Promise((resolve, reject) => {
+           
+            prov_authdebug("Validating aud (Audience) claim matches the value of the tool's client_id given by the platform")
+            prov_authdebug("Aud claim: " + token.aud)
+            prov_authdebug("Tool's client_id: " + platform.platformClientId())
+            if(!token.aud.includes(platform.platformClientId())) reject("AudDoesNotMatchClientId")
+            if(Array.isArray(token.aud)){
+                prov_authdebug("More than one aud listed, searching for azp claim")
+                if(token.azp && token.azp != platform.platformClientId()) reject("AzpClaimDoesNotMatchClientId")
+            }
+
+            prov_authdebug('Checking alg claim. Alg: '+ alg)
+            if(alg != 'RS256') reject("NoRSA256Alg")
+
+            prov_authdebug('Checking iat claim to prevent old tokens from being passed.')
+            prov_authdebug('Iat claim: ' + token.iat)
+            let cur_time = Date.now()/1000
+            prov_authdebug('Current_time: ' + cur_time)
+            let time_passed = cur_time - token.iat
+            prov_authdebug('Time passed: ' + time_passed)
+            if(time_passed > 10) reject("TokenTooOld")
+
+            prov_authdebug('Validating nonce')
+            prov_authdebug('Nonce: ' + token.nonce)
+            
+            if(Database.Get(false, './provider_data', 'nonces', 'nonces', {nonce: token.nonce})) reject("NonceAlreadyStored")
+            else{
+                prov_authdebug("Storing nonce")
+                Database.Insert(false, './provider_data','nonces', 'nonces', {nonce: token.nonce})
+                this.deleteNonce(token.nonce).then(()=>{prov_authdebug('Nonce [' + token.nonce + '] deleted')})
+            }
+
+            
+            resolve(true)
+            
+        })
+    }
+
+    /**
+     * @description Starts up timer to delete nonce.
+     * @param {String} nonce - Nonce.
+     */
+    static deleteNonce(nonce){
+        return new Promise(resolve => {
+            setTimeout(()=>{
+                Database.Delete(false, './provider_data', 'nonces', 'nonces', {nonce: nonce})
+                resolve(true)
+            }, 10000)
+        })
     }
 }
 

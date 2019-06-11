@@ -2,7 +2,7 @@
 //Utis
 const Database = require('./Database')
 const jwk = require('pem-jwk')
-
+const prov_platformdebug = require('debug')('provider:platform')
 var ENCRYPTIONKEY
 
 var auth_config
@@ -36,7 +36,7 @@ class Platform{
         this.kid = kid
 
         if(!Database.Get(ENCRYPTIONKEY, './provider_data', 'platforms', 'platforms',{platform_url: this.platform_url})){
-            console.log("Registering new platform >> " + this.platform_url)
+            prov_platformdebug("Registering new platform: " + this.platform_url)
             Database.Insert(ENCRYPTIONKEY, './provider_data', 'platforms', 'platforms', {platform_name: this.platform_name, platform_url: this.platform_url, client_id: this.client_id, auth_endpoint: this.auth_endpoint, kid: this.kid, auth_config: auth_config})
         }
         
@@ -90,7 +90,7 @@ class Platform{
      * @description Gets the platform key_id.
      */
     platformKid(){
-        return this.client_id
+        return this.kid
     }
 
 

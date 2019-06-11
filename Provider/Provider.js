@@ -16,7 +16,10 @@ const Auth = require('../Utils/Auth')
 const Database = require('../Utils/Database')
 const url = require('url')
 const jwt = require('jsonwebtoken')
+const prov_authdebug = require('debug')('provider:auth')
+const prov_maindebug = require('debug')('provider:main')
 
+const crypto = require('crypto');
 
 
 //Pre-initiated variables
@@ -71,7 +74,7 @@ class Provider{
         }
 
         if(!options || !options.encryptionkey) {
-            console.error("Encryptionkey parameter missing in options")
+            console.error("Encryptionkey parameter missing in options.")
             return false
         }
         ENCRYPTIONKEY = options.encryptionkey
@@ -93,30 +96,37 @@ class Provider{
                 //Check if user already has session cookie stored in its browser
                 let it = req.signedCookies.it 
                 if(!it){
-                    
+                    prov_maindebug("No cookie found")
                     if(req.body.id_token){
+                        prov_maindebug('Received request containing token. Sending for validation')
                         Auth.validateToken(req.body.id_token, this.getPlatform).then( valid => {
                             //Study diferent encodings
+                            prov_authdebug("Successfully validated token!")
                             valid.exp = (Date.now() / 1000) + (cookie_options.maxAge/1000)
                             let it = jwt.sign(valid, ENCRYPTIONKEY)
                             res.cookie('it', it, cookie_options)
                             res.locals.token = valid
+                            prov_maindebug("Passing request to next handler")
                             return next()
                         }).catch(err => {
-                            console.error(err)
+                            prov_authdebug(err)
+                            prov_maindebug("Passing request to invalid token handler")
                             return res.redirect(invalidTokenUrl)
                         }) 
                     }else{
+                        prov_maindebug("Passing request to session timeout handler")
                         return res.redirect(sessionTimeoutUrl)
                     }
                 }else{
                     jwt.verify(it, ENCRYPTIONKEY, (err, valid)=>{
-                        if (err) {console.log(err);return res.redirect(invalidTokenUrl)}
+                        if (err) {prov_authdebug(err);return res.redirect(invalidTokenUrl)}
                         else{
+                            prov_authdebug("Cookie successfully validated")
                             valid.exp = (Date.now() / 1000) + (cookie_options.maxAge/1000)
                             let it = jwt.sign(valid, ENCRYPTIONKEY)
                             res.cookie('it', it, cookie_options)
                             res.locals.token = valid
+                            prov_maindebug("Passing request to next handler")
                             return next()
                         }
                     })
@@ -144,20 +154,25 @@ class Provider{
 
             /* Initiates oidc login flow */
             this.app.post(loginUrl, (req, res)=>{
+                prov_maindebug("Reciving a login request from: " + req.body.iss)
                 let platform = this.getPlatform(req.body.iss)
                   
                 if (platform) {
+                    prov_maindebug("Redirecting to platform authentication endpoint")
                     res.redirect(url.format({
                         pathname: platform.platformAuthEndpoint(),
                         query: Request.lti1_3Login(req.body, platform)
                     }))
                 }
-                else console.error("Unregistered platform attempting connection: " + req.body.iss)
+                else {
+                    prov_maindebug("Unregistered platform attempting connection: " + req.body.iss)
+                    res.status(401).send("Unregistered platform.")
+                }
             })
 
             //Keyset route
             this.app.get(keysetUrl, (req, res)=>{
-                console.log("Sending public keyset...")
+                prov_maindebug("Requesting public keyset")
                 let keyset = Database.Get(false, './provider_data', 'publickeyset', 'keys')
                 if(keyset) res.json({keys: keyset})
                 else res.json({keys: []})
@@ -340,6 +355,28 @@ class Provider{
     }
 
 
+
+    /* Messaging */
+
+    messagePlatform(platform){
+        let message = {
+            iss: platform.platformClientId(),
+            aud: platform.platformUrl(),
+            exp: Date.now()/1000 + 60,
+            iat: Date.now()/1000,
+            nonce: crypto.randomBytes(16).toString('base64'),
+            azp: platform.platformUrl()
+
+        }
+
+        let token = jwt.sign(message, platform.platformPrivateKeyRSA(), {algorithm: 'RS256', keyid: platform.platformKid()})
+
+        prov_maindebug(token)
+
+        let decoded = jwt.decode(token, {complete: true})
+        prov_maindebug(decoded)
+
+    }
     
 
 

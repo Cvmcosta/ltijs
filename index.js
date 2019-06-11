@@ -17,38 +17,28 @@ lti.appUrl('/')
 lti.loginUrl('/login')
 lti.keySetUrl('/keys')
 
-lti.registerPlatform("http://localhost/moodle", "Moodle", "1W8pk8LRuvB1DtO", "http://localhost/moodle/mod/lti/auth.php", {method: "JWK_SET", key: "http://localhost/moodle/mod/lti/certs.php"})
+//lti.registerPlatform("http://localhost/moodle", "Moodle", "1W8pk8LRuvB1DtO", "http://localhost/moodle/mod/lti/auth.php", {method: "JWK_SET", key: "http://localhost/moodle/mod/lti/certs.php"})
 
 
 
-console.log(lti.getAllPlatforms())
+let plat = lti.getPlatform("http://localhost/moodle")
 
 
 
 
 
 lti.deploy().onConnect((connection, request, response, next)=>{
-    console.log(request.query)
+    //console.log(connection['https://purl.imsglobal.org/spec/lti/claim/custom'].teste)
     response.sendFile(__dirname+'/views/teste/dist/index.html')
-},{maxAge: 1000*60*60})
+},{maxAge: 1000*1})
+
+
+
+lti.messagePlatform(plat)
 
 
 
 
-
-
-//cache keysets  and add timestamp to better ahndle the caching
-//aply other validations
-/* prompt
-OPTIONAL. Space delimited, case sensitive list of ASCII string values that specifies whether the Authorization Server prompts the End-User for reauthentication and consent. The defined values are:
-none
-The Authorization Server MUST NOT display any authentication or consent user interface pages. An error is returned if an End-User is not already authenticated or the Client does not have pre-configured consent for the requested Claims or does not fulfill other conditions for processing the request. The error code will typically be login_required, interaction_required, or another code defined in Section 3.1.2.6. This can be used as a method to check for existing authentication and/or consent.
-login
-The Authorization Server SHOULD prompt the End-User for reauthentication. If it cannot reauthenticate the End-User, it MUST return an error, typically login_required.
-consent
-The Authorization Server SHOULD prompt the End-User for consent before returning information to the Client. If it cannot obtain consent, it MUST return an error, typically consent_required.
-select_account
-The Authorization Server SHOULD prompt the End-User to select a user account. This enables an End-User who has multiple accounts at the Authorization Server to select amongst the multiple accounts that they might have current sessions for. If it cannot obtain an account selection choice made by the End-User, it MUST return an error, typically account_selection_required. */
 
 
 /* state n stuff */

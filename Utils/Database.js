@@ -111,7 +111,7 @@ class Database{
         let db
         let result
 
-        if(!path || !database || !set || !item || !query || !modification){
+        if(!path || !database || !set || !query || !modification){
             console.error("Missing argument.")
             return false
         }
@@ -151,7 +151,7 @@ class Database{
         let db
         let result
 
-        if(!path || !database || !set || !item || !query){
+        if(!path || !database || !set || !query){
             console.error("Missing argument.")
             return false
         }
