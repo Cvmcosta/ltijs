@@ -4,7 +4,9 @@
 
 const fs = require('fs')
 
+
 const Lti = require("./main").Provider
+
 
 
 
@@ -17,12 +19,13 @@ lti.appUrl('/')
 lti.loginUrl('/login')
 lti.keySetUrl('/keys')
 
-//lti.registerPlatform("http://localhost/moodle", "Moodle", "1W8pk8LRuvB1DtO", "http://localhost/moodle/mod/lti/auth.php", {method: "JWK_SET", key: "http://localhost/moodle/mod/lti/certs.php"})
+lti.registerPlatform("http://localhost/moodle", "Moodle", "1W8pk8LRuvB1DtO", "http://localhost/moodle/mod/lti/auth.php", {method: "JWK_SET", key: "http://localhost/moodle/mod/lti/certs.php"})
 
 
 
 let plat = lti.getPlatform("http://localhost/moodle")
 
+//console.log(plat.platformPublicKey())
 
 
 
@@ -30,11 +33,11 @@ let plat = lti.getPlatform("http://localhost/moodle")
 lti.deploy().onConnect((connection, request, response, next)=>{
     //console.log(connection['https://purl.imsglobal.org/spec/lti/claim/custom'].teste)
     response.sendFile(__dirname+'/views/teste/dist/index.html')
+    lti.messagePlatform(plat, connection)
 },{maxAge: 1000*1})
 
 
 
-lti.messagePlatform(plat)
 
 
 

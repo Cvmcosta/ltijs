@@ -18,6 +18,7 @@ const url = require('url')
 const jwt = require('jsonwebtoken')
 const prov_authdebug = require('debug')('provider:auth')
 const prov_maindebug = require('debug')('provider:main')
+let got = require('got')
 
 const crypto = require('crypto');
 
@@ -86,6 +87,13 @@ class Provider{
 
         if(options.staticPath) this.server.setStaticPath(options.staticPath)
 
+
+        /* teste */
+        this.app.all('/teste', (req,res)=>{
+            prov_maindebug(req.body)
+        })
+
+        /* end */
 
         //Registers main athentication middleware
         let sessionValidator = (req, res, next)=>{
@@ -358,23 +366,58 @@ class Provider{
 
     /* Messaging */
 
-    messagePlatform(platform){
-        let message = {
+    messagePlatform(platform, connection){
+        prov_maindebug("IdToken: ")
+        prov_maindebug(connection)
+
+        
+
+        let confjwt = {
             iss: platform.platformClientId(),
-            aud: platform.platformUrl(),
-            exp: Date.now()/1000 + 60,
+            sub: platform.platformClientId(),
+            aud: ['http://localhost/moodle/mod/lti/token.php'],
             iat: Date.now()/1000,
-            nonce: crypto.randomBytes(16).toString('base64'),
-            azp: platform.platformUrl()
+            exp: Date.now()/1000 + 60,
+            jti: crypto.randomBytes(16).toString('base64'),
+        }
+
+        let token = jwt.sign(confjwt, platform.platformPrivateKey(), {algorithm: 'RS256', keyid: '123123'})
+
+
+
+
+        let message = {
+            grant_type: 'client_credentials',
+            client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+            client_assertion: token,
+            scope: 'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem'
 
         }
 
-        let token = jwt.sign(message, platform.platformPrivateKeyRSA(), {algorithm: 'RS256', keyid: platform.platformKid()})
 
-        prov_maindebug(token)
+        got('http://localhost/moodle/mod/lti/token.php',{body: message, form: true}).then((res) => {
+           
+           
+            let access = JSON.parse(res.body)
+            prov_maindebug("Access token: ")
+            prov_maindebug(access)
 
-        let decoded = jwt.decode(token, {complete: true})
-        prov_maindebug(decoded)
+
+            let lineitems = connection['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint'].lineitems
+
+
+            got.get(lineitems,{headers:{Authorization: access.token_type + ' ' + access.access_token}}).then(res => {
+                prov_maindebug("Line Item: ")
+                prov_maindebug(JSON.parse(res.body))
+            })
+            
+            
+        }).catch(err=>{
+            console.log(err.body)
+        })
+
+
+        
 
     }
     

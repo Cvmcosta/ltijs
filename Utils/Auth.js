@@ -5,6 +5,7 @@ const jwk = require('pem-jwk')
 const got = require('got')
 const find = require('lodash.find')
 const jwt = require('jsonwebtoken')
+const pem = require("pem")
 const prov_authdebug = require('debug')('provider:auth')
 const cons_authdebug = require('debug')('consumer:auth')
 
@@ -30,33 +31,36 @@ class Auth{
         }
 
         let keys = crypto.generateKeyPairSync('rsa', {
-                                                        modulusLength: 4096,
-                                                        publicKeyEncoding: {
-                                                            type: 'pkcs1',
-                                                            format: 'pem'
-                                                        },
-                                                        privateKeyEncoding: {
-                                                            type: 'pkcs1',
-                                                            format: 'pem'
-                                                        }
-                                                    })
+            modulusLength: 4096,
+            publicKeyEncoding: {
+                type: 'spki',
+                format: 'pem'
+            },
+            privateKeyEncoding: {
+                type: 'pkcs1',
+                format: 'pem'
+            }
+        })
+
+        
 
         let {publicKey, privateKey} = keys
 
-        let jwk_publicKey = jwk.pem2jwk(publicKey)
-        let jwk_privateKey = jwk.pem2jwk(privateKey)
-        jwk_publicKey.kid = kid
-        jwk_publicKey.use = "sig"
-        
+    
 
-        
-        jwk_privateKey.kid = kid
-        jwk_privateKey.use = "sig"
-        
-        Database.Insert(false, './provider_data', 'publickeyset', 'keys',jwk_publicKey)
-        Database.Insert(false, './provider_data', 'privatekeyset', 'keys',jwk_privateKey)
-   
-        
+        let pubkeyobj = {
+            key: publicKey,
+            kid: kid
+        }
+        let privkeyobj = {
+            key: privateKey,
+            kid: kid
+        }
+
+        Database.Insert(false, './provider_data', 'publickeyset', 'keys', pubkeyobj)
+        Database.Insert(false, './provider_data', 'privatekeyset', 'keys', privkeyobj)
+
+
         return kid
     }
 

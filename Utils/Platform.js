@@ -94,37 +94,24 @@ class Platform{
     }
 
 
-    /**
-     * @description Gets the Jwk public key assigned to the platform.
-     *
-     */
-    platformPublicKeyJwk(){
-        return Database.Get(false, './provider_data', 'publickeyset', 'keys', {kid: this.kid})
-    }
 
     /**
      * @description Gets the RSA public key assigned to the platform.
      *
      */
-    platformPublicKeyRSA(){
-        return jwk.jwk2pem(Database.Get(false, './provider_data', 'publickeyset', 'keys', {kid: this.kid}))
+    platformPublicKey(){
+        return Database.Get(false, './provider_data', 'publickeyset', 'keys', {kid: this.kid}).key
     }
 
 
-     /**
-     * @description Gets the Jwk private key assigned to the platform.
-     *
-     */
-    platformPrivateKeyJwk(){
-        return Database.Get(false, './provider_data', 'privatekeyset', 'keys', {kid: this.kid})
-    }
+  
 
     /**
      * @description Gets the RSA private key assigned to the platform.
      *
      */
-    platformPrivateKeyRSA(){
-        return jwk.jwk2pem(Database.Get(false, './provider_data', 'privatekeyset', 'keys', {kid: this.kid}))
+    platformPrivateKey(){
+        return Database.Get(false, './provider_data', 'privatekeyset', 'keys', {kid: this.kid}).key
     }
 
 
