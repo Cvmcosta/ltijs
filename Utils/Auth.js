@@ -5,7 +5,6 @@ const jwk = require('pem-jwk')
 const got = require('got')
 const find = require('lodash.find')
 const jwt = require('jsonwebtoken')
-const pem = require("pem")
 const prov_authdebug = require('debug')('provider:auth')
 const cons_authdebug = require('debug')('consumer:auth')
 
@@ -211,6 +210,57 @@ class Auth{
         })
     }
 
+    
+
+
+    /**
+     * @description Gets a new access token from the platform.
+     * @param {Platform} platform - Platform object of the platform you want to access.
+     */
+    static getAccessToken(platform, ENCRYPTIONKEY){
+        return new Promise((resolve, reject)=>{
+            let confjwt = {
+                iss: platform.platformClientId(),
+                sub: platform.platformClientId(),
+                aud: [platform.platformAccessTokenEndpoint()],
+                iat: Date.now()/1000,
+                exp: Date.now()/1000 + 60,
+                jti: crypto.randomBytes(16).toString('base64'),
+            }
+    
+            let token = jwt.sign(confjwt, platform.platformPrivateKey(), {algorithm: 'RS256', keyid: platform.platformKid()})
+    
+    
+    
+    
+            let message = {
+                grant_type: 'client_credentials',
+                client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+                client_assertion: token,
+                scope: 'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem https://purl.imsglobal.org/spec/lti-ags/scope/score https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly'
+    
+            }
+    
+            prov_authdebug("Awaiting return from the platform")
+            got(platform.platformAccessTokenEndpoint(),{body: message, form: true}).then((res) => {
+                prov_authdebug("Successfully generated new access_token")
+                let access = JSON.parse(res.body)
+                prov_authdebug("Access token: ")
+                prov_authdebug(access)
+                Database.Insert(ENCRYPTIONKEY, './provider_data', 'access_tokens', 'access_tokens',{platform_url: platform.platformUrl(), token: access})
+                
+                this.deleteAccessToken(platform.platformUrl(), access.expires_in).then(()=>{prov_authdebug('Access token for [' + platform.platformUrl() + '] expired')})
+
+                resolve(access)          
+                
+            }).catch(err=>{
+                prov_authdebug(err)
+                reject(err.body)
+            })
+        })
+    }
+
+
     /**
      * @description Starts up timer to delete nonce.
      * @param {String} nonce - Nonce.
@@ -223,6 +273,24 @@ class Auth{
             }, 10000)
         })
     }
+
+
+
+    /**
+     * @description Starts up timer to delete access token.
+     * @param {String} url - Platform url.
+     */
+    static deleteAccessToken(url, time){
+        return new Promise(resolve => {
+            setTimeout(()=>{
+                Database.Delete(false, './provider_data', 'access_tokens', 'access_tokens', {platform_url: url})
+                resolve(true)
+            }, (time*1000) - 1)
+        })
+    }
 }
+
+
+
 
 module.exports = Auth

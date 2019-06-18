@@ -26,7 +26,7 @@ const crypto = require('crypto');
 //Pre-initiated variables
 var loginUrl = "/login"
 var appUrl = "/"
-var keysetUrl = "/keys"
+
 var sessionTimeoutUrl = '/sessionTimeout'
 var invalidTokenUrl = '/invalidToken'
 var ltiVersion = 1.3
@@ -99,7 +99,7 @@ class Provider{
         let sessionValidator = (req, res, next)=>{
             
             //Ckeck if request is attempting to initiate oidc login flow
-            if(req.url != loginUrl && req.url!=keysetUrl && req.url != sessionTimeoutUrl && req.url != invalidTokenUrl){
+            if(req.url != loginUrl && req.url != sessionTimeoutUrl && req.url != invalidTokenUrl){
         
                 //Check if user already has session cookie stored in its browser
                 let it = req.signedCookies.it 
@@ -178,13 +178,7 @@ class Provider{
                 }
             })
 
-            //Keyset route
-            this.app.get(keysetUrl, (req, res)=>{
-                prov_maindebug("Requesting public keyset")
-                let keyset = Database.Get(false, './provider_data', 'publickeyset', 'keys')
-                if(keyset) res.json({keys: keyset})
-                else res.json({keys: []})
-            })
+          
 
 
             //Session timeout and invalid token urls
@@ -205,7 +199,7 @@ class Provider{
         }
 
         //Starts server on given port
-        this.server.listen(port, "Lti Provider tool is listening on port " + port + "!\n\nLTI provider config: \n>Initiate login URL: " + loginUrl +"\n>App Url: " + appUrl + "\n>Keyset Url: " + keysetUrl + "\n>Session Timeout Url: " + sessionTimeoutUrl + "\n>Invalid Token Url: " + invalidTokenUrl  + "\n>Lti Version: " + ltiVersion)
+        this.server.listen(port, "Lti Provider tool is listening on port " + port + "!\n\nLTI provider config: \n>Initiate login URL: " + loginUrl +"\n>App Url: " + appUrl + "\n>Session Timeout Url: " + sessionTimeoutUrl + "\n>Invalid Token Url: " + invalidTokenUrl  + "\n>Lti Version: " + ltiVersion)
    
         
         return this
@@ -261,16 +255,7 @@ class Provider{
         appUrl = url
     }
 
-    /**
-     * @description Gets/Sets keyset Url that will return a json containing a set of public keys. If no value is set "/keys" is used.
-     * @param {string} url - Keyset url.
-     * @example provider.keySetUrl('/keyset')
-     */
-    keySetUrl(url){
-        if(!url) return keysetUrl
-        keysetUrl = url
-    }
-
+   
 
     /**
      * @description Gets/Sets session timeout Url that will be called whenever the system encounters a session timeout. If no value is set "/sessionTimeout" is used.
@@ -304,15 +289,15 @@ class Provider{
      * @param {String} auth_config.method - Method of authorization "RSA_KEY" or "JWK_KEY" or "JWK_SET".
      * @param {String} auth_config.key - Either the RSA public key provided by the platform, or the JWK key, or the JWK keyset address.
      */
-    registerPlatform(url, name, client_id, authentication_endpoint, auth_config){
-        if(!name || !url || !client_id || !authentication_endpoint || !auth_config) {
+    registerPlatform(url, name, client_id, authentication_endpoint, accesstoken_endpoint, auth_config){
+        if(!name || !url || !client_id || !authentication_endpoint || !accesstoken_endpoint || !auth_config) {
             console.error("Error registering platform. Missing argument.")
             return false
         }
         let platform  = this.getPlatform(url)
         if(!platform){
             let kid = Auth.generateProviderKeyPair()
-            return new Platform(name, url, client_id, authentication_endpoint, kid, ENCRYPTIONKEY, auth_config)
+            return new Platform(name, url, client_id, authentication_endpoint, accesstoken_endpoint, kid, ENCRYPTIONKEY, auth_config)
         }else{
             console.error("Platform already registered. Url: " + url)
             return platform
@@ -331,7 +316,7 @@ class Provider{
 
         if(!obj) return false
 
-        return new Platform(obj.platform_name, obj.platform_url, obj.client_id, obj.auth_endpoint, obj.kid, ENCRYPTIONKEY, obj.auth_config)
+        return new Platform(obj.platform_name, obj.platform_url, obj.client_id, obj.auth_endpoint, obj.accesstoken_endpoint, obj.kid, ENCRYPTIONKEY, obj.auth_config)
     }
 
 
@@ -355,7 +340,7 @@ class Provider{
         let platforms = Database.Get(ENCRYPTIONKEY, './provider_data','platforms','platforms')
         
         if(platforms){
-            for(let obj of platforms) return_array.push(new Platform(obj.platform_name, obj.platform_url, obj.client_id, obj.auth_endpoint, obj.kid, ENCRYPTIONKEY, obj.auth_config))
+            for(let obj of platforms) return_array.push(new Platform(obj.platform_name, obj.platform_url, obj.client_id, obj.auth_endpoint, obj.accesstoken_endpoint, obj.kid, ENCRYPTIONKEY, obj.auth_config))
 
             return return_array
         }
@@ -364,64 +349,54 @@ class Provider{
 
 
 
-    /* Messaging */
+    /**
+     * @description Sends message to the platform
+     * @param {Object} idtoken - Idtoken for the user 
+     */
+    messagePlatform(idtoken){
+        prov_maindebug("Target platform: " + idtoken.iss)
 
-    messagePlatform(platform, connection){
-        prov_maindebug("IdToken: ")
-        prov_maindebug(connection)
+        let platform = this.getPlatform(idtoken.iss)
 
-        
-
-        let confjwt = {
-            iss: platform.platformClientId(),
-            sub: platform.platformClientId(),
-            aud: ['http://localhost/moodle/mod/lti/token.php'],
-            iat: Date.now()/1000,
-            exp: Date.now()/1000 + 60,
-            jti: crypto.randomBytes(16).toString('base64'),
+        if(!platform){
+            prov_maindebug("Platform not found, returning false")
+            return false
         }
 
-        let token = jwt.sign(confjwt, platform.platformPrivateKey(), {algorithm: 'RS256', keyid: '123123'})
+        prov_maindebug("Attempting to retrieve platform access_token for ["+idtoken.iss+"]")
+        platform.platformAccessToken().then(res => {
+            prov_maindebug("Access_token retrieved for ["+idtoken.iss+"]")
+            let lineitems = idtoken['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint'].lineitems
 
 
-
-
-        let message = {
-            grant_type: 'client_credentials',
-            client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
-            client_assertion: token,
-            scope: 'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem'
-
-        }
-
-
-        got('http://localhost/moodle/mod/lti/token.php',{body: message, form: true}).then((res) => {
-           
-           
-            let access = JSON.parse(res.body)
-            prov_maindebug("Access token: ")
-            prov_maindebug(access)
-
-
-            let lineitems = connection['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint'].lineitems
-
-
-            got.get(lineitems,{headers:{Authorization: access.token_type + ' ' + access.access_token}}).then(res => {
-                prov_maindebug("Line Item: ")
+            /* got.get(lineitems,{headers:{Authorization: res.token_type + ' ' + res.access_token}}).then(res => {
+                prov_maindebug(idtoken)
+                //prov_maindebug("Line Item: ")
                 prov_maindebug(JSON.parse(res.body))
+            }) */
+            let grade = {
+                timestamp: new Date(Date.now()).toISOString(),
+                scoreGiven: 70,
+                scoreMaximum : 100,
+                comment : "This is exceptional work.",
+                activityProgress : "Completed",
+                gradingProgress: "FullyGraded",
+                userId : idtoken.sub
+            }
+
+            
+            got.post('http://localhost/moodle/mod/lti/services.php/2/lineitems/2/lineitem/scores?type_id=1',{headers:{Authorization: res.token_type + ' ' + res.access_token, 'Content-Type': "application/vnd.ims.lis.v1.score+json"}, body: JSON.stringify(grade)}).then(res => {
+                prov_maindebug("Message successfully sent")
+            }).catch(err => {
+                prov_maindebug('err')
+                prov_maindebug(err)
             })
-            
-            
         }).catch(err=>{
-            console.log(err.body)
+            prov_maindebug(err)
         })
 
 
-        
-
     }
     
-
-
 }
 module.exports = Provider
