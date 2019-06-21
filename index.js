@@ -19,22 +19,22 @@ lti.appUrl('/')
 lti.loginUrl('/login')
 
 
-lti.registerPlatform("http://localhost/moodle", "Moodle", "1W8pk8LRuvB1DtO", "http://localhost/moodle/mod/lti/auth.php", 'http://localhost/moodle/mod/lti/token.php',{method: "JWK_SET", key: "http://localhost/moodle/mod/lti/certs.php"})
+lti.registerPlatform("http://172.18.53.34", "Educsaite", "3tHEfEFArAGH7FG", "http://172.18.53.34/mod/lti/auth.php", 'http://172.18.53.34/mod/lti/token.php',{method: "JWK_SET", key: "http://172.18.53.34/mod/lti/certs.php"})
 
 
 
 let plat = lti.getPlatform("http://localhost/moodle")
 
-//console.log(plat.platformPublicKey())
+console.log(plat.platformPublicKey())
 
 
-//console.log(a = new Date(Date.now()).toISOString())
+//Delete access token on startup
 
 lti.deploy().onConnect((connection, request, response, next)=>{
     //console.log(connection['https://purl.imsglobal.org/spec/lti/claim/custom'].teste)
     response.sendFile(__dirname+'/views/teste/dist/index.html')
-    lti.messagePlatform(connection)
-},{maxAge: 1000*1})
+    //lti.messagePlatform(connection)
+},{maxAge: 1000*60*60})
 
 
 

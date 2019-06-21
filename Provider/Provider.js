@@ -88,13 +88,6 @@ class Provider{
         if(options.staticPath) this.server.setStaticPath(options.staticPath)
 
 
-        /* teste */
-        this.app.all('/teste', (req,res)=>{
-            prov_maindebug(req.body)
-        })
-
-        /* end */
-
         //Registers main athentication middleware
         let sessionValidator = (req, res, next)=>{
             
