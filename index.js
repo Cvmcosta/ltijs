@@ -13,19 +13,20 @@ const Lti = require("./main").Provider
 const privateKey  = fs.readFileSync('./ssl/server.key', 'utf8')
 const certificate = fs.readFileSync('./ssl/server.cert', 'utf8')
 
-const lti = new Lti({lti_version: "1.3", encryptionkey:"EXAMPLEKEY", https:true, ssl:{key: privateKey, cert: certificate}, staticPath:__dirname+'/views/teste'})
+const lti = new Lti("EXAMPLEKEY", {lti_version: "1.3", https:true, ssl:{key: privateKey, cert: certificate}, staticPath:__dirname+'/views/teste'})
 
 lti.appUrl('/')
 lti.loginUrl('/login')
 
 
-lti.registerPlatform("http://172.18.53.34", "Educsaite", "3tHEfEFArAGH7FG", "http://172.18.53.34/mod/lti/auth.php", 'http://172.18.53.34/mod/lti/token.php',{method: "JWK_SET", key: "http://172.18.53.34/mod/lti/certs.php"})
+lti.registerPlatform("http://localhost/moodle", "Educsaite", "1W8pk8LRuvB1DtO", "http://localhost/moodle/mod/lti/auth.php", 'http://localhost/moodle/mod/lti/token.php',{method: "JWK_SET", key: "http://localhost/moodle/mod/lti/certs.php"})
 
 
 
-let plat = lti.getPlatform("http://localhost/moodle")
+let plat2 = lti.getPlatform("http://localhost/moodle", 2)
 
-console.log(plat.platformPublicKey())
+console.log(plat2.platformPublicKey())
+
 
 
 //Delete access token on startup
@@ -33,8 +34,8 @@ console.log(plat.platformPublicKey())
 lti.deploy().onConnect((connection, request, response, next)=>{
     //console.log(connection['https://purl.imsglobal.org/spec/lti/claim/custom'].teste)
     response.sendFile(__dirname+'/views/teste/dist/index.html')
-    //lti.messagePlatform(connection)
-},{maxAge: 1000*60*60})
+    lti.messagePlatform(connection)
+},{maxAge: 1000*60*60}) 
 
 
 

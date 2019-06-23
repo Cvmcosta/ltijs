@@ -3,8 +3,8 @@
 const Database = require('./Database')
 const Auth = require('./Auth')
 const prov_platformdebug = require('debug')('provider:platform')
-var ENCRYPTIONKEY
 
+var ENCRYPTIONKEY
 var auth_config
 
 /**
@@ -24,11 +24,6 @@ class Platform{
     constructor(name, platform_url, client_id, authentication_endpoint, accesstoken_endpoint, kid, _ENCRYPTIONKEY, _auth_config){
         auth_config = _auth_config
         ENCRYPTIONKEY = _ENCRYPTIONKEY
-
-        if(!name) {
-            console.error("Error registering platform. Missing argument.")
-            return false
-        }
 
         this.platform_name = name
         this.platform_url = platform_url 
@@ -125,14 +120,11 @@ class Platform{
     platformAuthConfig(method, key){
         if(!method && !key) return auth_config
 
-        if(method != "RSA_KEY" && method != "JWK_KEY" && method != "JWK_SET"){
-            console.error('Invalid message validation method. Valid methods are "RSA_KEY", "JWK_KEY", "JWK_SET"')
-            return false
-        }
-        if(!key){
-            console.error("Missing secong argument key or keyset_url.")
-            return false
-        }
+        if(method != "RSA_KEY" && method != "JWK_KEY" && method != "JWK_SET") throw new Error('Invalid message validation method. Valid methods are "RSA_KEY", "JWK_KEY", "JWK_SET"')
+            
+        if(!key) throw new Error("Missing secong argument key or keyset_url.")
+            
+        
 
         auth_config = {
             method: method,

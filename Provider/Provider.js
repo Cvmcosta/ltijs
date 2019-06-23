@@ -18,9 +18,8 @@ const url = require('url')
 const jwt = require('jsonwebtoken')
 const prov_authdebug = require('debug')('provider:auth')
 const prov_maindebug = require('debug')('provider:main')
-let got = require('got')
+const got = require('got')
 
-const crypto = require('crypto');
 
 
 //Pre-initiated variables
@@ -32,7 +31,7 @@ var invalidTokenUrl = '/invalidToken'
 var ltiVersion = 1.3
 var ENCRYPTIONKEY
 
-var cookie_options ={
+var cookie_options = {
     maxAge: 1000*60*60,
     secure: true,
     httpOnly: true,
@@ -40,12 +39,12 @@ var cookie_options ={
 }
 
 
-var connect_callback = ()=>{}
+var connect_callback = () => {}
 
-var sessionTimedOut = (req, res, next)=>{
+var sessionTimedOut = (req, res, next) => {
     res.status(401).send("Session timed out. Please reinitiate login.")
 }
-var invalidToken = (req, res, next)=>{
+var invalidToken = (req, res, next) => {
     res.status(401).send("Invalid token. Please reinitiate login.")
 }
 
@@ -55,30 +54,27 @@ var invalidToken = (req, res, next)=>{
 /** Exposes methods for easy manipualtion of the LTI standard as a LTI Provider and a "server" object to manipulate the Express instance */
 class Provider{
 
+
     /**
      * @description Exposes methods for easy manipualtion of the LTI standard as a LTI Provider and a "server" object to manipulate the Express instance.
-     * @param {Object} options - Lti Provider options.
-     * @param {String} options.encryptionkey - Encryption key to generate the db with platforms.
+     * @param {String} encryptionkey - Secret used to sign cookies and other info.
+     * @param {Object} [options] - Lti Provider options.
      * @param {String} [options.lti_version = "1.3"]  - Valid versions are "1.1" and "1.3", it affects how the tool will comunicate with the consumer. Default value is "1.3".
      
      * @param {Boolean} [options.https = false] - Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https. If you really dont want to use https, disable the secure flag in the cookies option, so that it can be passed via http.
      * @param {Object} [options.ssl] - SSL certificate and key if https is enabled.
-     * @param {Object} [options.ssl.key] - SSL key.
-     * @param {Object} [options.ssl.cert] - SSL certificate. 
+     * @param {String} [options.ssl.key] - SSL key.
+     * @param {String} [options.ssl.cert] - SSL certificate. 
      * @param {String} [options.staticPath] - The path for the static files your application might serve (Ex: _dirname+"/public")
      */
-    constructor(options){
-        
-        if(options && options.https && (!options.ssl || !options.ssl.key || !options.ssl.cert)){
-            console.error("No ssl Key  or Certificate found for local https configuration.")
-            return false
-        }
+    constructor(encryptionkey, options){
+    
+        if(options && options.https && (!options.ssl || !options.ssl.key || !options.ssl.cert)) throw new Error("No ssl Key  or Certificate found for local https configuration.")
 
-        if(!options || !options.encryptionkey) {
-            console.error("Encryptionkey parameter missing in options.")
-            return false
-        }
-        ENCRYPTIONKEY = options.encryptionkey
+        if(!encryptionkey) throw new Error("Encryptionkey parameter missing in options.")
+    
+        
+        ENCRYPTIONKEY = encryptionkey
 
         if(options.lti_version && (parseFloat(options.lti_version) == 1.3 || parseFloat(options.lti_version) == 1.1)) ltiVersion = parseFloat(options.lti_version)
         
@@ -138,24 +134,13 @@ class Provider{
             
             
         }
-        this.app.use(sessionValidator)
         
-    }
-
-    /**
-     * @description Starts listening to a given port for LTI requests
-     * @param {number} port - The port the Provider should listen to
-     */
-    deploy(port){
-        /* In case no port is provided uses 3000 */
-        port = port || 3000
+        this.app.use(sessionValidator)
 
         if(ltiVersion == 1.3){
-            
-
             /* Initiates oidc login flow */
             this.app.post(loginUrl, (req, res)=>{
-                prov_maindebug("Reciving a login request from: " + req.body.iss)
+                prov_maindebug("Receiving a login request from: " + req.body.iss)
                 let platform = this.getPlatform(req.body.iss)
                   
                 if (platform) {
@@ -171,25 +156,38 @@ class Provider{
                 }
             })
 
-          
-
-
             //Session timeout and invalid token urls
             this.app.all(sessionTimeoutUrl, (req, res, next)=>{
                 sessionTimedOut(req, res, next)
             })
-
             this.app.all(invalidTokenUrl, (req, res, next)=>{
                 invalidToken(req, res, next)
             })
-
 
             //Main app 
             this.app.post(appUrl, (req, res, next)=>{
                 connect_callback(res.locals.token, req, res, next)
             })
 
+        }else{
+            throw new Error("Lti 1.1 not yet supported")
         }
+        
+    }
+
+    /**
+     * @description Starts listening to a given port for LTI requests
+     * @param {number} port - The port the Provider should listen to
+     */
+    deploy(port){
+        /* In case no port is provided uses 3000 */
+        port = port || 3000
+
+        //Clean stored access_tokens
+        prov_maindebug('Cleaning previously stored access tokens')
+        for(let plat of this.getAllPlatforms()) Database.Delete(ENCRYPTIONKEY, './provider_data', 'access_tokens', 'access_tokens', {platform_url: plat.platformUrl()})
+        
+        
 
         //Starts server on given port
         this.server.listen(port, "Lti Provider tool is listening on port " + port + "!\n\nLTI provider config: \n>Initiate login URL: " + loginUrl +"\n>App Url: " + appUrl + "\n>Session Timeout Url: " + sessionTimeoutUrl + "\n>Invalid Token Url: " + invalidTokenUrl  + "\n>Lti Version: " + ltiVersion)
@@ -283,17 +281,14 @@ class Provider{
      * @param {String} auth_config.key - Either the RSA public key provided by the platform, or the JWK key, or the JWK keyset address.
      */
     registerPlatform(url, name, client_id, authentication_endpoint, accesstoken_endpoint, auth_config){
-        if(!name || !url || !client_id || !authentication_endpoint || !accesstoken_endpoint || !auth_config) {
-            console.error("Error registering platform. Missing argument.")
-            return false
-        }
+        if(!name || !url || !client_id || !authentication_endpoint || !accesstoken_endpoint || !auth_config) throw new Error("Error registering platform. Missing argument.")
+           
         let platform  = this.getPlatform(url)
         if(!platform){
             let kid = Auth.generateProviderKeyPair()
             return new Platform(name, url, client_id, authentication_endpoint, accesstoken_endpoint, kid, ENCRYPTIONKEY, auth_config)
         }else{
-            console.error("Platform already registered. Url: " + url)
-            return platform
+            return false
         }
         
     }
@@ -334,7 +329,6 @@ class Provider{
         
         if(platforms){
             for(let obj of platforms) return_array.push(new Platform(obj.platform_name, obj.platform_url, obj.client_id, obj.auth_endpoint, obj.accesstoken_endpoint, obj.kid, ENCRYPTIONKEY, obj.auth_config))
-
             return return_array
         }
         return []

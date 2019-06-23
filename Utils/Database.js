@@ -23,10 +23,8 @@ class Database{
         let db
         let result
 
-        if(!path || !database|| !set){
-            console.error("Missing arguments Path or/and Set.")
-            return false
-        }
+        if(!path || !database|| !set) throw new Error("Missing argument.")
+           
 
         if(!fs.existsSync(path)) fs.mkdirSync(path)
 
@@ -67,12 +65,10 @@ class Database{
         let cryptr
         let adapter
         let db
-        let result
+       
 
-        if(!path || !database || !set || !item){
-            console.error("Missing argument.")
-            return false
-        }
+        if(!path || !database || !set || !item) throw new Error("Missing argument.")
+           
 
         if(!fs.existsSync(path)) fs.mkdirSync(path)
 
@@ -109,12 +105,10 @@ class Database{
         let cryptr
         let adapter
         let db
-        let result
+       
 
-        if(!path || !database || !set || !query || !modification){
-            console.error("Missing argument.")
-            return false
-        }
+        if(!path || !database || !set || !query || !modification) throw new Error("Missing argument.")
+            
 
         if(!fs.existsSync(path)) fs.mkdirSync(path)
 
@@ -149,12 +143,10 @@ class Database{
         let cryptr
         let adapter
         let db
-        let result
+        
 
-        if(!path || !database || !set || !query){
-            console.error("Missing argument.")
-            return false
-        }
+        if(!path || !database || !set || !query) throw new Error("Missing argument.")
+    
 
         if(!fs.existsSync(path)) fs.mkdirSync(path)
 
@@ -178,10 +170,6 @@ class Database{
         return true
 
     }
-
-
-    
-
 
 
 }
