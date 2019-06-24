@@ -32,17 +32,9 @@ console.log(plat2.platformPublicKey())
 //Delete access token on startup
 
 lti.deploy().onConnect((connection, request, response, next)=>{
-    //console.log(connection['https://purl.imsglobal.org/spec/lti/claim/custom'].teste)
+    //console.log(connection[Lti.ClaimCustomParameters])
     response.sendFile(__dirname+'/views/teste/dist/index.html')
     lti.messagePlatform(connection)
 },{maxAge: 1000*60*60}) 
 
 
-
-
-
-
-
-
-
-/* state n stuff */

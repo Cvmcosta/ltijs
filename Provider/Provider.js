@@ -1,25 +1,18 @@
 /* Main file for the Provider functionalities */
 
-// Express server to receive the requests
+
 const Server = require('../Utils/Server')
-
-// Handles requests
 const Request = require('../Utils/Request')
-
-// Platforms
 const Platform = require('../Utils/Platform')
-
-// Authentication
 const Auth = require('../Utils/Auth')
-
-// Utils
 const Database = require('../Utils/Database')
+
 const url = require('url')
 const jwt = require('jsonwebtoken')
-const prov_authdebug = require('debug')('provider:auth')
-const prov_maindebug = require('debug')('provider:main')
 const got = require('got')
 
+const prov_authdebug = require('debug')('provider:auth')
+const prov_maindebug = require('debug')('provider:main')
 
 
 //Pre-initiated variables
@@ -28,7 +21,6 @@ var appUrl = "/"
 
 var sessionTimeoutUrl = '/sessionTimeout'
 var invalidTokenUrl = '/invalidToken'
-var ltiVersion = 1.3
 var ENCRYPTIONKEY
 
 var cookie_options = {
@@ -51,16 +43,15 @@ var invalidToken = (req, res, next) => {
 
 
 
-/** Exposes methods for easy manipualtion of the LTI standard as a LTI Provider and a "server" object to manipulate the Express instance */
+/** 
+ * @descripttion Exposes methods for easy manipualtion of the LTI 1.3 standard as a LTI Provider and a "server" object to manipulate the Express instance 
+ */
 class Provider{
 
-
     /**
-     * @description Exposes methods for easy manipualtion of the LTI standard as a LTI Provider and a "server" object to manipulate the Express instance.
+     * @description Exposes methods for easy manipualtion of the LTI 1.3 standard as a LTI Provider and a "server" object to manipulate the Express instance.
      * @param {String} encryptionkey - Secret used to sign cookies and other info.
      * @param {Object} [options] - Lti Provider options.
-     * @param {String} [options.lti_version = "1.3"]  - Valid versions are "1.1" and "1.3", it affects how the tool will comunicate with the consumer. Default value is "1.3".
-     
      * @param {Boolean} [options.https = false] - Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https. If you really dont want to use https, disable the secure flag in the cookies option, so that it can be passed via http.
      * @param {Object} [options.ssl] - SSL certificate and key if https is enabled.
      * @param {String} [options.ssl.key] - SSL key.
@@ -70,110 +61,101 @@ class Provider{
     constructor(encryptionkey, options){
     
         if(options && options.https && (!options.ssl || !options.ssl.key || !options.ssl.cert)) throw new Error("No ssl Key  or Certificate found for local https configuration.")
-
         if(!encryptionkey) throw new Error("Encryptionkey parameter missing in options.")
     
-        
         ENCRYPTIONKEY = encryptionkey
-
-        if(options.lti_version && (parseFloat(options.lti_version) == 1.3 || parseFloat(options.lti_version) == 1.1)) ltiVersion = parseFloat(options.lti_version)
         
         this.server = new Server(options.https, options.ssl, ENCRYPTIONKEY)
         this.app = this.server.app
 
         if(options.staticPath) this.server.setStaticPath(options.staticPath)
 
-
         //Registers main athentication middleware
-        let sessionValidator = (req, res, next)=>{
+        let sessionValidator = async(req, res, next)=>{
             
             //Ckeck if request is attempting to initiate oidc login flow
-            if(req.url != loginUrl && req.url != sessionTimeoutUrl && req.url != invalidTokenUrl){
-        
-                //Check if user already has session cookie stored in its browser
+            if(req.url == loginUrl || req.url == sessionTimeoutUrl || req.url == invalidTokenUrl) return next()
+            
+            //Check if user already has session cookie stored in its browser
+            try{
                 let it = req.signedCookies.it 
                 if(!it){
                     prov_maindebug("No cookie found")
                     if(req.body.id_token){
+
                         prov_maindebug('Received request containing token. Sending for validation')
-                        Auth.validateToken(req.body.id_token, this.getPlatform).then( valid => {
-                            //Study diferent encodings
-                            prov_authdebug("Successfully validated token!")
-                            valid.exp = (Date.now() / 1000) + (cookie_options.maxAge/1000)
-                            let it = jwt.sign(valid, ENCRYPTIONKEY)
-                            res.cookie('it', it, cookie_options)
-                            res.locals.token = valid
-                            prov_maindebug("Passing request to next handler")
-                            return next()
-                        }).catch(err => {
-                            prov_authdebug(err)
-                            prov_maindebug("Passing request to invalid token handler")
-                            return res.redirect(invalidTokenUrl)
-                        }) 
+                        let valid = await Auth.validateToken(req.body.id_token, this.getPlatform)
+
+                        prov_authdebug("Successfully validated token!")
+                        valid.exp = (Date.now() / 1000) + (cookie_options.maxAge/1000)
+
+                        let it = jwt.sign(valid, ENCRYPTIONKEY)
+                        res.cookie('it', it, cookie_options)
+                        res.locals.token = valid
+
+                        prov_maindebug("Passing request to next handler")
+                        return next()
+                            
                     }else{
                         prov_maindebug("Passing request to session timeout handler")
                         return res.redirect(sessionTimeoutUrl)
                     }
                 }else{
-                    jwt.verify(it, ENCRYPTIONKEY, (err, valid)=>{
-                        if (err) {prov_authdebug(err);return res.redirect(invalidTokenUrl)}
-                        else{
-                            prov_authdebug("Cookie successfully validated")
-                            valid.exp = (Date.now() / 1000) + (cookie_options.maxAge/1000)
-                            let it = jwt.sign(valid, ENCRYPTIONKEY)
-                            res.cookie('it', it, cookie_options)
-                            res.locals.token = valid
-                            prov_maindebug("Passing request to next handler")
-                            return next()
-                        }
-                    })
+                    let valid = jwt.verify(it, ENCRYPTIONKEY)     
+                    prov_authdebug("Cookie successfully validated")
+
+                    valid.exp = (Date.now() / 1000) + (cookie_options.maxAge/1000)
+                    let _it = jwt.sign(valid, ENCRYPTIONKEY)
+                    res.cookie('it', _it, cookie_options)
+                    res.locals.token = valid
+
+                    prov_maindebug("Passing request to next handler")
+                    return next()  
+                    
                 }
-            }else{
-                return next()
+            }catch (err){
+                prov_authdebug(err);
+                prov_maindebug("Passing request to invalid token handler")
+                return res.redirect(invalidTokenUrl)
             }
-            
             
         }
         
         this.app.use(sessionValidator)
+        
+        this.app.post(loginUrl, (req, res)=>{
+            prov_maindebug("Receiving a login request from: " + req.body.iss)
+            let platform = this.getPlatform(req.body.iss)
+                
+            if (platform) {
+                prov_maindebug("Redirecting to platform authentication endpoint")
+                res.redirect(url.format({
+                    pathname: platform.platformAuthEndpoint(),
+                    query: Request.lti1_3Login(req.body, platform)
+                }))
+            }
+            else {
+                prov_maindebug("Unregistered platform attempting connection: " + req.body.iss)
+                res.status(401).send("Unregistered platform.")
+            }
+        })
 
-        if(ltiVersion == 1.3){
-            /* Initiates oidc login flow */
-            this.app.post(loginUrl, (req, res)=>{
-                prov_maindebug("Receiving a login request from: " + req.body.iss)
-                let platform = this.getPlatform(req.body.iss)
-                  
-                if (platform) {
-                    prov_maindebug("Redirecting to platform authentication endpoint")
-                    res.redirect(url.format({
-                        pathname: platform.platformAuthEndpoint(),
-                        query: Request.lti1_3Login(req.body, platform)
-                    }))
-                }
-                else {
-                    prov_maindebug("Unregistered platform attempting connection: " + req.body.iss)
-                    res.status(401).send("Unregistered platform.")
-                }
-            })
+        //Session timeout and invalid token urls
+        this.app.all(sessionTimeoutUrl, (req, res, next)=>{
+            sessionTimedOut(req, res, next)
+        })
+        this.app.all(invalidTokenUrl, (req, res, next)=>{
+            invalidToken(req, res, next)
+        })
 
-            //Session timeout and invalid token urls
-            this.app.all(sessionTimeoutUrl, (req, res, next)=>{
-                sessionTimedOut(req, res, next)
-            })
-            this.app.all(invalidTokenUrl, (req, res, next)=>{
-                invalidToken(req, res, next)
-            })
-
-            //Main app 
-            this.app.post(appUrl, (req, res, next)=>{
-                connect_callback(res.locals.token, req, res, next)
-            })
-
-        }else{
-            throw new Error("Lti 1.1 not yet supported")
-        }
+        //Main app 
+        this.app.post(appUrl, (req, res, next)=>{
+            connect_callback(res.locals.token, req, res, next)
+        })  
         
     }
+
+
 
     /**
      * @description Starts listening to a given port for LTI requests
@@ -186,15 +168,16 @@ class Provider{
         //Clean stored access_tokens
         prov_maindebug('Cleaning previously stored access tokens')
         for(let plat of this.getAllPlatforms()) Database.Delete(ENCRYPTIONKEY, './provider_data', 'access_tokens', 'access_tokens', {platform_url: plat.platformUrl()})
-        
-        
+    
 
         //Starts server on given port
-        this.server.listen(port, "Lti Provider tool is listening on port " + port + "!\n\nLTI provider config: \n>Initiate login URL: " + loginUrl +"\n>App Url: " + appUrl + "\n>Session Timeout Url: " + sessionTimeoutUrl + "\n>Invalid Token Url: " + invalidTokenUrl  + "\n>Lti Version: " + ltiVersion)
+        this.server.listen(port, "Lti Provider tool is listening on port " + port + "!\n\nLTI provider config: \n>Initiate login URL: " + loginUrl +"\n>App Url: " + appUrl + "\n>Session Timeout Url: " + sessionTimeoutUrl + "\n>Invalid Token Url: " + invalidTokenUrl)
    
         
         return this
     }
+
+
 
     /**
      * @description Sets the callback function called whenever theres a sucessfull connection, exposing a Conection object containing the id_token decoded parameters.
@@ -220,11 +203,11 @@ class Provider{
             if(options.invalidToken) invalidToken = options.invalidToken
             
         }
-        
-        
-        
+
         connect_callback = _connect_callback
     }
+
+    
 
     /**
      * @description Gets/Sets login Url responsible for dealing with the OIDC login flow. If no value is set "/login" is used.
@@ -298,7 +281,7 @@ class Provider{
      * @param {string} url - Platform url.
      */
     getPlatform(url){
-        if(!url) return false
+        if(!url) throw new Error("No url provided")
         
         let obj = Database.Get(ENCRYPTIONKEY, './provider_data', 'platforms', 'platforms', {platform_url: url})
 
@@ -313,7 +296,7 @@ class Provider{
      * @param {string} url - Platform url.
      */
     deletePlatform(url){
-        if(!url) return false
+        if(!url) throw new Error("No url provided")
         let platform = this.getPlatform(url)
         if(platform) return platform.remove()
     }
@@ -386,4 +369,9 @@ class Provider{
     }
     
 }
+
+//Create Claim helpers
+Provider.ClaimCustomParameters = 'https://purl.imsglobal.org/spec/lti/claim/custom'
+
+
 module.exports = Provider
