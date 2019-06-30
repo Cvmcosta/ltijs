@@ -6,7 +6,7 @@
   "scripts": {
     "test": "mocha --require @babel/register",
     "build": "standard 'src/**/*.js' --fix && babel src -d dist",
-    "start": "node index.js "
+    "start": "node index.js"
   },
   "repository": {
     "type": "git",
