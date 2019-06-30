@@ -1,11 +1,12 @@
 {
   "name": "ltijs",
-  "version": "0.0.1",
-  "description": "A simple nodejs tool to facilitate implementing LTI provider and consumer tools",
+  "version": "0.5.1",
+  "description": "A simple nodejs tool to facilitate the implementation of LTI providers and consumers.",
   "main": "index.js",
   "scripts": {
-    "test": "mocha",
-    "start": "node index.js"
+    "test": "mocha --require @babel/register",
+    "build": "standard 'src/**/*.js' --fix && babel src -d dist",
+    "start": "node index.js "
   },
   "repository": {
     "type": "git",
@@ -32,7 +33,22 @@
     "jsonwebtoken": "^8.5.1",
     "lodash.find": "^4.6.0",
     "lowdb": "^1.0.0",
-    "mocha": "^6.1.4",
     "pem-jwk": "^2.0.0"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.4.4",
+    "@babel/core": "^7.4.5",
+    "@babel/plugin-proposal-class-properties": "^7.4.4",
+    "@babel/preset-env": "^7.4.5",
+    "@babel/register": "^7.4.4",
+    "babel-eslint": "^10.0.2",
+    "chai": "^4.2.0",
+    "chai-http": "^4.3.0",
+    "eslint": "^6.0.1",
+    "mocha": "^6.1.4",
+    "standard": "^12.0.1"
+  },
+  "standard": {
+    "parser": "babel-eslint"
   }
 }
