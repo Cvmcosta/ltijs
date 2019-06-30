@@ -511,7 +511,6 @@ function () {
           while (1) {
             switch (_context8.prev = _context8.next) {
               case 0:
-                _context8.prev = 0;
                 confjwt = {
                   iss: platform.platformClientId(),
                   sub: platform.platformClientId(),
@@ -531,13 +530,13 @@ function () {
                   scope: 'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem https://purl.imsglobal.org/spec/lti-ags/scope/score https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly'
                 };
                 provAuthDebug('Awaiting return from the platform');
-                _context8.next = 7;
+                _context8.next = 6;
                 return got(platform.platformAccessTokenEndpoint(), {
                   body: message,
                   form: true
                 });
 
-              case 7:
+              case 6:
                 res = _context8.sent;
                 provAuthDebug('Successfully generated new access_token');
                 access = JSON.parse(res.body);
@@ -550,18 +549,12 @@ function () {
                 this.deleteAccessToken(platform.platformUrl(), access.expires_in);
                 return _context8.abrupt("return", access);
 
-              case 17:
-                _context8.prev = 17;
-                _context8.t0 = _context8["catch"](0);
-                provAuthDebug(_context8.t0);
-                throw new Error(_context8.t0);
-
-              case 21:
+              case 14:
               case "end":
                 return _context8.stop();
             }
           }
-        }, _callee8, this, [[0, 17]]);
+        }, _callee8, this);
       }));
 
       function getAccessToken(_x15, _x16) {

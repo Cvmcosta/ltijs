@@ -49,6 +49,10 @@
     "standard": "^12.0.1"
   },
   "standard": {
-    "parser": "babel-eslint"
+    "parser": "babel-eslint",
+    "ignore": [
+      "node_modules/",
+      "dist/"
+    ]
   }
 }
