@@ -1,4 +1,4 @@
-# [ltijs](https://github.com/Cvmcosta/ltijs#readme) 
+# [ltijs](https://cvmcosta.github.io/ltijs) 
 
 > A simple nodejs package to facilitate the implementation of LTI providers and consumers.
 
@@ -44,7 +44,7 @@ $ npm install ltijs
 
 This package implements Lti Provider and Consumer servers. See bellow for specific documentations.
 
-- [Lti Provider](https://github.com/Cvmcosta/ltijs/blob/master/src/Provider/README.md)
+- [Lti Provider](https://cvmcosta.github.io/ltijs/#/provider)
 - ~~Lti Consumer~~ (Coming soon)
 
 ---
