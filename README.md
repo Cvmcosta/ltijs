@@ -29,12 +29,12 @@ This package implements a tool provider and consumer (currently in development) 
 
 ## Installation
 
-#### Installing the package
+### Installing the package
 
 ```shell
 $ npm install ltijs
 ```
-#### MongoDB
+### MongoDB
 - This package uses mongoDB to store and manage the server data, so you need to have it installed, see link bellow for further instructions.
 [Installing mongoDB](https://docs.mongodb.com/manual/administration/install-community/)
 
@@ -44,14 +44,14 @@ $ npm install ltijs
 
 This package implements Lti Provider and Consumer servers. See bellow for specific documentations.
 
-- [Lti Provider](https://cvmcosta.github.io/ltijs/#/provider)
+- [Lti Provider](provider.md)
 - ~~Lti Consumer~~ (Coming soon)
 
 ---
 
 ## Usage
 
-#### Example of provider usage
+### Example of provider usage
 
 > Update and install this package first
 
@@ -65,6 +65,9 @@ $ npm install ltijs
 
 
 > Instantiate and use Provider class
+
+
+
 ```javascript
 const path = require('path')
 

@@ -6,7 +6,6 @@
 [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
 [![MIT License](https://img.shields.io/github/license/Cvmcosta/ltijs.svg)](LICENSE)
 
-
 ## Table of Contents
 
 - [Introduction](#introduction)
@@ -29,12 +28,12 @@ This package implements a tool provider and consumer (currently in development) 
 
 ## Installation
 
-#### Installing the package
+### Installing the package
 
 ```shell
 $ npm install ltijs
 ```
-#### MongoDB
+### MongoDB
 - This package uses mongoDB to store and manage the server data, so you need to have it installed, see link bellow for further instructions.
 [Installing mongoDB](https://docs.mongodb.com/manual/administration/install-community/)
 
@@ -51,7 +50,7 @@ This package implements Lti Provider and Consumer servers. See bellow for specif
 
 ## Usage
 
-#### Example of provider usage
+### Example of provider usage
 
 > Update and install this package first
 
