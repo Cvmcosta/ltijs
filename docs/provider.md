@@ -1,4 +1,4 @@
-# [ltijs](https://cvmcosta.github.io/ltijs) - Provider
+# [ltijs](README.md) - Provider
 
 > Implements a Lti provider server
 

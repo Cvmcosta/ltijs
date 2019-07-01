@@ -1,4 +1,4 @@
-# [ltijs](https://cvmcosta.github.io/ltijs) 
+# [ltijs](README.md) 
 
 > A simple nodejs package to facilitate the implementation of LTI providers and consumers.
 
