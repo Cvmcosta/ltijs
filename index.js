@@ -24,5 +24,15 @@ console.log(plat2.platformPublicKey())
 lti.deploy().onConnect((connection, request, response) => {
   // console.log(connection[Lti.ClaimCustomParameters])
   response.sendFile(path.join(__dirname, '/views/teste/dist/index.html'))
-  lti.messagePlatform(connection)
+
+  let grade = {
+    timestamp: new Date(Date.now()).toISOString(),
+    scoreGiven: 70,
+    scoreMaximum: 100,
+    comment: 'This is exceptional work.',
+    activityProgress: 'Completed',
+    gradingProgress: 'FullyGraded',
+    userId: connection.sub
+  }
+  lti.messagePlatform(connection, grade)
 }, { maxAge: 1000 * 60 * 60 })

@@ -1,4 +1,4 @@
-/* Main file for the Provider functionalities */
+/* Main class for the Provider functionalities */
 
 const Server = require('../Utils/Server')
 const Request = require('../Utils/Request')
@@ -286,8 +286,9 @@ class Provider {
   /**
      * @description Sends message to the platform
      * @param {Object} idtoken - Idtoken for the user
+     * @param {Object} message - Message following the Lti Standard application/vnd.ims.lis.v1.score+json
      */
-  async messagePlatform (idtoken) {
+  async messagePlatform (idtoken, message) {
     provMainDebug('Target platform: ' + idtoken.iss)
 
     let platform = this.getPlatform(idtoken.iss)
@@ -301,24 +302,12 @@ class Provider {
     try {
       let tokenRes = await platform.platformAccessToken()
       provMainDebug('Access_token retrieved for [' + idtoken.iss + ']')
-      // let lineitems = idtoken['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint'].lineitems
+      let lineitems = idtoken['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint'].lineitems
 
-      /* got.get(lineitems,{headers:{Authorization: res.token_type + ' ' + res.access_token}}).then(res => {
-                provMainDebug(idtoken)
-                //provMainDebug("Line Item: ")
-                provMainDebug(JSON.parse(res.body))
-            }) */
-      let grade = {
-        timestamp: new Date(Date.now()).toISOString(),
-        scoreGiven: 70,
-        scoreMaximum: 100,
-        comment: 'This is exceptional work.',
-        activityProgress: 'Completed',
-        gradingProgress: 'FullyGraded',
-        userId: idtoken.sub
-      }
+      let lineitemRes = await got.get(lineitems, { headers: { Authorization: tokenRes.token_type + ' ' + tokenRes.access_token } })
+      console.log(lineitemRes.body)
 
-      await got.post('http://localhost/moodle/mod/lti/services.php/2/lineitems/2/lineitem/scores?type_id=1', { headers: { Authorization: tokenRes.token_type + ' ' + tokenRes.access_token, 'Content-Type': 'application/vnd.ims.lis.v1.score+json' }, body: JSON.stringify(grade) })
+      await got.post('http://localhost/moodle/mod/lti/services.php/2/lineitems/2/lineitem/scores?type_id=1', { headers: { Authorization: tokenRes.token_type + ' ' + tokenRes.access_token, 'Content-Type': 'application/vnd.ims.lis.v1.score+json' }, body: JSON.stringify(message) })
 
       provMainDebug('Message successfully sent')
     } catch (err) {
