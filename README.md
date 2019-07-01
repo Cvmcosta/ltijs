@@ -17,7 +17,7 @@
 
 
 ---
-##Introduction
+## Introduction
 According to the [IMS Global Learning Consortium](https://www.imsglobal.org/), the Learning Tools Interoperability (LTI) protocol is an IMS standard for integration of rich learning applications within educational environments. <sup>[ref](https://www.imsglobal.org/spec/lti/v1p3/)</sup>
 
 
@@ -34,7 +34,7 @@ This package implements a tool provider and consumer (currently in development) 
 ```shell
 $ npm install ltijs
 ```
-####MongoDB
+#### MongoDB
 - This package uses mongoDB to store and manage the server data, so you need to have it installed, see link bellow for further instructions.
 [Installing mongoDB](https://docs.mongodb.com/manual/administration/install-community/)
 
@@ -49,9 +49,9 @@ This package implements Lti Provider and Consumer servers. See bellow for specif
 
 ---
 
-##Usage
+## Usage
 
-####Example of provider usage
+#### Example of provider usage
 
 > Update and install this package first
 
