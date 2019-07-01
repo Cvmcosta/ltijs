@@ -65,6 +65,9 @@ $ npm install ltijs
 
 
 > Instantiate and use Provider class
+
+
+
 ```javascript
 const path = require('path')
 
