@@ -16,7 +16,7 @@
 - [License](#license)
 
 ---
-##Introduction
+## Introduction
 According to the [IMS Global Learning Consortium](https://www.imsglobal.org/), a  Lti tool Provider is the external application or service providing functionality to the consumer platform. <sup>[ref](https://www.imsglobal.org/spec/lti/v1p3/#platforms-and-tools)</sup>
 
 
@@ -25,7 +25,7 @@ This package implements a tool provider as an [Express](https://expressjs.com/) 
 
 ---
 
-##Example
+## Example
 
 Example of provider usage
 
@@ -68,7 +68,7 @@ lti.deploy().onConnect((connection, request, response) => {
 
 ## Documentation
 
-###Provider
+### Provider
 >The Ltijs Provider Class
 
 
