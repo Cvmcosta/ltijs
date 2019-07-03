@@ -14,12 +14,13 @@ const provAuthDebug = require('debug')('provider:auth')
 class Auth {
   /**
      * @description Generates a new keypairfor the platform.
+     * @param {String} ENCRYPTIONKEY - Encryption key.
      * @returns {String} kid for the keypair.
      */
-  static generateProviderKeyPair () {
+  static async generateProviderKeyPair (ENCRYPTIONKEY) {
     let kid = crypto.randomBytes(16).toString('hex')
 
-    while (Database.Get(false, './provider_data', 'publickeyset', 'keys', { kid: kid })) {
+    while (await Database.Get(false, 'publickey', { kid: kid })) {
       kid = crypto.randomBytes(16).toString('hex')
     }
 
@@ -38,16 +39,14 @@ class Auth {
     let { publicKey, privateKey } = keys
 
     let pubkeyobj = {
-      key: publicKey,
-      kid: kid
+      key: publicKey
     }
     let privkeyobj = {
-      key: privateKey,
-      kid: kid
+      key: privateKey
     }
 
-    Database.Insert(false, './provider_data', 'publickeyset', 'keys', pubkeyobj)
-    Database.Insert(false, './provider_data', 'privatekeyset', 'keys', privkeyobj)
+    await Database.Insert(ENCRYPTIONKEY, 'publickey', pubkeyobj, { kid: kid })
+    await Database.Insert(ENCRYPTIONKEY, 'privatekey', privkeyobj, { kid: kid })
 
     return kid
   }
@@ -56,16 +55,17 @@ class Auth {
      * @description Resolves a promisse if the token is valid following LTI 1.3 standards.
      * @param {String} token - JWT token to be verified.
      * @param {Function} getPlatform - getPlatform function to get the platform that originated the token.
+     * @param {String} ENCRYPTIONKEY - Encription key.
      * @returns {Promise}
      */
-  static async validateToken (token, getPlatform) {
+  static async validateToken (token, getPlatform, ENCRYPTIONKEY) {
     let decodedToken = jwt.decode(token, { complete: true })
 
     let kid = decodedToken.header.kid
     let alg = decodedToken.header.alg
 
     provAuthDebug('Attempting to retrieve registered platform')
-    let platform = getPlatform(decodedToken.payload.iss)
+    let platform = await getPlatform(decodedToken.payload.iss, ENCRYPTIONKEY)
     if (!platform) throw new Error('NoPlatformRegistered')
 
     let authConfig = platform.platformAuthConfig()
@@ -189,11 +189,10 @@ class Auth {
     provAuthDebug('Validating nonce')
     provAuthDebug('Nonce: ' + token.nonce)
 
-    if (Database.Get(false, './provider_data', 'nonces', 'nonces', { nonce: token.nonce })) throw new Error('NonceAlreadyStored')
+    if (await Database.Get(false, 'nonce', { nonce: token.nonce })) throw new Error('NonceAlreadyStored')
     else {
       provAuthDebug('Storing nonce')
-      Database.Insert(false, './provider_data', 'nonces', 'nonces', { nonce: token.nonce })
-      this.deleteNonce(token.nonce)
+      Database.Insert(false, 'nonce', { nonce: token.nonce })
     }
     return true
   }
@@ -212,7 +211,7 @@ class Auth {
       jti: crypto.randomBytes(16).toString('base64')
     }
 
-    let token = jwt.sign(confjwt, platform.platformPrivateKey(), { algorithm: 'RS256', keyid: platform.platformKid() })
+    let token = jwt.sign(confjwt, await platform.platformPrivateKey(), { algorithm: 'RS256', keyid: platform.platformKid() })
 
     let message = {
       grant_type: 'client_credentials',
@@ -231,35 +230,9 @@ class Auth {
     provAuthDebug('Access token: ')
     provAuthDebug(access)
 
-    Database.Insert(ENCRYPTIONKEY, './provider_data', 'access_tokens', 'access_tokens', { platformUrl: platform.platformUrl(), token: access })
-
-    this.deleteAccessToken(platform.platformUrl(), access.expires_in)
+    await Database.Insert(ENCRYPTIONKEY, 'accesstoken', { token: access }, { platformUrl: platform.platformUrl() })
 
     return access
-  }
-
-  /**
-     * @description Starts up timer to delete nonce.
-     * @param {String} nonce - Nonce.
-     */
-  static async deleteNonce (nonce) {
-    setTimeout(() => {
-      Database.Delete(false, './provider_data', 'nonces', 'nonces', { nonce: nonce })
-      provAuthDebug('Nonce [' + nonce + '] deleted')
-      return true
-    }, 10000)
-  }
-
-  /**
-     * @description Starts up timer to delete access token.
-     * @param {String} url - Platform url.
-     */
-  static async deleteAccessToken (url, time) {
-    setTimeout(() => {
-      Database.Delete(false, './provider_data', 'access_tokens', 'access_tokens', { platformUrl: url })
-      provAuthDebug('Access token for [' + url + '] expired')
-      return true
-    }, (time * 1000) - 1)
   }
 }
 

@@ -143,7 +143,7 @@ class Provider {
           provMainDebug('No cookie found')
           if (req.body.id_token) {
             provMainDebug('Received request containing token. Sending for validation')
-            let valid = await Auth.validateToken(req.body.id_token, this.getPlatform)
+            let valid = await Auth.validateToken(req.body.id_token, this.getPlatform, this.#ENCRYPTIONKEY)
 
             provAuthDebug('Successfully validated token!')
             valid.exp = (Date.now() / 1000) + (this.#cookieOptions.maxAge / 1000)
@@ -179,9 +179,9 @@ class Provider {
 
     this.app.use(sessionValidator)
 
-    this.app.post(this.#loginUrl, (req, res) => {
+    this.app.post(this.#loginUrl, async (req, res) => {
       provMainDebug('Receiving a login request from: ' + req.body.iss)
-      let platform = this.getPlatform(req.body.iss)
+      let platform = await this.getPlatform(req.body.iss)
 
       if (platform) {
         provMainDebug('Redirecting to platform authentication endpoint')
@@ -298,15 +298,24 @@ class Provider {
      * @param {String} authConfig.method - Method of authorization "RSA_KEY" or "JWK_KEY" or "JWK_SET".
      * @param {String} authConfig.key - Either the RSA public key provided by the platform, or the JWK key, or the JWK keyset address.
      */
-  registerPlatform (url, name, clientId, authenticationEndpoint, accesstokenEndpoint, authConfig) {
+  async registerPlatform (url, name, clientId, authenticationEndpoint, accesstokenEndpoint, authConfig) {
     if (!name || !url || !clientId || !authenticationEndpoint || !accesstokenEndpoint || !authConfig) throw new Error('Error registering platform. Missing argument.')
 
-    let platform = this.getPlatform(url)
+    let platform = await this.getPlatform(url)
+
     if (!platform) {
-      let kid = Auth.generateProviderKeyPair()
-      return new Platform(name, url, clientId, authenticationEndpoint, accesstokenEndpoint, kid, this.#ENCRYPTIONKEY, authConfig)
+      let kid = await Auth.generateProviderKeyPair(this.#ENCRYPTIONKEY)
+      let plat = new Platform(name, url, clientId, authenticationEndpoint, accesstokenEndpoint, kid, this.#ENCRYPTIONKEY, authConfig)
+
+      // Save platform to db
+      let isregisteredPlat = await Database.Get(false, 'platform', { platformUrl: url })
+      if (!isregisteredPlat) {
+        provMainDebug('Registering new platform: ' + url)
+        await Database.Insert(false, 'platform', { platformName: name, platformUrl: url, clientId: clientId, authEndpoint: authenticationEndpoint, accesstokenEndpoint: accesstokenEndpoint, kid: kid, authConfig: authConfig })
+      }
+      return plat
     } else {
-      return false
+      return platform
     }
   }
 
@@ -314,33 +323,41 @@ class Provider {
      * @description Gets a platform.
      * @param {string} url - Platform url.
      */
-  getPlatform (url) {
+  async getPlatform (url, ENCRYPTIONKEY) {
     if (!url) throw new Error('No url provided')
 
-    let obj = Database.Get(this.#ENCRYPTIONKEY, './provider_data', 'platforms', 'platforms', { platformUrl: url })
+    let plat = await Database.Get(false, 'platform', { platformUrl: url })
+    if (!plat) return false
+    let obj = plat[0]
 
     if (!obj) return false
 
-    return new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, this.#ENCRYPTIONKEY, obj.authConfig)
+    let result
+    if (ENCRYPTIONKEY) {
+      result = new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, ENCRYPTIONKEY, obj.authConfig)
+    } else {
+      result = new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, this.#ENCRYPTIONKEY, obj.authConfig)
+    }
+
+    return result
   }
 
   /**
      * @description Deletes a platform.
      * @param {string} url - Platform url.
      */
-  deletePlatform (url) {
+  async deletePlatform (url) {
     if (!url) throw new Error('No url provided')
-    let platform = this.getPlatform(url)
+    let platform = await this.getPlatform(url)
     if (platform) return platform.remove()
   }
 
   /**
      * @description Gets all platforms.
      */
-  getAllPlatforms () {
+  async getAllPlatforms () {
     let returnArray = []
-
-    let platforms = Database.Get(this.#ENCRYPTIONKEY, './provider_data', 'platforms', 'platforms')
+    let platforms = await Database.Get(false, 'platform')
 
     if (platforms) {
       for (let obj of platforms) returnArray.push(new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, this.#ENCRYPTIONKEY, obj.authConfig))
@@ -357,7 +374,7 @@ class Provider {
   async messagePlatform (idtoken, message) {
     provMainDebug('Target platform: ' + idtoken.iss)
 
-    let platform = this.getPlatform(idtoken.iss)
+    let platform = await this.getPlatform(idtoken.iss)
 
     if (!platform) {
       provMainDebug('Platform not found, returning false')

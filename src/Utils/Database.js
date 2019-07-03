@@ -19,11 +19,15 @@ class Database {
 
     if (ENCRYPTIONKEY) {
       for (let i in result) {
+        let temp = result[i]
         result[i] = JSON.parse(await this.Decrypt(result[i].data, result[i].iv, ENCRYPTIONKEY))
+        if (temp.createdAt) {
+          let createdAt = Date.parse(temp.createdAt)
+          result[i].createdAt = createdAt
+        }
       }
     }
 
-    if (result.length === 1) return result[0]
     if (result.length === 0) return false
     return result
   }
@@ -48,7 +52,6 @@ class Database {
         data: encrypted.data
       }
     }
-
     let newDoc = new Model(newDocData)
     newDoc.save()
   }

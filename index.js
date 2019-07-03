@@ -11,19 +11,12 @@ const certificate = fs.readFileSync('./ssl/server.cert', 'utf8')
 
 const lti = new Lti('EXAMPLEKEY', { url: 'mongodb://localhost/tests' }, { https: true, ssl: { key: privateKey, cert: certificate }, staticPath: path.join(__dirname, '/views/teste') })
 
-lti.appUrl('/')
-lti.loginUrl('/login')
+let setup = async () => {
+  lti.appUrl('/')
+  lti.loginUrl('/login')
 
-/* lti.registerPlatform('http://localhost/moodle', 'Educsaite', '1W8pk8LRuvB1DtO', 'http://localhost/moodle/mod/lti/auth.php', 'http://localhost/moodle/mod/lti/token.php', { method: 'JWK_SET', key: 'http://localhost/moodle/mod/lti/certs.php' })
-
-let plat2 = lti.getPlatform('http://localhost/moodle')
-
-console.log(plat2.platformPublicKey()) */
-// Delete access token on startup
-
-lti.deploy().then(() => {
+  lti.deploy()
   lti.onConnect((connection, request, response) => {
-    // console.log(connection[Lti.ClaimCustomParameters])
     response.sendFile(path.join(__dirname, '/views/teste/dist/index.html'))
 
     let grade = {
@@ -37,4 +30,12 @@ lti.deploy().then(() => {
     }
     lti.messagePlatform(connection, grade)
   }, { maxAge: 1000 * 60 * 60 })
-})
+
+  let plat = await lti.registerPlatform('http://localhost/moodle', 'Educsaite', '1W8pk8LRuvB1DtO', 'http://localhost/moodle/mod/lti/auth.php', 'http://localhost/moodle/mod/lti/token.php', { method: 'JWK_SET', key: 'http://localhost/moodle/mod/lti/certs.php' })
+
+  let key = await plat.platformPublicKey()
+  console.log(key)
+
+  lti.deletePlatform(plat.platformUrl())
+}
+setup()

@@ -37,11 +37,6 @@ class Platform {
     this.#authEndpoint = authenticationEndpoint
     this.#accesstokenEndpoint = accesstokenEndpoint
     this.#kid = kid
-
-    if (!Database.Get(this.#ENCRYPTIONKEY, './provider_data', 'platforms', 'platforms', { platformUrl: this.#platformUrl })) {
-      provPlatformDebug('Registering new platform: ' + this.#platformUrl)
-      Database.Insert(this.#ENCRYPTIONKEY, './provider_data', 'platforms', 'platforms', { platformName: this.#platformName, platformUrl: this.#platformUrl, clientId: this.#clientId, authEndpoint: this.#authEndpoint, accesstokenEndpoint: this.#accesstokenEndpoint, kid: this.#kid, authConfig: this.#authConfig })
-    }
   }
 
   /**
@@ -51,7 +46,7 @@ class Platform {
   platformName (name) {
     if (!name) return this.#platformName
 
-    Database.Modify(this.#ENCRYPTIONKEY, './provider_data', 'platforms', 'platforms', { platformUrl: this.#platformUrl }, { platformName: name })
+    Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { platformName: name })
 
     this.#platformName = name
   }
@@ -63,7 +58,7 @@ class Platform {
   platformUrl (url) {
     if (!url) return this.#platformUrl
 
-    Database.Modify(this.#ENCRYPTIONKEY, './provider_data', 'platforms', 'platforms', { platformUrl: this.#platformUrl }, { platformUrl: url })
+    Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { platformUrl: url })
 
     this.#platformUrl = url
   }
@@ -75,7 +70,7 @@ class Platform {
   platformClientId (clientId) {
     if (!clientId) return this.#clientId
 
-    Database.Modify(this.#ENCRYPTIONKEY, './provider_data', 'platforms', 'platforms', { platformUrl: this.#platformUrl }, { clientId: clientId })
+    Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { clientId: clientId })
 
     this.#clientId = clientId
   }
@@ -91,16 +86,18 @@ class Platform {
      * @description Gets the RSA public key assigned to the platform.
      *
      */
-  platformPublicKey () {
-    return Database.Get(false, './provider_data', 'publickeyset', 'keys', { kid: this.#kid }).key
+  async platformPublicKey () {
+    let key = await Database.Get(this.#ENCRYPTIONKEY, 'publickey', { kid: this.#kid })
+    return key[0].key
   }
 
   /**
      * @description Gets the RSA private key assigned to the platform.
      *
      */
-  platformPrivateKey () {
-    return Database.Get(false, './provider_data', 'privatekeyset', 'keys', { kid: this.#kid }).key
+  async platformPrivateKey () {
+    let key = await Database.Get(this.#ENCRYPTIONKEY, 'privatekey', { kid: this.#kid })
+    return key[0].key
   }
 
   /**
@@ -120,7 +117,7 @@ class Platform {
       key: key
     }
 
-    Database.Modify(this.#ENCRYPTIONKEY, './provider_data', 'platforms', 'platforms', { platformUrl: this.#platformUrl }, { authConfig: this.#authConfig })
+    Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { authConfig: this.#authConfig })
   }
 
   /**
@@ -130,7 +127,7 @@ class Platform {
   platformAuthEndpoint (authEndpoint) {
     if (!authEndpoint) return this.#authEndpoint
 
-    Database.Modify(this.#ENCRYPTIONKEY, './provider_data', 'platforms', 'platforms', { platformUrl: this.#platformUrl }, { authEndpoint: authEndpoint })
+    Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { authEndpoint: authEndpoint })
 
     this.#authEndpoint = authEndpoint
   }
@@ -142,16 +139,16 @@ class Platform {
   platformAccessTokenEndpoint (accesstokenEndpoint) {
     if (!accesstokenEndpoint) return this.#accesstokenEndpoint
 
-    Database.Modify(this.#ENCRYPTIONKEY, './provider_data', 'platforms', 'platforms', { platformUrl: this.#platformUrl }, { accesstokenEndpoint: accesstokenEndpoint })
+    Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { accesstokenEndpoint: accesstokenEndpoint })
 
     this.#accesstokenEndpoint = accesstokenEndpoint
   }
 
   /**
-     * @description Returns a promise that resolves into the platform's access token or generate a new one.
+     * @description Returns a promise that resolves into the platform's access token or generates a new one.
      */
   async platformAccessToken () {
-    let token = Database.Get(this.#ENCRYPTIONKEY, './provider_data', 'access_tokens', 'access_tokens', { platformUrl: this.#platformUrl })
+    let token = await Database.Get(this.#ENCRYPTIONKEY, 'accesstoken', { platformUrl: this.#platformUrl })
 
     if (!token) {
       provPlatformDebug('Access_token for ' + this.#platformUrl + ' not found')
@@ -160,21 +157,22 @@ class Platform {
       return res
     } else {
       provPlatformDebug('Access_token found')
-      return token.token
+      if ((Date.now() - token[0].createdAt) / 1000 > token[0].expires_in) {
+        provPlatformDebug('Token expired')
+        provPlatformDebug('Access_token for ' + this.#platformUrl + ' not found')
+        provPlatformDebug('Attempting to generate new access_token for ' + this.#platformUrl)
+        let res = await Auth.getAccessToken(this, this.#ENCRYPTIONKEY)
+        return res
+      }
+      return token[0].token
     }
   }
 
   /**
    * @description Deletes a registered platform.
    */
-  remove () {
-    Database.Delete(this.#ENCRYPTIONKEY, './provider_data', 'platforms', 'platforms', { platformUrl: this.#platformUrl })
-
-    Database.Delete(false, './provider_data', 'publickeyset', 'keys', { kid: this.#kid })
-
-    Database.Delete(false, './provider_data', 'privatekeyset', 'keys', { kid: this.#kid })
-
-    return true
+  async remove () {
+    return Promise.all([Database.Delete('platform', { platformUrl: this.#platformUrl }), Database.Delete('publickey', { kid: this.#kid }), Database.Delete('privatekey', { kid: this.#kid })])
   }
 }
 
