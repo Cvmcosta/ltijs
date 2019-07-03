@@ -21,7 +21,7 @@
   "bugs": {
     "url": "https://github.com/Cvmcosta/ltijs/issues"
   },
-  "homepage": "https://github.com/Cvmcosta/ltijs#readme",
+  "homepage": "https://cvmcosta.github.io/ltijs",
   "dependencies": {
     "body-parser": "^1.19.0",
     "cookie-parser": "^1.4.4",

@@ -9,6 +9,9 @@ const Database = require('../Utils/Database')
 const url = require('url')
 const jwt = require('jsonwebtoken')
 const got = require('got')
+const mongoose = require('mongoose')
+mongoose.set('useCreateIndex', true)
+const Schema = mongoose.Schema
 
 const provAuthDebug = require('debug')('provider:auth')
 const provMainDebug = require('debug')('provider:main')
@@ -31,6 +34,7 @@ class Provider {
     httpOnly: true,
     signed: true
   }
+  #dbConnection = {}
 
   #connectCallback = () => {}
 
@@ -43,21 +47,86 @@ class Provider {
   #server
   /**
      * @description Exposes methods for easy manipualtion of the LTI 1.3 standard as a LTI Provider and a "server" object to manipulate the Express instance.
-     * @param {String} encryptionkey - Secret used to sign cookies and other info.
-     * @param {Object} [options] - Lti Provider options.
+     * @param {String} encryptionkey - Secret used to sign cookies and encrypt other info.
+     * @param {Object} database - The Database configurations to open and manage connection, uses MongoDB Driver.
+     * @param {String} database.url - Database Url (Ex: mongodb://localhost/applicationdb).
+     * @param {Object} [database.connection] - Database connection options (Ex: user, pass)
+     * @param {String} [database.connection.user] - Database user for authentication if needed.
+     * @param {String} [database.conenction.pass] - Database pass for authentication if needed.
+     * @param {Object} [options] - Lti Provider additional options.
      * @param {Boolean} [options.https = false] - Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https. If you really dont want to use https, disable the secure flag in the cookies option, so that it can be passed via http.
      * @param {Object} [options.ssl] - SSL certificate and key if https is enabled.
      * @param {String} [options.ssl.key] - SSL key.
      * @param {String} [options.ssl.cert] - SSL certificate.
      * @param {String} [options.staticPath] - The path for the static files your application might serve (Ex: _dirname+"/public")
      */
-  constructor (encryptionkey, options) {
+  constructor (encryptionkey, database, options) {
     if (options && options.https && (!options.ssl || !options.ssl.key || !options.ssl.cert)) throw new Error('No ssl Key  or Certificate found for local https configuration.')
     if (!encryptionkey) throw new Error('Encryptionkey parameter missing in options.')
+    if (!database || !database.url) throw new Error('Missing database configurations.')
 
     this.#ENCRYPTIONKEY = encryptionkey
-
     this.#server = new Server(options.https, options.ssl, this.#ENCRYPTIONKEY)
+
+    // Starts database connection
+    if (database.connection) {
+      if (!database.connection.useNewUrlParser) database.connection.useNewUrlParser = true
+      if (!database.connection.autoReconnect) database.connection.autoReconnect = true
+      if (!database.connection.keepAlive) database.connection.keepAlive = true
+      if (!database.connection.keepAliveInitialDelay) database.connection.keepAliveInitialDelay = 300000
+    } else {
+      database.connection = { useNewUrlParser: true, autoReconnect: true, keepAlive: true, keepAliveInitialDelay: 300000 }
+    }
+    this.#dbConnection.url = database.url
+    this.#dbConnection.options = database.connection
+
+    // Creating database schemas
+    const platformSchema = new Schema({
+      platformName: String,
+      platformUrl: String,
+      clientId: String,
+      authEndpoint: String,
+      accesstokenEndpoint: String,
+      kid: String,
+      authConfig: {
+        method: String,
+        key: String
+      }
+    })
+    const keySchema = new Schema({
+      kid: String,
+      iv: String,
+      data: String
+    })
+    const accessTokenSchema = new Schema({
+      platformUrl: String,
+      iv: String,
+      data: String,
+      createdAt: { type: Date, expires: 3600, default: Date.now }
+    })
+    const nonceSchema = new Schema({
+      nonce: String,
+      createdAt: { type: Date, expires: 10, default: Date.now }
+    })
+
+    try {
+      mongoose.model('platform', platformSchema)
+      mongoose.model('privatekey', keySchema)
+      mongoose.model('publickey', keySchema)
+      mongoose.model('accesstoken', accessTokenSchema)
+      mongoose.model('nonce', nonceSchema)
+    } catch (err) {
+      provMainDebug('Model already registered. Continuing')
+    }
+
+    /**
+     * @description Database connection object.
+     */
+    this.db = mongoose.connection
+
+    /**
+     * @description Express server object.
+     */
     this.app = this.#server.app
 
     if (options.staticPath) this.#server.setStaticPath(options.staticPath)
@@ -141,17 +210,14 @@ class Provider {
   }
 
   /**
-     * @description Starts listening to a given port for LTI requests
-     * @param {number} port - The port the Provider should listen to
+     * @description Starts listening to a given port for LTI requests and opens connection to the database.
+     * @param {number} port - The port the Provider should listen to.
      */
-  deploy (port) {
+  async deploy (port) {
+    await mongoose.connect(this.#dbConnection.url, this.#dbConnection.options)
+
     /* In case no port is provided uses 3000 */
     port = port || 3000
-
-    // Clean stored access_tokens
-    provMainDebug('Cleaning previously stored access tokens')
-    for (let plat of this.getAllPlatforms()) Database.Delete(this.#ENCRYPTIONKEY, './provider_data', 'access_tokens', 'access_tokens', { platformUrl: plat.platformUrl() })
-
     // Starts server on given port
     this.#server.listen(port, 'Lti Provider tool is listening on port ' + port + '!\n\nLTI provider config: \n>Initiate login URL: ' + this.#loginUrl + '\n>App Url: ' + this.#appUrl + '\n>Session Timeout Url: ' + this.#sessionTimeoutUrl + '\n>Invalid Token Url: ' + this.#invalidTokenUrl)
 
