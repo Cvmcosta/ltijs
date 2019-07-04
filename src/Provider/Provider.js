@@ -30,7 +30,7 @@ class Provider {
 
   #cookieOptions = {
     maxAge: 1000 * 60 * 60,
-    secure: true,
+    secure: false,
     httpOnly: true,
     signed: true
   }
@@ -54,7 +54,7 @@ class Provider {
      * @param {String} [database.connection.user] - Database user for authentication if needed.
      * @param {String} [database.conenction.pass] - Database pass for authentication if needed.
      * @param {Object} [options] - Lti Provider additional options.
-     * @param {Boolean} [options.https = false] - Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https. If you really dont want to use https, disable the secure flag in the cookies option, so that it can be passed via http.
+     * @param {Boolean} [options.https = false] - Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https. If you set this option as true you can enable the secure flag in the cookies options of the onConnect method.
      * @param {Object} [options.ssl] - SSL certificate and key if https is enabled.
      * @param {String} [options.ssl.key] - SSL key.
      * @param {String} [options.ssl.cert] - SSL certificate.
@@ -229,7 +229,7 @@ class Provider {
      * @param {Function} _connectCallback - Function that is going to be called everytime a platform sucessfully connects to the provider.
      * @param {Object} [options] - Options configuring the usage of cookies to pass the Id Token data to the client.
      * @param {Number} [options.maxAge = 1000 * 60 * 60] - MaxAge of the cookie in miliseconds.
-     * @param {Boolean} [options.secure = true] - Secure property of the cookie.
+     * @param {Boolean} [options.secure = false] - Secure property of the cookie.
      * @param {Function} [options.sessionTimeout] - Route function executed everytime the session expires. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}).
      * @param {Function} [options.invalidToken] - Route function executed everytime the system receives an invalid token or cookie. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}).
      * @example .onConnect((conection, response)=>{response.send(connection)}, {secure: true})
@@ -238,9 +238,7 @@ class Provider {
     if (options) {
       this.#cookieOptions.maxAge = options.maxAge || 1000 * 60 * 60
 
-      if (options.secure !== undefined) this.#cookieOptions.secure = options.secure
-      else this.#cookieOptions.secure = true
-
+      if (options.secure === true) this.#cookieOptions.secure = options.secure
       if (options.sessionTimeout) this.#sessionTimedOut = options.sessionTimeout
       if (options.invalidToken) this.#invalidToken = options.invalidToken
     }

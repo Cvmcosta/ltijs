@@ -113,7 +113,7 @@ Exposes methods for easy manipualtion of the LTI 1.3 standard as a LTI Provider 
 | database.connection.user | `String`  | Database user for authentication if needed. | *Optional* |
 | database.connection.pass | `String`  | Database pass for authentication if needed. | *Optional* |
 | options | `Object`  | Lti Provider options. | *Optional* |
-| options.https | `Boolean`  | [false]  Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https. ***If you set this option as true you can enable the secure flag in the cookies options of the onConnect method***. | *Optional* |
+| options.https | `Boolean`  | = false]  Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https. ***If you set this option as true you can enable the secure flag in the cookies options of the onConnect method***. | *Optional* |
 | options.ssl | `Object`  | SSL certificate and key if https is enabled. | *Optional* |
 | options.ssl.key | `String`  | SSL key. | *Optional* |
 | options.ssl.cert | `String`  | SSL certificate. | *Optional* |
@@ -154,7 +154,7 @@ Sets the callback function called whenever theres a sucessfull connection, expos
 | _connectCallback | `Function`  | Function that is going to be called everytime a platform sucessfully connects to the provider. | &nbsp; |
 | options | `Object`  | Options configuring the usage of cookies to pass the Id Token data to the client. | *Optional* |
 | options.maxAge | `Number`  | = 1000 * 60 * 60] - MaxAge of the cookie in miliseconds. | *Optional* |
-| options.secure | `Boolean`  | = true] - Secure property of the cookie. | *Optional* |
+| options.secure | `Boolean`  | = false] - Secure property of the cookie. | *Optional* |
 | options.sessionTimeout | `Function`  | Route/Function executed everytime the session expires. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}). | *Optional* |
 | options.invalidToken | `Function`  | Route/Function executed everytime the system receives an invalid token or cookie. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}). | *Optional* |
 

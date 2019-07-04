@@ -29,7 +29,7 @@ let setup = async () => {
       userId: connection.sub
     }
     lti.messagePlatform(connection, grade)
-  }, { maxAge: 1000 * 60 * 60 })
+  }, { maxAge: 1000 * 60 * 60, secure: true })
 
   let plat = await lti.registerPlatform('http://localhost/moodle', 'Educsaite', '1W8pk8LRuvB1DtO', 'http://localhost/moodle/mod/lti/auth.php', 'http://localhost/moodle/mod/lti/token.php', { method: 'JWK_SET', key: 'http://localhost/moodle/mod/lti/certs.php' })
 
