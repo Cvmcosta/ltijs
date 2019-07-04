@@ -491,7 +491,7 @@ lti.app.get('/stuff', (req,res,next) => {
 })
 ```
 
-> Now you can [register a new platform](readme.md#usage) to use your tool in. 
+> Now you can [register a new platform](platform.md#usage) to use your tool in. 
 
 
 
