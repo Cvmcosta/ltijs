@@ -21,15 +21,14 @@ let setup = async () => {
 
     let grade = {
       timestamp: new Date(Date.now()).toISOString(),
-      scoreGiven: 70,
-      scoreMaximum: 100,
+      scoreGiven: 60,
       comment: 'This is exceptional work.',
       activityProgress: 'Completed',
       gradingProgress: 'FullyGraded',
       userId: connection.sub
     }
     lti.messagePlatform(connection, grade)
-  }, { maxAge: 1000 * 60 * 60, secure: true })
+  }, { maxAge: 1000, secure: true })
 
   let plat = await lti.registerPlatform('http://localhost/moodle', 'Educsaite', '1W8pk8LRuvB1DtO', 'http://localhost/moodle/mod/lti/auth.php', 'http://localhost/moodle/mod/lti/token.php', { method: 'JWK_SET', key: 'http://localhost/moodle/mod/lti/certs.php' })
 

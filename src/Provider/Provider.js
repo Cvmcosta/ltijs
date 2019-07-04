@@ -1,3 +1,4 @@
+/* eslint-disable no-useless-escape */
 /* Main class for the Provider functionalities */
 
 const Server = require('../Utils/Server')
@@ -9,6 +10,7 @@ const Database = require('../Utils/Database')
 const url = require('url')
 const jwt = require('jsonwebtoken')
 const got = require('got')
+const find = require('lodash.find')
 const mongoose = require('mongoose')
 mongoose.set('useCreateIndex', true)
 const Schema = mongoose.Schema
@@ -398,12 +400,31 @@ class Provider {
     try {
       let tokenRes = await platform.platformAccessToken()
       provMainDebug('Access_token retrieved for [' + idtoken.iss + ']')
-      let lineitems = idtoken['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint'].lineitems
+      let lineitemsEndpoint = idtoken['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint'].lineitems
 
-      let lineitemRes = await got.get(lineitems, { headers: { Authorization: tokenRes.token_type + ' ' + tokenRes.access_token } })
-      console.log(lineitemRes.body)
+      let lineitemRes = await got.get(lineitemsEndpoint, { headers: { Authorization: tokenRes.token_type + ' ' + tokenRes.access_token } })
 
-      await got.post('http://localhost/moodle/mod/lti/services.php/2/lineitems/2/lineitem/scores?type_id=1', { headers: { Authorization: tokenRes.token_type + ' ' + tokenRes.access_token, 'Content-Type': 'application/vnd.ims.lis.v1.score+json' }, body: JSON.stringify(message) })
+      let resourceId = idtoken['https://purl.imsglobal.org/spec/lti/claim/resource_link']
+
+      let lineitem = find(JSON.parse(lineitemRes.body), ['resourceLinkId', resourceId.id])
+      let lineitemUrl = lineitem.id
+      let scoreUrl = lineitemUrl + '/scores'
+
+      if (lineitemUrl.split('\?') !== -1) {
+        let query = lineitemUrl.split('\?')[1]
+        let url = lineitemUrl.split('\?')[0]
+        scoreUrl = url + '/scores?' + query
+      }
+
+      console.log(idtoken)
+      console.log(lineitem)
+      console.log(resourceId)
+      console.log(scoreUrl)
+
+      message.timestamp = new Date(Date.now()).toISOString()
+      message.scoreMaximum = lineitem.scoreMaximum
+
+      await got.post(scoreUrl, { headers: { Authorization: tokenRes.token_type + ' ' + tokenRes.access_token, 'Content-Type': 'application/vnd.ims.lis.v1.score+json' }, body: JSON.stringify(message) })
 
       provMainDebug('Message successfully sent')
       return true
