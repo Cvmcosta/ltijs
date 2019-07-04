@@ -11,8 +11,7 @@
 
 - [Introduction](#introduction)
 - [Installation](#installation)
-- [Features](#features)
-- [Usage](#usage)
+- [Documentation](#documentation)
 - [License](#license)
 
 
@@ -49,47 +48,8 @@ This package implements Lti Provider and Consumer servers. See bellow for specif
 
 ---
 
-## Usage
-
-### Example of provider usage
-
-> Update and install this package first
-
-```shell
-$ npm install ltijs
-```
-
-> Install mongoDB
-
- - [Installing mongoDB](https://docs.mongodb.com/manual/administration/install-community/)
-
-
-> Instantiate and use Provider class
-
-
-
-```javascript
-const path = require('path')
-
-//Require Provider 
-const Lti = require('ltijs').Provider
-
-//Configure provider
-const lti = new Lti('EXAMPLEKEY', 
-            {  
-              staticPath: path.join(__dirname, '/views/')
-            })
-
-//Configure main routes
-lti.appUrl('/')
-lti.loginUrl('/login')
-
-
-//Deploy and set main connection callback
-lti.deploy().onConnect((connection, request, response) => {
-    response.redirect('/')
-})
-```
+## Documentation
+You can find the project documentation [here](https://cvmcosta.github.io/ltijs).
 
 ---
 

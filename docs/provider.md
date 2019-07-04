@@ -68,7 +68,7 @@ let setup = async () => {
 
   //Set connection callback
   lti.onConnect((connection, request, response) => {
-    response.redirect('/')
+    response.send('It\'s alive!')
   })
 }
 setup()
@@ -109,11 +109,11 @@ Exposes methods for easy manipualtion of the LTI 1.3 standard as a LTI Provider 
 | encryptionkey | `String`  | Secret used to sign cookies and other info. | &nbsp; |
 | database | `Object`  | Lti Provider options. | |
 | database.url | `String`  | Database url (Ex: mongodb://localhost/applicationdb). |  |
-| database.connection | `Object`  | Database connection options. | *Optional* |
+| database.connection | `Object`  | Database connection options. Can be any option supported by the [MongoDB Driver](http://mongodb.github.io/node-mongodb-native/2.2/api/MongoClient.html#connect) | *Optional* |
 | database.connection.user | `String`  | Database user for authentication if needed. | *Optional* |
 | database.connection.pass | `String`  | Database pass for authentication if needed. | *Optional* |
 | options | `Object`  | Lti Provider options. | *Optional* |
-| options.https | `Boolean`  | [false]  Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https. ***If you really dont want to use https, disable the secure flag in the cookies option, so that it can be passed via http***. | *Optional* |
+| options.https | `Boolean`  | [false]  Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https. ***If you set this option as true you can enable the secure flag in the cookies options of the onConnect method***. | *Optional* |
 | options.ssl | `Object`  | SSL certificate and key if https is enabled. | *Optional* |
 | options.ssl.key | `String`  | SSL key. | *Optional* |
 | options.ssl.cert | `String`  | SSL certificate. | *Optional* |
@@ -277,8 +277,6 @@ provider.invalidTokenUrl('/invtoken')
 Registers a [Platform](platform.md).
 
 
-
-
 ##### Parameters
 
 | Name | Type | Description |  |
@@ -376,10 +374,127 @@ Sends a grade message to [Platform](platform.md).
 
 ---
 ## Usage
+
 ### Setting up provider
+
+#### Require the package
+
+``` javascript
+const Lti = require('ltijs').Provider
+```
+
+
+#### Instantiate a new Lti Object
+
+```javascript
+//Configure provider
+const lti = new Lti('EXAMPLEKEY', 
+            { url: 'mongodb://localhost/database', 
+              connection:{ user:'user',
+                          pass: 'pass'} 
+            }, 
+            { staticPath: path.join(__dirname, '/views/') })
+```
+The second parameter of the contructor, `database`, is an object with an `url` field, that should be the database url, and a `connection` field, that must contain [MongoDB Driver's connection options](http://mongodb.github.io/node-mongodb-native/2.2/api/MongoClient.html#connect).
+
+
+The third parameter, `options`, allows you to configure a staticPath from where the server serves static files, as well as setup a server using https: 
+
+```javascript
+const lti = new Lti('EXAMPLEKEY', 
+            { url: 'mongodb://localhost/database', 
+              connection:{ user:'user',
+                          pass: 'pass'} 
+            }, 
+            { staticPath: path.join(__dirname, '/views/'),
+              https: true, 
+              ssl: { key: privateKey, 
+                     cert: certificate 
+                   },
+            })
+
+```
+
+
+
+#### Working with the Lti object
+
+You can configure the main routes (login, main app, session timeout, invalid token) through the given methods: 
+
+
+```javascript
+lti.appUrl('/')
+lti.loginUrl('/login')
+lti.sessionTimeoutUrl('/sessionTimeOut) 
+lti.invalidTokenUrl('/invalidToken) 
+```
+
+If no routes are specified the system defaults to:
+
+```javascript
+appUrl = '/'
+loginUrl = '/login'
+sessionTimeoutUrl = '/sessionTimeout'
+invalidTokenUrl = '/invalidToken'
+```
+***These functions must be called before `deploy()`, otherwise the changed will not be applied.***
+
+
+#### Deploy
+
+Deploying the application opens a connection to the configured database and starts the express server.
+
+```javascript
+await lti.deploy() // resolves false if it fails
+```
+
+#### The onConnect method
+
+The `onConnect()` method is called whenever a request successfully arrives at the main app url, and you can specify the callback function that is called. 
+
+Outside of it's first argument `connection`, that is the user's validated `idtoken`, the callback function will be given the three main Express route parameters (req, res, next).
+
+> The idtoken is also in the response.locals.token and will be passed on as so if next() is called.
+
+```javascript
+lti.onConnect(
+  (conection, response, request, next) => {
+    response.send('User connected!')
+  }
+)
+```
+
+The method also allows you to configure a few things regarding to how the idtoken cookie is handled, specify sessionTimeOut and invalidToken route functions to handle these cases.
+
+```javascript
+lti.onConnect(
+  (conection, response, request, next) => {
+    response.send('User connected!')
+  },{
+    secure: true, // Cookie is only passed through secure https requests
+    maxAge: 1000 * 60 * 60 // Cookie is alive for an hour
+  }
+)
+```
 
 
 ---
+
+
+#### The app property
+
+The Lti object gives you a `app` property that is an instance of the Express server, through this property you can create routes and manipulate the server as you please.
+
+```javascript
+lti.app.get('/stuff', (req,res,next) => {
+  res.send('Here\'s yo stuff!')
+})
+```
+
+> Now you can [register a new platform](readme.md#usage) to use your tool in. 
+
+
+
 
 ## License
 

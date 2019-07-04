@@ -92,7 +92,7 @@ let setup = async () => {
 
   //Set connection callback
   lti.onConnect((connection, request, response) => {
-    response.redirect('/')
+    response.send('It\'s alive!')
   })
 }
 setup()

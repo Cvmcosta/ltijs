@@ -184,7 +184,7 @@ class Platform {
   }
 
   /**
-     * @description Returns a promise that resolves into the platform's access token or generates a new one.
+     * @description Gets the platform access token or attempts to generate a new one.
      */
   async platformAccessToken () {
     let token = await Database.Get(this.#ENCRYPTIONKEY, 'accesstoken', { platformUrl: this.#platformUrl })
