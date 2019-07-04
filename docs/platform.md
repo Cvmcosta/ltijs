@@ -1,6 +1,6 @@
-# [ltijs](README.md) - Provider
+# [ltijs](README.md) - Platform
 
-> Turn your application into a lti tool.
+> Platform class
 
 
 [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
@@ -51,27 +51,19 @@ const Lti = require('ltijs').Provider
 
 //Configure provider
 const lti = new Lti('EXAMPLEKEY', 
-            { url: 'mongodb://localhost/database', 
-              connection:{ user:'user',
-                          pass: 'pass'} 
-            }, 
-            { staticPath: path.join(__dirname, '/views/') })
+            {  
+              staticPath: path.join(__dirname, '/views/')
+            })
+
+//Configure main routes
+lti.appUrl('/')
+lti.loginUrl('/login')
 
 
-let setup = async () => {
-  //Configure main routes
-  lti.appUrl('/')
-  lti.loginUrl('/login')
-
-  //Deploy and open connection to the database
-  lti.deploy()
-
-  //Set connection callback
-  lti.onConnect((connection, request, response) => {
+//Deploy and set main connection callback
+lti.deploy().onConnect((connection, request, response) => {
     response.redirect('/')
-  })
-}
-setup()
+})
 ```
 
 ---
@@ -343,19 +335,19 @@ Deletes a [Platform](platform.md).
 
 #### async Provider.getAllPlatforms() 
 
-Gets all [platforms](platform.md).
+Gets all [platforms](https://github.com/Cvmcosta/ltijs/blob/master/src/Provider/README.md#platform).
 
 
 
 ##### Returns
 
 
-- Promise that resolves a [Platform](platform.md) object array if it succeeds and ```false``` if it fails.
+- Promise that resolves a [Platform](https://github.com/Cvmcosta/ltijs/blob/master/src/Provider/README.md#platform) object array if it succeeds and ```false``` if it fails.
 
 
 #### async Provider.messagePlatform(idToken, message) 
 
-Sends a grade message to [Platform](platform.md).
+Sends a grade message to [Platform](https://github.com/Cvmcosta/ltijs/blob/master/src/Provider/README.md#platform).
 
 
 

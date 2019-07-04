@@ -35,7 +35,5 @@ let setup = async () => {
 
   let key = await plat.platformPublicKey()
   console.log(key)
-
-  lti.deletePlatform(plat.platformUrl())
 }
 setup()

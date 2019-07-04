@@ -53,7 +53,8 @@ class Database {
       }
     }
     let newDoc = new Model(newDocData)
-    newDoc.save()
+    await newDoc.save()
+    return true
   }
 
   /**
@@ -79,6 +80,7 @@ class Database {
     }
 
     await Model.updateOne(query, newMod)
+    return true
   }
 
   /**
@@ -90,6 +92,7 @@ class Database {
     if (!collection || !query) throw new Error('Missing argument.')
     let Model = mongoose.model(collection)
     await Model.deleteMany(query)
+    return true
   }
 
   /**

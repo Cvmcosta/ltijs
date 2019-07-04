@@ -1,6 +1,6 @@
 # [ltijs](README.md) 
 
-> A simple nodejs package to facilitate the implementation of LTI providers and consumers.
+> Turn your application into a fully integratable lti tool or platform.
 
 
 [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
@@ -75,19 +75,28 @@ const Lti = require('ltijs').Provider
 
 //Configure provider
 const lti = new Lti('EXAMPLEKEY', 
-            {  
-              staticPath: path.join(__dirname, '/views/')
-            })
-
-//Configure main routes
-lti.appUrl('/')
-lti.loginUrl('/login')
+            { url: 'mongodb://localhost/database', 
+              connection:{ user:'user',
+                          pass: 'pass'} 
+            }, 
+            { staticPath: path.join(__dirname, '/views/') })
 
 
-//Deploy and set main connection callback
-lti.deploy().onConnect((connection, request, response) => {
+let setup = async () => {
+  //Configure main routes
+  lti.appUrl('/')
+  lti.loginUrl('/login')
+
+  //Deploy and open connection to the database
+  lti.deploy()
+
+  //Set connection callback
+  lti.onConnect((connection, request, response) => {
     response.redirect('/')
-})
+  })
+}
+setup()
+
 ```
 
 ---

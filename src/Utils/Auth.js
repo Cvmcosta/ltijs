@@ -68,7 +68,7 @@ class Auth {
     let platform = await getPlatform(decodedToken.payload.iss, ENCRYPTIONKEY)
     if (!platform) throw new Error('NoPlatformRegistered')
 
-    let authConfig = platform.platformAuthConfig()
+    let authConfig = await platform.platformAuthConfig()
 
     switch (authConfig.method) {
       case 'JWK_SET': {
@@ -101,6 +101,10 @@ class Auth {
 
         let verified = await this.verifyToken(token, key, alg, platform)
         return (verified)
+      }
+      default: {
+        provAuthDebug('No auth configuration found for platform')
+        throw new Error('NoAuthConfigFound')
       }
     }
   }
@@ -147,11 +151,11 @@ class Auth {
   static async validateAud (token, platform) {
     provAuthDebug("Validating if aud (Audience) claim matches the value of the tool's clientId given by the platform")
     provAuthDebug('Aud claim: ' + token.aud)
-    provAuthDebug("Tool's clientId: " + platform.platformClientId())
-    if (!token.aud.includes(platform.platformClientId())) throw new Error('AudDoesNotMatchClientId')
+    provAuthDebug("Tool's clientId: " + await platform.platformClientId())
+    if (!token.aud.includes(await platform.platformClientId())) throw new Error('AudDoesNotMatchClientId')
     if (Array.isArray(token.aud)) {
       provAuthDebug('More than one aud listed, searching for azp claim')
-      if (token.azp && token.azp !== platform.platformClientId()) throw new Error('AzpClaimDoesNotMatchClientId')
+      if (token.azp && token.azp !== await platform.platformClientId()) throw new Error('AzpClaimDoesNotMatchClientId')
     }
     return true
   }
@@ -190,10 +194,9 @@ class Auth {
     provAuthDebug('Nonce: ' + token.nonce)
 
     if (await Database.Get(false, 'nonce', { nonce: token.nonce })) throw new Error('NonceAlreadyStored')
-    else {
-      provAuthDebug('Storing nonce')
-      Database.Insert(false, 'nonce', { nonce: token.nonce })
-    }
+    provAuthDebug('Storing nonce')
+    await Database.Insert(false, 'nonce', { nonce: token.nonce })
+
     return true
   }
 
@@ -203,15 +206,15 @@ class Auth {
      */
   static async getAccessToken (platform, ENCRYPTIONKEY) {
     let confjwt = {
-      iss: platform.platformClientId(),
-      sub: platform.platformClientId(),
-      aud: [platform.platformAccessTokenEndpoint()],
+      iss: await platform.platformClientId(),
+      sub: await platform.platformClientId(),
+      aud: await platform.platformAccessTokenEndpoint(),
       iat: Date.now() / 1000,
       exp: Date.now() / 1000 + 60,
       jti: crypto.randomBytes(16).toString('base64')
     }
 
-    let token = jwt.sign(confjwt, await platform.platformPrivateKey(), { algorithm: 'RS256', keyid: platform.platformKid() })
+    let token = jwt.sign(confjwt, await platform.platformPrivateKey(), { algorithm: 'RS256', keyid: await platform.platformKid() })
 
     let message = {
       grant_type: 'client_credentials',
@@ -222,15 +225,12 @@ class Auth {
     }
 
     provAuthDebug('Awaiting return from the platform')
-    let res = await got(platform.platformAccessTokenEndpoint(), { body: message, form: true })
+    let res = await got(await platform.platformAccessTokenEndpoint(), { body: message, form: true })
 
     provAuthDebug('Successfully generated new access_token')
     let access = JSON.parse(res.body)
 
-    provAuthDebug('Access token: ')
-    provAuthDebug(access)
-
-    await Database.Insert(ENCRYPTIONKEY, 'accesstoken', { token: access }, { platformUrl: platform.platformUrl() })
+    await Database.Insert(ENCRYPTIONKEY, 'accesstoken', { token: access }, { platformUrl: await platform.platformUrl() })
 
     return access
   }
