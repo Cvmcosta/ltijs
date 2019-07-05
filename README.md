@@ -1,6 +1,6 @@
 # [ltijs](https://cvmcosta.github.io/ltijs) 
 
-> A simple nodejs package to facilitate the implementation of LTI providers and consumers.
+> Turn your application into a fully integratable lti tool or platform.
 
 
 [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)

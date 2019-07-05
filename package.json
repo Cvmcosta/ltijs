@@ -1,7 +1,7 @@
 {
   "name": "ltijs",
-  "version": "0.2.1",
-  "description": "A simple nodejs tool to facilitate the implementation of LTI providers and consumers.",
+  "version": "0.5.1",
+  "description": "Turn your application into a fully integratable lti tool or platform.",
   "main": "index.js",
   "scripts": {
     "test": "mocha --require @babel/register",

@@ -1,3 +1,4 @@
+/* eslint-disable require-atomic-updates */
 /* eslint-disable no-useless-escape */
 /* Main class for the Provider functionalities */
 
@@ -40,7 +41,7 @@ class Provider {
   #connectCallback = () => {}
 
   #sessionTimedOut = (req, res) => {
-    res.status(401).send('Session timed out. Please reinitiate login.')
+    res.status(401).send('Token invalid or expired. Please reinitiate login.')
   }
   #invalidToken = (req, res) => {
     res.status(401).send('Invalid token. Please reinitiate login.')
@@ -133,32 +134,105 @@ class Provider {
     if (options.staticPath) this.#server.setStaticPath(options.staticPath)
     this.app.get('/favicon.ico', (req, res) => res.status(204))
 
-    // Registers main athentication middleware
+    // Registers main athentication and routing middleware
     let sessionValidator = async (req, res, next) => {
       // Ckeck if request is attempting to initiate oidc login flow
       if (req.url === this.#loginUrl || req.url === this.#sessionTimeoutUrl || req.url === this.#invalidTokenUrl) return next()
 
-      // Check if user already has session cookie stored in its browser
-      try {
-        let it = req.signedCookies.idt
+      if (req.url === this.#appUrl) {
+        let iss = 'plat' + encodeURIComponent(Buffer.from(req.get('origin')).toString('base64'))
+        return res.redirect(307, '/' + iss)
+      }
 
+      try {
+        let it = false
+        let urlArr = req.url.split('/')
+        let issuer = urlArr[1]
+        let path = ''
+        let isApiRequest = false
+        let cookies = req.signedCookies
+
+        // Validate issuer_code to see if its a route or normal request
+        if (issuer.search('plat') === -1) isApiRequest = true
+        if (!isApiRequest) {
+          try {
+            let decode = Buffer.from(decodeURIComponent(issuer.split('plat')[1]), 'base64').toString('ascii')
+            if (decode.search('http') === -1) isApiRequest = true
+          } catch (err) {
+            provMainDebug(err)
+            isApiRequest = true
+          }
+        }
+
+        // Mount request path and issuer_code
+        if (isApiRequest) {
+          let requestParts
+          try {
+            requestParts = req.query.context.split('/')
+          } catch (err) {
+            return res.status(400).send('Missing context parameter in request.')
+          }
+          issuer = encodeURIComponent(requestParts[1])
+          let _urlArr = []
+          for (let i in requestParts) _urlArr.push(requestParts[i])
+          urlArr = _urlArr
+        }
+        for (let i in urlArr) if (parseInt(i) !== 0 && parseInt(i) !== 1) path = path + '/' + urlArr[i]
+
+        // Mathes path to cookie
+        for (let key of Object.keys(cookies)) {
+          if (key === issuer) {
+            it = cookies[key]
+            break
+          }
+        }
+
+        // Check if user already has session cookie stored in its browser
         if (!it) {
           provMainDebug('No cookie found')
           if (req.body.id_token) {
             provMainDebug('Received request containing token. Sending for validation')
             let valid = await Auth.validateToken(req.body.id_token, this.getPlatform, this.#ENCRYPTIONKEY)
-
             provAuthDebug('Successfully validated token!')
-            valid.exp = (Date.now() / 1000) + 3600
-            let it = jwt.sign(valid, this.#ENCRYPTIONKEY)
-            res.cookie('idt', it, this.#cookieOptions)
-            res.locals.token = valid
 
-            res.locals.pathcookie = {
-              context: valid['https://purl.imsglobal.org/spec/lti/claim/context'],
-              resource: valid['https://purl.imsglobal.org/spec/lti/claim/resource_link']
+            // Mount platform cookie
+            let platformCookie = {
+              iss: valid.iss,
+              issuer_code: issuer,
+              user: valid.sub,
+              roles: valid['https://purl.imsglobal.org/spec/lti/claim/roles'],
+              userInfo: {
+                given_name: valid.given_name,
+                family_name: valid.family_name,
+                name: valid.name,
+                email: valid.email
+              },
+              platformInfo: {
+                family_code: valid['https://purl.imsglobal.org/spec/lti/claim/tool_platform'].family_code,
+                version: valid['https://purl.imsglobal.org/spec/lti/claim/tool_platform'].version,
+                name: valid['https://purl.imsglobal.org/spec/lti/claim/tool_platform'].name,
+                description: valid['https://purl.imsglobal.org/spec/lti/claim/tool_platform'].description
+              },
+              endpoint: valid['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint'],
+              namesRoles: valid['https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice']
             }
 
+            platformCookie.exp = (Date.now() / 1000) + 3600
+            let it = jwt.sign(platformCookie, this.#ENCRYPTIONKEY)
+            res.cookie(issuer, it, this.#cookieOptions)
+
+            // Mount context cookie
+            let contextCookie = {
+              context: valid['https://purl.imsglobal.org/spec/lti/claim/context'],
+              resource: valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'],
+              custom: valid['https://purl.imsglobal.org/spec/lti/claim/custom']
+            }
+
+            res.cookie(issuer + '/', contextCookie, this.#cookieOptions)
+
+            platformCookie.platformContext = contextCookie
+
+            res.locals.token = platformCookie
             res.locals.login = true
 
             provMainDebug('Passing request to next handler')
@@ -172,16 +246,36 @@ class Provider {
           provAuthDebug('Cookie successfully validated')
           valid.exp = (Date.now() / 1000) + 3600
           let _it = jwt.sign(valid, this.#ENCRYPTIONKEY)
-          res.cookie('idt', _it, this.#cookieOptions)
+          res.cookie(issuer, _it, this.#cookieOptions)
+
+          let isPath = false
+          if (path) {
+            path = issuer + path
+            for (let key of Object.keys(cookies)) {
+              if (key === issuer) continue
+              if (path.search(key) !== -1) {
+                isPath = cookies[key]
+                break
+              }
+            }
+            if (isPath) {
+              valid.platformContext = isPath
+              if (!valid.platformContext) throw new Error('No path cookie found')
+            }
+          } else {
+            valid.platformContext = cookies[issuer + '/']
+            if (!valid.platformContext) throw new Error('No path cookie found')
+          }
 
           res.locals.token = valid
+          res.locals.login = false
 
           provMainDebug('Passing request to next handler')
           return next()
         }
       } catch (err) {
         provAuthDebug(err)
-        provMainDebug('Error validating token. Passing request to invalid token handler')
+        provMainDebug('Error retrieving or validating token. Passing request to invalid token handler')
         return res.redirect(this.#invalidTokenUrl)
       }
     }
@@ -191,10 +285,10 @@ class Provider {
     this.app.post(this.#loginUrl, async (req, res) => {
       provMainDebug('Receiving a login request from: ' + req.body.iss)
       let platform = await this.getPlatform(req.body.iss)
-
       if (platform) {
+        let cookieName = 'plat' + encodeURIComponent(Buffer.from(req.get('origin')).toString('base64'))
         provMainDebug('Redirecting to platform authentication endpoint')
-        res.clearCookie('idt', this.#cookieOptions)
+        res.clearCookie(cookieName, this.#cookieOptions)
         res.redirect(url.format({
           pathname: await platform.platformAuthEndpoint(),
           query: await Request.ltiAdvantageLogin(req.body, platform)
@@ -214,7 +308,7 @@ class Provider {
     })
 
     // Main app
-    this.app.post(this.#appUrl, (req, res, next) => {
+    this.app.post(this.#appUrl + ':iss', (req, res, next) => {
       this.#connectCallback(res.locals.token, req, res, next)
     })
   }
@@ -405,11 +499,11 @@ class Provider {
     try {
       let tokenRes = await platform.platformAccessToken()
       provMainDebug('Access_token retrieved for [' + idtoken.iss + ']')
-      let lineitemsEndpoint = idtoken['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint'].lineitems
+      let lineitemsEndpoint = idtoken.endpoint.lineitems
 
       let lineitemRes = await got.get(lineitemsEndpoint, { headers: { Authorization: tokenRes.token_type + ' ' + tokenRes.access_token } })
 
-      let resourceId = idtoken['https://purl.imsglobal.org/spec/lti/claim/resource_link']
+      let resourceId = idtoken.platformContext.resource
 
       let lineitem = find(JSON.parse(lineitemRes.body), ['resourceLinkId', resourceId.id])
       let lineitemUrl = lineitem.id
@@ -421,9 +515,6 @@ class Provider {
         scoreUrl = url + '/scores?' + query
       }
 
-      console.log(lineitem)
-      console.log(resourceId)
-      console.log(scoreUrl)
       provMainDebug('Sending grade message to: ' + scoreUrl)
 
       message.timestamp = new Date(Date.now()).toISOString()
@@ -440,21 +531,19 @@ class Provider {
   }
 
   /**
-   * @description Generates a cookie for the given path. Use this to work with multiple tools. Can only be called inside onConnect()
+   * @description Redirect to a new location and sets it's cookie if the location represents a separate resource
    * @param {Object} res - Express response object
-   * @param {Object} idToken - IdToken for the user
    * @param {String} path - Path used as name for the cookie
-   * @example lti.generatePathCookie(response, connection, path)
+   * @param {Boolea} [isNewResource = false] - If true creates new resource and its cookie
+   * @example lti.generatePathCookie(response, '/path', true)
    */
-  generatePathCookie (res, idToken, path) {
-    if (res.locals.login) {
+  redirect (res, path, isNewResource) {
+    if (res.locals.login && isNewResource) {
       provMainDebug('Setting up path cookie for this resource with path: ' + path)
-      res.cookie(path, res.locals.pathcookie, this.#cookieOptions)
+      res.cookie(res.locals.token.issuer_code + path, res.locals.token.platformContext, this.#cookieOptions)
     }
+    res.redirect(res.locals.token.issuer_code + path)
   }
 }
-
-// Create Claim helpers
-Provider.ClaimCustomParameters = 'https://purl.imsglobal.org/spec/lti/claim/custom'
 
 module.exports = Provider

@@ -26,7 +26,7 @@ class Server {
   }
 
   setStaticPath (path) {
-    this.app.use(express.static(path))
+    this.app.use('/', express.static(path))
   }
 }
 
