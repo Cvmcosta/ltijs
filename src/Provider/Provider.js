@@ -31,7 +31,6 @@ class Provider {
   #ENCRYPTIONKEY
 
   #cookieOptions = {
-    maxAge: 1000 * 60 * 60,
     secure: false,
     httpOnly: true,
     signed: true
@@ -132,6 +131,7 @@ class Provider {
     this.app = this.#server.app
 
     if (options.staticPath) this.#server.setStaticPath(options.staticPath)
+    this.app.get('/favicon.ico', (req, res) => res.status(204))
 
     // Registers main athentication middleware
     let sessionValidator = async (req, res, next) => {
@@ -140,7 +140,8 @@ class Provider {
 
       // Check if user already has session cookie stored in its browser
       try {
-        let it = req.signedCookies.it
+        let it = req.signedCookies.idt
+
         if (!it) {
           provMainDebug('No cookie found')
           if (req.body.id_token) {
@@ -148,11 +149,17 @@ class Provider {
             let valid = await Auth.validateToken(req.body.id_token, this.getPlatform, this.#ENCRYPTIONKEY)
 
             provAuthDebug('Successfully validated token!')
-            valid.exp = (Date.now() / 1000) + (this.#cookieOptions.maxAge / 1000)
-
+            valid.exp = (Date.now() / 1000) + 3600
             let it = jwt.sign(valid, this.#ENCRYPTIONKEY)
-            res.cookie('it', it, this.#cookieOptions)
+            res.cookie('idt', it, this.#cookieOptions)
             res.locals.token = valid
+
+            res.locals.pathcookie = {
+              context: valid['https://purl.imsglobal.org/spec/lti/claim/context'],
+              resource: valid['https://purl.imsglobal.org/spec/lti/claim/resource_link']
+            }
+
+            res.locals.login = true
 
             provMainDebug('Passing request to next handler')
             return next()
@@ -163,10 +170,10 @@ class Provider {
         } else {
           let valid = jwt.verify(it, this.#ENCRYPTIONKEY)
           provAuthDebug('Cookie successfully validated')
-
-          valid.exp = (Date.now() / 1000) + (this.#cookieOptions.maxAge / 1000)
+          valid.exp = (Date.now() / 1000) + 3600
           let _it = jwt.sign(valid, this.#ENCRYPTIONKEY)
-          res.cookie('it', _it, this.#cookieOptions)
+          res.cookie('idt', _it, this.#cookieOptions)
+
           res.locals.token = valid
 
           provMainDebug('Passing request to next handler')
@@ -187,6 +194,7 @@ class Provider {
 
       if (platform) {
         provMainDebug('Redirecting to platform authentication endpoint')
+        res.clearCookie('idt', this.#cookieOptions)
         res.redirect(url.format({
           pathname: await platform.platformAuthEndpoint(),
           query: await Request.ltiAdvantageLogin(req.body, platform)
@@ -230,7 +238,6 @@ class Provider {
      * @description Sets the callback function called whenever theres a sucessfull connection, exposing a Conection object containing the id_token decoded parameters.
      * @param {Function} _connectCallback - Function that is going to be called everytime a platform sucessfully connects to the provider.
      * @param {Object} [options] - Options configuring the usage of cookies to pass the Id Token data to the client.
-     * @param {Number} [options.maxAge = 1000 * 60 * 60] - MaxAge of the cookie in miliseconds.
      * @param {Boolean} [options.secure = false] - Secure property of the cookie.
      * @param {Function} [options.sessionTimeout] - Route function executed everytime the session expires. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}).
      * @param {Function} [options.invalidToken] - Route function executed everytime the system receives an invalid token or cookie. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}).
@@ -238,8 +245,6 @@ class Provider {
      */
   onConnect (_connectCallback, options) {
     if (options) {
-      this.#cookieOptions.maxAge = options.maxAge || 1000 * 60 * 60
-
       if (options.secure === true) this.#cookieOptions.secure = options.secure
       if (options.sessionTimeout) this.#sessionTimedOut = options.sessionTimeout
       if (options.invalidToken) this.#invalidToken = options.invalidToken
@@ -416,10 +421,10 @@ class Provider {
         scoreUrl = url + '/scores?' + query
       }
 
-      console.log(idtoken)
       console.log(lineitem)
       console.log(resourceId)
       console.log(scoreUrl)
+      provMainDebug('Sending grade message to: ' + scoreUrl)
 
       message.timestamp = new Date(Date.now()).toISOString()
       message.scoreMaximum = lineitem.scoreMaximum
@@ -431,6 +436,20 @@ class Provider {
     } catch (err) {
       provMainDebug(err)
       return false
+    }
+  }
+
+  /**
+   * @description Generates a cookie for the given path. Use this to work with multiple tools. Can only be called inside onConnect()
+   * @param {Object} res - Express response object
+   * @param {Object} idToken - IdToken for the user
+   * @param {String} path - Path used as name for the cookie
+   * @example lti.generatePathCookie(response, connection, path)
+   */
+  generatePathCookie (res, idToken, path) {
+    if (res.locals.login) {
+      provMainDebug('Setting up path cookie for this resource with path: ' + path)
+      res.cookie(path, res.locals.pathcookie, this.#cookieOptions)
     }
   }
 }

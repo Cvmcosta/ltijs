@@ -153,7 +153,6 @@ Sets the callback function called whenever theres a sucessfull connection, expos
 | ---- | ---- | ----------- | -------- |
 | _connectCallback | `Function`  | Function that is going to be called everytime a platform sucessfully connects to the provider. | &nbsp; |
 | options | `Object`  | Options configuring the usage of cookies to pass the Id Token data to the client. | *Optional* |
-| options.maxAge | `Number`  | = 1000 * 60 * 60] - MaxAge of the cookie in miliseconds. | *Optional* |
 | options.secure | `Boolean`  | = false] - Secure property of the cookie. | *Optional* |
 | options.sessionTimeout | `Function`  | Route/Function executed everytime the session expires. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}). | *Optional* |
 | options.invalidToken | `Function`  | Route/Function executed everytime the system receives an invalid token or cookie. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}). | *Optional* |
@@ -472,7 +471,6 @@ lti.onConnect(
     response.send('User connected!')
   },{
     secure: true, // Cookie is only passed through secure https requests
-    maxAge: 1000 * 60 * 60 // Cookie is alive for an hour
   }
 )
 ```
