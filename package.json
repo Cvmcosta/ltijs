@@ -1,6 +1,6 @@
 {
   "name": "ltijs",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Turn your application into a fully integratable lti tool or platform.",
   "main": "index.js",
   "scripts": {

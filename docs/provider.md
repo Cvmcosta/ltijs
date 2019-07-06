@@ -87,7 +87,7 @@ setup()
 > Now you can **[register a new platform](#registering-a-new-platform)** to use your tool with. And checkout the **[Platform class documentation](platform.md)**
 
 
-**Routing with **Ltijs** is a bit diferent from regular Express routing  so here's a useful tutorial:** 
+**Routing with Ltijs is a bit diferent from regular Express routing  so here's a useful tutorial:** 
 
 
 > **[Understand routing and context with ltijs](#routing-and-context)**

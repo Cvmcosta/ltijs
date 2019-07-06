@@ -1071,10 +1071,11 @@ function () {
                 }
 
                 provMainDebug('Sending grade message to: ' + scoreUrl);
+                message.userId = idtoken.user;
                 message.timestamp = new Date(Date.now()).toISOString();
                 message.scoreMaximum = lineitem.scoreMaximum;
-                message.userId = idtoken.user;
-                _context8.next = 28;
+                provMainDebug(message);
+                _context8.next = 29;
                 return got.post(scoreUrl, {
                   headers: {
                     Authorization: tokenRes.token_type + ' ' + tokenRes.access_token,
@@ -1083,22 +1084,22 @@ function () {
                   body: JSON.stringify(message)
                 });
 
-              case 28:
+              case 29:
                 provMainDebug('Message successfully sent');
                 return _context8.abrupt("return", true);
 
-              case 32:
-                _context8.prev = 32;
+              case 33:
+                _context8.prev = 33;
                 _context8.t0 = _context8["catch"](8);
                 provMainDebug(_context8.t0);
                 return _context8.abrupt("return", false);
 
-              case 36:
+              case 37:
               case "end":
                 return _context8.stop();
             }
           }
-        }, _callee8, this, [[8, 32]]);
+        }, _callee8, this, [[8, 33]]);
       }));
 
       function messagePlatform(_x16, _x17) {

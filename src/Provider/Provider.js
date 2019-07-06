@@ -517,9 +517,10 @@ class Provider {
 
       provMainDebug('Sending grade message to: ' + scoreUrl)
 
+      message.userId = idtoken.user
       message.timestamp = new Date(Date.now()).toISOString()
       message.scoreMaximum = lineitem.scoreMaximum
-      message.userId = idtoken.user
+      provMainDebug(message)
 
       await got.post(scoreUrl, { headers: { Authorization: tokenRes.token_type + ' ' + tokenRes.access_token, 'Content-Type': 'application/vnd.ims.lis.v1.score+json' }, body: JSON.stringify(message) })
 
