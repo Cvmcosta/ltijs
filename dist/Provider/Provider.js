@@ -31,8 +31,6 @@ var Database = require('../Utils/Database');
 
 var url = require('url');
 
-var jwt = require('jsonwebtoken');
-
 var got = require('got');
 
 var find = require('lodash.find');
@@ -216,7 +214,7 @@ function () {
       var _ref = (0, _asyncToGenerator2["default"])(
       /*#__PURE__*/
       _regenerator["default"].mark(function _callee(req, res, next) {
-        var iss, it, urlArr, issuer, path, isApiRequest, cookies, decode, requestParts, _urlArr, i, _i, _i2, _Object$keys, _key, valid, platformCookie, _it2, contextCookie, _valid, _it, isPath, _i3, _Object$keys2, key;
+        var iss, it, urlArr, issuer, path, isApiRequest, cookies, decode, requestParts, _urlArr, i, _i, _i2, _Object$keys, _key, valid, platformCookie, contextCookie, _valid, isPath, _i3, _Object$keys2, key;
 
         return _regenerator["default"].wrap(function _callee$(_context) {
           while (1) {
@@ -261,21 +259,23 @@ function () {
 
 
                 if (!isApiRequest) {
-                  _context.next = 26;
+                  _context.next = 24;
                   break;
                 }
 
-                _context.prev = 15;
+                if (!req.query.context) {
+                  _context.next = 19;
+                  break;
+                }
+
                 requestParts = req.query.context.split('/');
-                _context.next = 22;
+                _context.next = 20;
                 break;
 
               case 19:
-                _context.prev = 19;
-                _context.t0 = _context["catch"](15);
                 return _context.abrupt("return", res.status(400).send('Missing context parameter in request.'));
 
-              case 22:
+              case 20:
                 issuer = encodeURIComponent(requestParts[1]);
                 _urlArr = [];
 
@@ -285,7 +285,7 @@ function () {
 
                 urlArr = _urlArr;
 
-              case 26:
+              case 24:
                 for (_i in urlArr) {
                   if (parseInt(_i) !== 0 && parseInt(_i) !== 1) path = path + '/' + urlArr[_i];
                 } // Mathes path to cookie
@@ -293,45 +293,45 @@ function () {
 
                 _i2 = 0, _Object$keys = Object.keys(cookies);
 
-              case 28:
+              case 26:
                 if (!(_i2 < _Object$keys.length)) {
-                  _context.next = 36;
+                  _context.next = 34;
                   break;
                 }
 
                 _key = _Object$keys[_i2];
 
                 if (!(_key === issuer)) {
-                  _context.next = 33;
+                  _context.next = 31;
                   break;
                 }
 
                 it = cookies[_key];
-                return _context.abrupt("break", 36);
+                return _context.abrupt("break", 34);
 
-              case 33:
+              case 31:
                 _i2++;
-                _context.next = 28;
+                _context.next = 26;
                 break;
 
-              case 36:
+              case 34:
                 if (it) {
-                  _context.next = 61;
+                  _context.next = 57;
                   break;
                 }
 
                 provMainDebug('No cookie found');
 
                 if (!req.body.id_token) {
-                  _context.next = 57;
+                  _context.next = 53;
                   break;
                 }
 
                 provMainDebug('Received request containing token. Sending for validation');
-                _context.next = 42;
+                _context.next = 40;
                 return Auth.validateToken(req.body.id_token, _this.getPlatform, (0, _classPrivateFieldLooseBase2["default"])(_this, _ENCRYPTIONKEY)[_ENCRYPTIONKEY]);
 
-              case 42:
+              case 40:
                 valid = _context.sent;
                 provAuthDebug('Successfully validated token!'); // Mount platform cookie
 
@@ -355,9 +355,7 @@ function () {
                   endpoint: valid['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint'],
                   namesRoles: valid['https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice']
                 };
-                platformCookie.exp = Date.now() / 1000 + 3600;
-                _it2 = jwt.sign(platformCookie, (0, _classPrivateFieldLooseBase2["default"])(_this, _ENCRYPTIONKEY)[_ENCRYPTIONKEY]);
-                res.cookie(issuer, _it2, (0, _classPrivateFieldLooseBase2["default"])(_this, _cookieOptions)[_cookieOptions]); // Mount context cookie
+                res.cookie(issuer, platformCookie, (0, _classPrivateFieldLooseBase2["default"])(_this, _cookieOptions)[_cookieOptions]); // Mount context cookie
 
                 contextCookie = {
                   context: valid['https://purl.imsglobal.org/spec/lti/claim/context'],
@@ -371,111 +369,109 @@ function () {
                 provMainDebug('Passing request to next handler');
                 return _context.abrupt("return", next());
 
-              case 57:
+              case 53:
                 provMainDebug('Passing request to session timeout handler');
                 return _context.abrupt("return", res.redirect((0, _classPrivateFieldLooseBase2["default"])(_this, _sessionTimeoutUrl)[_sessionTimeoutUrl]));
 
-              case 59:
-                _context.next = 93;
+              case 55:
+                _context.next = 87;
                 break;
 
-              case 61:
-                _valid = jwt.verify(it, (0, _classPrivateFieldLooseBase2["default"])(_this, _ENCRYPTIONKEY)[_ENCRYPTIONKEY]);
-                provAuthDebug('Cookie successfully validated');
-                _valid.exp = Date.now() / 1000 + 3600;
-                _it = jwt.sign(_valid, (0, _classPrivateFieldLooseBase2["default"])(_this, _ENCRYPTIONKEY)[_ENCRYPTIONKEY]);
-                res.cookie(issuer, _it, (0, _classPrivateFieldLooseBase2["default"])(_this, _cookieOptions)[_cookieOptions]);
+              case 57:
+                provAuthDebug('Cookie found');
+                _valid = it;
+                res.cookie(issuer, _valid, (0, _classPrivateFieldLooseBase2["default"])(_this, _cookieOptions)[_cookieOptions]);
                 isPath = false;
 
                 if (!path) {
-                  _context.next = 86;
+                  _context.next = 80;
                   break;
                 }
 
                 path = issuer + path;
                 _i3 = 0, _Object$keys2 = Object.keys(cookies);
 
-              case 70:
+              case 64:
                 if (!(_i3 < _Object$keys2.length)) {
-                  _context.next = 80;
+                  _context.next = 74;
                   break;
                 }
 
                 key = _Object$keys2[_i3];
 
                 if (!(key === issuer)) {
-                  _context.next = 74;
+                  _context.next = 68;
                   break;
                 }
 
-                return _context.abrupt("continue", 77);
+                return _context.abrupt("continue", 71);
 
-              case 74:
+              case 68:
                 if (!(path.search(key) !== -1)) {
-                  _context.next = 77;
+                  _context.next = 71;
                   break;
                 }
 
                 isPath = cookies[key];
-                return _context.abrupt("break", 80);
+                return _context.abrupt("break", 74);
 
-              case 77:
+              case 71:
                 _i3++;
-                _context.next = 70;
+                _context.next = 64;
                 break;
 
-              case 80:
+              case 74:
                 if (!isPath) {
-                  _context.next = 84;
+                  _context.next = 78;
                   break;
                 }
 
                 _valid.platformContext = isPath;
 
                 if (_valid.platformContext) {
-                  _context.next = 84;
+                  _context.next = 78;
                   break;
                 }
 
                 throw new Error('No path cookie found');
 
-              case 84:
-                _context.next = 89;
+              case 78:
+                _context.next = 83;
                 break;
 
-              case 86:
+              case 80:
                 _valid.platformContext = cookies[issuer + '/'];
 
                 if (_valid.platformContext) {
-                  _context.next = 89;
+                  _context.next = 83;
                   break;
                 }
 
                 throw new Error('No path cookie found');
 
-              case 89:
+              case 83:
                 res.locals.token = _valid;
                 res.locals.login = false;
                 provMainDebug('Passing request to next handler');
                 return _context.abrupt("return", next());
 
-              case 93:
-                _context.next = 100;
+              case 87:
+                _context.next = 94;
                 break;
 
-              case 95:
-                _context.prev = 95;
-                _context.t1 = _context["catch"](5);
-                provAuthDebug(_context.t1);
+              case 89:
+                _context.prev = 89;
+                _context.t0 = _context["catch"](5);
+                provAuthDebug(_context.t0);
                 provMainDebug('Error retrieving or validating token. Passing request to invalid token handler');
                 return _context.abrupt("return", res.redirect((0, _classPrivateFieldLooseBase2["default"])(_this, _invalidTokenUrl)[_invalidTokenUrl]));
 
-              case 100:
+              case 94:
               case "end":
                 return _context.stop();
             }
           }
-        }, _callee, null, [[5, 95], [15, 19]]);
+        }, _callee, null, [[5, 89]]);
       }));
 
       return function sessionValidator(_x, _x2, _x3) {
