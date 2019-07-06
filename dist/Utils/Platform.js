@@ -83,21 +83,6 @@ function () {
     _classPrivateFieldLooseBase(this, _authEndpoint)[_authEndpoint] = authenticationEndpoint;
     _classPrivateFieldLooseBase(this, _accesstokenEndpoint)[_accesstokenEndpoint] = accesstokenEndpoint;
     _classPrivateFieldLooseBase(this, _kid)[_kid] = kid;
-
-    if (!Database.Get(_classPrivateFieldLooseBase(this, _ENCRYPTIONKEY2)[_ENCRYPTIONKEY2], './provider_data', 'platforms', 'platforms', {
-      platformUrl: _classPrivateFieldLooseBase(this, _platformUrl)[_platformUrl]
-    })) {
-      provPlatformDebug('Registering new platform: ' + _classPrivateFieldLooseBase(this, _platformUrl)[_platformUrl]);
-      Database.Insert(_classPrivateFieldLooseBase(this, _ENCRYPTIONKEY2)[_ENCRYPTIONKEY2], './provider_data', 'platforms', 'platforms', {
-        platformName: _classPrivateFieldLooseBase(this, _platformName)[_platformName],
-        platformUrl: _classPrivateFieldLooseBase(this, _platformUrl)[_platformUrl],
-        clientId: _classPrivateFieldLooseBase(this, _clientId)[_clientId],
-        authEndpoint: _classPrivateFieldLooseBase(this, _authEndpoint)[_authEndpoint],
-        accesstokenEndpoint: _classPrivateFieldLooseBase(this, _accesstokenEndpoint)[_accesstokenEndpoint],
-        kid: _classPrivateFieldLooseBase(this, _kid)[_kid],
-        authConfig: _classPrivateFieldLooseBase(this, _authConfig2)[_authConfig2]
-      });
-    }
   }
   /**
      * @description Sets/Gets the platform name.
@@ -107,15 +92,58 @@ function () {
 
   _createClass(Platform, [{
     key: "platformName",
-    value: function platformName(name) {
-      if (!name) return _classPrivateFieldLooseBase(this, _platformName)[_platformName];
-      Database.Modify(_classPrivateFieldLooseBase(this, _ENCRYPTIONKEY2)[_ENCRYPTIONKEY2], './provider_data', 'platforms', 'platforms', {
-        platformUrl: _classPrivateFieldLooseBase(this, _platformUrl)[_platformUrl]
-      }, {
-        platformName: name
-      });
-      _classPrivateFieldLooseBase(this, _platformName)[_platformName] = name;
-    }
+    value: function () {
+      var _platformName2 = _asyncToGenerator(
+      /*#__PURE__*/
+      regeneratorRuntime.mark(function _callee(name) {
+        return regeneratorRuntime.wrap(function _callee$(_context) {
+          while (1) {
+            switch (_context.prev = _context.next) {
+              case 0:
+                if (name) {
+                  _context.next = 2;
+                  break;
+                }
+
+                return _context.abrupt("return", _classPrivateFieldLooseBase(this, _platformName)[_platformName]);
+
+              case 2:
+                _context.prev = 2;
+                _context.next = 5;
+                return Database.Modify(false, 'platform', {
+                  platformUrl: _classPrivateFieldLooseBase(this, _platformUrl)[_platformUrl]
+                }, {
+                  platformName: name
+                });
+
+              case 5:
+                _context.next = 11;
+                break;
+
+              case 7:
+                _context.prev = 7;
+                _context.t0 = _context["catch"](2);
+                provPlatformDebug(_context.t0);
+                return _context.abrupt("return", false);
+
+              case 11:
+                _classPrivateFieldLooseBase(this, _platformName)[_platformName] = name;
+                return _context.abrupt("return", this);
+
+              case 13:
+              case "end":
+                return _context.stop();
+            }
+          }
+        }, _callee, this, [[2, 7]]);
+      }));
+
+      function platformName(_x) {
+        return _platformName2.apply(this, arguments);
+      }
+
+      return platformName;
+    }()
     /**
        * @description Sets/Gets the platform url.
        * @param {string} [url] - Platform url.
@@ -123,15 +151,58 @@ function () {
 
   }, {
     key: "platformUrl",
-    value: function platformUrl(url) {
-      if (!url) return _classPrivateFieldLooseBase(this, _platformUrl)[_platformUrl];
-      Database.Modify(_classPrivateFieldLooseBase(this, _ENCRYPTIONKEY2)[_ENCRYPTIONKEY2], './provider_data', 'platforms', 'platforms', {
-        platformUrl: _classPrivateFieldLooseBase(this, _platformUrl)[_platformUrl]
-      }, {
-        platformUrl: url
-      });
-      _classPrivateFieldLooseBase(this, _platformUrl)[_platformUrl] = url;
-    }
+    value: function () {
+      var _platformUrl2 = _asyncToGenerator(
+      /*#__PURE__*/
+      regeneratorRuntime.mark(function _callee2(url) {
+        return regeneratorRuntime.wrap(function _callee2$(_context2) {
+          while (1) {
+            switch (_context2.prev = _context2.next) {
+              case 0:
+                if (url) {
+                  _context2.next = 2;
+                  break;
+                }
+
+                return _context2.abrupt("return", _classPrivateFieldLooseBase(this, _platformUrl)[_platformUrl]);
+
+              case 2:
+                _context2.prev = 2;
+                _context2.next = 5;
+                return Database.Modify(false, 'platform', {
+                  platformUrl: _classPrivateFieldLooseBase(this, _platformUrl)[_platformUrl]
+                }, {
+                  platformUrl: url
+                });
+
+              case 5:
+                _context2.next = 11;
+                break;
+
+              case 7:
+                _context2.prev = 7;
+                _context2.t0 = _context2["catch"](2);
+                provPlatformDebug(_context2.t0);
+                return _context2.abrupt("return", false);
+
+              case 11:
+                _classPrivateFieldLooseBase(this, _platformUrl)[_platformUrl] = url;
+                return _context2.abrupt("return", this);
+
+              case 13:
+              case "end":
+                return _context2.stop();
+            }
+          }
+        }, _callee2, this, [[2, 7]]);
+      }));
+
+      function platformUrl(_x2) {
+        return _platformUrl2.apply(this, arguments);
+      }
+
+      return platformUrl;
+    }()
     /**
        * @description Sets/Gets the platform client id.
        * @param {string} [clientId] - Platform client id.
@@ -139,15 +210,58 @@ function () {
 
   }, {
     key: "platformClientId",
-    value: function platformClientId(clientId) {
-      if (!clientId) return _classPrivateFieldLooseBase(this, _clientId)[_clientId];
-      Database.Modify(_classPrivateFieldLooseBase(this, _ENCRYPTIONKEY2)[_ENCRYPTIONKEY2], './provider_data', 'platforms', 'platforms', {
-        platformUrl: _classPrivateFieldLooseBase(this, _platformUrl)[_platformUrl]
-      }, {
-        clientId: clientId
-      });
-      _classPrivateFieldLooseBase(this, _clientId)[_clientId] = clientId;
-    }
+    value: function () {
+      var _platformClientId = _asyncToGenerator(
+      /*#__PURE__*/
+      regeneratorRuntime.mark(function _callee3(clientId) {
+        return regeneratorRuntime.wrap(function _callee3$(_context3) {
+          while (1) {
+            switch (_context3.prev = _context3.next) {
+              case 0:
+                if (clientId) {
+                  _context3.next = 2;
+                  break;
+                }
+
+                return _context3.abrupt("return", _classPrivateFieldLooseBase(this, _clientId)[_clientId]);
+
+              case 2:
+                _context3.prev = 2;
+                _context3.next = 5;
+                return Database.Modify(false, 'platform', {
+                  platformUrl: _classPrivateFieldLooseBase(this, _platformUrl)[_platformUrl]
+                }, {
+                  clientId: clientId
+                });
+
+              case 5:
+                _context3.next = 11;
+                break;
+
+              case 7:
+                _context3.prev = 7;
+                _context3.t0 = _context3["catch"](2);
+                provPlatformDebug(_context3.t0);
+                return _context3.abrupt("return", false);
+
+              case 11:
+                _classPrivateFieldLooseBase(this, _clientId)[_clientId] = clientId;
+                return _context3.abrupt("return", this);
+
+              case 13:
+              case "end":
+                return _context3.stop();
+            }
+          }
+        }, _callee3, this, [[2, 7]]);
+      }));
+
+      function platformClientId(_x3) {
+        return _platformClientId.apply(this, arguments);
+      }
+
+      return platformClientId;
+    }()
     /**
        * @description Gets the platform key_id.
        */
@@ -164,11 +278,45 @@ function () {
 
   }, {
     key: "platformPublicKey",
-    value: function platformPublicKey() {
-      return Database.Get(false, './provider_data', 'publickeyset', 'keys', {
-        kid: _classPrivateFieldLooseBase(this, _kid)[_kid]
-      }).key;
-    }
+    value: function () {
+      var _platformPublicKey = _asyncToGenerator(
+      /*#__PURE__*/
+      regeneratorRuntime.mark(function _callee4() {
+        var key;
+        return regeneratorRuntime.wrap(function _callee4$(_context4) {
+          while (1) {
+            switch (_context4.prev = _context4.next) {
+              case 0:
+                _context4.prev = 0;
+                _context4.next = 3;
+                return Database.Get(_classPrivateFieldLooseBase(this, _ENCRYPTIONKEY2)[_ENCRYPTIONKEY2], 'publickey', {
+                  kid: _classPrivateFieldLooseBase(this, _kid)[_kid]
+                });
+
+              case 3:
+                key = _context4.sent;
+                return _context4.abrupt("return", key[0].key);
+
+              case 7:
+                _context4.prev = 7;
+                _context4.t0 = _context4["catch"](0);
+                provPlatformDebug(_context4.t0);
+                return _context4.abrupt("return", false);
+
+              case 11:
+              case "end":
+                return _context4.stop();
+            }
+          }
+        }, _callee4, this, [[0, 7]]);
+      }));
+
+      function platformPublicKey() {
+        return _platformPublicKey.apply(this, arguments);
+      }
+
+      return platformPublicKey;
+    }()
     /**
        * @description Gets the RSA private key assigned to the platform.
        *
@@ -176,11 +324,45 @@ function () {
 
   }, {
     key: "platformPrivateKey",
-    value: function platformPrivateKey() {
-      return Database.Get(false, './provider_data', 'privatekeyset', 'keys', {
-        kid: _classPrivateFieldLooseBase(this, _kid)[_kid]
-      }).key;
-    }
+    value: function () {
+      var _platformPrivateKey = _asyncToGenerator(
+      /*#__PURE__*/
+      regeneratorRuntime.mark(function _callee5() {
+        var key;
+        return regeneratorRuntime.wrap(function _callee5$(_context5) {
+          while (1) {
+            switch (_context5.prev = _context5.next) {
+              case 0:
+                _context5.prev = 0;
+                _context5.next = 3;
+                return Database.Get(_classPrivateFieldLooseBase(this, _ENCRYPTIONKEY2)[_ENCRYPTIONKEY2], 'privatekey', {
+                  kid: _classPrivateFieldLooseBase(this, _kid)[_kid]
+                });
+
+              case 3:
+                key = _context5.sent;
+                return _context5.abrupt("return", key[0].key);
+
+              case 7:
+                _context5.prev = 7;
+                _context5.t0 = _context5["catch"](0);
+                provPlatformDebug(_context5.t0);
+                return _context5.abrupt("return", false);
+
+              case 11:
+              case "end":
+                return _context5.stop();
+            }
+          }
+        }, _callee5, this, [[0, 7]]);
+      }));
+
+      function platformPrivateKey() {
+        return _platformPrivateKey.apply(this, arguments);
+      }
+
+      return platformPrivateKey;
+    }()
     /**
        * @description Sets/Gets the platform authorization configurations used to validate it's messages.
        * @param {string} method - Method of authorization "RSA_KEY" or "JWK_KEY" or "JWK_SET".
@@ -189,20 +371,79 @@ function () {
 
   }, {
     key: "platformAuthConfig",
-    value: function platformAuthConfig(method, key) {
-      if (!method && !key) return _classPrivateFieldLooseBase(this, _authConfig2)[_authConfig2];
-      if (method !== 'RSA_KEY' && method !== 'JWK_KEY' && method !== 'JWK_SET') throw new Error('Invalid message validation method. Valid methods are "RSA_KEY", "JWK_KEY", "JWK_SET"');
-      if (!key) throw new Error('Missing secong argument key or keyset_url.');
-      _classPrivateFieldLooseBase(this, _authConfig2)[_authConfig2] = {
-        method: method,
-        key: key
-      };
-      Database.Modify(_classPrivateFieldLooseBase(this, _ENCRYPTIONKEY2)[_ENCRYPTIONKEY2], './provider_data', 'platforms', 'platforms', {
-        platformUrl: _classPrivateFieldLooseBase(this, _platformUrl)[_platformUrl]
-      }, {
-        authConfig: _classPrivateFieldLooseBase(this, _authConfig2)[_authConfig2]
-      });
-    }
+    value: function () {
+      var _platformAuthConfig = _asyncToGenerator(
+      /*#__PURE__*/
+      regeneratorRuntime.mark(function _callee6(method, key) {
+        var authConfig;
+        return regeneratorRuntime.wrap(function _callee6$(_context6) {
+          while (1) {
+            switch (_context6.prev = _context6.next) {
+              case 0:
+                if (!(!method && !key)) {
+                  _context6.next = 2;
+                  break;
+                }
+
+                return _context6.abrupt("return", _classPrivateFieldLooseBase(this, _authConfig2)[_authConfig2]);
+
+              case 2:
+                if (!(method !== 'RSA_KEY' && method !== 'JWK_KEY' && method !== 'JWK_SET')) {
+                  _context6.next = 4;
+                  break;
+                }
+
+                throw new Error('Invalid message validation method. Valid methods are "RSA_KEY", "JWK_KEY", "JWK_SET"');
+
+              case 4:
+                if (key) {
+                  _context6.next = 6;
+                  break;
+                }
+
+                throw new Error('Missing secong argument key or keyset_url.');
+
+              case 6:
+                authConfig = {
+                  method: method,
+                  key: key
+                };
+                _context6.prev = 7;
+                _context6.next = 10;
+                return Database.Modify(false, 'platform', {
+                  platformUrl: _classPrivateFieldLooseBase(this, _platformUrl)[_platformUrl]
+                }, {
+                  authConfig: authConfig
+                });
+
+              case 10:
+                _context6.next = 16;
+                break;
+
+              case 12:
+                _context6.prev = 12;
+                _context6.t0 = _context6["catch"](7);
+                provPlatformDebug(_context6.t0);
+                return _context6.abrupt("return", false);
+
+              case 16:
+                _classPrivateFieldLooseBase(this, _authConfig2)[_authConfig2] = authConfig;
+                return _context6.abrupt("return", this);
+
+              case 18:
+              case "end":
+                return _context6.stop();
+            }
+          }
+        }, _callee6, this, [[7, 12]]);
+      }));
+
+      function platformAuthConfig(_x4, _x5) {
+        return _platformAuthConfig.apply(this, arguments);
+      }
+
+      return platformAuthConfig;
+    }()
     /**
        * @description Sets/Gets the platform authorization endpoint used to perform the OIDC login.
        * @param {string} [authEndpoint] - Platform authorization endpoint.
@@ -210,15 +451,58 @@ function () {
 
   }, {
     key: "platformAuthEndpoint",
-    value: function platformAuthEndpoint(authEndpoint) {
-      if (!authEndpoint) return _classPrivateFieldLooseBase(this, _authEndpoint)[_authEndpoint];
-      Database.Modify(_classPrivateFieldLooseBase(this, _ENCRYPTIONKEY2)[_ENCRYPTIONKEY2], './provider_data', 'platforms', 'platforms', {
-        platformUrl: _classPrivateFieldLooseBase(this, _platformUrl)[_platformUrl]
-      }, {
-        authEndpoint: authEndpoint
-      });
-      _classPrivateFieldLooseBase(this, _authEndpoint)[_authEndpoint] = authEndpoint;
-    }
+    value: function () {
+      var _platformAuthEndpoint = _asyncToGenerator(
+      /*#__PURE__*/
+      regeneratorRuntime.mark(function _callee7(authEndpoint) {
+        return regeneratorRuntime.wrap(function _callee7$(_context7) {
+          while (1) {
+            switch (_context7.prev = _context7.next) {
+              case 0:
+                if (authEndpoint) {
+                  _context7.next = 2;
+                  break;
+                }
+
+                return _context7.abrupt("return", _classPrivateFieldLooseBase(this, _authEndpoint)[_authEndpoint]);
+
+              case 2:
+                _context7.prev = 2;
+                _context7.next = 5;
+                return Database.Modify(false, 'platform', {
+                  platformUrl: _classPrivateFieldLooseBase(this, _platformUrl)[_platformUrl]
+                }, {
+                  authEndpoint: authEndpoint
+                });
+
+              case 5:
+                _context7.next = 11;
+                break;
+
+              case 7:
+                _context7.prev = 7;
+                _context7.t0 = _context7["catch"](2);
+                provPlatformDebug(_context7.t0);
+                return _context7.abrupt("return", false);
+
+              case 11:
+                _classPrivateFieldLooseBase(this, _authEndpoint)[_authEndpoint] = authEndpoint;
+                return _context7.abrupt("return", this);
+
+              case 13:
+              case "end":
+                return _context7.stop();
+            }
+          }
+        }, _callee7, this, [[2, 7]]);
+      }));
+
+      function platformAuthEndpoint(_x6) {
+        return _platformAuthEndpoint.apply(this, arguments);
+      }
+
+      return platformAuthEndpoint;
+    }()
     /**
        * @description Sets/Gets the platform access token endpoint used to authenticate messages to the platform.
        * @param {string} [accesstokenEndpoint] - Platform access token endpoint.
@@ -226,17 +510,60 @@ function () {
 
   }, {
     key: "platformAccessTokenEndpoint",
-    value: function platformAccessTokenEndpoint(accesstokenEndpoint) {
-      if (!accesstokenEndpoint) return _classPrivateFieldLooseBase(this, _accesstokenEndpoint)[_accesstokenEndpoint];
-      Database.Modify(_classPrivateFieldLooseBase(this, _ENCRYPTIONKEY2)[_ENCRYPTIONKEY2], './provider_data', 'platforms', 'platforms', {
-        platformUrl: _classPrivateFieldLooseBase(this, _platformUrl)[_platformUrl]
-      }, {
-        accesstokenEndpoint: accesstokenEndpoint
-      });
-      _classPrivateFieldLooseBase(this, _accesstokenEndpoint)[_accesstokenEndpoint] = accesstokenEndpoint;
-    }
+    value: function () {
+      var _platformAccessTokenEndpoint = _asyncToGenerator(
+      /*#__PURE__*/
+      regeneratorRuntime.mark(function _callee8(accesstokenEndpoint) {
+        return regeneratorRuntime.wrap(function _callee8$(_context8) {
+          while (1) {
+            switch (_context8.prev = _context8.next) {
+              case 0:
+                if (accesstokenEndpoint) {
+                  _context8.next = 2;
+                  break;
+                }
+
+                return _context8.abrupt("return", _classPrivateFieldLooseBase(this, _accesstokenEndpoint)[_accesstokenEndpoint]);
+
+              case 2:
+                _context8.prev = 2;
+                _context8.next = 5;
+                return Database.Modify(false, 'platform', {
+                  platformUrl: _classPrivateFieldLooseBase(this, _platformUrl)[_platformUrl]
+                }, {
+                  accesstokenEndpoint: accesstokenEndpoint
+                });
+
+              case 5:
+                _context8.next = 11;
+                break;
+
+              case 7:
+                _context8.prev = 7;
+                _context8.t0 = _context8["catch"](2);
+                provPlatformDebug(_context8.t0);
+                return _context8.abrupt("return", false);
+
+              case 11:
+                _classPrivateFieldLooseBase(this, _accesstokenEndpoint)[_accesstokenEndpoint] = accesstokenEndpoint;
+                return _context8.abrupt("return", this);
+
+              case 13:
+              case "end":
+                return _context8.stop();
+            }
+          }
+        }, _callee8, this, [[2, 7]]);
+      }));
+
+      function platformAccessTokenEndpoint(_x7) {
+        return _platformAccessTokenEndpoint.apply(this, arguments);
+      }
+
+      return platformAccessTokenEndpoint;
+    }()
     /**
-       * @description Returns a promise that resolves into the platform's access token or generate a new one.
+       * @description Gets the platform access token or attempts to generate a new one.
        */
 
   }, {
@@ -244,40 +571,80 @@ function () {
     value: function () {
       var _platformAccessToken = _asyncToGenerator(
       /*#__PURE__*/
-      regeneratorRuntime.mark(function _callee() {
-        var token, res;
-        return regeneratorRuntime.wrap(function _callee$(_context) {
+      regeneratorRuntime.mark(function _callee9() {
+        var token, res, _res;
+
+        return regeneratorRuntime.wrap(function _callee9$(_context9) {
           while (1) {
-            switch (_context.prev = _context.next) {
+            switch (_context9.prev = _context9.next) {
               case 0:
-                token = Database.Get(_classPrivateFieldLooseBase(this, _ENCRYPTIONKEY2)[_ENCRYPTIONKEY2], './provider_data', 'access_tokens', 'access_tokens', {
+                _context9.next = 2;
+                return Database.Get(_classPrivateFieldLooseBase(this, _ENCRYPTIONKEY2)[_ENCRYPTIONKEY2], 'accesstoken', {
                   platformUrl: _classPrivateFieldLooseBase(this, _platformUrl)[_platformUrl]
                 });
 
+              case 2:
+                token = _context9.sent;
+
                 if (token) {
-                  _context.next = 10;
+                  _context9.next = 19;
                   break;
                 }
 
                 provPlatformDebug('Access_token for ' + _classPrivateFieldLooseBase(this, _platformUrl)[_platformUrl] + ' not found');
                 provPlatformDebug('Attempting to generate new access_token for ' + _classPrivateFieldLooseBase(this, _platformUrl)[_platformUrl]);
-                _context.next = 6;
+                _context9.prev = 6;
+                _context9.next = 9;
                 return Auth.getAccessToken(this, _classPrivateFieldLooseBase(this, _ENCRYPTIONKEY2)[_ENCRYPTIONKEY2]);
 
-              case 6:
-                res = _context.sent;
-                return _context.abrupt("return", res);
+              case 9:
+                res = _context9.sent;
+                return _context9.abrupt("return", res);
 
-              case 10:
+              case 13:
+                _context9.prev = 13;
+                _context9.t0 = _context9["catch"](6);
+                provPlatformDebug(_context9.t0);
+                return _context9.abrupt("return", false);
+
+              case 17:
+                _context9.next = 36;
+                break;
+
+              case 19:
                 provPlatformDebug('Access_token found');
-                return _context.abrupt("return", token.token);
 
-              case 12:
+                if (!((Date.now() - token[0].createdAt) / 1000 > token[0].expires_in)) {
+                  _context9.next = 35;
+                  break;
+                }
+
+                provPlatformDebug('Token expired');
+                provPlatformDebug('Access_token for ' + _classPrivateFieldLooseBase(this, _platformUrl)[_platformUrl] + ' not found');
+                provPlatformDebug('Attempting to generate new access_token for ' + _classPrivateFieldLooseBase(this, _platformUrl)[_platformUrl]);
+                _context9.prev = 24;
+                _context9.next = 27;
+                return Auth.getAccessToken(this, _classPrivateFieldLooseBase(this, _ENCRYPTIONKEY2)[_ENCRYPTIONKEY2]);
+
+              case 27:
+                _res = _context9.sent;
+                return _context9.abrupt("return", _res);
+
+              case 31:
+                _context9.prev = 31;
+                _context9.t1 = _context9["catch"](24);
+                provPlatformDebug(_context9.t1);
+                return _context9.abrupt("return", false);
+
+              case 35:
+                return _context9.abrupt("return", token[0].token);
+
+              case 36:
               case "end":
-                return _context.stop();
+                return _context9.stop();
             }
           }
-        }, _callee, this);
+        }, _callee9, this, [[6, 13], [24, 31]]);
       }));
 
       function platformAccessToken() {
@@ -292,18 +659,43 @@ function () {
 
   }, {
     key: "remove",
-    value: function remove() {
-      Database.Delete(_classPrivateFieldLooseBase(this, _ENCRYPTIONKEY2)[_ENCRYPTIONKEY2], './provider_data', 'platforms', 'platforms', {
-        platformUrl: _classPrivateFieldLooseBase(this, _platformUrl)[_platformUrl]
-      });
-      Database.Delete(false, './provider_data', 'publickeyset', 'keys', {
-        kid: _classPrivateFieldLooseBase(this, _kid)[_kid]
-      });
-      Database.Delete(false, './provider_data', 'privatekeyset', 'keys', {
-        kid: _classPrivateFieldLooseBase(this, _kid)[_kid]
-      });
-      return true;
-    }
+    value: function () {
+      var _remove = _asyncToGenerator(
+      /*#__PURE__*/
+      regeneratorRuntime.mark(function _callee10() {
+        return regeneratorRuntime.wrap(function _callee10$(_context10) {
+          while (1) {
+            switch (_context10.prev = _context10.next) {
+              case 0:
+                _context10.prev = 0;
+                return _context10.abrupt("return", Promise.all([Database.Delete('platform', {
+                  platformUrl: _classPrivateFieldLooseBase(this, _platformUrl)[_platformUrl]
+                }), Database.Delete('publickey', {
+                  kid: _classPrivateFieldLooseBase(this, _kid)[_kid]
+                }), Database.Delete('privatekey', {
+                  kid: _classPrivateFieldLooseBase(this, _kid)[_kid]
+                })]));
+
+              case 4:
+                _context10.prev = 4;
+                _context10.t0 = _context10["catch"](0);
+                provPlatformDebug(_context10.t0);
+                return _context10.abrupt("return", false);
+
+              case 8:
+              case "end":
+                return _context10.stop();
+            }
+          }
+        }, _callee10, this, [[0, 4]]);
+      }));
+
+      function remove() {
+        return _remove.apply(this, arguments);
+      }
+
+      return remove;
+    }()
   }]);
 
   return Platform;

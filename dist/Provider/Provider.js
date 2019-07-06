@@ -16,7 +16,11 @@ var id = 0;
 
 function _classPrivateFieldLooseKey(name) { return "__private_" + id++ + "_" + name; }
 
-/* Main file for the Provider functionalities */
+/* eslint-disable require-atomic-updates */
+
+/* eslint-disable no-useless-escape */
+
+/* Main class for the Provider functionalities */
 var Server = require('../Utils/Server');
 
 var Request = require('../Utils/Request');
@@ -33,6 +37,13 @@ var jwt = require('jsonwebtoken');
 
 var got = require('got');
 
+var find = require('lodash.find');
+
+var mongoose = require('mongoose');
+
+mongoose.set('useCreateIndex', true);
+var Schema = mongoose.Schema;
+
 var provAuthDebug = require('debug')('provider:auth');
 
 var provMainDebug = require('debug')('provider:main');
@@ -48,15 +59,20 @@ function () {
 
   /**
      * @description Exposes methods for easy manipualtion of the LTI 1.3 standard as a LTI Provider and a "server" object to manipulate the Express instance.
-     * @param {String} encryptionkey - Secret used to sign cookies and other info.
-     * @param {Object} [options] - Lti Provider options.
-     * @param {Boolean} [options.https = false] - Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https. If you really dont want to use https, disable the secure flag in the cookies option, so that it can be passed via http.
+     * @param {String} encryptionkey - Secret used to sign cookies and encrypt other info.
+     * @param {Object} database - The Database configurations to open and manage connection, uses MongoDB Driver.
+     * @param {String} database.url - Database Url (Ex: mongodb://localhost/applicationdb).
+     * @param {Object} [database.connection] - Database connection options (Ex: user, pass)
+     * @param {String} [database.connection.user] - Database user for authentication if needed.
+     * @param {String} [database.conenction.pass] - Database pass for authentication if needed.
+     * @param {Object} [options] - Lti Provider additional options.
+     * @param {Boolean} [options.https = false] - Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https. If you set this option as true you can enable the secure flag in the cookies options of the onConnect method.
      * @param {Object} [options.ssl] - SSL certificate and key if https is enabled.
      * @param {String} [options.ssl.key] - SSL key.
      * @param {String} [options.ssl.cert] - SSL certificate.
      * @param {String} [options.staticPath] - The path for the static files your application might serve (Ex: _dirname+"/public")
      */
-  function Provider(encryptionkey, options) {
+  function Provider(encryptionkey, database, options) {
     var _this = this;
 
     _classCallCheck(this, Provider);
@@ -84,11 +100,14 @@ function () {
     Object.defineProperty(this, _cookieOptions, {
       writable: true,
       value: {
-        maxAge: 1000 * 60 * 60,
-        secure: true,
+        secure: false,
         httpOnly: true,
         signed: true
       }
+    });
+    Object.defineProperty(this, _dbConnection, {
+      writable: true,
+      value: {}
     });
     Object.defineProperty(this, _connectCallback2, {
       writable: true,
@@ -97,7 +116,7 @@ function () {
     Object.defineProperty(this, _sessionTimedOut, {
       writable: true,
       value: function value(req, res) {
-        res.status(401).send('Session timed out. Please reinitiate login.');
+        res.status(401).send('Token invalid or expired. Please reinitiate login.');
       }
     });
     Object.defineProperty(this, _invalidToken, {
@@ -112,10 +131,87 @@ function () {
     });
     if (options && options.https && (!options.ssl || !options.ssl.key || !options.ssl.cert)) throw new Error('No ssl Key  or Certificate found for local https configuration.');
     if (!encryptionkey) throw new Error('Encryptionkey parameter missing in options.');
+    if (!database || !database.url) throw new Error('Missing database configurations.');
     _classPrivateFieldLooseBase(this, _ENCRYPTIONKEY)[_ENCRYPTIONKEY] = encryptionkey;
-    _classPrivateFieldLooseBase(this, _server)[_server] = new Server(options.https, options.ssl, _classPrivateFieldLooseBase(this, _ENCRYPTIONKEY)[_ENCRYPTIONKEY]);
+    _classPrivateFieldLooseBase(this, _server)[_server] = new Server(options.https, options.ssl, _classPrivateFieldLooseBase(this, _ENCRYPTIONKEY)[_ENCRYPTIONKEY]); // Starts database connection
+
+    if (database.connection) {
+      if (!database.connection.useNewUrlParser) database.connection.useNewUrlParser = true;
+      if (!database.connection.autoReconnect) database.connection.autoReconnect = true;
+      if (!database.connection.keepAlive) database.connection.keepAlive = true;
+      if (!database.connection.keepAliveInitialDelay) database.connection.keepAliveInitialDelay = 300000;
+    } else {
+      database.connection = {
+        useNewUrlParser: true,
+        autoReconnect: true,
+        keepAlive: true,
+        keepAliveInitialDelay: 300000
+      };
+    }
+
+    _classPrivateFieldLooseBase(this, _dbConnection)[_dbConnection].url = database.url;
+    _classPrivateFieldLooseBase(this, _dbConnection)[_dbConnection].options = database.connection; // Creating database schemas
+
+    var platformSchema = new Schema({
+      platformName: String,
+      platformUrl: String,
+      clientId: String,
+      authEndpoint: String,
+      accesstokenEndpoint: String,
+      kid: String,
+      authConfig: {
+        method: String,
+        key: String
+      }
+    });
+    var keySchema = new Schema({
+      kid: String,
+      iv: String,
+      data: String
+    });
+    var accessTokenSchema = new Schema({
+      platformUrl: String,
+      iv: String,
+      data: String,
+      createdAt: {
+        type: Date,
+        expires: 3600,
+        "default": Date.now
+      }
+    });
+    var nonceSchema = new Schema({
+      nonce: String,
+      createdAt: {
+        type: Date,
+        expires: 10,
+        "default": Date.now
+      }
+    });
+
+    try {
+      mongoose.model('platform', platformSchema);
+      mongoose.model('privatekey', keySchema);
+      mongoose.model('publickey', keySchema);
+      mongoose.model('accesstoken', accessTokenSchema);
+      mongoose.model('nonce', nonceSchema);
+    } catch (err) {
+      provMainDebug('Model already registered. Continuing');
+    }
+    /**
+     * @description Database connection object.
+     */
+
+
+    this.db = mongoose.connection;
+    /**
+     * @description Express server object.
+     */
+
     this.app = _classPrivateFieldLooseBase(this, _server)[_server].app;
-    if (options.staticPath) _classPrivateFieldLooseBase(this, _server)[_server].setStaticPath(options.staticPath); // Registers main athentication middleware
+    if (options.staticPath) _classPrivateFieldLooseBase(this, _server)[_server].setStaticPath(options.staticPath);
+    this.app.get('/favicon.ico', function (req, res) {
+      return res.status(204);
+    }); // Registers main athentication and routing middleware
 
     var sessionValidator =
     /*#__PURE__*/
@@ -123,7 +219,7 @@ function () {
       var _ref = _asyncToGenerator(
       /*#__PURE__*/
       regeneratorRuntime.mark(function _callee(req, res, next) {
-        var it, valid, _it2, _valid, _it;
+        var iss, it, urlArr, issuer, path, isApiRequest, cookies, decode, requestParts, _urlArr, i, _i, _i2, _Object$keys, _key, valid, platformCookie, _it2, contextCookie, _valid, _it, isPath, _i3, _Object$keys2, key;
 
         return regeneratorRuntime.wrap(function _callee$(_context) {
           while (1) {
@@ -137,70 +233,252 @@ function () {
                 return _context.abrupt("return", next());
 
               case 2:
-                _context.prev = 2;
-                it = req.signedCookies.it;
+                if (!(req.url === _classPrivateFieldLooseBase(_this, _appUrl)[_appUrl])) {
+                  _context.next = 5;
+                  break;
+                }
 
+                iss = 'plat' + encodeURIComponent(Buffer.from(req.get('origin')).toString('base64'));
+                return _context.abrupt("return", res.redirect(307, '/' + iss));
+
+              case 5:
+                _context.prev = 5;
+                it = false;
+                urlArr = req.url.split('/');
+                issuer = urlArr[1];
+                path = '';
+                isApiRequest = false;
+                cookies = req.signedCookies; // Validate issuer_code to see if its a route or normal request
+
+                if (issuer.search('plat') === -1) isApiRequest = true;
+
+                if (!isApiRequest) {
+                  try {
+                    decode = Buffer.from(decodeURIComponent(issuer.split('plat')[1]), 'base64').toString('ascii');
+                    if (decode.search('http') === -1) isApiRequest = true;
+                  } catch (err) {
+                    provMainDebug(err);
+                    isApiRequest = true;
+                  }
+                } // Mount request path and issuer_code
+
+
+                if (!isApiRequest) {
+                  _context.next = 26;
+                  break;
+                }
+
+                _context.prev = 15;
+                requestParts = req.query.context.split('/');
+                _context.next = 22;
+                break;
+
+              case 19:
+                _context.prev = 19;
+                _context.t0 = _context["catch"](15);
+                return _context.abrupt("return", res.status(400).send('Missing context parameter in request.'));
+
+              case 22:
+                issuer = encodeURIComponent(requestParts[1]);
+                _urlArr = [];
+
+                for (i in requestParts) {
+                  _urlArr.push(requestParts[i]);
+                }
+
+                urlArr = _urlArr;
+
+              case 26:
+                for (_i in urlArr) {
+                  if (parseInt(_i) !== 0 && parseInt(_i) !== 1) path = path + '/' + urlArr[_i];
+                } // Mathes path to cookie
+
+
+                _i2 = 0, _Object$keys = Object.keys(cookies);
+
+              case 28:
+                if (!(_i2 < _Object$keys.length)) {
+                  _context.next = 36;
+                  break;
+                }
+
+                _key = _Object$keys[_i2];
+
+                if (!(_key === issuer)) {
+                  _context.next = 33;
+                  break;
+                }
+
+                it = cookies[_key];
+                return _context.abrupt("break", 36);
+
+              case 33:
+                _i2++;
+                _context.next = 28;
+                break;
+
+              case 36:
                 if (it) {
-                  _context.next = 24;
+                  _context.next = 61;
                   break;
                 }
 
                 provMainDebug('No cookie found');
 
                 if (!req.body.id_token) {
-                  _context.next = 20;
+                  _context.next = 57;
                   break;
                 }
 
                 provMainDebug('Received request containing token. Sending for validation');
-                _context.next = 10;
-                return Auth.validateToken(req.body.id_token, _this.getPlatform);
+                _context.next = 42;
+                return Auth.validateToken(req.body.id_token, _this.getPlatform, _classPrivateFieldLooseBase(_this, _ENCRYPTIONKEY)[_ENCRYPTIONKEY]);
 
-              case 10:
+              case 42:
                 valid = _context.sent;
-                provAuthDebug('Successfully validated token!');
-                valid.exp = Date.now() / 1000 + _classPrivateFieldLooseBase(_this, _cookieOptions)[_cookieOptions].maxAge / 1000;
-                _it2 = jwt.sign(valid, _classPrivateFieldLooseBase(_this, _ENCRYPTIONKEY)[_ENCRYPTIONKEY]);
-                res.cookie('it', _it2, _classPrivateFieldLooseBase(_this, _cookieOptions)[_cookieOptions]);
-                res.locals.token = valid;
+                provAuthDebug('Successfully validated token!'); // Mount platform cookie
+
+                platformCookie = {
+                  iss: valid.iss,
+                  issuer_code: issuer,
+                  user: valid.sub,
+                  roles: valid['https://purl.imsglobal.org/spec/lti/claim/roles'],
+                  userInfo: {
+                    given_name: valid.given_name,
+                    family_name: valid.family_name,
+                    name: valid.name,
+                    email: valid.email
+                  },
+                  platformInfo: {
+                    family_code: valid['https://purl.imsglobal.org/spec/lti/claim/tool_platform'].family_code,
+                    version: valid['https://purl.imsglobal.org/spec/lti/claim/tool_platform'].version,
+                    name: valid['https://purl.imsglobal.org/spec/lti/claim/tool_platform'].name,
+                    description: valid['https://purl.imsglobal.org/spec/lti/claim/tool_platform'].description
+                  },
+                  endpoint: valid['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint'],
+                  namesRoles: valid['https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice']
+                };
+                platformCookie.exp = Date.now() / 1000 + 3600;
+                _it2 = jwt.sign(platformCookie, _classPrivateFieldLooseBase(_this, _ENCRYPTIONKEY)[_ENCRYPTIONKEY]);
+                res.cookie(issuer, _it2, _classPrivateFieldLooseBase(_this, _cookieOptions)[_cookieOptions]); // Mount context cookie
+
+                contextCookie = {
+                  context: valid['https://purl.imsglobal.org/spec/lti/claim/context'],
+                  resource: valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'],
+                  custom: valid['https://purl.imsglobal.org/spec/lti/claim/custom']
+                };
+                res.cookie(issuer + '/', contextCookie, _classPrivateFieldLooseBase(_this, _cookieOptions)[_cookieOptions]);
+                platformCookie.platformContext = contextCookie;
+                res.locals.token = platformCookie;
+                res.locals.login = true;
                 provMainDebug('Passing request to next handler');
                 return _context.abrupt("return", next());
 
-              case 20:
+              case 57:
                 provMainDebug('Passing request to session timeout handler');
                 return _context.abrupt("return", res.redirect(_classPrivateFieldLooseBase(_this, _sessionTimeoutUrl)[_sessionTimeoutUrl]));
 
-              case 22:
-                _context.next = 32;
+              case 59:
+                _context.next = 93;
                 break;
 
-              case 24:
+              case 61:
                 _valid = jwt.verify(it, _classPrivateFieldLooseBase(_this, _ENCRYPTIONKEY)[_ENCRYPTIONKEY]);
                 provAuthDebug('Cookie successfully validated');
-                _valid.exp = Date.now() / 1000 + _classPrivateFieldLooseBase(_this, _cookieOptions)[_cookieOptions].maxAge / 1000;
+                _valid.exp = Date.now() / 1000 + 3600;
                 _it = jwt.sign(_valid, _classPrivateFieldLooseBase(_this, _ENCRYPTIONKEY)[_ENCRYPTIONKEY]);
-                res.cookie('it', _it, _classPrivateFieldLooseBase(_this, _cookieOptions)[_cookieOptions]);
+                res.cookie(issuer, _it, _classPrivateFieldLooseBase(_this, _cookieOptions)[_cookieOptions]);
+                isPath = false;
+
+                if (!path) {
+                  _context.next = 86;
+                  break;
+                }
+
+                path = issuer + path;
+                _i3 = 0, _Object$keys2 = Object.keys(cookies);
+
+              case 70:
+                if (!(_i3 < _Object$keys2.length)) {
+                  _context.next = 80;
+                  break;
+                }
+
+                key = _Object$keys2[_i3];
+
+                if (!(key === issuer)) {
+                  _context.next = 74;
+                  break;
+                }
+
+                return _context.abrupt("continue", 77);
+
+              case 74:
+                if (!(path.search(key) !== -1)) {
+                  _context.next = 77;
+                  break;
+                }
+
+                isPath = cookies[key];
+                return _context.abrupt("break", 80);
+
+              case 77:
+                _i3++;
+                _context.next = 70;
+                break;
+
+              case 80:
+                if (!isPath) {
+                  _context.next = 84;
+                  break;
+                }
+
+                _valid.platformContext = isPath;
+
+                if (_valid.platformContext) {
+                  _context.next = 84;
+                  break;
+                }
+
+                throw new Error('No path cookie found');
+
+              case 84:
+                _context.next = 89;
+                break;
+
+              case 86:
+                _valid.platformContext = cookies[issuer + '/'];
+
+                if (_valid.platformContext) {
+                  _context.next = 89;
+                  break;
+                }
+
+                throw new Error('No path cookie found');
+
+              case 89:
                 res.locals.token = _valid;
+                res.locals.login = false;
                 provMainDebug('Passing request to next handler');
                 return _context.abrupt("return", next());
 
-              case 32:
-                _context.next = 39;
+              case 93:
+                _context.next = 100;
                 break;
 
-              case 34:
-                _context.prev = 34;
-                _context.t0 = _context["catch"](2);
-                provAuthDebug(_context.t0);
-                provMainDebug('Error validating token. Passing request to invalid token handler');
+              case 95:
+                _context.prev = 95;
+                _context.t1 = _context["catch"](5);
+                provAuthDebug(_context.t1);
+                provMainDebug('Error retrieving or validating token. Passing request to invalid token handler');
                 return _context.abrupt("return", res.redirect(_classPrivateFieldLooseBase(_this, _invalidTokenUrl)[_invalidTokenUrl]));
 
-              case 39:
+              case 100:
               case "end":
                 return _context.stop();
             }
           }
-        }, _callee, null, [[2, 34]]);
+        }, _callee, null, [[5, 95], [15, 19]]);
       }));
 
       return function sessionValidator(_x, _x2, _x3) {
@@ -209,22 +487,71 @@ function () {
     }();
 
     this.app.use(sessionValidator);
-    this.app.post(_classPrivateFieldLooseBase(this, _loginUrl)[_loginUrl], function (req, res) {
-      provMainDebug('Receiving a login request from: ' + req.body.iss);
+    this.app.post(_classPrivateFieldLooseBase(this, _loginUrl)[_loginUrl],
+    /*#__PURE__*/
+    function () {
+      var _ref2 = _asyncToGenerator(
+      /*#__PURE__*/
+      regeneratorRuntime.mark(function _callee2(req, res) {
+        var platform, cookieName;
+        return regeneratorRuntime.wrap(function _callee2$(_context2) {
+          while (1) {
+            switch (_context2.prev = _context2.next) {
+              case 0:
+                provMainDebug('Receiving a login request from: ' + req.body.iss);
+                _context2.next = 3;
+                return _this.getPlatform(req.body.iss);
 
-      var platform = _this.getPlatform(req.body.iss);
+              case 3:
+                platform = _context2.sent;
 
-      if (platform) {
-        provMainDebug('Redirecting to platform authentication endpoint');
-        res.redirect(url.format({
-          pathname: platform.platformAuthEndpoint(),
-          query: Request.ltiAdvantageLogin(req.body, platform)
-        }));
-      } else {
-        provMainDebug('Unregistered platform attempting connection: ' + req.body.iss);
-        res.status(401).send('Unregistered platform.');
-      }
-    }); // Session timeout and invalid token urls
+                if (!platform) {
+                  _context2.next = 21;
+                  break;
+                }
+
+                cookieName = 'plat' + encodeURIComponent(Buffer.from(req.get('origin')).toString('base64'));
+                provMainDebug('Redirecting to platform authentication endpoint');
+                res.clearCookie(cookieName, _classPrivateFieldLooseBase(_this, _cookieOptions)[_cookieOptions]);
+                _context2.t0 = res;
+                _context2.t1 = url;
+                _context2.next = 12;
+                return platform.platformAuthEndpoint();
+
+              case 12:
+                _context2.t2 = _context2.sent;
+                _context2.next = 15;
+                return Request.ltiAdvantageLogin(req.body, platform);
+
+              case 15:
+                _context2.t3 = _context2.sent;
+                _context2.t4 = {
+                  pathname: _context2.t2,
+                  query: _context2.t3
+                };
+                _context2.t5 = _context2.t1.format.call(_context2.t1, _context2.t4);
+
+                _context2.t0.redirect.call(_context2.t0, _context2.t5);
+
+                _context2.next = 23;
+                break;
+
+              case 21:
+                provMainDebug('Unregistered platform attempting connection: ' + req.body.iss);
+                res.status(401).send('Unregistered platform.');
+
+              case 23:
+              case "end":
+                return _context2.stop();
+            }
+          }
+        }, _callee2);
+      }));
+
+      return function (_x4, _x5) {
+        return _ref2.apply(this, arguments);
+      };
+    }()); // Session timeout and invalid token urls
 
     this.app.all(_classPrivateFieldLooseBase(this, _sessionTimeoutUrl)[_sessionTimeoutUrl], function (req, res, next) {
       _classPrivateFieldLooseBase(_this, _sessionTimedOut)[_sessionTimedOut](req, res, next);
@@ -233,61 +560,57 @@ function () {
       _classPrivateFieldLooseBase(_this, _invalidToken)[_invalidToken](req, res, next);
     }); // Main app
 
-    this.app.post(_classPrivateFieldLooseBase(this, _appUrl)[_appUrl], function (req, res, next) {
+    this.app.post(_classPrivateFieldLooseBase(this, _appUrl)[_appUrl] + ':iss', function (req, res, next) {
       _classPrivateFieldLooseBase(_this, _connectCallback2)[_connectCallback2](res.locals.token, req, res, next);
     });
   }
   /**
-     * @description Starts listening to a given port for LTI requests
-     * @param {number} port - The port the Provider should listen to
+     * @description Starts listening to a given port for LTI requests and opens connection to the database.
+     * @param {number} port - The port the Provider should listen to.
      */
 
 
   _createClass(Provider, [{
     key: "deploy",
-    value: function deploy(port) {
-      /* In case no port is provided uses 3000 */
-      port = port || 3000; // Clean stored access_tokens
+    value: function () {
+      var _deploy = _asyncToGenerator(
+      /*#__PURE__*/
+      regeneratorRuntime.mark(function _callee3(port) {
+        return regeneratorRuntime.wrap(function _callee3$(_context3) {
+          while (1) {
+            switch (_context3.prev = _context3.next) {
+              case 0:
+                _context3.next = 2;
+                return mongoose.connect(_classPrivateFieldLooseBase(this, _dbConnection)[_dbConnection].url, _classPrivateFieldLooseBase(this, _dbConnection)[_dbConnection].options);
 
-      provMainDebug('Cleaning previously stored access tokens');
-      var _iteratorNormalCompletion = true;
-      var _didIteratorError = false;
-      var _iteratorError = undefined;
+              case 2:
+                /* In case no port is provided uses 3000 */
+                port = port || 3000; // Starts server on given port
 
-      try {
-        for (var _iterator = this.getAllPlatforms()[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-          var plat = _step.value;
-          Database.Delete(_classPrivateFieldLooseBase(this, _ENCRYPTIONKEY)[_ENCRYPTIONKEY], './provider_data', 'access_tokens', 'access_tokens', {
-            platformUrl: plat.platformUrl()
-          });
-        } // Starts server on given port
+                _classPrivateFieldLooseBase(this, _server)[_server].listen(port, 'Lti Provider tool is listening on port ' + port + '!\n\nLTI provider config: \n>Initiate login URL: ' + _classPrivateFieldLooseBase(this, _loginUrl)[_loginUrl] + '\n>App Url: ' + _classPrivateFieldLooseBase(this, _appUrl)[_appUrl] + '\n>Session Timeout Url: ' + _classPrivateFieldLooseBase(this, _sessionTimeoutUrl)[_sessionTimeoutUrl] + '\n>Invalid Token Url: ' + _classPrivateFieldLooseBase(this, _invalidTokenUrl)[_invalidTokenUrl]);
 
-      } catch (err) {
-        _didIteratorError = true;
-        _iteratorError = err;
-      } finally {
-        try {
-          if (!_iteratorNormalCompletion && _iterator["return"] != null) {
-            _iterator["return"]();
+                return _context3.abrupt("return", true);
+
+              case 5:
+              case "end":
+                return _context3.stop();
+            }
           }
-        } finally {
-          if (_didIteratorError) {
-            throw _iteratorError;
-          }
-        }
+        }, _callee3, this);
+      }));
+
+      function deploy(_x6) {
+        return _deploy.apply(this, arguments);
       }
 
-      _classPrivateFieldLooseBase(this, _server)[_server].listen(port, 'Lti Provider tool is listening on port ' + port + '!\n\nLTI provider config: \n>Initiate login URL: ' + _classPrivateFieldLooseBase(this, _loginUrl)[_loginUrl] + '\n>App Url: ' + _classPrivateFieldLooseBase(this, _appUrl)[_appUrl] + '\n>Session Timeout Url: ' + _classPrivateFieldLooseBase(this, _sessionTimeoutUrl)[_sessionTimeoutUrl] + '\n>Invalid Token Url: ' + _classPrivateFieldLooseBase(this, _invalidTokenUrl)[_invalidTokenUrl]);
-
-      return this;
-    }
+      return deploy;
+    }()
     /**
        * @description Sets the callback function called whenever theres a sucessfull connection, exposing a Conection object containing the id_token decoded parameters.
        * @param {Function} _connectCallback - Function that is going to be called everytime a platform sucessfully connects to the provider.
        * @param {Object} [options] - Options configuring the usage of cookies to pass the Id Token data to the client.
-       * @param {Number} [options.maxAge = 1000 * 60 * 60] - MaxAge of the cookie in miliseconds.
-       * @param {Boolean} [options.secure = true] - Secure property of the cookie.
-       * @param {Function} [options.sessionTmeout] - Route function executed everytime the session expires. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}).
+       * @param {Boolean} [options.secure = false] - Secure property of the cookie.
+       * @param {Function} [options.sessionTimeout] - Route function executed everytime the session expires. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}).
        * @param {Function} [options.invalidToken] - Route function executed everytime the system receives an invalid token or cookie. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}).
        * @example .onConnect((conection, response)=>{response.send(connection)}, {secure: true})
        */
@@ -296,8 +619,7 @@ function () {
     key: "onConnect",
     value: function onConnect(_connectCallback, options) {
       if (options) {
-        _classPrivateFieldLooseBase(this, _cookieOptions)[_cookieOptions].maxAge = options.maxAge || 1000 * 60 * 60;
-        if (options.secure !== undefined) _classPrivateFieldLooseBase(this, _cookieOptions)[_cookieOptions].secure = options.secure;else _classPrivateFieldLooseBase(this, _cookieOptions)[_cookieOptions].secure = true;
+        if (options.secure === true) _classPrivateFieldLooseBase(this, _cookieOptions)[_cookieOptions].secure = options.secure;
         if (options.sessionTimeout) _classPrivateFieldLooseBase(this, _sessionTimedOut)[_sessionTimedOut] = options.sessionTimeout;
         if (options.invalidToken) _classPrivateFieldLooseBase(this, _invalidToken)[_invalidToken] = options.invalidToken;
       }
@@ -354,7 +676,7 @@ function () {
     }
     /**
        * @description Registers a platform.
-       * @param {string} Url - Platform url.
+       * @param {string} url - Platform url.
        * @param {string} name - Platform nickname.
        * @param {string} clientId - Client Id generated by the platform.
        * @param {string} authenticationEndpoint - Authentication endpoint that the tool will use to authenticate within the platform.
@@ -365,32 +687,177 @@ function () {
 
   }, {
     key: "registerPlatform",
-    value: function registerPlatform(url, name, clientId, authenticationEndpoint, accesstokenEndpoint, authConfig) {
-      if (!name || !url || !clientId || !authenticationEndpoint || !accesstokenEndpoint || !authConfig) throw new Error('Error registering platform. Missing argument.');
-      var platform = this.getPlatform(url);
+    value: function () {
+      var _registerPlatform = _asyncToGenerator(
+      /*#__PURE__*/
+      regeneratorRuntime.mark(function _callee4(url, name, clientId, authenticationEndpoint, accesstokenEndpoint, authConfig) {
+        var platform, kid, plat, isregisteredPlat;
+        return regeneratorRuntime.wrap(function _callee4$(_context4) {
+          while (1) {
+            switch (_context4.prev = _context4.next) {
+              case 0:
+                if (!(!name || !url || !clientId || !authenticationEndpoint || !accesstokenEndpoint || !authConfig)) {
+                  _context4.next = 2;
+                  break;
+                }
 
-      if (!platform) {
-        var kid = Auth.generateProviderKeyPair();
-        return new Platform(name, url, clientId, authenticationEndpoint, accesstokenEndpoint, kid, _classPrivateFieldLooseBase(this, _ENCRYPTIONKEY)[_ENCRYPTIONKEY], authConfig);
-      } else {
-        return false;
+                throw new Error('Error registering platform. Missing argument.');
+
+              case 2:
+                _context4.prev = 2;
+                _context4.next = 5;
+                return this.getPlatform(url);
+
+              case 5:
+                platform = _context4.sent;
+
+                if (platform) {
+                  _context4.next = 21;
+                  break;
+                }
+
+                _context4.next = 9;
+                return Auth.generateProviderKeyPair(_classPrivateFieldLooseBase(this, _ENCRYPTIONKEY)[_ENCRYPTIONKEY]);
+
+              case 9:
+                kid = _context4.sent;
+                plat = new Platform(name, url, clientId, authenticationEndpoint, accesstokenEndpoint, kid, _classPrivateFieldLooseBase(this, _ENCRYPTIONKEY)[_ENCRYPTIONKEY], authConfig); // Save platform to db
+
+                _context4.next = 13;
+                return Database.Get(false, 'platform', {
+                  platformUrl: url
+                });
+
+              case 13:
+                isregisteredPlat = _context4.sent;
+
+                if (isregisteredPlat) {
+                  _context4.next = 18;
+                  break;
+                }
+
+                provMainDebug('Registering new platform: ' + url);
+                _context4.next = 18;
+                return Database.Insert(false, 'platform', {
+                  platformName: name,
+                  platformUrl: url,
+                  clientId: clientId,
+                  authEndpoint: authenticationEndpoint,
+                  accesstokenEndpoint: accesstokenEndpoint,
+                  kid: kid,
+                  authConfig: authConfig
+                });
+
+              case 18:
+                return _context4.abrupt("return", plat);
+
+              case 21:
+                return _context4.abrupt("return", platform);
+
+              case 22:
+                _context4.next = 28;
+                break;
+
+              case 24:
+                _context4.prev = 24;
+                _context4.t0 = _context4["catch"](2);
+                provAuthDebug(_context4.t0);
+                return _context4.abrupt("return", false);
+
+              case 28:
+              case "end":
+                return _context4.stop();
+            }
+          }
+        }, _callee4, this, [[2, 24]]);
+      }));
+
+      function registerPlatform(_x7, _x8, _x9, _x10, _x11, _x12) {
+        return _registerPlatform.apply(this, arguments);
       }
-    }
+
+      return registerPlatform;
+    }()
     /**
        * @description Gets a platform.
-       * @param {string} url - Platform url.
+       * @param {String} url - Platform url.
+       * @param {String} [ENCRYPTIONKEY] - Encryption key. THIS PARAMETER IS ONLY IN A FEW SPECIFIC CALLS, DO NOT USE IN YOUR APPLICATION.
        */
 
   }, {
     key: "getPlatform",
-    value: function getPlatform(url) {
-      if (!url) throw new Error('No url provided');
-      var obj = Database.Get(_classPrivateFieldLooseBase(this, _ENCRYPTIONKEY)[_ENCRYPTIONKEY], './provider_data', 'platforms', 'platforms', {
-        platformUrl: url
-      });
-      if (!obj) return false;
-      return new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, _classPrivateFieldLooseBase(this, _ENCRYPTIONKEY)[_ENCRYPTIONKEY], obj.authConfig);
-    }
+    value: function () {
+      var _getPlatform = _asyncToGenerator(
+      /*#__PURE__*/
+      regeneratorRuntime.mark(function _callee5(url, ENCRYPTIONKEY) {
+        var plat, obj, result;
+        return regeneratorRuntime.wrap(function _callee5$(_context5) {
+          while (1) {
+            switch (_context5.prev = _context5.next) {
+              case 0:
+                if (url) {
+                  _context5.next = 2;
+                  break;
+                }
+
+                throw new Error('No url provided');
+
+              case 2:
+                _context5.prev = 2;
+                _context5.next = 5;
+                return Database.Get(false, 'platform', {
+                  platformUrl: url
+                });
+
+              case 5:
+                plat = _context5.sent;
+
+                if (plat) {
+                  _context5.next = 8;
+                  break;
+                }
+
+                return _context5.abrupt("return", false);
+
+              case 8:
+                obj = plat[0];
+
+                if (obj) {
+                  _context5.next = 11;
+                  break;
+                }
+
+                return _context5.abrupt("return", false);
+
+              case 11:
+                if (ENCRYPTIONKEY) {
+                  result = new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, ENCRYPTIONKEY, obj.authConfig);
+                } else {
+                  result = new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, _classPrivateFieldLooseBase(this, _ENCRYPTIONKEY)[_ENCRYPTIONKEY], obj.authConfig);
+                }
+
+                return _context5.abrupt("return", result);
+
+              case 15:
+                _context5.prev = 15;
+                _context5.t0 = _context5["catch"](2);
+                provAuthDebug(_context5.t0);
+                return _context5.abrupt("return", false);
+
+              case 19:
+              case "end":
+                return _context5.stop();
+            }
+          }
+        }, _callee5, this, [[2, 15]]);
+      }));
+
+      function getPlatform(_x13, _x14) {
+        return _getPlatform.apply(this, arguments);
+      }
+
+      return getPlatform;
+    }()
     /**
        * @description Deletes a platform.
        * @param {string} url - Platform url.
@@ -398,54 +865,155 @@ function () {
 
   }, {
     key: "deletePlatform",
-    value: function deletePlatform(url) {
-      if (!url) throw new Error('No url provided');
-      var platform = this.getPlatform(url);
-      if (platform) return platform.remove();
-    }
+    value: function () {
+      var _deletePlatform = _asyncToGenerator(
+      /*#__PURE__*/
+      regeneratorRuntime.mark(function _callee6(url) {
+        var platform;
+        return regeneratorRuntime.wrap(function _callee6$(_context6) {
+          while (1) {
+            switch (_context6.prev = _context6.next) {
+              case 0:
+                if (url) {
+                  _context6.next = 2;
+                  break;
+                }
+
+                throw new Error('No url provided');
+
+              case 2:
+                _context6.next = 4;
+                return this.getPlatform(url);
+
+              case 4:
+                platform = _context6.sent;
+
+                if (!platform) {
+                  _context6.next = 7;
+                  break;
+                }
+
+                return _context6.abrupt("return", platform.remove());
+
+              case 7:
+                return _context6.abrupt("return", false);
+
+              case 8:
+              case "end":
+                return _context6.stop();
+            }
+          }
+        }, _callee6, this);
+      }));
+
+      function deletePlatform(_x15) {
+        return _deletePlatform.apply(this, arguments);
+      }
+
+      return deletePlatform;
+    }()
     /**
        * @description Gets all platforms.
        */
 
   }, {
     key: "getAllPlatforms",
-    value: function getAllPlatforms() {
-      var returnArray = [];
-      var platforms = Database.Get(_classPrivateFieldLooseBase(this, _ENCRYPTIONKEY)[_ENCRYPTIONKEY], './provider_data', 'platforms', 'platforms');
+    value: function () {
+      var _getAllPlatforms = _asyncToGenerator(
+      /*#__PURE__*/
+      regeneratorRuntime.mark(function _callee7() {
+        var returnArray, platforms, _iteratorNormalCompletion, _didIteratorError, _iteratorError, _iterator, _step, obj;
 
-      if (platforms) {
-        var _iteratorNormalCompletion2 = true;
-        var _didIteratorError2 = false;
-        var _iteratorError2 = undefined;
+        return regeneratorRuntime.wrap(function _callee7$(_context7) {
+          while (1) {
+            switch (_context7.prev = _context7.next) {
+              case 0:
+                returnArray = [];
+                _context7.prev = 1;
+                _context7.next = 4;
+                return Database.Get(false, 'platform');
 
-        try {
-          for (var _iterator2 = platforms[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-            var obj = _step2.value;
-            returnArray.push(new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, _classPrivateFieldLooseBase(this, _ENCRYPTIONKEY)[_ENCRYPTIONKEY], obj.authConfig));
-          }
-        } catch (err) {
-          _didIteratorError2 = true;
-          _iteratorError2 = err;
-        } finally {
-          try {
-            if (!_iteratorNormalCompletion2 && _iterator2["return"] != null) {
-              _iterator2["return"]();
+              case 4:
+                platforms = _context7.sent;
+
+                if (!platforms) {
+                  _context7.next = 26;
+                  break;
+                }
+
+                _iteratorNormalCompletion = true;
+                _didIteratorError = false;
+                _iteratorError = undefined;
+                _context7.prev = 9;
+
+                for (_iterator = platforms[Symbol.iterator](); !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                  obj = _step.value;
+                  returnArray.push(new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, _classPrivateFieldLooseBase(this, _ENCRYPTIONKEY)[_ENCRYPTIONKEY], obj.authConfig));
+                }
+
+                _context7.next = 17;
+                break;
+
+              case 13:
+                _context7.prev = 13;
+                _context7.t0 = _context7["catch"](9);
+                _didIteratorError = true;
+                _iteratorError = _context7.t0;
+
+              case 17:
+                _context7.prev = 17;
+                _context7.prev = 18;
+
+                if (!_iteratorNormalCompletion && _iterator["return"] != null) {
+                  _iterator["return"]();
+                }
+
+              case 20:
+                _context7.prev = 20;
+
+                if (!_didIteratorError) {
+                  _context7.next = 23;
+                  break;
+                }
+
+                throw _iteratorError;
+
+              case 23:
+                return _context7.finish(20);
+
+              case 24:
+                return _context7.finish(17);
+
+              case 25:
+                return _context7.abrupt("return", returnArray);
+
+              case 26:
+                return _context7.abrupt("return", []);
+
+              case 29:
+                _context7.prev = 29;
+                _context7.t1 = _context7["catch"](1);
+                provAuthDebug(_context7.t1);
+                return _context7.abrupt("return", false);
+
+              case 33:
+              case "end":
+                return _context7.stop();
             }
-          } finally {
-            if (_didIteratorError2) {
-              throw _iteratorError2;
-            }
           }
-        }
+        }, _callee7, this, [[1, 29], [9, 13, 17, 25], [18,, 20, 24]]);
+      }));
 
-        return returnArray;
+      function getAllPlatforms() {
+        return _getAllPlatforms.apply(this, arguments);
       }
 
-      return [];
-    }
+      return getAllPlatforms;
+    }()
     /**
        * @description Sends message to the platform
        * @param {Object} idtoken - Idtoken for the user
+       * @param {Object} message - Message following the Lti Standard application/vnd.ims.lis.v1.score+json
        */
 
   }, {
@@ -453,86 +1021,116 @@ function () {
     value: function () {
       var _messagePlatform = _asyncToGenerator(
       /*#__PURE__*/
-      regeneratorRuntime.mark(function _callee2(idtoken) {
-        var platform, tokenRes, grade;
-        return regeneratorRuntime.wrap(function _callee2$(_context2) {
+      regeneratorRuntime.mark(function _callee8(idtoken, message) {
+        var platform, tokenRes, lineitemsEndpoint, lineitemRes, resourceId, lineitem, lineitemUrl, scoreUrl, query, _url;
+
+        return regeneratorRuntime.wrap(function _callee8$(_context8) {
           while (1) {
-            switch (_context2.prev = _context2.next) {
+            switch (_context8.prev = _context8.next) {
               case 0:
                 provMainDebug('Target platform: ' + idtoken.iss);
-                platform = this.getPlatform(idtoken.iss);
+                _context8.next = 3;
+                return this.getPlatform(idtoken.iss);
+
+              case 3:
+                platform = _context8.sent;
 
                 if (platform) {
-                  _context2.next = 5;
+                  _context8.next = 7;
                   break;
                 }
 
                 provMainDebug('Platform not found, returning false');
-                return _context2.abrupt("return", false);
+                return _context8.abrupt("return", false);
 
-              case 5:
+              case 7:
                 provMainDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']');
-                _context2.prev = 6;
-                _context2.next = 9;
+                _context8.prev = 8;
+                _context8.next = 11;
                 return platform.platformAccessToken();
 
-              case 9:
-                tokenRes = _context2.sent;
-                provMainDebug('Access_token retrieved for [' + idtoken.iss + ']'); // let lineitems = idtoken['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint'].lineitems
+              case 11:
+                tokenRes = _context8.sent;
+                provMainDebug('Access_token retrieved for [' + idtoken.iss + ']');
+                lineitemsEndpoint = idtoken.endpoint.lineitems;
+                _context8.next = 16;
+                return got.get(lineitemsEndpoint, {
+                  headers: {
+                    Authorization: tokenRes.token_type + ' ' + tokenRes.access_token
+                  }
+                });
 
-                /* got.get(lineitems,{headers:{Authorization: res.token_type + ' ' + res.access_token}}).then(res => {
-                          provMainDebug(idtoken)
-                          //provMainDebug("Line Item: ")
-                          provMainDebug(JSON.parse(res.body))
-                      }) */
+              case 16:
+                lineitemRes = _context8.sent;
+                resourceId = idtoken.platformContext.resource;
+                lineitem = find(JSON.parse(lineitemRes.body), ['resourceLinkId', resourceId.id]);
+                lineitemUrl = lineitem.id;
+                scoreUrl = lineitemUrl + '/scores';
 
-                grade = {
-                  timestamp: new Date(Date.now()).toISOString(),
-                  scoreGiven: 70,
-                  scoreMaximum: 100,
-                  comment: 'This is exceptional work.',
-                  activityProgress: 'Completed',
-                  gradingProgress: 'FullyGraded',
-                  userId: idtoken.sub
-                };
-                _context2.next = 14;
-                return got.post('http://localhost/moodle/mod/lti/services.php/2/lineitems/2/lineitem/scores?type_id=1', {
+                if (lineitemUrl.split('\?') !== -1) {
+                  query = lineitemUrl.split('\?')[1];
+                  _url = lineitemUrl.split('\?')[0];
+                  scoreUrl = _url + '/scores?' + query;
+                }
+
+                provMainDebug('Sending grade message to: ' + scoreUrl);
+                message.timestamp = new Date(Date.now()).toISOString();
+                message.scoreMaximum = lineitem.scoreMaximum;
+                _context8.next = 27;
+                return got.post(scoreUrl, {
                   headers: {
                     Authorization: tokenRes.token_type + ' ' + tokenRes.access_token,
                     'Content-Type': 'application/vnd.ims.lis.v1.score+json'
                   },
-                  body: JSON.stringify(grade)
+                  body: JSON.stringify(message)
                 });
 
-              case 14:
+              case 27:
                 provMainDebug('Message successfully sent');
-                _context2.next = 20;
-                break;
+                return _context8.abrupt("return", true);
 
-              case 17:
-                _context2.prev = 17;
-                _context2.t0 = _context2["catch"](6);
-                provMainDebug(_context2.t0);
+              case 31:
+                _context8.prev = 31;
+                _context8.t0 = _context8["catch"](8);
+                provMainDebug(_context8.t0);
+                return _context8.abrupt("return", false);
 
-              case 20:
+              case 35:
               case "end":
-                return _context2.stop();
+                return _context8.stop();
             }
           }
-        }, _callee2, this, [[6, 17]]);
+        }, _callee8, this, [[8, 31]]);
       }));
 
-      function messagePlatform(_x4) {
+      function messagePlatform(_x16, _x17) {
         return _messagePlatform.apply(this, arguments);
       }
 
       return messagePlatform;
     }()
+    /**
+     * @description Redirect to a new location and sets it's cookie if the location represents a separate resource
+     * @param {Object} res - Express response object
+     * @param {String} path - Path used as name for the cookie
+     * @param {Boolea} [isNewResource = false] - If true creates new resource and its cookie
+     * @example lti.generatePathCookie(response, '/path', true)
+     */
+
+  }, {
+    key: "redirect",
+    value: function redirect(res, path, isNewResource) {
+      if (res.locals.login && isNewResource) {
+        provMainDebug('Setting up path cookie for this resource with path: ' + path);
+        res.cookie(res.locals.token.issuer_code + path, res.locals.token.platformContext, _classPrivateFieldLooseBase(this, _cookieOptions)[_cookieOptions]);
+      }
+
+      res.redirect(res.locals.token.issuer_code + path);
+    }
   }]);
 
   return Provider;
-}(); // Create Claim helpers
-
+}();
 
 var _loginUrl = _classPrivateFieldLooseKey("loginUrl");
 
@@ -546,6 +1144,8 @@ var _ENCRYPTIONKEY = _classPrivateFieldLooseKey("ENCRYPTIONKEY");
 
 var _cookieOptions = _classPrivateFieldLooseKey("cookieOptions");
 
+var _dbConnection = _classPrivateFieldLooseKey("dbConnection");
+
 var _connectCallback2 = _classPrivateFieldLooseKey("connectCallback");
 
 var _sessionTimedOut = _classPrivateFieldLooseKey("sessionTimedOut");
@@ -554,5 +1154,4 @@ var _invalidToken = _classPrivateFieldLooseKey("invalidToken");
 
 var _server = _classPrivateFieldLooseKey("server");
 
-Provider.ClaimCustomParameters = 'https://purl.imsglobal.org/spec/lti/claim/custom';
 module.exports = Provider;
