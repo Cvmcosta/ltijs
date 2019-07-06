@@ -1,16 +1,16 @@
 "use strict";
 
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefault");
 
-function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { Promise.resolve(value).then(_next, _throw); } }
+var _defineProperty2 = _interopRequireDefault(require("@babel/runtime/helpers/defineProperty"));
 
-function _asyncToGenerator(fn) { return function () { var self = this, args = arguments; return new Promise(function (resolve, reject) { var gen = fn.apply(self, args); function _next(value) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value); } function _throw(err) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err); } _next(undefined); }); }; }
+var _regenerator = _interopRequireDefault(require("@babel/runtime/regenerator"));
 
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+var _asyncToGenerator2 = _interopRequireDefault(require("@babel/runtime/helpers/asyncToGenerator"));
 
-function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+var _classCallCheck2 = _interopRequireDefault(require("@babel/runtime/helpers/classCallCheck"));
 
-function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+var _createClass2 = _interopRequireDefault(require("@babel/runtime/helpers/createClass"));
 
 var mongoose = require('mongoose');
 
@@ -24,10 +24,10 @@ var Database =
 /*#__PURE__*/
 function () {
   function Database() {
-    _classCallCheck(this, Database);
+    (0, _classCallCheck2["default"])(this, Database);
   }
 
-  _createClass(Database, null, [{
+  (0, _createClass2["default"])(Database, null, [{
     key: "Get",
 
     /**
@@ -37,11 +37,11 @@ function () {
        * @param {Object} [query] - Query for the item you are looking for in the format {type: "type1"}.
        */
     value: function () {
-      var _Get = _asyncToGenerator(
+      var _Get = (0, _asyncToGenerator2["default"])(
       /*#__PURE__*/
-      regeneratorRuntime.mark(function _callee(ENCRYPTIONKEY, collection, query) {
+      _regenerator["default"].mark(function _callee(ENCRYPTIONKEY, collection, query) {
         var Model, result, i, temp, createdAt;
-        return regeneratorRuntime.wrap(function _callee$(_context) {
+        return _regenerator["default"].wrap(function _callee$(_context) {
           while (1) {
             switch (_context.prev = _context.next) {
               case 0:
@@ -65,7 +65,7 @@ function () {
                   break;
                 }
 
-                _context.t0 = regeneratorRuntime.keys(result);
+                _context.t0 = _regenerator["default"].keys(result);
 
               case 8:
                 if ((_context.t1 = _context.t0()).done) {
@@ -127,12 +127,12 @@ function () {
   }, {
     key: "Insert",
     value: function () {
-      var _Insert = _asyncToGenerator(
+      var _Insert = (0, _asyncToGenerator2["default"])(
       /*#__PURE__*/
-      regeneratorRuntime.mark(function _callee2(ENCRYPTIONKEY, collection, item, index) {
+      _regenerator["default"].mark(function _callee2(ENCRYPTIONKEY, collection, item, index) {
         var Model, newDocData, _newDocData, encrypted, newDoc;
 
-        return regeneratorRuntime.wrap(function _callee2$(_context2) {
+        return _regenerator["default"].wrap(function _callee2$(_context2) {
           while (1) {
             switch (_context2.prev = _context2.next) {
               case 0:
@@ -157,7 +157,7 @@ function () {
 
               case 7:
                 encrypted = _context2.sent;
-                newDocData = (_newDocData = {}, _defineProperty(_newDocData, Object.keys(index)[0], Object.values(index)[0]), _defineProperty(_newDocData, "iv", encrypted.iv), _defineProperty(_newDocData, "data", encrypted.data), _newDocData);
+                newDocData = (_newDocData = {}, (0, _defineProperty2["default"])(_newDocData, Object.keys(index)[0], Object.values(index)[0]), (0, _defineProperty2["default"])(_newDocData, "iv", encrypted.iv), (0, _defineProperty2["default"])(_newDocData, "data", encrypted.data), _newDocData);
 
               case 9:
                 newDoc = new Model(newDocData);
@@ -192,11 +192,11 @@ function () {
   }, {
     key: "Modify",
     value: function () {
-      var _Modify = _asyncToGenerator(
+      var _Modify = (0, _asyncToGenerator2["default"])(
       /*#__PURE__*/
-      regeneratorRuntime.mark(function _callee3(ENCRYPTIONKEY, collection, query, modification) {
+      _regenerator["default"].mark(function _callee3(ENCRYPTIONKEY, collection, query, modification) {
         var Model, newMod, result;
-        return regeneratorRuntime.wrap(function _callee3$(_context3) {
+        return _regenerator["default"].wrap(function _callee3$(_context3) {
           while (1) {
             switch (_context3.prev = _context3.next) {
               case 0:
@@ -271,11 +271,11 @@ function () {
   }, {
     key: "Delete",
     value: function () {
-      var _Delete = _asyncToGenerator(
+      var _Delete = (0, _asyncToGenerator2["default"])(
       /*#__PURE__*/
-      regeneratorRuntime.mark(function _callee4(collection, query) {
+      _regenerator["default"].mark(function _callee4(collection, query) {
         var Model;
-        return regeneratorRuntime.wrap(function _callee4$(_context4) {
+        return _regenerator["default"].wrap(function _callee4$(_context4) {
           while (1) {
             switch (_context4.prev = _context4.next) {
               case 0:
@@ -317,11 +317,11 @@ function () {
   }, {
     key: "Encrypt",
     value: function () {
-      var _Encrypt = _asyncToGenerator(
+      var _Encrypt = (0, _asyncToGenerator2["default"])(
       /*#__PURE__*/
-      regeneratorRuntime.mark(function _callee5(data, secret) {
+      _regenerator["default"].mark(function _callee5(data, secret) {
         var hash, key, iv, cipher, encrypted;
-        return regeneratorRuntime.wrap(function _callee5$(_context5) {
+        return _regenerator["default"].wrap(function _callee5$(_context5) {
           while (1) {
             switch (_context5.prev = _context5.next) {
               case 0:
@@ -361,11 +361,11 @@ function () {
   }, {
     key: "Decrypt",
     value: function () {
-      var _Decrypt = _asyncToGenerator(
+      var _Decrypt = (0, _asyncToGenerator2["default"])(
       /*#__PURE__*/
-      regeneratorRuntime.mark(function _callee6(data, _iv, secret) {
+      _regenerator["default"].mark(function _callee6(data, _iv, secret) {
         var hash, key, iv, encryptedText, decipher, decrypted;
-        return regeneratorRuntime.wrap(function _callee6$(_context6) {
+        return _regenerator["default"].wrap(function _callee6$(_context6) {
           while (1) {
             switch (_context6.prev = _context6.next) {
               case 0:
@@ -394,7 +394,6 @@ function () {
       return Decrypt;
     }()
   }]);
-
   return Database;
 }();
 

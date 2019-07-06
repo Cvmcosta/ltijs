@@ -286,13 +286,23 @@ Deletes a registered platform.
 The [Lti Provider](provider.md) method `registerPlatform()` returns a Promise that resolves the created `Platform` or `false` if some error occurs.
 
 ```javascript
-let plat = await lti.registerPlatform(
+await lti.registerPlatform(
   'http://platform/url', 
   'Platform Name', 'ClientIdThePlatformCreatedForYourApp', 
   'http://platform/AuthorizationUrl', 
   'http://platform/AccessTokenUrl', 
   { method: 'JWK_SET', key: 'http://platform/keyset' }
-  )
+)
+
+/*
+.
+.
+.
+*/
+
+let plat = await lti.getPlatform('http://platform/url') 
+
+let key = await plat.platformPublicKey()
 ```
 
 

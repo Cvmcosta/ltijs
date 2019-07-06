@@ -1,14 +1,14 @@
 "use strict";
 
-function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { Promise.resolve(value).then(_next, _throw); } }
+var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefault");
 
-function _asyncToGenerator(fn) { return function () { var self = this, args = arguments; return new Promise(function (resolve, reject) { var gen = fn.apply(self, args); function _next(value) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value); } function _throw(err) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err); } _next(undefined); }); }; }
+var _regenerator = _interopRequireDefault(require("@babel/runtime/regenerator"));
 
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+var _asyncToGenerator2 = _interopRequireDefault(require("@babel/runtime/helpers/asyncToGenerator"));
 
-function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+var _classCallCheck2 = _interopRequireDefault(require("@babel/runtime/helpers/classCallCheck"));
 
-function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+var _createClass2 = _interopRequireDefault(require("@babel/runtime/helpers/createClass"));
 
 var Database = require('./Database');
 
@@ -33,10 +33,10 @@ var Auth =
 /*#__PURE__*/
 function () {
   function Auth() {
-    _classCallCheck(this, Auth);
+    (0, _classCallCheck2["default"])(this, Auth);
   }
 
-  _createClass(Auth, null, [{
+  (0, _createClass2["default"])(Auth, null, [{
     key: "generateProviderKeyPair",
 
     /**
@@ -45,11 +45,11 @@ function () {
        * @returns {String} kid for the keypair.
        */
     value: function () {
-      var _generateProviderKeyPair = _asyncToGenerator(
+      var _generateProviderKeyPair = (0, _asyncToGenerator2["default"])(
       /*#__PURE__*/
-      regeneratorRuntime.mark(function _callee(ENCRYPTIONKEY) {
+      _regenerator["default"].mark(function _callee(ENCRYPTIONKEY) {
         var kid, keys, publicKey, privateKey, pubkeyobj, privkeyobj;
-        return regeneratorRuntime.wrap(function _callee$(_context) {
+        return _regenerator["default"].wrap(function _callee$(_context) {
           while (1) {
             switch (_context.prev = _context.next) {
               case 0:
@@ -129,12 +129,12 @@ function () {
   }, {
     key: "validateToken",
     value: function () {
-      var _validateToken = _asyncToGenerator(
+      var _validateToken = (0, _asyncToGenerator2["default"])(
       /*#__PURE__*/
-      regeneratorRuntime.mark(function _callee2(token, getPlatform, ENCRYPTIONKEY) {
+      _regenerator["default"].mark(function _callee2(token, getPlatform, ENCRYPTIONKEY) {
         var decodedToken, kid, alg, platform, authConfig, keysEndpoint, res, keyset, key, verified, _key, _verified, _key2, _verified2;
 
-        return regeneratorRuntime.wrap(function _callee2$(_context2) {
+        return _regenerator["default"].wrap(function _callee2$(_context2) {
           while (1) {
             switch (_context2.prev = _context2.next) {
               case 0:
@@ -278,11 +278,11 @@ function () {
   }, {
     key: "verifyToken",
     value: function () {
-      var _verifyToken = _asyncToGenerator(
+      var _verifyToken = (0, _asyncToGenerator2["default"])(
       /*#__PURE__*/
-      regeneratorRuntime.mark(function _callee3(token, key, alg, platform) {
+      _regenerator["default"].mark(function _callee3(token, key, alg, platform) {
         var decoded;
-        return regeneratorRuntime.wrap(function _callee3$(_context3) {
+        return _regenerator["default"].wrap(function _callee3$(_context3) {
           while (1) {
             switch (_context3.prev = _context3.next) {
               case 0:
@@ -320,12 +320,12 @@ function () {
   }, {
     key: "oidcValidationSteps",
     value: function () {
-      var _oidcValidationSteps = _asyncToGenerator(
+      var _oidcValidationSteps = (0, _asyncToGenerator2["default"])(
       /*#__PURE__*/
-      regeneratorRuntime.mark(function _callee4(token, platform, alg) {
+      _regenerator["default"].mark(function _callee4(token, platform, alg) {
         var aud, _alg, iat, nonce;
 
-        return regeneratorRuntime.wrap(function _callee4$(_context4) {
+        return _regenerator["default"].wrap(function _callee4$(_context4) {
           while (1) {
             switch (_context4.prev = _context4.next) {
               case 0:
@@ -360,10 +360,10 @@ function () {
   }, {
     key: "validateAud",
     value: function () {
-      var _validateAud = _asyncToGenerator(
+      var _validateAud = (0, _asyncToGenerator2["default"])(
       /*#__PURE__*/
-      regeneratorRuntime.mark(function _callee5(token, platform) {
-        return regeneratorRuntime.wrap(function _callee5$(_context5) {
+      _regenerator["default"].mark(function _callee5(token, platform) {
+        return _regenerator["default"].wrap(function _callee5$(_context5) {
           while (1) {
             switch (_context5.prev = _context5.next) {
               case 0:
@@ -446,10 +446,10 @@ function () {
   }, {
     key: "validateAlg",
     value: function () {
-      var _validateAlg = _asyncToGenerator(
+      var _validateAlg = (0, _asyncToGenerator2["default"])(
       /*#__PURE__*/
-      regeneratorRuntime.mark(function _callee6(alg) {
-        return regeneratorRuntime.wrap(function _callee6$(_context6) {
+      _regenerator["default"].mark(function _callee6(alg) {
+        return _regenerator["default"].wrap(function _callee6$(_context6) {
           while (1) {
             switch (_context6.prev = _context6.next) {
               case 0:
@@ -487,11 +487,11 @@ function () {
   }, {
     key: "validateIat",
     value: function () {
-      var _validateIat = _asyncToGenerator(
+      var _validateIat = (0, _asyncToGenerator2["default"])(
       /*#__PURE__*/
-      regeneratorRuntime.mark(function _callee7(token) {
+      _regenerator["default"].mark(function _callee7(token) {
         var curTime, timePassed;
-        return regeneratorRuntime.wrap(function _callee7$(_context7) {
+        return _regenerator["default"].wrap(function _callee7$(_context7) {
           while (1) {
             switch (_context7.prev = _context7.next) {
               case 0:
@@ -534,10 +534,10 @@ function () {
   }, {
     key: "validateNonce",
     value: function () {
-      var _validateNonce = _asyncToGenerator(
+      var _validateNonce = (0, _asyncToGenerator2["default"])(
       /*#__PURE__*/
-      regeneratorRuntime.mark(function _callee8(token) {
-        return regeneratorRuntime.wrap(function _callee8$(_context8) {
+      _regenerator["default"].mark(function _callee8(token) {
+        return _regenerator["default"].wrap(function _callee8$(_context8) {
           while (1) {
             switch (_context8.prev = _context8.next) {
               case 0:
@@ -588,11 +588,11 @@ function () {
   }, {
     key: "getAccessToken",
     value: function () {
-      var _getAccessToken = _asyncToGenerator(
+      var _getAccessToken = (0, _asyncToGenerator2["default"])(
       /*#__PURE__*/
-      regeneratorRuntime.mark(function _callee9(platform, ENCRYPTIONKEY) {
+      _regenerator["default"].mark(function _callee9(platform, ENCRYPTIONKEY) {
         var confjwt, token, message, res, access;
-        return regeneratorRuntime.wrap(function _callee9$(_context9) {
+        return _regenerator["default"].wrap(function _callee9$(_context9) {
           while (1) {
             switch (_context9.prev = _context9.next) {
               case 0:
@@ -697,7 +697,6 @@ function () {
       return getAccessToken;
     }()
   }]);
-
   return Auth;
 }();
 

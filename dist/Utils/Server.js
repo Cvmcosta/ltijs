@@ -1,10 +1,10 @@
 "use strict";
 
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefault");
 
-function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+var _classCallCheck2 = _interopRequireDefault(require("@babel/runtime/helpers/classCallCheck"));
 
-function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+var _createClass2 = _interopRequireDefault(require("@babel/runtime/helpers/createClass"));
 
 // Express server
 var express = require('express');
@@ -21,8 +21,7 @@ var Server =
 /*#__PURE__*/
 function () {
   function Server(https, ssl, ENCRYPTIONKEY) {
-    _classCallCheck(this, Server);
-
+    (0, _classCallCheck2["default"])(this, Server);
     this.app = express();
     this.ssl = false;
     if (https) this.ssl = ssl;
@@ -36,7 +35,7 @@ function () {
     this.app.use(cookieParser(ENCRYPTIONKEY));
   }
 
-  _createClass(Server, [{
+  (0, _createClass2["default"])(Server, [{
     key: "listen",
     value: function listen(port, message) {
       if (this.ssl) https.createServer(this.ssl, this.app).listen(port, function () {
@@ -51,7 +50,6 @@ function () {
       this.app.use('/', express["static"](path));
     }
   }]);
-
   return Server;
 }();
 

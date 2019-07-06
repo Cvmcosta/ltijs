@@ -1,20 +1,18 @@
 "use strict";
 
-function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { Promise.resolve(value).then(_next, _throw); } }
+var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefault");
 
-function _asyncToGenerator(fn) { return function () { var self = this, args = arguments; return new Promise(function (resolve, reject) { var gen = fn.apply(self, args); function _next(value) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value); } function _throw(err) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err); } _next(undefined); }); }; }
+var _regenerator = _interopRequireDefault(require("@babel/runtime/regenerator"));
 
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+var _asyncToGenerator2 = _interopRequireDefault(require("@babel/runtime/helpers/asyncToGenerator"));
 
-function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+var _classCallCheck2 = _interopRequireDefault(require("@babel/runtime/helpers/classCallCheck"));
 
-function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+var _createClass2 = _interopRequireDefault(require("@babel/runtime/helpers/createClass"));
 
-function _classPrivateFieldLooseBase(receiver, privateKey) { if (!Object.prototype.hasOwnProperty.call(receiver, privateKey)) { throw new TypeError("attempted to use private field on non-instance"); } return receiver; }
+var _classPrivateFieldLooseBase2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldLooseBase"));
 
-var id = 0;
-
-function _classPrivateFieldLooseKey(name) { return "__private_" + id++ + "_" + name; }
+var _classPrivateFieldLooseKey2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldLooseKey"));
 
 // Utis
 var Database = require('./Database');
@@ -41,8 +39,7 @@ function () {
      * @param {Object} _authConfig - Authentication configurations for the platform.
      */
   function Platform(name, platformUrl, clientId, authenticationEndpoint, accesstokenEndpoint, kid, _ENCRYPTIONKEY, _authConfig) {
-    _classCallCheck(this, Platform);
-
+    (0, _classCallCheck2["default"])(this, Platform);
     Object.defineProperty(this, _platformName, {
       writable: true,
       value: void 0
@@ -75,14 +72,14 @@ function () {
       writable: true,
       value: void 0
     });
-    _classPrivateFieldLooseBase(this, _authConfig2)[_authConfig2] = _authConfig;
-    _classPrivateFieldLooseBase(this, _ENCRYPTIONKEY2)[_ENCRYPTIONKEY2] = _ENCRYPTIONKEY;
-    _classPrivateFieldLooseBase(this, _platformName)[_platformName] = name;
-    _classPrivateFieldLooseBase(this, _platformUrl)[_platformUrl] = platformUrl;
-    _classPrivateFieldLooseBase(this, _clientId)[_clientId] = clientId;
-    _classPrivateFieldLooseBase(this, _authEndpoint)[_authEndpoint] = authenticationEndpoint;
-    _classPrivateFieldLooseBase(this, _accesstokenEndpoint)[_accesstokenEndpoint] = accesstokenEndpoint;
-    _classPrivateFieldLooseBase(this, _kid)[_kid] = kid;
+    (0, _classPrivateFieldLooseBase2["default"])(this, _authConfig2)[_authConfig2] = _authConfig;
+    (0, _classPrivateFieldLooseBase2["default"])(this, _ENCRYPTIONKEY2)[_ENCRYPTIONKEY2] = _ENCRYPTIONKEY;
+    (0, _classPrivateFieldLooseBase2["default"])(this, _platformName)[_platformName] = name;
+    (0, _classPrivateFieldLooseBase2["default"])(this, _platformUrl)[_platformUrl] = platformUrl;
+    (0, _classPrivateFieldLooseBase2["default"])(this, _clientId)[_clientId] = clientId;
+    (0, _classPrivateFieldLooseBase2["default"])(this, _authEndpoint)[_authEndpoint] = authenticationEndpoint;
+    (0, _classPrivateFieldLooseBase2["default"])(this, _accesstokenEndpoint)[_accesstokenEndpoint] = accesstokenEndpoint;
+    (0, _classPrivateFieldLooseBase2["default"])(this, _kid)[_kid] = kid;
   }
   /**
      * @description Sets/Gets the platform name.
@@ -90,13 +87,13 @@ function () {
      */
 
 
-  _createClass(Platform, [{
+  (0, _createClass2["default"])(Platform, [{
     key: "platformName",
     value: function () {
-      var _platformName2 = _asyncToGenerator(
+      var _platformName2 = (0, _asyncToGenerator2["default"])(
       /*#__PURE__*/
-      regeneratorRuntime.mark(function _callee(name) {
-        return regeneratorRuntime.wrap(function _callee$(_context) {
+      _regenerator["default"].mark(function _callee(name) {
+        return _regenerator["default"].wrap(function _callee$(_context) {
           while (1) {
             switch (_context.prev = _context.next) {
               case 0:
@@ -105,13 +102,13 @@ function () {
                   break;
                 }
 
-                return _context.abrupt("return", _classPrivateFieldLooseBase(this, _platformName)[_platformName]);
+                return _context.abrupt("return", (0, _classPrivateFieldLooseBase2["default"])(this, _platformName)[_platformName]);
 
               case 2:
                 _context.prev = 2;
                 _context.next = 5;
                 return Database.Modify(false, 'platform', {
-                  platformUrl: _classPrivateFieldLooseBase(this, _platformUrl)[_platformUrl]
+                  platformUrl: (0, _classPrivateFieldLooseBase2["default"])(this, _platformUrl)[_platformUrl]
                 }, {
                   platformName: name
                 });
@@ -127,7 +124,7 @@ function () {
                 return _context.abrupt("return", false);
 
               case 11:
-                _classPrivateFieldLooseBase(this, _platformName)[_platformName] = name;
+                (0, _classPrivateFieldLooseBase2["default"])(this, _platformName)[_platformName] = name;
                 return _context.abrupt("return", this);
 
               case 13:
@@ -152,10 +149,10 @@ function () {
   }, {
     key: "platformUrl",
     value: function () {
-      var _platformUrl2 = _asyncToGenerator(
+      var _platformUrl2 = (0, _asyncToGenerator2["default"])(
       /*#__PURE__*/
-      regeneratorRuntime.mark(function _callee2(url) {
-        return regeneratorRuntime.wrap(function _callee2$(_context2) {
+      _regenerator["default"].mark(function _callee2(url) {
+        return _regenerator["default"].wrap(function _callee2$(_context2) {
           while (1) {
             switch (_context2.prev = _context2.next) {
               case 0:
@@ -164,13 +161,13 @@ function () {
                   break;
                 }
 
-                return _context2.abrupt("return", _classPrivateFieldLooseBase(this, _platformUrl)[_platformUrl]);
+                return _context2.abrupt("return", (0, _classPrivateFieldLooseBase2["default"])(this, _platformUrl)[_platformUrl]);
 
               case 2:
                 _context2.prev = 2;
                 _context2.next = 5;
                 return Database.Modify(false, 'platform', {
-                  platformUrl: _classPrivateFieldLooseBase(this, _platformUrl)[_platformUrl]
+                  platformUrl: (0, _classPrivateFieldLooseBase2["default"])(this, _platformUrl)[_platformUrl]
                 }, {
                   platformUrl: url
                 });
@@ -186,7 +183,7 @@ function () {
                 return _context2.abrupt("return", false);
 
               case 11:
-                _classPrivateFieldLooseBase(this, _platformUrl)[_platformUrl] = url;
+                (0, _classPrivateFieldLooseBase2["default"])(this, _platformUrl)[_platformUrl] = url;
                 return _context2.abrupt("return", this);
 
               case 13:
@@ -211,10 +208,10 @@ function () {
   }, {
     key: "platformClientId",
     value: function () {
-      var _platformClientId = _asyncToGenerator(
+      var _platformClientId = (0, _asyncToGenerator2["default"])(
       /*#__PURE__*/
-      regeneratorRuntime.mark(function _callee3(clientId) {
-        return regeneratorRuntime.wrap(function _callee3$(_context3) {
+      _regenerator["default"].mark(function _callee3(clientId) {
+        return _regenerator["default"].wrap(function _callee3$(_context3) {
           while (1) {
             switch (_context3.prev = _context3.next) {
               case 0:
@@ -223,13 +220,13 @@ function () {
                   break;
                 }
 
-                return _context3.abrupt("return", _classPrivateFieldLooseBase(this, _clientId)[_clientId]);
+                return _context3.abrupt("return", (0, _classPrivateFieldLooseBase2["default"])(this, _clientId)[_clientId]);
 
               case 2:
                 _context3.prev = 2;
                 _context3.next = 5;
                 return Database.Modify(false, 'platform', {
-                  platformUrl: _classPrivateFieldLooseBase(this, _platformUrl)[_platformUrl]
+                  platformUrl: (0, _classPrivateFieldLooseBase2["default"])(this, _platformUrl)[_platformUrl]
                 }, {
                   clientId: clientId
                 });
@@ -245,7 +242,7 @@ function () {
                 return _context3.abrupt("return", false);
 
               case 11:
-                _classPrivateFieldLooseBase(this, _clientId)[_clientId] = clientId;
+                (0, _classPrivateFieldLooseBase2["default"])(this, _clientId)[_clientId] = clientId;
                 return _context3.abrupt("return", this);
 
               case 13:
@@ -269,7 +266,7 @@ function () {
   }, {
     key: "platformKid",
     value: function platformKid() {
-      return _classPrivateFieldLooseBase(this, _kid)[_kid];
+      return (0, _classPrivateFieldLooseBase2["default"])(this, _kid)[_kid];
     }
     /**
        * @description Gets the RSA public key assigned to the platform.
@@ -279,18 +276,18 @@ function () {
   }, {
     key: "platformPublicKey",
     value: function () {
-      var _platformPublicKey = _asyncToGenerator(
+      var _platformPublicKey = (0, _asyncToGenerator2["default"])(
       /*#__PURE__*/
-      regeneratorRuntime.mark(function _callee4() {
+      _regenerator["default"].mark(function _callee4() {
         var key;
-        return regeneratorRuntime.wrap(function _callee4$(_context4) {
+        return _regenerator["default"].wrap(function _callee4$(_context4) {
           while (1) {
             switch (_context4.prev = _context4.next) {
               case 0:
                 _context4.prev = 0;
                 _context4.next = 3;
-                return Database.Get(_classPrivateFieldLooseBase(this, _ENCRYPTIONKEY2)[_ENCRYPTIONKEY2], 'publickey', {
-                  kid: _classPrivateFieldLooseBase(this, _kid)[_kid]
+                return Database.Get((0, _classPrivateFieldLooseBase2["default"])(this, _ENCRYPTIONKEY2)[_ENCRYPTIONKEY2], 'publickey', {
+                  kid: (0, _classPrivateFieldLooseBase2["default"])(this, _kid)[_kid]
                 });
 
               case 3:
@@ -325,18 +322,18 @@ function () {
   }, {
     key: "platformPrivateKey",
     value: function () {
-      var _platformPrivateKey = _asyncToGenerator(
+      var _platformPrivateKey = (0, _asyncToGenerator2["default"])(
       /*#__PURE__*/
-      regeneratorRuntime.mark(function _callee5() {
+      _regenerator["default"].mark(function _callee5() {
         var key;
-        return regeneratorRuntime.wrap(function _callee5$(_context5) {
+        return _regenerator["default"].wrap(function _callee5$(_context5) {
           while (1) {
             switch (_context5.prev = _context5.next) {
               case 0:
                 _context5.prev = 0;
                 _context5.next = 3;
-                return Database.Get(_classPrivateFieldLooseBase(this, _ENCRYPTIONKEY2)[_ENCRYPTIONKEY2], 'privatekey', {
-                  kid: _classPrivateFieldLooseBase(this, _kid)[_kid]
+                return Database.Get((0, _classPrivateFieldLooseBase2["default"])(this, _ENCRYPTIONKEY2)[_ENCRYPTIONKEY2], 'privatekey', {
+                  kid: (0, _classPrivateFieldLooseBase2["default"])(this, _kid)[_kid]
                 });
 
               case 3:
@@ -372,11 +369,11 @@ function () {
   }, {
     key: "platformAuthConfig",
     value: function () {
-      var _platformAuthConfig = _asyncToGenerator(
+      var _platformAuthConfig = (0, _asyncToGenerator2["default"])(
       /*#__PURE__*/
-      regeneratorRuntime.mark(function _callee6(method, key) {
+      _regenerator["default"].mark(function _callee6(method, key) {
         var authConfig;
-        return regeneratorRuntime.wrap(function _callee6$(_context6) {
+        return _regenerator["default"].wrap(function _callee6$(_context6) {
           while (1) {
             switch (_context6.prev = _context6.next) {
               case 0:
@@ -385,7 +382,7 @@ function () {
                   break;
                 }
 
-                return _context6.abrupt("return", _classPrivateFieldLooseBase(this, _authConfig2)[_authConfig2]);
+                return _context6.abrupt("return", (0, _classPrivateFieldLooseBase2["default"])(this, _authConfig2)[_authConfig2]);
 
               case 2:
                 if (!(method !== 'RSA_KEY' && method !== 'JWK_KEY' && method !== 'JWK_SET')) {
@@ -411,7 +408,7 @@ function () {
                 _context6.prev = 7;
                 _context6.next = 10;
                 return Database.Modify(false, 'platform', {
-                  platformUrl: _classPrivateFieldLooseBase(this, _platformUrl)[_platformUrl]
+                  platformUrl: (0, _classPrivateFieldLooseBase2["default"])(this, _platformUrl)[_platformUrl]
                 }, {
                   authConfig: authConfig
                 });
@@ -427,7 +424,7 @@ function () {
                 return _context6.abrupt("return", false);
 
               case 16:
-                _classPrivateFieldLooseBase(this, _authConfig2)[_authConfig2] = authConfig;
+                (0, _classPrivateFieldLooseBase2["default"])(this, _authConfig2)[_authConfig2] = authConfig;
                 return _context6.abrupt("return", this);
 
               case 18:
@@ -452,10 +449,10 @@ function () {
   }, {
     key: "platformAuthEndpoint",
     value: function () {
-      var _platformAuthEndpoint = _asyncToGenerator(
+      var _platformAuthEndpoint = (0, _asyncToGenerator2["default"])(
       /*#__PURE__*/
-      regeneratorRuntime.mark(function _callee7(authEndpoint) {
-        return regeneratorRuntime.wrap(function _callee7$(_context7) {
+      _regenerator["default"].mark(function _callee7(authEndpoint) {
+        return _regenerator["default"].wrap(function _callee7$(_context7) {
           while (1) {
             switch (_context7.prev = _context7.next) {
               case 0:
@@ -464,13 +461,13 @@ function () {
                   break;
                 }
 
-                return _context7.abrupt("return", _classPrivateFieldLooseBase(this, _authEndpoint)[_authEndpoint]);
+                return _context7.abrupt("return", (0, _classPrivateFieldLooseBase2["default"])(this, _authEndpoint)[_authEndpoint]);
 
               case 2:
                 _context7.prev = 2;
                 _context7.next = 5;
                 return Database.Modify(false, 'platform', {
-                  platformUrl: _classPrivateFieldLooseBase(this, _platformUrl)[_platformUrl]
+                  platformUrl: (0, _classPrivateFieldLooseBase2["default"])(this, _platformUrl)[_platformUrl]
                 }, {
                   authEndpoint: authEndpoint
                 });
@@ -486,7 +483,7 @@ function () {
                 return _context7.abrupt("return", false);
 
               case 11:
-                _classPrivateFieldLooseBase(this, _authEndpoint)[_authEndpoint] = authEndpoint;
+                (0, _classPrivateFieldLooseBase2["default"])(this, _authEndpoint)[_authEndpoint] = authEndpoint;
                 return _context7.abrupt("return", this);
 
               case 13:
@@ -511,10 +508,10 @@ function () {
   }, {
     key: "platformAccessTokenEndpoint",
     value: function () {
-      var _platformAccessTokenEndpoint = _asyncToGenerator(
+      var _platformAccessTokenEndpoint = (0, _asyncToGenerator2["default"])(
       /*#__PURE__*/
-      regeneratorRuntime.mark(function _callee8(accesstokenEndpoint) {
-        return regeneratorRuntime.wrap(function _callee8$(_context8) {
+      _regenerator["default"].mark(function _callee8(accesstokenEndpoint) {
+        return _regenerator["default"].wrap(function _callee8$(_context8) {
           while (1) {
             switch (_context8.prev = _context8.next) {
               case 0:
@@ -523,13 +520,13 @@ function () {
                   break;
                 }
 
-                return _context8.abrupt("return", _classPrivateFieldLooseBase(this, _accesstokenEndpoint)[_accesstokenEndpoint]);
+                return _context8.abrupt("return", (0, _classPrivateFieldLooseBase2["default"])(this, _accesstokenEndpoint)[_accesstokenEndpoint]);
 
               case 2:
                 _context8.prev = 2;
                 _context8.next = 5;
                 return Database.Modify(false, 'platform', {
-                  platformUrl: _classPrivateFieldLooseBase(this, _platformUrl)[_platformUrl]
+                  platformUrl: (0, _classPrivateFieldLooseBase2["default"])(this, _platformUrl)[_platformUrl]
                 }, {
                   accesstokenEndpoint: accesstokenEndpoint
                 });
@@ -545,7 +542,7 @@ function () {
                 return _context8.abrupt("return", false);
 
               case 11:
-                _classPrivateFieldLooseBase(this, _accesstokenEndpoint)[_accesstokenEndpoint] = accesstokenEndpoint;
+                (0, _classPrivateFieldLooseBase2["default"])(this, _accesstokenEndpoint)[_accesstokenEndpoint] = accesstokenEndpoint;
                 return _context8.abrupt("return", this);
 
               case 13:
@@ -569,18 +566,18 @@ function () {
   }, {
     key: "platformAccessToken",
     value: function () {
-      var _platformAccessToken = _asyncToGenerator(
+      var _platformAccessToken = (0, _asyncToGenerator2["default"])(
       /*#__PURE__*/
-      regeneratorRuntime.mark(function _callee9() {
+      _regenerator["default"].mark(function _callee9() {
         var token, res, _res;
 
-        return regeneratorRuntime.wrap(function _callee9$(_context9) {
+        return _regenerator["default"].wrap(function _callee9$(_context9) {
           while (1) {
             switch (_context9.prev = _context9.next) {
               case 0:
                 _context9.next = 2;
-                return Database.Get(_classPrivateFieldLooseBase(this, _ENCRYPTIONKEY2)[_ENCRYPTIONKEY2], 'accesstoken', {
-                  platformUrl: _classPrivateFieldLooseBase(this, _platformUrl)[_platformUrl]
+                return Database.Get((0, _classPrivateFieldLooseBase2["default"])(this, _ENCRYPTIONKEY2)[_ENCRYPTIONKEY2], 'accesstoken', {
+                  platformUrl: (0, _classPrivateFieldLooseBase2["default"])(this, _platformUrl)[_platformUrl]
                 });
 
               case 2:
@@ -591,11 +588,11 @@ function () {
                   break;
                 }
 
-                provPlatformDebug('Access_token for ' + _classPrivateFieldLooseBase(this, _platformUrl)[_platformUrl] + ' not found');
-                provPlatformDebug('Attempting to generate new access_token for ' + _classPrivateFieldLooseBase(this, _platformUrl)[_platformUrl]);
+                provPlatformDebug('Access_token for ' + (0, _classPrivateFieldLooseBase2["default"])(this, _platformUrl)[_platformUrl] + ' not found');
+                provPlatformDebug('Attempting to generate new access_token for ' + (0, _classPrivateFieldLooseBase2["default"])(this, _platformUrl)[_platformUrl]);
                 _context9.prev = 6;
                 _context9.next = 9;
-                return Auth.getAccessToken(this, _classPrivateFieldLooseBase(this, _ENCRYPTIONKEY2)[_ENCRYPTIONKEY2]);
+                return Auth.getAccessToken(this, (0, _classPrivateFieldLooseBase2["default"])(this, _ENCRYPTIONKEY2)[_ENCRYPTIONKEY2]);
 
               case 9:
                 res = _context9.sent;
@@ -620,11 +617,11 @@ function () {
                 }
 
                 provPlatformDebug('Token expired');
-                provPlatformDebug('Access_token for ' + _classPrivateFieldLooseBase(this, _platformUrl)[_platformUrl] + ' not found');
-                provPlatformDebug('Attempting to generate new access_token for ' + _classPrivateFieldLooseBase(this, _platformUrl)[_platformUrl]);
+                provPlatformDebug('Access_token for ' + (0, _classPrivateFieldLooseBase2["default"])(this, _platformUrl)[_platformUrl] + ' not found');
+                provPlatformDebug('Attempting to generate new access_token for ' + (0, _classPrivateFieldLooseBase2["default"])(this, _platformUrl)[_platformUrl]);
                 _context9.prev = 24;
                 _context9.next = 27;
-                return Auth.getAccessToken(this, _classPrivateFieldLooseBase(this, _ENCRYPTIONKEY2)[_ENCRYPTIONKEY2]);
+                return Auth.getAccessToken(this, (0, _classPrivateFieldLooseBase2["default"])(this, _ENCRYPTIONKEY2)[_ENCRYPTIONKEY2]);
 
               case 27:
                 _res = _context9.sent;
@@ -660,20 +657,20 @@ function () {
   }, {
     key: "remove",
     value: function () {
-      var _remove = _asyncToGenerator(
+      var _remove = (0, _asyncToGenerator2["default"])(
       /*#__PURE__*/
-      regeneratorRuntime.mark(function _callee10() {
-        return regeneratorRuntime.wrap(function _callee10$(_context10) {
+      _regenerator["default"].mark(function _callee10() {
+        return _regenerator["default"].wrap(function _callee10$(_context10) {
           while (1) {
             switch (_context10.prev = _context10.next) {
               case 0:
                 _context10.prev = 0;
                 return _context10.abrupt("return", Promise.all([Database.Delete('platform', {
-                  platformUrl: _classPrivateFieldLooseBase(this, _platformUrl)[_platformUrl]
+                  platformUrl: (0, _classPrivateFieldLooseBase2["default"])(this, _platformUrl)[_platformUrl]
                 }), Database.Delete('publickey', {
-                  kid: _classPrivateFieldLooseBase(this, _kid)[_kid]
+                  kid: (0, _classPrivateFieldLooseBase2["default"])(this, _kid)[_kid]
                 }), Database.Delete('privatekey', {
-                  kid: _classPrivateFieldLooseBase(this, _kid)[_kid]
+                  kid: (0, _classPrivateFieldLooseBase2["default"])(this, _kid)[_kid]
                 })]));
 
               case 4:
@@ -697,24 +694,23 @@ function () {
       return remove;
     }()
   }]);
-
   return Platform;
 }();
 
-var _platformName = _classPrivateFieldLooseKey("platformName");
+var _platformName = (0, _classPrivateFieldLooseKey2["default"])("platformName");
 
-var _platformUrl = _classPrivateFieldLooseKey("platformUrl");
+var _platformUrl = (0, _classPrivateFieldLooseKey2["default"])("platformUrl");
 
-var _clientId = _classPrivateFieldLooseKey("clientId");
+var _clientId = (0, _classPrivateFieldLooseKey2["default"])("clientId");
 
-var _authEndpoint = _classPrivateFieldLooseKey("authEndpoint");
+var _authEndpoint = (0, _classPrivateFieldLooseKey2["default"])("authEndpoint");
 
-var _authConfig2 = _classPrivateFieldLooseKey("authConfig");
+var _authConfig2 = (0, _classPrivateFieldLooseKey2["default"])("authConfig");
 
-var _ENCRYPTIONKEY2 = _classPrivateFieldLooseKey("ENCRYPTIONKEY");
+var _ENCRYPTIONKEY2 = (0, _classPrivateFieldLooseKey2["default"])("ENCRYPTIONKEY");
 
-var _accesstokenEndpoint = _classPrivateFieldLooseKey("accesstokenEndpoint");
+var _accesstokenEndpoint = (0, _classPrivateFieldLooseKey2["default"])("accesstokenEndpoint");
 
-var _kid = _classPrivateFieldLooseKey("kid");
+var _kid = (0, _classPrivateFieldLooseKey2["default"])("kid");
 
 module.exports = Platform;

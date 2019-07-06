@@ -519,6 +519,7 @@ class Provider {
 
       message.timestamp = new Date(Date.now()).toISOString()
       message.scoreMaximum = lineitem.scoreMaximum
+      message.userId = idtoken.user
 
       await got.post(scoreUrl, { headers: { Authorization: tokenRes.token_type + ' ' + tokenRes.access_token, 'Content-Type': 'application/vnd.ims.lis.v1.score+json' }, body: JSON.stringify(message) })
 
@@ -533,16 +534,16 @@ class Provider {
   /**
    * @description Redirect to a new location and sets it's cookie if the location represents a separate resource
    * @param {Object} res - Express response object
-   * @param {String} path - Path used as name for the cookie
+   * @param {String} path - Redirect path
    * @param {Boolea} [isNewResource = false] - If true creates new resource and its cookie
    * @example lti.generatePathCookie(response, '/path', true)
    */
-  redirect (res, path, isNewResource) {
+  async redirect (res, path, isNewResource) {
     if (res.locals.login && isNewResource) {
       provMainDebug('Setting up path cookie for this resource with path: ' + path)
       res.cookie(res.locals.token.issuer_code + path, res.locals.token.platformContext, this.#cookieOptions)
     }
-    res.redirect(res.locals.token.issuer_code + path)
+    return res.redirect(res.locals.token.issuer_code + path)
   }
 }
 
