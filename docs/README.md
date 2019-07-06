@@ -1,6 +1,6 @@
 # [ltijs](README.md) 
 
-> Turn your application into a fully integratable lti tool or platform.
+> Turn your application into a fully integratable lti 1.3 tool or platform.
 
 
 [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
@@ -71,10 +71,10 @@ $ npm install ltijs
 ```javascript
 const path = require('path')
 
-//Require Provider 
+// Require Provider 
 const Lti = require('ltijs').Provider
 
-//Configure provider
+// Configure provider
 const lti = new Lti('EXAMPLEKEY', 
             { url: 'mongodb://localhost/database', 
               connection:{ user:'user',
@@ -84,20 +84,36 @@ const lti = new Lti('EXAMPLEKEY',
 
 
 let setup = async () => {
-  //Configure main routes
+  // Configure main routes
   lti.appUrl('/')
   lti.loginUrl('/login')
 
-  //Deploy and open connection to the database
-  lti.deploy()
+  // Deploy and open connection to the database
+  await lti.deploy()
 
-  //Set connection callback
+  // Register platform
+  let plat = await lti.registerPlatform(
+    'http://platform/url', 
+    'Platform Name', 'ClientIdThePlatformCreatedForYourApp', 
+    'http://platform/AuthorizationUrl', 
+    'http://platform/AccessTokenUrl', 
+    { method: 'JWK_SET', key: 'http://platform/keyset' }
+  )
+
+  // Set connection callback
   lti.onConnect((connection, request, response) => {
-    response.send('It\'s alive!')
+    // Call redirect function
+    lti.redirect(response, '/main')
+  })
+
+  // Set route accounting for issuer context
+  lti.app.get('/:iss/main', (req, res) => {
+    // Id token
+    console.log(res.locals.token)
+    res.send('It\'s alive!')
   })
 }
 setup()
-
 ```
 
 ---

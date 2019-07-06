@@ -1,6 +1,6 @@
 # [ltijs](README.md) - Provider
 
-> Turn your application into a lti tool.
+> Turn your application into a lti 1.3 tool.
 
 
 [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
@@ -64,7 +64,16 @@ let setup = async () => {
   lti.loginUrl('/login')
 
   // Deploy and open connection to the database
-  lti.deploy()
+  await lti.deploy()
+
+  // Register platform
+  let plat = await lti.registerPlatform(
+    'http://platform/url', 
+    'Platform Name', 'ClientIdThePlatformCreatedForYourApp', 
+    'http://platform/AuthorizationUrl', 
+    'http://platform/AccessTokenUrl', 
+    { method: 'JWK_SET', key: 'http://platform/keyset' }
+  )
 
   // Set connection callback
   lti.onConnect((connection, request, response) => {
@@ -84,7 +93,10 @@ setup()
 
 
 
-> Now you can **[register a new platform](#registering-a-new-platform)** to use your tool with. And checkout the **[Platform class documentation](platform.md)**
+**Register a platform to work with your tool** 
+> **[Registering a new platform](#registering-a-new-platform)**
+
+> And checkout the **[Platform class documentation](platform.md)**
 
 
 **Routing with Ltijs is a bit diferent from regular Express routing  so here's a useful tutorial:** 
@@ -595,7 +607,7 @@ The token consists of:
     email: 'user@email.com'
   },
   platformInfo: {
-    family_code: 'paltform_type', // ex: Moodle
+    family_code: 'platform_type', // ex: Moodle
     version: 'versionNumber',
     name: 'Lti',
     description: 'LTI tool'
@@ -614,11 +626,9 @@ The token consists of:
     context_memberships_url: 'http://platform/context/membership/url',
     service_versions: [ '1.0', '2.0' ]
   },
-  exp: 1562391093.103,
-  iat: 1562387493,
   platformContext: { // Context of connection
     context: { id: '2', label: 'course label', title: 'course title', type: [Array] },
-    resource: { title: 'Activity name', id: '1' },
+    resource: { title: 'Activity name', id: '1' }, // Activity that originated login
     custom: { // Custom parameter sent by the platform
       resource: '123456', // Id for a requested resource
       system_setting_url: 'http:platform/customs/system/setting',
@@ -658,7 +668,7 @@ The PLATFORM_ID is a url encoded base64 value that represents a platform url, th
 ```javascript
 lti.onConnect((connection, request, response) => {
   // Call redirect function
-  lti.redirect(response, '/main') // Redirects to http://platform.com/PLATFORM_ID/main
+  lti.redirect(response, '/main') // Redirects to http://provider/PLATFORM_ID/main
 })
 ```
 
@@ -681,7 +691,7 @@ That happens because the call `lti.redirect(response, '/main')`, doesn't specify
 ```javascript
 lti.onConnect((connection, request, response) => {
   // Call redirect function
-  lti.redirect(response, '/main', true) // Redirects to http://platform.com/PLATFORM_ID/main within a new context
+  lti.redirect(response, '/main', true) // Redirects to http://provider/PLATFORM_ID/main within a new context
 })
 ```
 
@@ -701,7 +711,7 @@ The previous call generates the following cookies:
 **<center>platPLATFORM_ID/main</center>**
 
 
-And now calls to the `http://platform.com/PLATFORM_ID/main` url will get the information from these cookies, assemble a **IdToken** and pass it to the request handler (`lti.app.get('/:iss/main')`). 
+And now calls to the `http://provider/PLATFORM_ID/main` url will get the information from these cookies, assemble a **IdToken** and pass it to the request handler (`lti.app.get('/:iss/main')`). 
 
 > **How do i handle these redirects?**
 
@@ -714,6 +724,32 @@ lti.app.get('/:iss/main', (req, res) => { // Handles requests to /main
   console.log(res.locals.token)
 })
 ```
+
+You **can** make requests to regular routes if you send in the request the query parameter `context` containing the path context information, so that the request can validated it and return to the route the correct context idtoken.
+
+**<center>http://provider/getidtoken?context=/platPLATFORM_ID/PATH</center>**
+
+> With javascript you can easily get this information in the client by calling **window.location.pathname**
+
+##### Making requests from the client
+
+The client can call regular routes to get information from the provider by passing the query parameter `context` containing the path context information as described above, failing to do so will return a **400 bad request status**.
+
+> Example request from the client:
+
+```javascript
+let context = window.location.pathname
+got.get('https://provider/gettoken?context=' + context, (err, response)=>{
+    if(err){
+      console.log(err)
+      return false
+    }else{
+      console.log(response)
+    }
+})
+```
+
+
 
 ---
 

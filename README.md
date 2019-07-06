@@ -1,6 +1,6 @@
 # [ltijs](https://cvmcosta.github.io/ltijs) 
 
-> Turn your application into a fully integratable lti tool or platform.
+> Turn your application into a fully integratable lti 1.3 tool or platform.
 
 
 [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
@@ -11,6 +11,8 @@
 
 - [Introduction](#introduction)
 - [Installation](#installation)
+- [Features](#features)
+- [Usage](#usage)
 - [Documentation](#documentation)
 - [License](#license)
 
@@ -46,6 +48,75 @@ This package implements Lti Provider and Consumer servers. See bellow for specif
 ### [Ltijs Provider Documentation](https://cvmcosta.github.io/ltijs/#/provider) 
    - [Platform class documentation](https://cvmcosta.github.io/ltijs/#/platform)
 ### ~~Ltijs Consumer Documentation~~ (Coming soon)
+
+---
+
+## Usage
+
+### Example of provider usage
+
+> Update and install this package first
+
+```shell
+$ npm install ltijs
+```
+
+> Install mongoDB
+
+ - [Installing mongoDB](https://docs.mongodb.com/manual/administration/install-community/)
+
+
+> Instantiate and use Provider class
+
+
+
+```javascript
+const path = require('path')
+
+// Require Provider 
+const Lti = require('ltijs').Provider
+
+// Configure provider
+const lti = new Lti('EXAMPLEKEY', 
+            { url: 'mongodb://localhost/database', 
+              connection:{ user:'user',
+                          pass: 'pass'} 
+            }, 
+            { staticPath: path.join(__dirname, '/views/') })
+
+
+let setup = async () => {
+  // Configure main routes
+  lti.appUrl('/')
+  lti.loginUrl('/login')
+
+  // Deploy and open connection to the database
+  await lti.deploy()
+
+  // Register platform
+  let plat = await lti.registerPlatform(
+    'http://platform/url', 
+    'Platform Name', 'ClientIdThePlatformCreatedForYourApp', 
+    'http://platform/AuthorizationUrl', 
+    'http://platform/AccessTokenUrl', 
+    { method: 'JWK_SET', key: 'http://platform/keyset' }
+  )
+
+  // Set connection callback
+  lti.onConnect((connection, request, response) => {
+    // Call redirect function
+    lti.redirect(response, '/main')
+  })
+
+  // Set route accounting for issuer context
+  lti.app.get('/:iss/main', (req, res) => {
+    // Id token
+    console.log(res.locals.token)
+    res.send('It\'s alive!')
+  })
+}
+setup()
+```
 
 ---
 

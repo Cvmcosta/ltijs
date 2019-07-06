@@ -9,7 +9,6 @@ const Auth = require('../Utils/Auth')
 const Database = require('../Utils/Database')
 
 const url = require('url')
-const jwt = require('jsonwebtoken')
 const got = require('got')
 const find = require('lodash.find')
 const mongoose = require('mongoose')
@@ -167,9 +166,9 @@ class Provider {
         // Mount request path and issuer_code
         if (isApiRequest) {
           let requestParts
-          try {
+          if (req.query.context) {
             requestParts = req.query.context.split('/')
-          } catch (err) {
+          } else {
             return res.status(400).send('Missing context parameter in request.')
           }
           issuer = encodeURIComponent(requestParts[1])
@@ -217,9 +216,7 @@ class Provider {
               namesRoles: valid['https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice']
             }
 
-            platformCookie.exp = (Date.now() / 1000) + 3600
-            let it = jwt.sign(platformCookie, this.#ENCRYPTIONKEY)
-            res.cookie(issuer, it, this.#cookieOptions)
+            res.cookie(issuer, platformCookie, this.#cookieOptions)
 
             // Mount context cookie
             let contextCookie = {
@@ -242,11 +239,10 @@ class Provider {
             return res.redirect(this.#sessionTimeoutUrl)
           }
         } else {
-          let valid = jwt.verify(it, this.#ENCRYPTIONKEY)
-          provAuthDebug('Cookie successfully validated')
-          valid.exp = (Date.now() / 1000) + 3600
-          let _it = jwt.sign(valid, this.#ENCRYPTIONKEY)
-          res.cookie(issuer, _it, this.#cookieOptions)
+          provAuthDebug('Cookie found')
+          let valid = it
+
+          res.cookie(issuer, valid, this.#cookieOptions)
 
           let isPath = false
           if (path) {
