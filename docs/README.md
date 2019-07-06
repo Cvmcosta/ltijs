@@ -43,7 +43,7 @@ $ npm install ltijs
 
 This package implements Lti Provider and Consumer servers. See bellow for specific documentations.
 
-### [Ltijs Provider Documentation](https://cvmcosta.github.io/ltijs/#/provider) 
+### [Ltijs Provider Documentation](provider.md) 
    - [Platform class documentation](platform.md)
 ### ~~Ltijs Consumer Documentation~~ (Coming soon)
 
