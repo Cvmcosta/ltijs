@@ -790,7 +790,7 @@ lti.messagePlatform(res.locals.token, grade)
 **Ltijs** uses [debug](https://www.npmjs.com/package/debug) to log various events in the console. Just append `DEBUG='provider=*'` before yout node or npm command and it should be working.
 
 ```shell
-DEBUG='provider=*' npm start
+DEBUG='provider:*' npm start
 ```
 
 ---
