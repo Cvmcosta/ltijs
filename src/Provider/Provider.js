@@ -76,7 +76,7 @@ class Provider {
       if (!database.connection.keepAlive) database.connection.keepAlive = true
       if (!database.connection.keepAliveInitialDelay) database.connection.keepAliveInitialDelay = 300000
     } else {
-      database.connection = { useNewUrlParser: true, autoReconnect: true, keepAlive: true, keepAliveInitialDelay: 300000 }
+      database.connection = { useNewUrlParser: true, autoReconnect: true, keepAlive: true, keepAliveInitialDelay: 300000, connectTimeoutMS: 300000 }
     }
     this.#dbConnection.url = database.url
     this.#dbConnection.options = database.connection
@@ -296,15 +296,15 @@ class Provider {
     })
 
     // Session timeout and invalid token urls
-    this.app.all(this.#sessionTimeoutUrl, (req, res, next) => {
+    this.app.all(this.#sessionTimeoutUrl, async (req, res, next) => {
       this.#sessionTimedOut(req, res, next)
     })
-    this.app.all(this.#invalidTokenUrl, (req, res, next) => {
+    this.app.all(this.#invalidTokenUrl, async (req, res, next) => {
       this.#invalidToken(req, res, next)
     })
 
     // Main app
-    this.app.post(this.#appUrl + ':iss', (req, res, next) => {
+    this.app.post(this.#appUrl + ':iss', async (req, res, next) => {
       this.#connectCallback(res.locals.token, req, res, next)
     })
   }
@@ -314,7 +314,41 @@ class Provider {
      * @param {number} port - The port the Provider should listen to.
      */
   async deploy (port) {
-    await mongoose.connect(this.#dbConnection.url, this.#dbConnection.options)
+    provMainDebug('Attempting to connect to database')
+
+    try {
+      this.db.on('connected', async () => {
+        provMainDebug('Database connected')
+      })
+      this.db.once('open', async () => {
+        provMainDebug('Database connection open')
+      })
+
+      if (this.db.readyState === 0) await mongoose.connect(this.#dbConnection.url, this.#dbConnection.options)
+
+      this.db.on('error', async () => {
+        mongoose.disconnect()
+      })
+      this.db.on('reconnected', async () => {
+        provMainDebug('Database reconnected')
+      })
+      this.db.on('disconnected', async () => {
+        provMainDebug('Database disconnected')
+        provMainDebug('Attempting to reconnect')
+        setTimeout(async () => {
+          if (this.db.readyState === 0) {
+            try {
+              await mongoose.connect(this.#dbConnection.url, this.#dbConnection.options)
+            } catch (err) {
+              provMainDebug('Error in MongoDb connection: ' + err)
+            }
+          }
+        }, 1000)
+      })
+    } catch (err) {
+      provMainDebug('Error in MongoDb connection: ' + err)
+      throw new Error('Unable to connect to database')
+    }
 
     /* In case no port is provided uses 3000 */
     port = port || 3000

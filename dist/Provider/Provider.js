@@ -140,7 +140,8 @@ function () {
         useNewUrlParser: true,
         autoReconnect: true,
         keepAlive: true,
-        keepAliveInitialDelay: 300000
+        keepAliveInitialDelay: 300000,
+        connectTimeoutMS: 300000
       };
     }
 
@@ -546,16 +547,79 @@ function () {
       };
     }()); // Session timeout and invalid token urls
 
-    this.app.all((0, _classPrivateFieldLooseBase2["default"])(this, _sessionTimeoutUrl)[_sessionTimeoutUrl], function (req, res, next) {
-      (0, _classPrivateFieldLooseBase2["default"])(_this, _sessionTimedOut)[_sessionTimedOut](req, res, next);
-    });
-    this.app.all((0, _classPrivateFieldLooseBase2["default"])(this, _invalidTokenUrl)[_invalidTokenUrl], function (req, res, next) {
-      (0, _classPrivateFieldLooseBase2["default"])(_this, _invalidToken)[_invalidToken](req, res, next);
-    }); // Main app
+    this.app.all((0, _classPrivateFieldLooseBase2["default"])(this, _sessionTimeoutUrl)[_sessionTimeoutUrl],
+    /*#__PURE__*/
+    function () {
+      var _ref3 = (0, _asyncToGenerator2["default"])(
+      /*#__PURE__*/
+      _regenerator["default"].mark(function _callee3(req, res, next) {
+        return _regenerator["default"].wrap(function _callee3$(_context3) {
+          while (1) {
+            switch (_context3.prev = _context3.next) {
+              case 0:
+                (0, _classPrivateFieldLooseBase2["default"])(_this, _sessionTimedOut)[_sessionTimedOut](req, res, next);
 
-    this.app.post((0, _classPrivateFieldLooseBase2["default"])(this, _appUrl)[_appUrl] + ':iss', function (req, res, next) {
-      (0, _classPrivateFieldLooseBase2["default"])(_this, _connectCallback2)[_connectCallback2](res.locals.token, req, res, next);
-    });
+              case 1:
+              case "end":
+                return _context3.stop();
+            }
+          }
+        }, _callee3);
+      }));
+
+      return function (_x6, _x7, _x8) {
+        return _ref3.apply(this, arguments);
+      };
+    }());
+    this.app.all((0, _classPrivateFieldLooseBase2["default"])(this, _invalidTokenUrl)[_invalidTokenUrl],
+    /*#__PURE__*/
+    function () {
+      var _ref4 = (0, _asyncToGenerator2["default"])(
+      /*#__PURE__*/
+      _regenerator["default"].mark(function _callee4(req, res, next) {
+        return _regenerator["default"].wrap(function _callee4$(_context4) {
+          while (1) {
+            switch (_context4.prev = _context4.next) {
+              case 0:
+                (0, _classPrivateFieldLooseBase2["default"])(_this, _invalidToken)[_invalidToken](req, res, next);
+
+              case 1:
+              case "end":
+                return _context4.stop();
+            }
+          }
+        }, _callee4);
+      }));
+
+      return function (_x9, _x10, _x11) {
+        return _ref4.apply(this, arguments);
+      };
+    }()); // Main app
+
+    this.app.post((0, _classPrivateFieldLooseBase2["default"])(this, _appUrl)[_appUrl] + ':iss',
+    /*#__PURE__*/
+    function () {
+      var _ref5 = (0, _asyncToGenerator2["default"])(
+      /*#__PURE__*/
+      _regenerator["default"].mark(function _callee5(req, res, next) {
+        return _regenerator["default"].wrap(function _callee5$(_context5) {
+          while (1) {
+            switch (_context5.prev = _context5.next) {
+              case 0:
+                (0, _classPrivateFieldLooseBase2["default"])(_this, _connectCallback2)[_connectCallback2](res.locals.token, req, res, next);
+
+              case 1:
+              case "end":
+                return _context5.stop();
+            }
+          }
+        }, _callee5);
+      }));
+
+      return function (_x12, _x13, _x14) {
+        return _ref5.apply(this, arguments);
+      };
+    }());
   }
   /**
      * @description Starts listening to a given port for LTI requests and opens connection to the database.
@@ -568,31 +632,176 @@ function () {
     value: function () {
       var _deploy = (0, _asyncToGenerator2["default"])(
       /*#__PURE__*/
-      _regenerator["default"].mark(function _callee3(port) {
-        return _regenerator["default"].wrap(function _callee3$(_context3) {
+      _regenerator["default"].mark(function _callee12(port) {
+        var _this2 = this;
+
+        return _regenerator["default"].wrap(function _callee12$(_context12) {
           while (1) {
-            switch (_context3.prev = _context3.next) {
+            switch (_context12.prev = _context12.next) {
               case 0:
-                _context3.next = 2;
+                provMainDebug('Attempting to connect to database');
+                _context12.prev = 1;
+                this.db.on('connected',
+                /*#__PURE__*/
+                (0, _asyncToGenerator2["default"])(
+                /*#__PURE__*/
+                _regenerator["default"].mark(function _callee6() {
+                  return _regenerator["default"].wrap(function _callee6$(_context6) {
+                    while (1) {
+                      switch (_context6.prev = _context6.next) {
+                        case 0:
+                          provMainDebug('Database connected');
+
+                        case 1:
+                        case "end":
+                          return _context6.stop();
+                      }
+                    }
+                  }, _callee6);
+                })));
+                this.db.once('open',
+                /*#__PURE__*/
+                (0, _asyncToGenerator2["default"])(
+                /*#__PURE__*/
+                _regenerator["default"].mark(function _callee7() {
+                  return _regenerator["default"].wrap(function _callee7$(_context7) {
+                    while (1) {
+                      switch (_context7.prev = _context7.next) {
+                        case 0:
+                          provMainDebug('Database connection open');
+
+                        case 1:
+                        case "end":
+                          return _context7.stop();
+                      }
+                    }
+                  }, _callee7);
+                })));
+
+                if (!(this.db.readyState === 0)) {
+                  _context12.next = 7;
+                  break;
+                }
+
+                _context12.next = 7;
                 return mongoose.connect((0, _classPrivateFieldLooseBase2["default"])(this, _dbConnection)[_dbConnection].url, (0, _classPrivateFieldLooseBase2["default"])(this, _dbConnection)[_dbConnection].options);
 
-              case 2:
+              case 7:
+                this.db.on('error',
+                /*#__PURE__*/
+                (0, _asyncToGenerator2["default"])(
+                /*#__PURE__*/
+                _regenerator["default"].mark(function _callee8() {
+                  return _regenerator["default"].wrap(function _callee8$(_context8) {
+                    while (1) {
+                      switch (_context8.prev = _context8.next) {
+                        case 0:
+                          mongoose.disconnect();
+
+                        case 1:
+                        case "end":
+                          return _context8.stop();
+                      }
+                    }
+                  }, _callee8);
+                })));
+                this.db.on('reconnected',
+                /*#__PURE__*/
+                (0, _asyncToGenerator2["default"])(
+                /*#__PURE__*/
+                _regenerator["default"].mark(function _callee9() {
+                  return _regenerator["default"].wrap(function _callee9$(_context9) {
+                    while (1) {
+                      switch (_context9.prev = _context9.next) {
+                        case 0:
+                          provMainDebug('Database reconnected');
+
+                        case 1:
+                        case "end":
+                          return _context9.stop();
+                      }
+                    }
+                  }, _callee9);
+                })));
+                this.db.on('disconnected',
+                /*#__PURE__*/
+                (0, _asyncToGenerator2["default"])(
+                /*#__PURE__*/
+                _regenerator["default"].mark(function _callee11() {
+                  return _regenerator["default"].wrap(function _callee11$(_context11) {
+                    while (1) {
+                      switch (_context11.prev = _context11.next) {
+                        case 0:
+                          provMainDebug('Database disconnected');
+                          provMainDebug('Attempting to reconnect');
+                          setTimeout(
+                          /*#__PURE__*/
+                          (0, _asyncToGenerator2["default"])(
+                          /*#__PURE__*/
+                          _regenerator["default"].mark(function _callee10() {
+                            return _regenerator["default"].wrap(function _callee10$(_context10) {
+                              while (1) {
+                                switch (_context10.prev = _context10.next) {
+                                  case 0:
+                                    if (!(_this2.db.readyState === 0)) {
+                                      _context10.next = 9;
+                                      break;
+                                    }
+
+                                    _context10.prev = 1;
+                                    _context10.next = 4;
+                                    return mongoose.connect((0, _classPrivateFieldLooseBase2["default"])(_this2, _dbConnection)[_dbConnection].url, (0, _classPrivateFieldLooseBase2["default"])(_this2, _dbConnection)[_dbConnection].options);
+
+                                  case 4:
+                                    _context10.next = 9;
+                                    break;
+
+                                  case 6:
+                                    _context10.prev = 6;
+                                    _context10.t0 = _context10["catch"](1);
+                                    provMainDebug('Error in MongoDb connection: ' + _context10.t0);
+
+                                  case 9:
+                                  case "end":
+                                    return _context10.stop();
+                                }
+                              }
+                            }, _callee10, null, [[1, 6]]);
+                          })), 1000);
+
+                        case 3:
+                        case "end":
+                          return _context11.stop();
+                      }
+                    }
+                  }, _callee11);
+                })));
+                _context12.next = 16;
+                break;
+
+              case 12:
+                _context12.prev = 12;
+                _context12.t0 = _context12["catch"](1);
+                provMainDebug('Error in MongoDb connection: ' + _context12.t0);
+                throw new Error('Unable to connect to database');
+
+              case 16:
                 /* In case no port is provided uses 3000 */
                 port = port || 3000; // Starts server on given port
 
                 (0, _classPrivateFieldLooseBase2["default"])(this, _server)[_server].listen(port, 'Lti Provider tool is listening on port ' + port + '!\n\nLTI provider config: \n>Initiate login URL: ' + (0, _classPrivateFieldLooseBase2["default"])(this, _loginUrl)[_loginUrl] + '\n>App Url: ' + (0, _classPrivateFieldLooseBase2["default"])(this, _appUrl)[_appUrl] + '\n>Session Timeout Url: ' + (0, _classPrivateFieldLooseBase2["default"])(this, _sessionTimeoutUrl)[_sessionTimeoutUrl] + '\n>Invalid Token Url: ' + (0, _classPrivateFieldLooseBase2["default"])(this, _invalidTokenUrl)[_invalidTokenUrl]);
 
-                return _context3.abrupt("return", true);
+                return _context12.abrupt("return", true);
 
-              case 5:
+              case 19:
               case "end":
-                return _context3.stop();
+                return _context12.stop();
             }
           }
-        }, _callee3, this);
+        }, _callee12, this, [[1, 12]]);
       }));
 
-      function deploy(_x6) {
+      function deploy(_x15) {
         return _deploy.apply(this, arguments);
       }
 
@@ -683,54 +892,54 @@ function () {
     value: function () {
       var _registerPlatform = (0, _asyncToGenerator2["default"])(
       /*#__PURE__*/
-      _regenerator["default"].mark(function _callee4(url, name, clientId, authenticationEndpoint, accesstokenEndpoint, authConfig) {
+      _regenerator["default"].mark(function _callee13(url, name, clientId, authenticationEndpoint, accesstokenEndpoint, authConfig) {
         var platform, kid, plat, isregisteredPlat;
-        return _regenerator["default"].wrap(function _callee4$(_context4) {
+        return _regenerator["default"].wrap(function _callee13$(_context13) {
           while (1) {
-            switch (_context4.prev = _context4.next) {
+            switch (_context13.prev = _context13.next) {
               case 0:
                 if (!(!name || !url || !clientId || !authenticationEndpoint || !accesstokenEndpoint || !authConfig)) {
-                  _context4.next = 2;
+                  _context13.next = 2;
                   break;
                 }
 
                 throw new Error('Error registering platform. Missing argument.');
 
               case 2:
-                _context4.prev = 2;
-                _context4.next = 5;
+                _context13.prev = 2;
+                _context13.next = 5;
                 return this.getPlatform(url);
 
               case 5:
-                platform = _context4.sent;
+                platform = _context13.sent;
 
                 if (platform) {
-                  _context4.next = 21;
+                  _context13.next = 21;
                   break;
                 }
 
-                _context4.next = 9;
+                _context13.next = 9;
                 return Auth.generateProviderKeyPair((0, _classPrivateFieldLooseBase2["default"])(this, _ENCRYPTIONKEY)[_ENCRYPTIONKEY]);
 
               case 9:
-                kid = _context4.sent;
+                kid = _context13.sent;
                 plat = new Platform(name, url, clientId, authenticationEndpoint, accesstokenEndpoint, kid, (0, _classPrivateFieldLooseBase2["default"])(this, _ENCRYPTIONKEY)[_ENCRYPTIONKEY], authConfig); // Save platform to db
 
-                _context4.next = 13;
+                _context13.next = 13;
                 return Database.Get(false, 'platform', {
                   platformUrl: url
                 });
 
               case 13:
-                isregisteredPlat = _context4.sent;
+                isregisteredPlat = _context13.sent;
 
                 if (isregisteredPlat) {
-                  _context4.next = 18;
+                  _context13.next = 18;
                   break;
                 }
 
                 provMainDebug('Registering new platform: ' + url);
-                _context4.next = 18;
+                _context13.next = 18;
                 return Database.Insert(false, 'platform', {
                   platformName: name,
                   platformUrl: url,
@@ -742,30 +951,30 @@ function () {
                 });
 
               case 18:
-                return _context4.abrupt("return", plat);
+                return _context13.abrupt("return", plat);
 
               case 21:
-                return _context4.abrupt("return", platform);
+                return _context13.abrupt("return", platform);
 
               case 22:
-                _context4.next = 28;
+                _context13.next = 28;
                 break;
 
               case 24:
-                _context4.prev = 24;
-                _context4.t0 = _context4["catch"](2);
-                provAuthDebug(_context4.t0);
-                return _context4.abrupt("return", false);
+                _context13.prev = 24;
+                _context13.t0 = _context13["catch"](2);
+                provAuthDebug(_context13.t0);
+                return _context13.abrupt("return", false);
 
               case 28:
               case "end":
-                return _context4.stop();
+                return _context13.stop();
             }
           }
-        }, _callee4, this, [[2, 24]]);
+        }, _callee13, this, [[2, 24]]);
       }));
 
-      function registerPlatform(_x7, _x8, _x9, _x10, _x11, _x12) {
+      function registerPlatform(_x16, _x17, _x18, _x19, _x20, _x21) {
         return _registerPlatform.apply(this, arguments);
       }
 
@@ -782,45 +991,45 @@ function () {
     value: function () {
       var _getPlatform = (0, _asyncToGenerator2["default"])(
       /*#__PURE__*/
-      _regenerator["default"].mark(function _callee5(url, ENCRYPTIONKEY) {
+      _regenerator["default"].mark(function _callee14(url, ENCRYPTIONKEY) {
         var plat, obj, result;
-        return _regenerator["default"].wrap(function _callee5$(_context5) {
+        return _regenerator["default"].wrap(function _callee14$(_context14) {
           while (1) {
-            switch (_context5.prev = _context5.next) {
+            switch (_context14.prev = _context14.next) {
               case 0:
                 if (url) {
-                  _context5.next = 2;
+                  _context14.next = 2;
                   break;
                 }
 
                 throw new Error('No url provided');
 
               case 2:
-                _context5.prev = 2;
-                _context5.next = 5;
+                _context14.prev = 2;
+                _context14.next = 5;
                 return Database.Get(false, 'platform', {
                   platformUrl: url
                 });
 
               case 5:
-                plat = _context5.sent;
+                plat = _context14.sent;
 
                 if (plat) {
-                  _context5.next = 8;
+                  _context14.next = 8;
                   break;
                 }
 
-                return _context5.abrupt("return", false);
+                return _context14.abrupt("return", false);
 
               case 8:
                 obj = plat[0];
 
                 if (obj) {
-                  _context5.next = 11;
+                  _context14.next = 11;
                   break;
                 }
 
-                return _context5.abrupt("return", false);
+                return _context14.abrupt("return", false);
 
               case 11:
                 if (ENCRYPTIONKEY) {
@@ -829,23 +1038,23 @@ function () {
                   result = new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, (0, _classPrivateFieldLooseBase2["default"])(this, _ENCRYPTIONKEY)[_ENCRYPTIONKEY], obj.authConfig);
                 }
 
-                return _context5.abrupt("return", result);
+                return _context14.abrupt("return", result);
 
               case 15:
-                _context5.prev = 15;
-                _context5.t0 = _context5["catch"](2);
-                provAuthDebug(_context5.t0);
-                return _context5.abrupt("return", false);
+                _context14.prev = 15;
+                _context14.t0 = _context14["catch"](2);
+                provAuthDebug(_context14.t0);
+                return _context14.abrupt("return", false);
 
               case 19:
               case "end":
-                return _context5.stop();
+                return _context14.stop();
             }
           }
-        }, _callee5, this, [[2, 15]]);
+        }, _callee14, this, [[2, 15]]);
       }));
 
-      function getPlatform(_x13, _x14) {
+      function getPlatform(_x22, _x23) {
         return _getPlatform.apply(this, arguments);
       }
 
@@ -861,45 +1070,45 @@ function () {
     value: function () {
       var _deletePlatform = (0, _asyncToGenerator2["default"])(
       /*#__PURE__*/
-      _regenerator["default"].mark(function _callee6(url) {
+      _regenerator["default"].mark(function _callee15(url) {
         var platform;
-        return _regenerator["default"].wrap(function _callee6$(_context6) {
+        return _regenerator["default"].wrap(function _callee15$(_context15) {
           while (1) {
-            switch (_context6.prev = _context6.next) {
+            switch (_context15.prev = _context15.next) {
               case 0:
                 if (url) {
-                  _context6.next = 2;
+                  _context15.next = 2;
                   break;
                 }
 
                 throw new Error('No url provided');
 
               case 2:
-                _context6.next = 4;
+                _context15.next = 4;
                 return this.getPlatform(url);
 
               case 4:
-                platform = _context6.sent;
+                platform = _context15.sent;
 
                 if (!platform) {
-                  _context6.next = 7;
+                  _context15.next = 7;
                   break;
                 }
 
-                return _context6.abrupt("return", platform.remove());
+                return _context15.abrupt("return", platform.remove());
 
               case 7:
-                return _context6.abrupt("return", false);
+                return _context15.abrupt("return", false);
 
               case 8:
               case "end":
-                return _context6.stop();
+                return _context15.stop();
             }
           }
-        }, _callee6, this);
+        }, _callee15, this);
       }));
 
-      function deletePlatform(_x15) {
+      function deletePlatform(_x24) {
         return _deletePlatform.apply(this, arguments);
       }
 
@@ -914,87 +1123,87 @@ function () {
     value: function () {
       var _getAllPlatforms = (0, _asyncToGenerator2["default"])(
       /*#__PURE__*/
-      _regenerator["default"].mark(function _callee7() {
+      _regenerator["default"].mark(function _callee16() {
         var returnArray, platforms, _iteratorNormalCompletion, _didIteratorError, _iteratorError, _iterator, _step, obj;
 
-        return _regenerator["default"].wrap(function _callee7$(_context7) {
+        return _regenerator["default"].wrap(function _callee16$(_context16) {
           while (1) {
-            switch (_context7.prev = _context7.next) {
+            switch (_context16.prev = _context16.next) {
               case 0:
                 returnArray = [];
-                _context7.prev = 1;
-                _context7.next = 4;
+                _context16.prev = 1;
+                _context16.next = 4;
                 return Database.Get(false, 'platform');
 
               case 4:
-                platforms = _context7.sent;
+                platforms = _context16.sent;
 
                 if (!platforms) {
-                  _context7.next = 26;
+                  _context16.next = 26;
                   break;
                 }
 
                 _iteratorNormalCompletion = true;
                 _didIteratorError = false;
                 _iteratorError = undefined;
-                _context7.prev = 9;
+                _context16.prev = 9;
 
                 for (_iterator = platforms[Symbol.iterator](); !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
                   obj = _step.value;
                   returnArray.push(new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, (0, _classPrivateFieldLooseBase2["default"])(this, _ENCRYPTIONKEY)[_ENCRYPTIONKEY], obj.authConfig));
                 }
 
-                _context7.next = 17;
+                _context16.next = 17;
                 break;
 
               case 13:
-                _context7.prev = 13;
-                _context7.t0 = _context7["catch"](9);
+                _context16.prev = 13;
+                _context16.t0 = _context16["catch"](9);
                 _didIteratorError = true;
-                _iteratorError = _context7.t0;
+                _iteratorError = _context16.t0;
 
               case 17:
-                _context7.prev = 17;
-                _context7.prev = 18;
+                _context16.prev = 17;
+                _context16.prev = 18;
 
                 if (!_iteratorNormalCompletion && _iterator["return"] != null) {
                   _iterator["return"]();
                 }
 
               case 20:
-                _context7.prev = 20;
+                _context16.prev = 20;
 
                 if (!_didIteratorError) {
-                  _context7.next = 23;
+                  _context16.next = 23;
                   break;
                 }
 
                 throw _iteratorError;
 
               case 23:
-                return _context7.finish(20);
+                return _context16.finish(20);
 
               case 24:
-                return _context7.finish(17);
+                return _context16.finish(17);
 
               case 25:
-                return _context7.abrupt("return", returnArray);
+                return _context16.abrupt("return", returnArray);
 
               case 26:
-                return _context7.abrupt("return", []);
+                return _context16.abrupt("return", []);
 
               case 29:
-                _context7.prev = 29;
-                _context7.t1 = _context7["catch"](1);
-                provAuthDebug(_context7.t1);
-                return _context7.abrupt("return", false);
+                _context16.prev = 29;
+                _context16.t1 = _context16["catch"](1);
+                provAuthDebug(_context16.t1);
+                return _context16.abrupt("return", false);
 
               case 33:
               case "end":
-                return _context7.stop();
+                return _context16.stop();
             }
           }
-        }, _callee7, this, [[1, 29], [9, 13, 17, 25], [18,, 20, 24]]);
+        }, _callee16, this, [[1, 29], [9, 13, 17, 25], [18,, 20, 24]]);
       }));
 
       function getAllPlatforms() {
@@ -1014,39 +1223,39 @@ function () {
     value: function () {
       var _messagePlatform = (0, _asyncToGenerator2["default"])(
       /*#__PURE__*/
-      _regenerator["default"].mark(function _callee8(idtoken, message) {
+      _regenerator["default"].mark(function _callee17(idtoken, message) {
         var platform, tokenRes, lineitemsEndpoint, lineitemRes, resourceId, lineitem, lineitemUrl, scoreUrl, query, _url;
 
-        return _regenerator["default"].wrap(function _callee8$(_context8) {
+        return _regenerator["default"].wrap(function _callee17$(_context17) {
           while (1) {
-            switch (_context8.prev = _context8.next) {
+            switch (_context17.prev = _context17.next) {
               case 0:
                 provMainDebug('Target platform: ' + idtoken.iss);
-                _context8.next = 3;
+                _context17.next = 3;
                 return this.getPlatform(idtoken.iss);
 
               case 3:
-                platform = _context8.sent;
+                platform = _context17.sent;
 
                 if (platform) {
-                  _context8.next = 7;
+                  _context17.next = 7;
                   break;
                 }
 
                 provMainDebug('Platform not found, returning false');
-                return _context8.abrupt("return", false);
+                return _context17.abrupt("return", false);
 
               case 7:
                 provMainDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']');
-                _context8.prev = 8;
-                _context8.next = 11;
+                _context17.prev = 8;
+                _context17.next = 11;
                 return platform.platformAccessToken();
 
               case 11:
-                tokenRes = _context8.sent;
+                tokenRes = _context17.sent;
                 provMainDebug('Access_token retrieved for [' + idtoken.iss + ']');
                 lineitemsEndpoint = idtoken.endpoint.lineitems;
-                _context8.next = 16;
+                _context17.next = 16;
                 return got.get(lineitemsEndpoint, {
                   headers: {
                     Authorization: tokenRes.token_type + ' ' + tokenRes.access_token
@@ -1054,7 +1263,7 @@ function () {
                 });
 
               case 16:
-                lineitemRes = _context8.sent;
+                lineitemRes = _context17.sent;
                 resourceId = idtoken.platformContext.resource;
                 lineitem = find(JSON.parse(lineitemRes.body), ['resourceLinkId', resourceId.id]);
                 lineitemUrl = lineitem.id;
@@ -1071,7 +1280,7 @@ function () {
                 message.timestamp = new Date(Date.now()).toISOString();
                 message.scoreMaximum = lineitem.scoreMaximum;
                 provMainDebug(message);
-                _context8.next = 29;
+                _context17.next = 29;
                 return got.post(scoreUrl, {
                   headers: {
                     Authorization: tokenRes.token_type + ' ' + tokenRes.access_token,
@@ -1082,23 +1291,23 @@ function () {
 
               case 29:
                 provMainDebug('Message successfully sent');
-                return _context8.abrupt("return", true);
+                return _context17.abrupt("return", true);
 
               case 33:
-                _context8.prev = 33;
-                _context8.t0 = _context8["catch"](8);
-                provMainDebug(_context8.t0);
-                return _context8.abrupt("return", false);
+                _context17.prev = 33;
+                _context17.t0 = _context17["catch"](8);
+                provMainDebug(_context17.t0);
+                return _context17.abrupt("return", false);
 
               case 37:
               case "end":
-                return _context8.stop();
+                return _context17.stop();
             }
           }
-        }, _callee8, this, [[8, 33]]);
+        }, _callee17, this, [[8, 33]]);
       }));
 
-      function messagePlatform(_x16, _x17) {
+      function messagePlatform(_x25, _x26) {
         return _messagePlatform.apply(this, arguments);
       }
 
@@ -1117,27 +1326,27 @@ function () {
     value: function () {
       var _redirect = (0, _asyncToGenerator2["default"])(
       /*#__PURE__*/
-      _regenerator["default"].mark(function _callee9(res, path, isNewResource) {
-        return _regenerator["default"].wrap(function _callee9$(_context9) {
+      _regenerator["default"].mark(function _callee18(res, path, isNewResource) {
+        return _regenerator["default"].wrap(function _callee18$(_context18) {
           while (1) {
-            switch (_context9.prev = _context9.next) {
+            switch (_context18.prev = _context18.next) {
               case 0:
                 if (res.locals.login && isNewResource) {
                   provMainDebug('Setting up path cookie for this resource with path: ' + path);
                   res.cookie(res.locals.token.issuer_code + path, res.locals.token.platformContext, (0, _classPrivateFieldLooseBase2["default"])(this, _cookieOptions)[_cookieOptions]);
                 }
 
-                return _context9.abrupt("return", res.redirect(res.locals.token.issuer_code + path));
+                return _context18.abrupt("return", res.redirect(res.locals.token.issuer_code + path));
 
               case 2:
               case "end":
-                return _context9.stop();
+                return _context18.stop();
             }
           }
-        }, _callee9, this);
+        }, _callee18, this);
       }));
 
-      function redirect(_x18, _x19, _x20) {
+      function redirect(_x27, _x28, _x29) {
         return _redirect.apply(this, arguments);
       }
 
