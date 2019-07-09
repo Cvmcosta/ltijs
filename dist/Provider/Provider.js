@@ -237,7 +237,7 @@ function () {
                 }
 
                 origin = req.get('origin');
-                if (!origin) origin = req.get('host');
+                if (!origin || origin === 'null') origin = req.get('host');
 
                 if (origin) {
                   _context.next = 7;
@@ -518,7 +518,7 @@ function () {
                 }
 
                 origin = req.get('origin');
-                if (!origin) origin = req.get('host');
+                if (!origin || origin === 'null') origin = req.get('host');
 
                 if (origin) {
                   _context2.next = 9;

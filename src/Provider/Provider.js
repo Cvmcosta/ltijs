@@ -141,7 +141,7 @@ class Provider {
 
       if (req.url === this.#appUrl) {
         let origin = req.get('origin')
-        if (!origin) origin = req.get('host')
+        if (!origin || origin === 'null') origin = req.get('host')
         if (!origin) return res.redirect(this.#invalidTokenUrl)
         let iss = 'plat' + encodeURIComponent(Buffer.from(origin).toString('base64'))
         return res.redirect(307, '/' + iss)
@@ -287,7 +287,7 @@ class Provider {
       let platform = await this.getPlatform(req.body.iss)
       if (platform) {
         let origin = req.get('origin')
-        if (!origin) origin = req.get('host')
+        if (!origin || origin === 'null') origin = req.get('host')
         if (!origin) return res.redirect(this.#invalidTokenUrl)
         let cookieName = 'plat' + encodeURIComponent(Buffer.from(origin).toString('base64'))
         provMainDebug('Redirecting to platform authentication endpoint')
