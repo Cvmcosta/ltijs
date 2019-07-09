@@ -215,7 +215,7 @@ function () {
       var _ref = (0, _asyncToGenerator2["default"])(
       /*#__PURE__*/
       _regenerator["default"].mark(function _callee(req, res, next) {
-        var iss, it, urlArr, issuer, path, isApiRequest, cookies, decode, requestParts, _urlArr, i, _i, _i2, _Object$keys, _key, valid, platformCookie, contextCookie, _valid, isPath, _i3, _Object$keys2, key;
+        var origin, iss, it, urlArr, issuer, path, isApiRequest, cookies, decode, requestParts, _urlArr, i, _i, _i2, _Object$keys, _key, valid, platformCookie, contextCookie, _valid, isPath, _i3, _Object$keys2, key;
 
         return _regenerator["default"].wrap(function _callee$(_context) {
           while (1) {
@@ -230,23 +230,26 @@ function () {
 
               case 2:
                 if (!(req.url === (0, _classPrivateFieldLooseBase2["default"])(_this, _appUrl)[_appUrl])) {
-                  _context.next = 7;
+                  _context.next = 9;
                   break;
                 }
 
-                if (req.get('origin')) {
-                  _context.next = 5;
+                origin = req.get('origin');
+                if (!origin) origin = req.get('host');
+
+                if (origin) {
+                  _context.next = 7;
                   break;
                 }
 
                 return _context.abrupt("return", res.redirect((0, _classPrivateFieldLooseBase2["default"])(_this, _invalidTokenUrl)[_invalidTokenUrl]));
 
-              case 5:
-                iss = 'plat' + encodeURIComponent(Buffer.from(req.get('origin')).toString('base64'));
+              case 7:
+                iss = 'plat' + encodeURIComponent(Buffer.from(origin).toString('base64'));
                 return _context.abrupt("return", res.redirect(307, '/' + iss));
 
-              case 7:
-                _context.prev = 7;
+              case 9:
+                _context.prev = 9;
                 it = false;
                 urlArr = req.url.split('/');
                 issuer = urlArr[1];
@@ -268,23 +271,23 @@ function () {
 
 
                 if (!isApiRequest) {
-                  _context.next = 26;
+                  _context.next = 28;
                   break;
                 }
 
                 if (!req.query.context) {
-                  _context.next = 21;
+                  _context.next = 23;
                   break;
                 }
 
                 requestParts = req.query.context.split('/');
-                _context.next = 22;
+                _context.next = 24;
                 break;
 
-              case 21:
+              case 23:
                 return _context.abrupt("return", res.status(400).send('Missing context parameter in request.'));
 
-              case 22:
+              case 24:
                 issuer = encodeURIComponent(requestParts[1]);
                 _urlArr = [];
 
@@ -294,7 +297,7 @@ function () {
 
                 urlArr = _urlArr;
 
-              case 26:
+              case 28:
                 for (_i in urlArr) {
                   if (parseInt(_i) !== 0 && parseInt(_i) !== 1) path = path + '/' + urlArr[_i];
                 } // Mathes path to cookie
@@ -302,45 +305,45 @@ function () {
 
                 _i2 = 0, _Object$keys = Object.keys(cookies);
 
-              case 28:
+              case 30:
                 if (!(_i2 < _Object$keys.length)) {
-                  _context.next = 36;
+                  _context.next = 38;
                   break;
                 }
 
                 _key = _Object$keys[_i2];
 
                 if (!(_key === issuer)) {
-                  _context.next = 33;
+                  _context.next = 35;
                   break;
                 }
 
                 it = cookies[_key];
-                return _context.abrupt("break", 36);
+                return _context.abrupt("break", 38);
 
-              case 33:
+              case 35:
                 _i2++;
-                _context.next = 28;
+                _context.next = 30;
                 break;
 
-              case 36:
+              case 38:
                 if (it) {
-                  _context.next = 59;
+                  _context.next = 61;
                   break;
                 }
 
                 provMainDebug('No cookie found');
 
                 if (!req.body.id_token) {
-                  _context.next = 55;
+                  _context.next = 57;
                   break;
                 }
 
                 provMainDebug('Received request containing token. Sending for validation');
-                _context.next = 42;
+                _context.next = 44;
                 return Auth.validateToken(req.body.id_token, _this.getPlatform, (0, _classPrivateFieldLooseBase2["default"])(_this, _ENCRYPTIONKEY)[_ENCRYPTIONKEY]);
 
-              case 42:
+              case 44:
                 valid = _context.sent;
                 provAuthDebug('Successfully validated token!'); // Mount platform cookie
 
@@ -378,109 +381,109 @@ function () {
                 provMainDebug('Passing request to next handler');
                 return _context.abrupt("return", next());
 
-              case 55:
+              case 57:
                 provMainDebug('Passing request to session timeout handler');
                 return _context.abrupt("return", res.redirect((0, _classPrivateFieldLooseBase2["default"])(_this, _sessionTimeoutUrl)[_sessionTimeoutUrl]));
 
-              case 57:
-                _context.next = 89;
+              case 59:
+                _context.next = 91;
                 break;
 
-              case 59:
+              case 61:
                 provAuthDebug('Cookie found');
                 _valid = it;
                 res.cookie(issuer, _valid, (0, _classPrivateFieldLooseBase2["default"])(_this, _cookieOptions)[_cookieOptions]);
                 isPath = false;
 
                 if (!path) {
-                  _context.next = 82;
+                  _context.next = 84;
                   break;
                 }
 
                 path = issuer + path;
                 _i3 = 0, _Object$keys2 = Object.keys(cookies);
 
-              case 66:
+              case 68:
                 if (!(_i3 < _Object$keys2.length)) {
-                  _context.next = 76;
+                  _context.next = 78;
                   break;
                 }
 
                 key = _Object$keys2[_i3];
 
                 if (!(key === issuer)) {
-                  _context.next = 70;
+                  _context.next = 72;
                   break;
                 }
 
-                return _context.abrupt("continue", 73);
+                return _context.abrupt("continue", 75);
 
-              case 70:
+              case 72:
                 if (!(path.search(key) !== -1)) {
-                  _context.next = 73;
+                  _context.next = 75;
                   break;
                 }
 
                 isPath = cookies[key];
-                return _context.abrupt("break", 76);
+                return _context.abrupt("break", 78);
 
-              case 73:
+              case 75:
                 _i3++;
-                _context.next = 66;
+                _context.next = 68;
                 break;
 
-              case 76:
+              case 78:
                 if (!isPath) {
-                  _context.next = 80;
+                  _context.next = 82;
                   break;
                 }
 
                 _valid.platformContext = isPath;
 
                 if (_valid.platformContext) {
-                  _context.next = 80;
+                  _context.next = 82;
                   break;
                 }
 
                 throw new Error('No path cookie found');
 
-              case 80:
-                _context.next = 85;
+              case 82:
+                _context.next = 87;
                 break;
 
-              case 82:
+              case 84:
                 _valid.platformContext = cookies[issuer + '/'];
 
                 if (_valid.platformContext) {
-                  _context.next = 85;
+                  _context.next = 87;
                   break;
                 }
 
                 throw new Error('No path cookie found');
 
-              case 85:
+              case 87:
                 res.locals.token = _valid;
                 res.locals.login = false;
                 provMainDebug('Passing request to next handler');
                 return _context.abrupt("return", next());
 
-              case 89:
-                _context.next = 96;
+              case 91:
+                _context.next = 98;
                 break;
 
-              case 91:
-                _context.prev = 91;
-                _context.t0 = _context["catch"](7);
+              case 93:
+                _context.prev = 93;
+                _context.t0 = _context["catch"](9);
                 provAuthDebug(_context.t0);
                 provMainDebug('Error retrieving or validating token. Passing request to invalid token handler');
                 return _context.abrupt("return", res.redirect((0, _classPrivateFieldLooseBase2["default"])(_this, _invalidTokenUrl)[_invalidTokenUrl]));
 
-              case 96:
+              case 98:
               case "end":
                 return _context.stop();
             }
           }
-        }, _callee, null, [[7, 91]]);
+        }, _callee, null, [[9, 93]]);
       }));
 
       return function sessionValidator(_x, _x2, _x3) {
@@ -495,7 +498,7 @@ function () {
       var _ref2 = (0, _asyncToGenerator2["default"])(
       /*#__PURE__*/
       _regenerator["default"].mark(function _callee2(req, res) {
-        var platform, cookieName;
+        var platform, origin, cookieName;
         return _regenerator["default"].wrap(function _callee2$(_context2) {
           while (1) {
             switch (_context2.prev = _context2.next) {
@@ -508,24 +511,35 @@ function () {
                 platform = _context2.sent;
 
                 if (!platform) {
-                  _context2.next = 21;
+                  _context2.next = 25;
                   break;
                 }
 
-                cookieName = 'plat' + encodeURIComponent(Buffer.from(req.get('origin')).toString('base64'));
+                origin = req.get('origin');
+                if (!origin) origin = req.get('host');
+
+                if (origin) {
+                  _context2.next = 9;
+                  break;
+                }
+
+                return _context2.abrupt("return", res.redirect((0, _classPrivateFieldLooseBase2["default"])(_this, _invalidTokenUrl)[_invalidTokenUrl]));
+
+              case 9:
+                cookieName = 'plat' + encodeURIComponent(Buffer.from(origin).toString('base64'));
                 provMainDebug('Redirecting to platform authentication endpoint');
                 res.clearCookie(cookieName, (0, _classPrivateFieldLooseBase2["default"])(_this, _cookieOptions)[_cookieOptions]);
                 _context2.t0 = res;
                 _context2.t1 = url;
-                _context2.next = 12;
+                _context2.next = 16;
                 return platform.platformAuthEndpoint();
 
-              case 12:
+              case 16:
                 _context2.t2 = _context2.sent;
-                _context2.next = 15;
+                _context2.next = 19;
                 return Request.ltiAdvantageLogin(req.body, platform);
 
-              case 15:
+              case 19:
                 _context2.t3 = _context2.sent;
                 _context2.t4 = {
                   pathname: _context2.t2,
@@ -535,14 +549,14 @@ function () {
 
                 _context2.t0.redirect.call(_context2.t0, _context2.t5);
 
-                _context2.next = 23;
+                _context2.next = 27;
                 break;
 
-              case 21:
+              case 25:
                 provMainDebug('Unregistered platform attempting connection: ' + req.body.iss);
                 res.status(401).send('Unregistered platform.');
 
-              case 23:
+              case 27:
               case "end":
                 return _context2.stop();
             }

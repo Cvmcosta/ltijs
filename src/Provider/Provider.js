@@ -139,8 +139,10 @@ class Provider {
       if (req.url === this.#loginUrl || req.url === this.#sessionTimeoutUrl || req.url === this.#invalidTokenUrl) return next()
 
       if (req.url === this.#appUrl) {
-        if (!req.get('origin')) return res.redirect(this.#invalidTokenUrl)
-        let iss = 'plat' + encodeURIComponent(Buffer.from(req.get('origin')).toString('base64'))
+        let origin = req.get('origin')
+        if (!origin) origin = req.get('host')
+        if (!origin) return res.redirect(this.#invalidTokenUrl)
+        let iss = 'plat' + encodeURIComponent(Buffer.from(origin).toString('base64'))
         return res.redirect(307, '/' + iss)
       }
 
@@ -283,7 +285,10 @@ class Provider {
       provMainDebug('Receiving a login request from: ' + req.body.iss)
       let platform = await this.getPlatform(req.body.iss)
       if (platform) {
-        let cookieName = 'plat' + encodeURIComponent(Buffer.from(req.get('origin')).toString('base64'))
+        let origin = req.get('origin')
+        if (!origin) origin = req.get('host')
+        if (!origin) return res.redirect(this.#invalidTokenUrl)
+        let cookieName = 'plat' + encodeURIComponent(Buffer.from(origin).toString('base64'))
         provMainDebug('Redirecting to platform authentication endpoint')
         res.clearCookie(cookieName, this.#cookieOptions)
         res.redirect(url.format({
