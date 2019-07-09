@@ -139,6 +139,7 @@ class Provider {
       if (req.url === this.#loginUrl || req.url === this.#sessionTimeoutUrl || req.url === this.#invalidTokenUrl) return next()
 
       if (req.url === this.#appUrl) {
+        if (!req.get('origin')) return res.redirect(this.#invalidTokenUrl)
         let iss = 'plat' + encodeURIComponent(Buffer.from(req.get('origin')).toString('base64'))
         return res.redirect(307, '/' + iss)
       }
