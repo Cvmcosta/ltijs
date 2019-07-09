@@ -230,15 +230,23 @@ function () {
 
               case 2:
                 if (!(req.url === (0, _classPrivateFieldLooseBase2["default"])(_this, _appUrl)[_appUrl])) {
+                  _context.next = 7;
+                  break;
+                }
+
+                if (req.get('origin')) {
                   _context.next = 5;
                   break;
                 }
 
+                return _context.abrupt("return", res.redirect((0, _classPrivateFieldLooseBase2["default"])(_this, _invalidTokenUrl)[_invalidTokenUrl]));
+
+              case 5:
                 iss = 'plat' + encodeURIComponent(Buffer.from(req.get('origin')).toString('base64'));
                 return _context.abrupt("return", res.redirect(307, '/' + iss));
 
-              case 5:
-                _context.prev = 5;
+              case 7:
+                _context.prev = 7;
                 it = false;
                 urlArr = req.url.split('/');
                 issuer = urlArr[1];
@@ -260,23 +268,23 @@ function () {
 
 
                 if (!isApiRequest) {
-                  _context.next = 24;
+                  _context.next = 26;
                   break;
                 }
 
                 if (!req.query.context) {
-                  _context.next = 19;
+                  _context.next = 21;
                   break;
                 }
 
                 requestParts = req.query.context.split('/');
-                _context.next = 20;
+                _context.next = 22;
                 break;
 
-              case 19:
+              case 21:
                 return _context.abrupt("return", res.status(400).send('Missing context parameter in request.'));
 
-              case 20:
+              case 22:
                 issuer = encodeURIComponent(requestParts[1]);
                 _urlArr = [];
 
@@ -286,7 +294,7 @@ function () {
 
                 urlArr = _urlArr;
 
-              case 24:
+              case 26:
                 for (_i in urlArr) {
                   if (parseInt(_i) !== 0 && parseInt(_i) !== 1) path = path + '/' + urlArr[_i];
                 } // Mathes path to cookie
@@ -294,45 +302,45 @@ function () {
 
                 _i2 = 0, _Object$keys = Object.keys(cookies);
 
-              case 26:
+              case 28:
                 if (!(_i2 < _Object$keys.length)) {
-                  _context.next = 34;
+                  _context.next = 36;
                   break;
                 }
 
                 _key = _Object$keys[_i2];
 
                 if (!(_key === issuer)) {
-                  _context.next = 31;
+                  _context.next = 33;
                   break;
                 }
 
                 it = cookies[_key];
-                return _context.abrupt("break", 34);
+                return _context.abrupt("break", 36);
 
-              case 31:
+              case 33:
                 _i2++;
-                _context.next = 26;
+                _context.next = 28;
                 break;
 
-              case 34:
+              case 36:
                 if (it) {
-                  _context.next = 57;
+                  _context.next = 59;
                   break;
                 }
 
                 provMainDebug('No cookie found');
 
                 if (!req.body.id_token) {
-                  _context.next = 53;
+                  _context.next = 55;
                   break;
                 }
 
                 provMainDebug('Received request containing token. Sending for validation');
-                _context.next = 40;
+                _context.next = 42;
                 return Auth.validateToken(req.body.id_token, _this.getPlatform, (0, _classPrivateFieldLooseBase2["default"])(_this, _ENCRYPTIONKEY)[_ENCRYPTIONKEY]);
 
-              case 40:
+              case 42:
                 valid = _context.sent;
                 provAuthDebug('Successfully validated token!'); // Mount platform cookie
 
@@ -370,109 +378,109 @@ function () {
                 provMainDebug('Passing request to next handler');
                 return _context.abrupt("return", next());
 
-              case 53:
+              case 55:
                 provMainDebug('Passing request to session timeout handler');
                 return _context.abrupt("return", res.redirect((0, _classPrivateFieldLooseBase2["default"])(_this, _sessionTimeoutUrl)[_sessionTimeoutUrl]));
 
-              case 55:
-                _context.next = 87;
+              case 57:
+                _context.next = 89;
                 break;
 
-              case 57:
+              case 59:
                 provAuthDebug('Cookie found');
                 _valid = it;
                 res.cookie(issuer, _valid, (0, _classPrivateFieldLooseBase2["default"])(_this, _cookieOptions)[_cookieOptions]);
                 isPath = false;
 
                 if (!path) {
-                  _context.next = 80;
+                  _context.next = 82;
                   break;
                 }
 
                 path = issuer + path;
                 _i3 = 0, _Object$keys2 = Object.keys(cookies);
 
-              case 64:
+              case 66:
                 if (!(_i3 < _Object$keys2.length)) {
-                  _context.next = 74;
+                  _context.next = 76;
                   break;
                 }
 
                 key = _Object$keys2[_i3];
 
                 if (!(key === issuer)) {
-                  _context.next = 68;
+                  _context.next = 70;
                   break;
                 }
 
-                return _context.abrupt("continue", 71);
+                return _context.abrupt("continue", 73);
 
-              case 68:
+              case 70:
                 if (!(path.search(key) !== -1)) {
-                  _context.next = 71;
+                  _context.next = 73;
                   break;
                 }
 
                 isPath = cookies[key];
-                return _context.abrupt("break", 74);
+                return _context.abrupt("break", 76);
 
-              case 71:
+              case 73:
                 _i3++;
-                _context.next = 64;
+                _context.next = 66;
                 break;
 
-              case 74:
+              case 76:
                 if (!isPath) {
-                  _context.next = 78;
+                  _context.next = 80;
                   break;
                 }
 
                 _valid.platformContext = isPath;
 
                 if (_valid.platformContext) {
-                  _context.next = 78;
+                  _context.next = 80;
                   break;
                 }
 
                 throw new Error('No path cookie found');
 
-              case 78:
-                _context.next = 83;
+              case 80:
+                _context.next = 85;
                 break;
 
-              case 80:
+              case 82:
                 _valid.platformContext = cookies[issuer + '/'];
 
                 if (_valid.platformContext) {
-                  _context.next = 83;
+                  _context.next = 85;
                   break;
                 }
 
                 throw new Error('No path cookie found');
 
-              case 83:
+              case 85:
                 res.locals.token = _valid;
                 res.locals.login = false;
                 provMainDebug('Passing request to next handler');
                 return _context.abrupt("return", next());
 
-              case 87:
-                _context.next = 94;
+              case 89:
+                _context.next = 96;
                 break;
 
-              case 89:
-                _context.prev = 89;
-                _context.t0 = _context["catch"](5);
+              case 91:
+                _context.prev = 91;
+                _context.t0 = _context["catch"](7);
                 provAuthDebug(_context.t0);
                 provMainDebug('Error retrieving or validating token. Passing request to invalid token handler');
                 return _context.abrupt("return", res.redirect((0, _classPrivateFieldLooseBase2["default"])(_this, _invalidTokenUrl)[_invalidTokenUrl]));
 
-              case 94:
+              case 96:
               case "end":
                 return _context.stop();
             }
           }
-        }, _callee, null, [[5, 89]]);
+        }, _callee, null, [[7, 91]]);
       }));
 
       return function sessionValidator(_x, _x2, _x3) {
