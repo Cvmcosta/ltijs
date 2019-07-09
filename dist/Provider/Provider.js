@@ -35,6 +35,8 @@ var got = require('got');
 
 var find = require('lodash.find');
 
+var validator = require('validator');
+
 var mongoose = require('mongoose');
 
 mongoose.set('useCreateIndex', true);
@@ -262,7 +264,7 @@ function () {
                 if (!isApiRequest) {
                   try {
                     decode = Buffer.from(decodeURIComponent(issuer.split('plat')[1]), 'base64').toString('ascii');
-                    if (decode.search('http') === -1) isApiRequest = true;
+                    if (!validator.isURL(decode)) isApiRequest = true;
                   } catch (err) {
                     provMainDebug(err);
                     isApiRequest = true;
