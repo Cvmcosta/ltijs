@@ -264,7 +264,7 @@ function () {
                 if (!isApiRequest) {
                   try {
                     decode = Buffer.from(decodeURIComponent(issuer.split('plat')[1]), 'base64').toString('ascii');
-                    if (!validator.isURL(decode)) isApiRequest = true;
+                    if (!validator.isURL(decode) && decode.search('localhost') === -1) isApiRequest = true;
                   } catch (err) {
                     provMainDebug(err);
                     isApiRequest = true;
