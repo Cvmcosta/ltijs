@@ -11,6 +11,7 @@ const Database = require('../Utils/Database')
 const url = require('url')
 const got = require('got')
 const find = require('lodash.find')
+const validator = require('validator')
 const mongoose = require('mongoose')
 mongoose.set('useCreateIndex', true)
 const Schema = mongoose.Schema
@@ -159,7 +160,7 @@ class Provider {
         if (!isApiRequest) {
           try {
             let decode = Buffer.from(decodeURIComponent(issuer.split('plat')[1]), 'base64').toString('ascii')
-            if (decode.search('http') === -1) isApiRequest = true
+            if (!validator.isURL(decode)) isApiRequest = true
           } catch (err) {
             provMainDebug(err)
             isApiRequest = true
