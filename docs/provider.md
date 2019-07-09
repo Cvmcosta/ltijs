@@ -1,6 +1,6 @@
-# [ltijs](README.md) - Provider
+# [LTIjs](README.md) - Provider
 
-> Turn your application into a lti 1.3 tool.
+> Turn your application into a LTI 1.3 tool.
 
 
 [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
@@ -17,10 +17,10 @@
 
 ---
 ## Introduction
-According to the [IMS Global Learning Consortium](https://www.imsglobal.org/), a  Lti tool Provider is the external application or service providing functionality to the consumer [platform](platform.md). <sup>[ref](https://www.imsglobal.org/spec/lti/v1p3/#platforms-and-tools)</sup>
+According to the [IMS Global Learning Consortium](https://www.imsglobal.org/), a  LTI tool Provider is the external application or service providing functionality to the consumer [platform](platform.md). <sup>[ref](https://www.imsglobal.org/spec/lti/v1p3/#platforms-and-tools)</sup>
 
 
-This package implements a tool provider as an [Express](https://expressjs.com/) server, with preconfigured routes and methods that manage the [Lti 1.3](https://www.imsglobal.org/spec/lti/v1p3/) protocol for you. Making it fast and simple to create a working learning tool without having to worry about manually implementing any of the security and validation required to do so. 
+This package implements a tool provider as an [Express](https://expressjs.com/) server, with preconfigured routes and methods that manage the [LTI 1.3](https://www.imsglobal.org/spec/lti/v1p3/) protocol for you. Making it fast and simple to create a working learning tool without having to worry about manually implementing any of the security and validation required to do so. 
 
 
 ---
@@ -35,7 +35,7 @@ Example of provider usage
 $ npm install ltijs
 ```
 
-> Install mongoDB. Ltijs  uses mongodb to store and manage information
+> Install mongoDB. LTIjs  uses mongodb to store and manage information
 
  - [Installing mongoDB](https://docs.mongodb.com/manual/administration/install-community)
 
@@ -47,10 +47,10 @@ $ npm install ltijs
 const path = require('path')
 
 // Require Provider 
-const Lti = require('ltijs').Provider
+const LTI = require('ltijs').Provider
 
 // Configure provider
-const lti = new Lti('EXAMPLEKEY', 
+const lti = new LTI('EXAMPLEKEY', 
             { url: 'mongodb://localhost/database', 
               connection:{ user:'user',
                           pass: 'pass'} 
@@ -99,10 +99,10 @@ setup()
 > And checkout the **[Platform class documentation](platform.md)**
 
 
-**Routing with Ltijs is a bit diferent from regular Express routing  so here's a useful tutorial:** 
+**Routing with LTIjs is a bit diferent from regular Express routing  so here's a useful tutorial:** 
 
 
-> **[Understand routing and context with ltijs](#routing-and-context)**
+> **[Understand routing and context with LTIjs](#routing-and-context)**
 
 
 **If your tool is going to function as a hub serving multiple resources:**
@@ -122,7 +122,7 @@ For more examples:
 ## Documentation
 
 ### Provider
->The Ltijs Provider Class
+>The LTIjs Provider Class
 
 Exposes methods for easy manipualtion of the LTI 1.3 standard as a LTI Provider, an "app" object to manipulate the [Express](https://expressjs.com/) server and a [Mongoose.Connection](https://mongoosejs.com/docs/api/connection.html) "db" object.
 
@@ -140,7 +140,7 @@ Express server object.
 
 #### Provider.constructor(encryptionkey, database, [, options]) 
 
-Exposes methods for easy manipualtion of the LTI 1.3 standard as a LTI Provider and a "app" object to manipulate the [Express](https://expressjs.com/) server.
+Exposes methods for easy manipulation of the LTI 1.3 standard as a LTI Provider and a "app" object to manipulate the [Express](https://expressjs.com/) server.
 
 
 
@@ -150,12 +150,12 @@ Exposes methods for easy manipualtion of the LTI 1.3 standard as a LTI Provider 
 | Name | Type | Description |  |
 | ---- | ---- | ----------- | -------- |
 | encryptionkey | `String`  | Secret used to sign cookies and other info. | &nbsp; |
-| database | `Object`  | Lti Provider options. | |
+| database | `Object`  | LTI Provider options. | |
 | database.url | `String`  | Database url (Ex: mongodb://localhost/applicationdb). |  |
 | database.connection | `Object`  | Database connection options. Can be any option supported by the [MongoDB Driver](http://mongodb.github.io/node-mongodb-native/2.2/api/MongoClient.html#connect) | *Optional* |
 | database.connection.user | `String`  | Database user for authentication if needed. | *Optional* |
 | database.connection.pass | `String`  | Database pass for authentication if needed. | *Optional* |
-| options | `Object`  | Lti Provider options. | *Optional* |
+| options | `Object`  | LTI Provider options. | *Optional* |
 | options.https | `Boolean`  | = false]  Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https. ***If you set this option as true you can enable the secure flag in the cookies options of the onConnect method***. | *Optional* |
 | options.ssl | `Object`  | SSL certificate and key if https is enabled. | *Optional* |
 | options.ssl.key | `String`  | SSL key. | *Optional* |
@@ -405,7 +405,7 @@ Sends a grade message to [Platform](platform.md).
 | Name | Type | Description |  |
 | ---- | ---- | ----------- | -------- |
 | idToken | `Object`  | Connection token.| &nbsp; |
-| message | `Object`  | Grade message following the [application/vnd.ims.lis.v1.score+json](https://www.imsglobal.org/spec/lti-ags/v2p0/#score-publish-service) Lti 1.3 standard. | &nbsp; |
+| message | `Object`  | Grade message following the [application/vnd.ims.lis.v1.score+json](https://www.imsglobal.org/spec/lti-ags/v2p0/#score-publish-service) LTI 1.3 standard. | &nbsp; |
 
 
 
@@ -438,15 +438,15 @@ Redirects to another route, handles the context in the url and if the route is a
 #### Require the package
 
 ``` javascript
-const Lti = require('ltijs').Provider
+const LTI = require('ltijs').Provider
 ```
 
 
-#### Instantiate a new Lti Object
+#### Instantiate a new LTI Object
 
 ```javascript
 //Configure provider
-const lti = new Lti('EXAMPLEKEY', 
+const lti = new LTI('EXAMPLEKEY', 
             { url: 'mongodb://localhost/database', 
               connection:{ user:'user',
                           pass: 'pass'} 
@@ -463,7 +463,7 @@ The third parameter, `options`, allows you to configure a staticPath from where 
 
 
 ```javascript
-const lti = new Lti('EXAMPLEKEY', 
+const lti = new LTI('EXAMPLEKEY', 
             { url: 'mongodb://localhost/database', 
               connection:{ user:'user',
                           pass: 'pass'} 
@@ -479,7 +479,7 @@ const lti = new Lti('EXAMPLEKEY',
 
 
 
-#### Working with the Lti object
+#### Working with the LTI object
 
 You can configure the main routes (login, main app, session timeout, invalid token) through the given methods: 
 
@@ -489,7 +489,7 @@ You can configure the main routes (login, main app, session timeout, invalid tok
 
 ```javascript
 lti.appUrl('/') // Main route that calls the onConnect() callback.
-lti.loginUrl('/login') // Login Url used by a platform to initiate the oidc login flow used by Lti 1.3.
+lti.loginUrl('/login') // Login Url used by a platform to initiate the oidc login flow used by LTI 1.3.
 lti.sessionTimeoutUrl('/sessionTimeOut') // Route called when the session cookie for the platform expires.
 lti.invalidTokenUrl('/invalidToken')  // Route called when the system fails to validate token or cookie passed.
 ```
@@ -544,7 +544,7 @@ lti.onConnect(
 
 #### The app property
 
-The Lti object gives you a `app` property that is an instance of the Express server, through this property you can create routes just like with regular [Express](https://expressjs.com/).
+The LTI object gives you a `app` property that is an instance of the Express server, through this property you can create routes just like with regular [Express](https://expressjs.com/).
 
 ```javascript
 lti.app.get('/stuff', (req,res,next) => {
@@ -557,11 +557,11 @@ lti.app.get('/stuff', (req,res,next) => {
 
 ### The [Platform](platform.md) object
 
-A lti tool works in conjunction with an lti ready platform, so in order for a platform to display your tool's resource, it needs to first be registered in the tool.
+A LTI tool works in conjunction with an LTI ready platform, so in order for a platform to display your tool's resource, it needs to first be registered in the tool.
 
 #### Registering a new Platform
 
-The [Lti Provider](provider.md) method `registerPlatform()` returns a Promise that resolves the created `Platform` or `false` if some error occurs.
+The [LTI Provider](provider.md) method `registerPlatform()` returns a Promise that resolves the created `Platform` or `false` if some error occurs.
 
 ```javascript
 let plat = await lti.registerPlatform(
@@ -577,9 +577,9 @@ let plat = await lti.registerPlatform(
 
 ### The IdToken object
 
-When using the Lti 1.3 protocol, every successful login between tool and platform generates an **IdToken** thet the tool uses to identify the user as well as the context in which the login request was realized in.
+When using the LTI 1.3 protocol, every successful login between tool and platform generates an **IdToken** thet the tool uses to identify the user as well as the context in which the login request was realized in.
 
-Everytime a login request or call to route is sucessfully validated, either by validating the idtoken received according to the [Lti 1.3 security specifications](https://www.imsglobal.org/spec/security/v1p0/), or retrieving the session cookie generated when the idtoken validation is completed, a **IdToken** object is passed to the application inside the **res.locals.token** property of the Express route function.
+Everytime a login request or call to route is sucessfully validated, either by validating the idtoken received according to the [LTI 1.3 security specifications](https://www.imsglobal.org/spec/security/v1p0/), or retrieving the session cookie generated when the idtoken validation is completed, a **IdToken** object is passed to the application inside the **res.locals.token** property of the Express route function.
 
 ```javascript
 lti.app.get('/:iss/route', (req, res) => {
@@ -609,7 +609,7 @@ The token consists of:
   platformInfo: {
     family_code: 'platform_type', // ex: Moodle
     version: 'versionNumber',
-    name: 'Lti',
+    name: 'LTI',
     description: 'LTI tool'
   },
   endpoint: {
@@ -643,9 +643,9 @@ The token consists of:
 
 ### Routing and context
 
-Your tool can be used with an unlimited amount of platforms, that is the idea behind Lti, so it needs a way to track which platform and resource is currently being accessed and return the correct token information relevant to each context.
+Your tool can be used with an unlimited amount of platforms, that is the idea behind LTI, so it needs a way to track which platform and resource is currently being accessed and return the correct token information relevant to each context.
 
-In **Ltijs** this is done matching the context url with it's corresponding session cookies stored in the user's browser.
+In **LTIjs** this is done matching the context url with it's corresponding session cookies stored in the user's browser.
 
 - Url context formatting
 
@@ -659,7 +659,7 @@ In **Ltijs** this is done matching the context url with it's corresponding sessi
 
 
 
-> As you can see there is more than one cookie stored, that is because Ltijs also keeps track of multiple activities linked to the tool within a same platform, so the path specific cookie keeps track of activity specific information, like custom parameters, that might point to a specific resource.
+> As you can see there is more than one cookie stored, that is because LTIjs also keeps track of multiple activities linked to the tool within a same platform, so the path specific cookie keeps track of activity specific information, like custom parameters, that might point to a specific resource.
 
 
 The PLATFORM_ID is a url encoded base64 value that represents a platform url, this value is automatically generated and prepended to the PATH when the `redirect()` function is called:
@@ -755,7 +755,7 @@ got.get('https://provider/gettoken?context=' + context, (err, response)=>{
 
 ### Sending grades to a platform
 
-At the moment Ltijs implements a simple version of the [Lti 1.3 Assignment and Grading Service Specification](https://www.imsglobal.org/spec/lti-ags/v2p0/), being able to send grades to a platform in the [application/vnd.ims.lis.v1.score+json](https://www.imsglobal.org/spec/lti-ags/v2p0/#score-publish-service) Lti standard:
+At the moment LTIjs implements a simple version of the [LTI 1.3 Assignment and Grading Service Specification](https://www.imsglobal.org/spec/lti-ags/v2p0/), being able to send grades to a platform in the [application/vnd.ims.lis.v1.score+json](https://www.imsglobal.org/spec/lti-ags/v2p0/#score-publish-service) LTI standard:
 
 ```javascript
 {
@@ -787,7 +787,7 @@ lti.messagePlatform(res.locals.token, grade)
 ## Debugging
 
 
-**Ltijs** uses [debug](https://www.npmjs.com/package/debug) to log various events in the console. Just append `DEBUG='provider:*'` before yout node or npm command and it should be working.
+**LTIjs** uses [debug](https://www.npmjs.com/package/debug) to log various events in the console. Just append `DEBUG='provider:*'` before yout node or npm command and it should be working.
 
 ```shell
 DEBUG='provider:*' npm start

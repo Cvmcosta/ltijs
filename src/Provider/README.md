@@ -1,6 +1,6 @@
 # [ltijs](https://cvmcosta.github.io/ltijs) - Provider
 
-> Turn your application into a lti 1.3 tool.
+> Turn your application into a LTI 1.3 tool.
 
 
 [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
@@ -17,10 +17,10 @@
 
 ---
 ## Introduction
-According to the [IMS Global Learning Consortium](https://www.imsglobal.org/), a  Lti tool Provider is the external application or service providing functionality to the consumer platform. <sup>[ref](https://www.imsglobal.org/spec/lti/v1p3/#platforms-and-tools)</sup>
+According to the [IMS Global Learning Consortium](https://www.imsglobal.org/), a  LTI tool Provider is the external application or service providing functionality to the consumer platform. <sup>[ref](https://www.imsglobal.org/spec/lti/v1p3/#platforms-and-tools)</sup>
 
 
-This package implements a tool provider as an [Express](https://expressjs.com/) server, with preconfigured routes and methods that manage the [Lti 1.3](https://www.imsglobal.org/spec/lti/v1p3/) protocol for you. Making it fast and simple to create a working learning tool without having to worry about manually implementing any of the security and validation required to do so. 
+This package implements a tool provider as an [Express](https://expressjs.com/) server, with preconfigured routes and methods that manage the [LTI 1.3](https://www.imsglobal.org/spec/lti/v1p3/) protocol for you. Making it fast and simple to create a working learning tool without having to worry about manually implementing any of the security and validation required to do so. 
 
 ---
 
@@ -46,10 +46,10 @@ $ npm install ltijs
 const path = require('path')
 
 // Require Provider 
-const Lti = require('ltijs').Provider
+const LTI = require('ltijs').Provider
 
 // Configure provider
-const lti = new Lti('EXAMPLEKEY', 
+const lti = new LTI('EXAMPLEKEY', 
             { url: 'mongodb://localhost/database', 
               connection:{ user:'user',
                           pass: 'pass'} 

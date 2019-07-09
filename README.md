@@ -1,6 +1,6 @@
-# [ltijs](https://cvmcosta.github.io/ltijs) 
+# [LTIjs](https://cvmcosta.github.io/ltijs) 
 
-> Turn your application into a fully integratable lti 1.3 tool or platform.
+> Turn your application into a fully integratable LTI 1.3 tool or platform.
 
 
 [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
@@ -22,7 +22,7 @@
 According to the [IMS Global Learning Consortium](https://www.imsglobal.org/), the Learning Tools Interoperability (LTI) protocol is an IMS standard for integration of rich learning applications within educational environments. <sup>[ref](https://www.imsglobal.org/spec/lti/v1p3/)</sup>
 
 
-This package implements a tool provider and consumer (currently in development) as an [Express](https://expressjs.com/) server, with preconfigured routes and methods that manage the [Lti 1.3](https://www.imsglobal.org/spec/lti/v1p3/) protocol for you. Making it fast and simple to create a working learning tool without having to worry about manually implementing any of the security and validation required to do so. 
+This package implements a tool provider and consumer (currently in development) as an [Express](https://expressjs.com/) server, with preconfigured routes and methods that manage the [LTI 1.3](https://www.imsglobal.org/spec/lti/v1p3/) protocol for you. Making it fast and simple to create a working learning tool without having to worry about manually implementing any of the security and validation required to do so. 
 
 
 ---
@@ -43,11 +43,11 @@ $ npm install ltijs
 
 ## Features
 
-This package implements Lti Provider and Consumer servers. See bellow for specific documentations.
+This package implements LTI Provider and Consumer servers. See bellow for specific documentations.
 
-### [Ltijs Provider Documentation](https://cvmcosta.github.io/ltijs/#/provider) 
+### [LTIjs Provider Documentation](https://cvmcosta.github.io/ltijs/#/provider) 
    - [Platform class documentation](https://cvmcosta.github.io/ltijs/#/platform)
-### ~~Ltijs Consumer Documentation~~ (Coming soon)
+### ~~LTIjs Consumer Documentation~~ (Coming soon)
 
 ---
 
@@ -74,10 +74,10 @@ $ npm install ltijs
 const path = require('path')
 
 // Require Provider 
-const Lti = require('ltijs').Provider
+const LTI = require('ltijs').Provider
 
 // Configure provider
-const lti = new Lti('EXAMPLEKEY', 
+const lti = new LTI('EXAMPLEKEY', 
             { url: 'mongodb://localhost/database', 
               connection:{ user:'user',
                           pass: 'pass'} 

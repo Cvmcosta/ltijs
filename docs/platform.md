@@ -1,4 +1,4 @@
-# [ltijs](README.md) - Platform
+# [LTIjs](README.md) - Platform
 
 > Platform class
 
@@ -18,7 +18,7 @@
 
 
 ## Introduction
-The ```Platform``` class represents a [Lti Consumer](https://www.imsglobal.org/spec/lti/v1p3/#platforms-and-tools).
+The ```Platform``` class represents a [LTI Consumer](https://www.imsglobal.org/spec/lti/v1p3/#platforms-and-tools).
 
 
 ---
@@ -283,7 +283,7 @@ Deletes a registered platform.
 
 ### Registering platform
 
-The [Lti Provider](provider.md) method `registerPlatform()` returns a Promise that resolves the created `Platform` or `false` if some error occurs.
+The [LTI Provider](provider.md) method `registerPlatform()` returns a Promise that resolves the created `Platform` or `false` if some error occurs.
 
 ```javascript
 await lti.registerPlatform(
