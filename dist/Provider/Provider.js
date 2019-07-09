@@ -130,7 +130,7 @@ function () {
     if (!encryptionkey) throw new Error('Encryptionkey parameter missing in options.');
     if (!database || !database.url) throw new Error('Missing database configurations.');
     (0, _classPrivateFieldLooseBase2["default"])(this, _ENCRYPTIONKEY)[_ENCRYPTIONKEY] = encryptionkey;
-    (0, _classPrivateFieldLooseBase2["default"])(this, _server)[_server] = new Server(options.https, options.ssl, (0, _classPrivateFieldLooseBase2["default"])(this, _ENCRYPTIONKEY)[_ENCRYPTIONKEY]); // Starts database connection
+    (0, _classPrivateFieldLooseBase2["default"])(this, _server)[_server] = new Server(options ? options.https : false, options ? options.ssl : false, (0, _classPrivateFieldLooseBase2["default"])(this, _ENCRYPTIONKEY)[_ENCRYPTIONKEY]); // Starts database connection
 
     if (database.connection) {
       if (!database.connection.useNewUrlParser) database.connection.useNewUrlParser = true;
@@ -206,7 +206,7 @@ function () {
      */
 
     this.app = (0, _classPrivateFieldLooseBase2["default"])(this, _server)[_server].app;
-    if (options.staticPath) (0, _classPrivateFieldLooseBase2["default"])(this, _server)[_server].setStaticPath(options.staticPath);
+    if (options && options.staticPath) (0, _classPrivateFieldLooseBase2["default"])(this, _server)[_server].setStaticPath(options.staticPath);
     this.app.get('/favicon.ico', function (req, res) {
       return res.status(204);
     }); // Registers main athentication and routing middleware

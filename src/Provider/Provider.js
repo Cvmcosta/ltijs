@@ -68,7 +68,7 @@ class Provider {
     if (!database || !database.url) throw new Error('Missing database configurations.')
 
     this.#ENCRYPTIONKEY = encryptionkey
-    this.#server = new Server(options.https, options.ssl, this.#ENCRYPTIONKEY)
+    this.#server = new Server(options ? options.https : false, options ? options.ssl : false, this.#ENCRYPTIONKEY)
 
     // Starts database connection
     if (database.connection) {
@@ -131,7 +131,7 @@ class Provider {
      */
     this.app = this.#server.app
 
-    if (options.staticPath) this.#server.setStaticPath(options.staticPath)
+    if (options && options.staticPath) this.#server.setStaticPath(options.staticPath)
     this.app.get('/favicon.ico', (req, res) => res.status(204))
 
     // Registers main athentication and routing middleware
