@@ -17,6 +17,8 @@ var helmet = require('helmet');
 
 var cookieParser = require('cookie-parser');
 
+var cors = require('cors');
+
 var Server =
 /*#__PURE__*/
 function () {
@@ -28,6 +30,7 @@ function () {
     this.app.use(helmet({
       frameguard: false
     }));
+    this.app.use(cors());
     this.app.use(bodyParser.urlencoded({
       extended: false
     }));

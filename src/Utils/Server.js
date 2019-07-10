@@ -4,6 +4,7 @@ const bodyParser = require('body-parser')
 const https = require('https')
 const helmet = require('helmet')
 const cookieParser = require('cookie-parser')
+const cors = require('cors')
 
 class Server {
   constructor (https, ssl, ENCRYPTIONKEY) {
@@ -15,6 +16,7 @@ class Server {
     this.app.use(helmet({
       frameguard: false
     }))
+    this.app.use(cors())
     this.app.use(bodyParser.urlencoded({ extended: false }))
     this.app.use(bodyParser.json())
     this.app.use(cookieParser(ENCRYPTIONKEY))
