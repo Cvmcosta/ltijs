@@ -1,7 +1,8 @@
 {
-    "plugins": [
-      ["@babel/plugin-proposal-class-properties", { "loose": true }],
-      ["@babel/transform-runtime"]
-    ],
-    "presets": ["@babel/preset-env"]
-  }
+  "plugins": [
+    ["@babel/plugin-proposal-class-properties"],
+    ["@babel/transform-runtime"],
+    ["@babel/plugin-transform-classes"]
+  ],
+  "presets": ["@babel/preset-env"]
+}

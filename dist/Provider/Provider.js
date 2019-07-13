@@ -10,9 +10,9 @@ var _classCallCheck2 = _interopRequireDefault(require("@babel/runtime/helpers/cl
 
 var _createClass2 = _interopRequireDefault(require("@babel/runtime/helpers/createClass"));
 
-var _classPrivateFieldLooseBase2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldLooseBase"));
+var _classPrivateFieldGet2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldGet"));
 
-var _classPrivateFieldLooseKey2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldLooseKey"));
+var _classPrivateFieldSet2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldSet"));
 
 /* eslint-disable require-atomic-updates */
 
@@ -74,27 +74,33 @@ function () {
     var _this = this;
 
     (0, _classCallCheck2["default"])(this, Provider);
-    Object.defineProperty(this, _loginUrl, {
+
+    _loginUrl.set(this, {
       writable: true,
       value: '/login'
     });
-    Object.defineProperty(this, _appUrl, {
+
+    _appUrl.set(this, {
       writable: true,
       value: '/'
     });
-    Object.defineProperty(this, _sessionTimeoutUrl, {
+
+    _sessionTimeoutUrl.set(this, {
       writable: true,
       value: '/sessionTimeout'
     });
-    Object.defineProperty(this, _invalidTokenUrl, {
+
+    _invalidTokenUrl.set(this, {
       writable: true,
       value: '/invalidToken'
     });
-    Object.defineProperty(this, _ENCRYPTIONKEY, {
+
+    _ENCRYPTIONKEY.set(this, {
       writable: true,
       value: void 0
     });
-    Object.defineProperty(this, _cookieOptions, {
+
+    _cookieOptions.set(this, {
       writable: true,
       value: {
         secure: false,
@@ -102,35 +108,41 @@ function () {
         signed: true
       }
     });
-    Object.defineProperty(this, _dbConnection, {
+
+    _dbConnection.set(this, {
       writable: true,
       value: {}
     });
-    Object.defineProperty(this, _connectCallback2, {
+
+    _connectCallback2.set(this, {
       writable: true,
       value: function value() {}
     });
-    Object.defineProperty(this, _sessionTimedOut, {
+
+    _sessionTimedOut.set(this, {
       writable: true,
       value: function value(req, res) {
         res.status(401).send('Token invalid or expired. Please reinitiate login.');
       }
     });
-    Object.defineProperty(this, _invalidToken, {
+
+    _invalidToken.set(this, {
       writable: true,
       value: function value(req, res) {
         res.status(401).send('Invalid token. Please reinitiate login.');
       }
     });
-    Object.defineProperty(this, _server, {
+
+    _server.set(this, {
       writable: true,
       value: void 0
     });
+
     if (options && options.https && (!options.ssl || !options.ssl.key || !options.ssl.cert)) throw new Error('No ssl Key  or Certificate found for local https configuration.');
     if (!encryptionkey) throw new Error('Encryptionkey parameter missing in options.');
     if (!database || !database.url) throw new Error('Missing database configurations.');
-    (0, _classPrivateFieldLooseBase2["default"])(this, _ENCRYPTIONKEY)[_ENCRYPTIONKEY] = encryptionkey;
-    (0, _classPrivateFieldLooseBase2["default"])(this, _server)[_server] = new Server(options ? options.https : false, options ? options.ssl : false, (0, _classPrivateFieldLooseBase2["default"])(this, _ENCRYPTIONKEY)[_ENCRYPTIONKEY]); // Starts database connection
+    (0, _classPrivateFieldSet2["default"])(this, _ENCRYPTIONKEY, encryptionkey);
+    (0, _classPrivateFieldSet2["default"])(this, _server, new Server(options ? options.https : false, options ? options.ssl : false, (0, _classPrivateFieldGet2["default"])(this, _ENCRYPTIONKEY))); // Starts database connection
 
     if (database.connection) {
       if (!database.connection.useNewUrlParser) database.connection.useNewUrlParser = true;
@@ -147,8 +159,8 @@ function () {
       };
     }
 
-    (0, _classPrivateFieldLooseBase2["default"])(this, _dbConnection)[_dbConnection].url = database.url;
-    (0, _classPrivateFieldLooseBase2["default"])(this, _dbConnection)[_dbConnection].options = database.connection; // Creating database schemas
+    (0, _classPrivateFieldGet2["default"])(this, _dbConnection).url = database.url;
+    (0, _classPrivateFieldGet2["default"])(this, _dbConnection).options = database.connection; // Creating database schemas
 
     var platformSchema = new Schema({
       platformName: String,
@@ -205,8 +217,8 @@ function () {
      * @description Express server object.
      */
 
-    this.app = (0, _classPrivateFieldLooseBase2["default"])(this, _server)[_server].app;
-    if (options && options.staticPath) (0, _classPrivateFieldLooseBase2["default"])(this, _server)[_server].setStaticPath(options.staticPath);
+    this.app = (0, _classPrivateFieldGet2["default"])(this, _server).app;
+    if (options && options.staticPath) (0, _classPrivateFieldGet2["default"])(this, _server).setStaticPath(options.staticPath);
     this.app.get('/favicon.ico', function (req, res) {
       return res.status(204);
     }); // Registers main athentication and routing middleware
@@ -223,7 +235,7 @@ function () {
           while (1) {
             switch (_context.prev = _context.next) {
               case 0:
-                if (!(req.url === (0, _classPrivateFieldLooseBase2["default"])(_this, _loginUrl)[_loginUrl] || req.url === (0, _classPrivateFieldLooseBase2["default"])(_this, _sessionTimeoutUrl)[_sessionTimeoutUrl] || req.url === (0, _classPrivateFieldLooseBase2["default"])(_this, _invalidTokenUrl)[_invalidTokenUrl])) {
+                if (!(req.url === (0, _classPrivateFieldGet2["default"])(_this, _loginUrl) || req.url === (0, _classPrivateFieldGet2["default"])(_this, _sessionTimeoutUrl) || req.url === (0, _classPrivateFieldGet2["default"])(_this, _invalidTokenUrl))) {
                   _context.next = 2;
                   break;
                 }
@@ -231,7 +243,7 @@ function () {
                 return _context.abrupt("return", next());
 
               case 2:
-                if (!(req.url === (0, _classPrivateFieldLooseBase2["default"])(_this, _appUrl)[_appUrl])) {
+                if (!(req.url === (0, _classPrivateFieldGet2["default"])(_this, _appUrl))) {
                   _context.next = 9;
                   break;
                 }
@@ -244,7 +256,7 @@ function () {
                   break;
                 }
 
-                return _context.abrupt("return", res.redirect((0, _classPrivateFieldLooseBase2["default"])(_this, _invalidTokenUrl)[_invalidTokenUrl]));
+                return _context.abrupt("return", res.redirect((0, _classPrivateFieldGet2["default"])(_this, _invalidTokenUrl)));
 
               case 7:
                 iss = 'plat' + encodeURIComponent(Buffer.from(origin).toString('base64'));
@@ -343,7 +355,7 @@ function () {
 
                 provMainDebug('Received request containing token. Sending for validation');
                 _context.next = 44;
-                return Auth.validateToken(req.body.id_token, _this.getPlatform, (0, _classPrivateFieldLooseBase2["default"])(_this, _ENCRYPTIONKEY)[_ENCRYPTIONKEY]);
+                return Auth.validateToken(req.body.id_token, _this.getPlatform, (0, _classPrivateFieldGet2["default"])(_this, _ENCRYPTIONKEY));
 
               case 44:
                 valid = _context.sent;
@@ -369,14 +381,14 @@ function () {
                   endpoint: valid['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint'],
                   namesRoles: valid['https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice']
                 };
-                res.cookie(issuer, platformCookie, (0, _classPrivateFieldLooseBase2["default"])(_this, _cookieOptions)[_cookieOptions]); // Mount context cookie
+                res.cookie(issuer, platformCookie, (0, _classPrivateFieldGet2["default"])(_this, _cookieOptions)); // Mount context cookie
 
                 contextCookie = {
                   context: valid['https://purl.imsglobal.org/spec/lti/claim/context'],
                   resource: valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'],
                   custom: valid['https://purl.imsglobal.org/spec/lti/claim/custom']
                 };
-                res.cookie(issuer + '/', contextCookie, (0, _classPrivateFieldLooseBase2["default"])(_this, _cookieOptions)[_cookieOptions]);
+                res.cookie(issuer + '/', contextCookie, (0, _classPrivateFieldGet2["default"])(_this, _cookieOptions));
                 platformCookie.platformContext = contextCookie;
                 res.locals.token = platformCookie;
                 res.locals.login = true;
@@ -385,7 +397,7 @@ function () {
 
               case 57:
                 provMainDebug('Passing request to session timeout handler');
-                return _context.abrupt("return", res.redirect((0, _classPrivateFieldLooseBase2["default"])(_this, _sessionTimeoutUrl)[_sessionTimeoutUrl]));
+                return _context.abrupt("return", res.redirect((0, _classPrivateFieldGet2["default"])(_this, _sessionTimeoutUrl)));
 
               case 59:
                 _context.next = 91;
@@ -394,7 +406,7 @@ function () {
               case 61:
                 provAuthDebug('Cookie found');
                 _valid = it;
-                res.cookie(issuer, _valid, (0, _classPrivateFieldLooseBase2["default"])(_this, _cookieOptions)[_cookieOptions]);
+                res.cookie(issuer, _valid, (0, _classPrivateFieldGet2["default"])(_this, _cookieOptions));
                 isPath = false;
 
                 if (!path) {
@@ -478,7 +490,7 @@ function () {
                 _context.t0 = _context["catch"](9);
                 provAuthDebug(_context.t0);
                 provMainDebug('Error retrieving or validating token. Passing request to invalid token handler');
-                return _context.abrupt("return", res.redirect((0, _classPrivateFieldLooseBase2["default"])(_this, _invalidTokenUrl)[_invalidTokenUrl]));
+                return _context.abrupt("return", res.redirect((0, _classPrivateFieldGet2["default"])(_this, _invalidTokenUrl)));
 
               case 98:
               case "end":
@@ -494,7 +506,7 @@ function () {
     }();
 
     this.app.use(sessionValidator);
-    this.app.post((0, _classPrivateFieldLooseBase2["default"])(this, _loginUrl)[_loginUrl],
+    this.app.post((0, _classPrivateFieldGet2["default"])(this, _loginUrl),
     /*#__PURE__*/
     function () {
       var _ref2 = (0, _asyncToGenerator2["default"])(
@@ -525,12 +537,12 @@ function () {
                   break;
                 }
 
-                return _context2.abrupt("return", res.redirect((0, _classPrivateFieldLooseBase2["default"])(_this, _invalidTokenUrl)[_invalidTokenUrl]));
+                return _context2.abrupt("return", res.redirect((0, _classPrivateFieldGet2["default"])(_this, _invalidTokenUrl)));
 
               case 9:
                 cookieName = 'plat' + encodeURIComponent(Buffer.from(origin).toString('base64'));
                 provMainDebug('Redirecting to platform authentication endpoint');
-                res.clearCookie(cookieName, (0, _classPrivateFieldLooseBase2["default"])(_this, _cookieOptions)[_cookieOptions]);
+                res.clearCookie(cookieName, (0, _classPrivateFieldGet2["default"])(_this, _cookieOptions));
                 _context2.t0 = res;
                 _context2.t1 = url;
                 _context2.next = 16;
@@ -571,7 +583,7 @@ function () {
       };
     }()); // Session timeout and invalid token urls
 
-    this.app.all((0, _classPrivateFieldLooseBase2["default"])(this, _sessionTimeoutUrl)[_sessionTimeoutUrl],
+    this.app.all((0, _classPrivateFieldGet2["default"])(this, _sessionTimeoutUrl),
     /*#__PURE__*/
     function () {
       var _ref3 = (0, _asyncToGenerator2["default"])(
@@ -581,7 +593,7 @@ function () {
           while (1) {
             switch (_context3.prev = _context3.next) {
               case 0:
-                (0, _classPrivateFieldLooseBase2["default"])(_this, _sessionTimedOut)[_sessionTimedOut](req, res, next);
+                (0, _classPrivateFieldGet2["default"])(_this, _sessionTimedOut).call(_this, req, res, next);
 
               case 1:
               case "end":
@@ -595,7 +607,7 @@ function () {
         return _ref3.apply(this, arguments);
       };
     }());
-    this.app.all((0, _classPrivateFieldLooseBase2["default"])(this, _invalidTokenUrl)[_invalidTokenUrl],
+    this.app.all((0, _classPrivateFieldGet2["default"])(this, _invalidTokenUrl),
     /*#__PURE__*/
     function () {
       var _ref4 = (0, _asyncToGenerator2["default"])(
@@ -605,7 +617,7 @@ function () {
           while (1) {
             switch (_context4.prev = _context4.next) {
               case 0:
-                (0, _classPrivateFieldLooseBase2["default"])(_this, _invalidToken)[_invalidToken](req, res, next);
+                (0, _classPrivateFieldGet2["default"])(_this, _invalidToken).call(_this, req, res, next);
 
               case 1:
               case "end":
@@ -620,7 +632,7 @@ function () {
       };
     }()); // Main app
 
-    this.app.post((0, _classPrivateFieldLooseBase2["default"])(this, _appUrl)[_appUrl] + ':iss',
+    this.app.post((0, _classPrivateFieldGet2["default"])(this, _appUrl) + ':iss',
     /*#__PURE__*/
     function () {
       var _ref5 = (0, _asyncToGenerator2["default"])(
@@ -630,7 +642,7 @@ function () {
           while (1) {
             switch (_context5.prev = _context5.next) {
               case 0:
-                (0, _classPrivateFieldLooseBase2["default"])(_this, _connectCallback2)[_connectCallback2](res.locals.token, req, res, next);
+                (0, _classPrivateFieldGet2["default"])(_this, _connectCallback2).call(_this, res.locals.token, req, res, next);
 
               case 1:
               case "end":
@@ -708,7 +720,7 @@ function () {
                 }
 
                 _context12.next = 7;
-                return mongoose.connect((0, _classPrivateFieldLooseBase2["default"])(this, _dbConnection)[_dbConnection].url, (0, _classPrivateFieldLooseBase2["default"])(this, _dbConnection)[_dbConnection].options);
+                return mongoose.connect((0, _classPrivateFieldGet2["default"])(this, _dbConnection).url, (0, _classPrivateFieldGet2["default"])(this, _dbConnection).options);
 
               case 7:
                 this.db.on('error',
@@ -774,7 +786,7 @@ function () {
 
                                     _context10.prev = 1;
                                     _context10.next = 4;
-                                    return mongoose.connect((0, _classPrivateFieldLooseBase2["default"])(_this2, _dbConnection)[_dbConnection].url, (0, _classPrivateFieldLooseBase2["default"])(_this2, _dbConnection)[_dbConnection].options);
+                                    return mongoose.connect((0, _classPrivateFieldGet2["default"])(_this2, _dbConnection).url, (0, _classPrivateFieldGet2["default"])(_this2, _dbConnection).options);
 
                                   case 4:
                                     _context10.next = 9;
@@ -813,8 +825,7 @@ function () {
                 /* In case no port is provided uses 3000 */
                 port = port || 3000; // Starts server on given port
 
-                (0, _classPrivateFieldLooseBase2["default"])(this, _server)[_server].listen(port, 'Lti Provider tool is listening on port ' + port + '!\n\nLTI provider config: \n>Initiate login URL: ' + (0, _classPrivateFieldLooseBase2["default"])(this, _loginUrl)[_loginUrl] + '\n>App Url: ' + (0, _classPrivateFieldLooseBase2["default"])(this, _appUrl)[_appUrl] + '\n>Session Timeout Url: ' + (0, _classPrivateFieldLooseBase2["default"])(this, _sessionTimeoutUrl)[_sessionTimeoutUrl] + '\n>Invalid Token Url: ' + (0, _classPrivateFieldLooseBase2["default"])(this, _invalidTokenUrl)[_invalidTokenUrl]);
-
+                (0, _classPrivateFieldGet2["default"])(this, _server).listen(port, 'Lti Provider tool is listening on port ' + port + '!\n\nLTI provider config: \n>Initiate login URL: ' + (0, _classPrivateFieldGet2["default"])(this, _loginUrl) + '\n>App Url: ' + (0, _classPrivateFieldGet2["default"])(this, _appUrl) + '\n>Session Timeout Url: ' + (0, _classPrivateFieldGet2["default"])(this, _sessionTimeoutUrl) + '\n>Invalid Token Url: ' + (0, _classPrivateFieldGet2["default"])(this, _invalidTokenUrl));
                 return _context12.abrupt("return", true);
 
               case 19:
@@ -845,12 +856,12 @@ function () {
     key: "onConnect",
     value: function onConnect(_connectCallback, options) {
       if (options) {
-        if (options.secure === true) (0, _classPrivateFieldLooseBase2["default"])(this, _cookieOptions)[_cookieOptions].secure = options.secure;
-        if (options.sessionTimeout) (0, _classPrivateFieldLooseBase2["default"])(this, _sessionTimedOut)[_sessionTimedOut] = options.sessionTimeout;
-        if (options.invalidToken) (0, _classPrivateFieldLooseBase2["default"])(this, _invalidToken)[_invalidToken] = options.invalidToken;
+        if (options.secure === true) (0, _classPrivateFieldGet2["default"])(this, _cookieOptions).secure = options.secure;
+        if (options.sessionTimeout) (0, _classPrivateFieldSet2["default"])(this, _sessionTimedOut, options.sessionTimeout);
+        if (options.invalidToken) (0, _classPrivateFieldSet2["default"])(this, _invalidToken, options.invalidToken);
       }
 
-      (0, _classPrivateFieldLooseBase2["default"])(this, _connectCallback2)[_connectCallback2] = _connectCallback;
+      (0, _classPrivateFieldSet2["default"])(this, _connectCallback2, _connectCallback);
     }
     /**
        * @description Gets/Sets login Url responsible for dealing with the OIDC login flow. If no value is set "/login" is used.
@@ -861,8 +872,8 @@ function () {
   }, {
     key: "loginUrl",
     value: function loginUrl(url) {
-      if (!url) return (0, _classPrivateFieldLooseBase2["default"])(this, _loginUrl)[_loginUrl];
-      (0, _classPrivateFieldLooseBase2["default"])(this, _loginUrl)[_loginUrl] = url;
+      if (!url) return (0, _classPrivateFieldGet2["default"])(this, _loginUrl);
+      (0, _classPrivateFieldSet2["default"])(this, _loginUrl, url);
     }
     /**
        * @description Gets/Sets main application Url that will receive the final decoded Idtoken. If no value is set "/" (root) is used.
@@ -873,8 +884,8 @@ function () {
   }, {
     key: "appUrl",
     value: function appUrl(url) {
-      if (!url) return (0, _classPrivateFieldLooseBase2["default"])(this, _appUrl)[_appUrl];
-      (0, _classPrivateFieldLooseBase2["default"])(this, _appUrl)[_appUrl] = url;
+      if (!url) return (0, _classPrivateFieldGet2["default"])(this, _appUrl);
+      (0, _classPrivateFieldSet2["default"])(this, _appUrl, url);
     }
     /**
        * @description Gets/Sets session timeout Url that will be called whenever the system encounters a session timeout. If no value is set "/sessionTimeout" is used.
@@ -885,8 +896,8 @@ function () {
   }, {
     key: "sessionTimeoutUrl",
     value: function sessionTimeoutUrl(url) {
-      if (!url) return (0, _classPrivateFieldLooseBase2["default"])(this, _sessionTimeoutUrl)[_sessionTimeoutUrl];
-      (0, _classPrivateFieldLooseBase2["default"])(this, _sessionTimeoutUrl)[_sessionTimeoutUrl] = url;
+      if (!url) return (0, _classPrivateFieldGet2["default"])(this, _sessionTimeoutUrl);
+      (0, _classPrivateFieldSet2["default"])(this, _sessionTimeoutUrl, url);
     }
     /**
        * @description Gets/Sets invalid token Url that will be called whenever the system encounters a invalid token or cookie. If no value is set "/invalidToken" is used.
@@ -897,8 +908,8 @@ function () {
   }, {
     key: "invalidTokenUrl",
     value: function invalidTokenUrl(url) {
-      if (!url) return (0, _classPrivateFieldLooseBase2["default"])(this, _invalidTokenUrl)[_invalidTokenUrl];
-      (0, _classPrivateFieldLooseBase2["default"])(this, _invalidTokenUrl)[_invalidTokenUrl] = url;
+      if (!url) return (0, _classPrivateFieldGet2["default"])(this, _invalidTokenUrl);
+      (0, _classPrivateFieldSet2["default"])(this, _invalidTokenUrl, url);
     }
     /**
        * @description Registers a platform.
@@ -943,11 +954,11 @@ function () {
                 }
 
                 _context13.next = 9;
-                return Auth.generateProviderKeyPair((0, _classPrivateFieldLooseBase2["default"])(this, _ENCRYPTIONKEY)[_ENCRYPTIONKEY]);
+                return Auth.generateProviderKeyPair((0, _classPrivateFieldGet2["default"])(this, _ENCRYPTIONKEY));
 
               case 9:
                 kid = _context13.sent;
-                plat = new Platform(name, url, clientId, authenticationEndpoint, accesstokenEndpoint, kid, (0, _classPrivateFieldLooseBase2["default"])(this, _ENCRYPTIONKEY)[_ENCRYPTIONKEY], authConfig); // Save platform to db
+                plat = new Platform(name, url, clientId, authenticationEndpoint, accesstokenEndpoint, kid, (0, _classPrivateFieldGet2["default"])(this, _ENCRYPTIONKEY), authConfig); // Save platform to db
 
                 _context13.next = 13;
                 return Database.Get(false, 'platform', {
@@ -1059,7 +1070,7 @@ function () {
                 if (ENCRYPTIONKEY) {
                   result = new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, ENCRYPTIONKEY, obj.authConfig);
                 } else {
-                  result = new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, (0, _classPrivateFieldLooseBase2["default"])(this, _ENCRYPTIONKEY)[_ENCRYPTIONKEY], obj.authConfig);
+                  result = new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, (0, _classPrivateFieldGet2["default"])(this, _ENCRYPTIONKEY), obj.authConfig);
                 }
 
                 return _context14.abrupt("return", result);
@@ -1174,7 +1185,7 @@ function () {
 
                 for (_iterator = platforms[Symbol.iterator](); !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
                   obj = _step.value;
-                  returnArray.push(new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, (0, _classPrivateFieldLooseBase2["default"])(this, _ENCRYPTIONKEY)[_ENCRYPTIONKEY], obj.authConfig));
+                  returnArray.push(new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, (0, _classPrivateFieldGet2["default"])(this, _ENCRYPTIONKEY), obj.authConfig));
                 }
 
                 _context16.next = 17;
@@ -1357,7 +1368,7 @@ function () {
               case 0:
                 if (res.locals.login && isNewResource) {
                   provMainDebug('Setting up path cookie for this resource with path: ' + path);
-                  res.cookie(res.locals.token.issuer_code + path, res.locals.token.platformContext, (0, _classPrivateFieldLooseBase2["default"])(this, _cookieOptions)[_cookieOptions]);
+                  res.cookie(res.locals.token.issuer_code + path, res.locals.token.platformContext, (0, _classPrivateFieldGet2["default"])(this, _cookieOptions));
                 }
 
                 return _context18.abrupt("return", res.redirect(res.locals.token.issuer_code + path));
@@ -1380,26 +1391,26 @@ function () {
   return Provider;
 }();
 
-var _loginUrl = (0, _classPrivateFieldLooseKey2["default"])("loginUrl");
+var _loginUrl = new WeakMap();
 
-var _appUrl = (0, _classPrivateFieldLooseKey2["default"])("appUrl");
+var _appUrl = new WeakMap();
 
-var _sessionTimeoutUrl = (0, _classPrivateFieldLooseKey2["default"])("sessionTimeoutUrl");
+var _sessionTimeoutUrl = new WeakMap();
 
-var _invalidTokenUrl = (0, _classPrivateFieldLooseKey2["default"])("invalidTokenUrl");
+var _invalidTokenUrl = new WeakMap();
 
-var _ENCRYPTIONKEY = (0, _classPrivateFieldLooseKey2["default"])("ENCRYPTIONKEY");
+var _ENCRYPTIONKEY = new WeakMap();
 
-var _cookieOptions = (0, _classPrivateFieldLooseKey2["default"])("cookieOptions");
+var _cookieOptions = new WeakMap();
 
-var _dbConnection = (0, _classPrivateFieldLooseKey2["default"])("dbConnection");
+var _dbConnection = new WeakMap();
 
-var _connectCallback2 = (0, _classPrivateFieldLooseKey2["default"])("connectCallback");
+var _connectCallback2 = new WeakMap();
 
-var _sessionTimedOut = (0, _classPrivateFieldLooseKey2["default"])("sessionTimedOut");
+var _sessionTimedOut = new WeakMap();
 
-var _invalidToken = (0, _classPrivateFieldLooseKey2["default"])("invalidToken");
+var _invalidToken = new WeakMap();
 
-var _server = (0, _classPrivateFieldLooseKey2["default"])("server");
+var _server = new WeakMap();
 
 module.exports = Provider;

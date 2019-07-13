@@ -10,9 +10,9 @@ var _classCallCheck2 = _interopRequireDefault(require("@babel/runtime/helpers/cl
 
 var _createClass2 = _interopRequireDefault(require("@babel/runtime/helpers/createClass"));
 
-var _classPrivateFieldLooseBase2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldLooseBase"));
+var _classPrivateFieldGet2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldGet"));
 
-var _classPrivateFieldLooseKey2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldLooseKey"));
+var _classPrivateFieldSet2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldSet"));
 
 // Utis
 var Database = require('./Database');
@@ -40,46 +40,55 @@ function () {
      */
   function Platform(name, platformUrl, clientId, authenticationEndpoint, accesstokenEndpoint, kid, _ENCRYPTIONKEY, _authConfig) {
     (0, _classCallCheck2["default"])(this, Platform);
-    Object.defineProperty(this, _platformName, {
+
+    _platformName.set(this, {
       writable: true,
       value: void 0
     });
-    Object.defineProperty(this, _platformUrl, {
+
+    _platformUrl.set(this, {
       writable: true,
       value: void 0
     });
-    Object.defineProperty(this, _clientId, {
+
+    _clientId.set(this, {
       writable: true,
       value: void 0
     });
-    Object.defineProperty(this, _authEndpoint, {
+
+    _authEndpoint.set(this, {
       writable: true,
       value: void 0
     });
-    Object.defineProperty(this, _authConfig2, {
+
+    _authConfig2.set(this, {
       writable: true,
       value: void 0
     });
-    Object.defineProperty(this, _ENCRYPTIONKEY2, {
+
+    _ENCRYPTIONKEY2.set(this, {
       writable: true,
       value: void 0
     });
-    Object.defineProperty(this, _accesstokenEndpoint, {
+
+    _accesstokenEndpoint.set(this, {
       writable: true,
       value: void 0
     });
-    Object.defineProperty(this, _kid, {
+
+    _kid.set(this, {
       writable: true,
       value: void 0
     });
-    (0, _classPrivateFieldLooseBase2["default"])(this, _authConfig2)[_authConfig2] = _authConfig;
-    (0, _classPrivateFieldLooseBase2["default"])(this, _ENCRYPTIONKEY2)[_ENCRYPTIONKEY2] = _ENCRYPTIONKEY;
-    (0, _classPrivateFieldLooseBase2["default"])(this, _platformName)[_platformName] = name;
-    (0, _classPrivateFieldLooseBase2["default"])(this, _platformUrl)[_platformUrl] = platformUrl;
-    (0, _classPrivateFieldLooseBase2["default"])(this, _clientId)[_clientId] = clientId;
-    (0, _classPrivateFieldLooseBase2["default"])(this, _authEndpoint)[_authEndpoint] = authenticationEndpoint;
-    (0, _classPrivateFieldLooseBase2["default"])(this, _accesstokenEndpoint)[_accesstokenEndpoint] = accesstokenEndpoint;
-    (0, _classPrivateFieldLooseBase2["default"])(this, _kid)[_kid] = kid;
+
+    (0, _classPrivateFieldSet2["default"])(this, _authConfig2, _authConfig);
+    (0, _classPrivateFieldSet2["default"])(this, _ENCRYPTIONKEY2, _ENCRYPTIONKEY);
+    (0, _classPrivateFieldSet2["default"])(this, _platformName, name);
+    (0, _classPrivateFieldSet2["default"])(this, _platformUrl, platformUrl);
+    (0, _classPrivateFieldSet2["default"])(this, _clientId, clientId);
+    (0, _classPrivateFieldSet2["default"])(this, _authEndpoint, authenticationEndpoint);
+    (0, _classPrivateFieldSet2["default"])(this, _accesstokenEndpoint, accesstokenEndpoint);
+    (0, _classPrivateFieldSet2["default"])(this, _kid, kid);
   }
   /**
      * @description Sets/Gets the platform name.
@@ -102,13 +111,13 @@ function () {
                   break;
                 }
 
-                return _context.abrupt("return", (0, _classPrivateFieldLooseBase2["default"])(this, _platformName)[_platformName]);
+                return _context.abrupt("return", (0, _classPrivateFieldGet2["default"])(this, _platformName));
 
               case 2:
                 _context.prev = 2;
                 _context.next = 5;
                 return Database.Modify(false, 'platform', {
-                  platformUrl: (0, _classPrivateFieldLooseBase2["default"])(this, _platformUrl)[_platformUrl]
+                  platformUrl: (0, _classPrivateFieldGet2["default"])(this, _platformUrl)
                 }, {
                   platformName: name
                 });
@@ -124,7 +133,7 @@ function () {
                 return _context.abrupt("return", false);
 
               case 11:
-                (0, _classPrivateFieldLooseBase2["default"])(this, _platformName)[_platformName] = name;
+                (0, _classPrivateFieldSet2["default"])(this, _platformName, name);
                 return _context.abrupt("return", this);
 
               case 13:
@@ -161,13 +170,13 @@ function () {
                   break;
                 }
 
-                return _context2.abrupt("return", (0, _classPrivateFieldLooseBase2["default"])(this, _platformUrl)[_platformUrl]);
+                return _context2.abrupt("return", (0, _classPrivateFieldGet2["default"])(this, _platformUrl));
 
               case 2:
                 _context2.prev = 2;
                 _context2.next = 5;
                 return Database.Modify(false, 'platform', {
-                  platformUrl: (0, _classPrivateFieldLooseBase2["default"])(this, _platformUrl)[_platformUrl]
+                  platformUrl: (0, _classPrivateFieldGet2["default"])(this, _platformUrl)
                 }, {
                   platformUrl: url
                 });
@@ -183,7 +192,7 @@ function () {
                 return _context2.abrupt("return", false);
 
               case 11:
-                (0, _classPrivateFieldLooseBase2["default"])(this, _platformUrl)[_platformUrl] = url;
+                (0, _classPrivateFieldSet2["default"])(this, _platformUrl, url);
                 return _context2.abrupt("return", this);
 
               case 13:
@@ -220,13 +229,13 @@ function () {
                   break;
                 }
 
-                return _context3.abrupt("return", (0, _classPrivateFieldLooseBase2["default"])(this, _clientId)[_clientId]);
+                return _context3.abrupt("return", (0, _classPrivateFieldGet2["default"])(this, _clientId));
 
               case 2:
                 _context3.prev = 2;
                 _context3.next = 5;
                 return Database.Modify(false, 'platform', {
-                  platformUrl: (0, _classPrivateFieldLooseBase2["default"])(this, _platformUrl)[_platformUrl]
+                  platformUrl: (0, _classPrivateFieldGet2["default"])(this, _platformUrl)
                 }, {
                   clientId: clientId
                 });
@@ -242,7 +251,7 @@ function () {
                 return _context3.abrupt("return", false);
 
               case 11:
-                (0, _classPrivateFieldLooseBase2["default"])(this, _clientId)[_clientId] = clientId;
+                (0, _classPrivateFieldSet2["default"])(this, _clientId, clientId);
                 return _context3.abrupt("return", this);
 
               case 13:
@@ -266,7 +275,7 @@ function () {
   }, {
     key: "platformKid",
     value: function platformKid() {
-      return (0, _classPrivateFieldLooseBase2["default"])(this, _kid)[_kid];
+      return (0, _classPrivateFieldGet2["default"])(this, _kid);
     }
     /**
        * @description Gets the RSA public key assigned to the platform.
@@ -286,8 +295,8 @@ function () {
               case 0:
                 _context4.prev = 0;
                 _context4.next = 3;
-                return Database.Get((0, _classPrivateFieldLooseBase2["default"])(this, _ENCRYPTIONKEY2)[_ENCRYPTIONKEY2], 'publickey', {
-                  kid: (0, _classPrivateFieldLooseBase2["default"])(this, _kid)[_kid]
+                return Database.Get((0, _classPrivateFieldGet2["default"])(this, _ENCRYPTIONKEY2), 'publickey', {
+                  kid: (0, _classPrivateFieldGet2["default"])(this, _kid)
                 });
 
               case 3:
@@ -332,8 +341,8 @@ function () {
               case 0:
                 _context5.prev = 0;
                 _context5.next = 3;
-                return Database.Get((0, _classPrivateFieldLooseBase2["default"])(this, _ENCRYPTIONKEY2)[_ENCRYPTIONKEY2], 'privatekey', {
-                  kid: (0, _classPrivateFieldLooseBase2["default"])(this, _kid)[_kid]
+                return Database.Get((0, _classPrivateFieldGet2["default"])(this, _ENCRYPTIONKEY2), 'privatekey', {
+                  kid: (0, _classPrivateFieldGet2["default"])(this, _kid)
                 });
 
               case 3:
@@ -382,7 +391,7 @@ function () {
                   break;
                 }
 
-                return _context6.abrupt("return", (0, _classPrivateFieldLooseBase2["default"])(this, _authConfig2)[_authConfig2]);
+                return _context6.abrupt("return", (0, _classPrivateFieldGet2["default"])(this, _authConfig2));
 
               case 2:
                 if (!(method !== 'RSA_KEY' && method !== 'JWK_KEY' && method !== 'JWK_SET')) {
@@ -408,7 +417,7 @@ function () {
                 _context6.prev = 7;
                 _context6.next = 10;
                 return Database.Modify(false, 'platform', {
-                  platformUrl: (0, _classPrivateFieldLooseBase2["default"])(this, _platformUrl)[_platformUrl]
+                  platformUrl: (0, _classPrivateFieldGet2["default"])(this, _platformUrl)
                 }, {
                   authConfig: authConfig
                 });
@@ -424,7 +433,7 @@ function () {
                 return _context6.abrupt("return", false);
 
               case 16:
-                (0, _classPrivateFieldLooseBase2["default"])(this, _authConfig2)[_authConfig2] = authConfig;
+                (0, _classPrivateFieldSet2["default"])(this, _authConfig2, authConfig);
                 return _context6.abrupt("return", this);
 
               case 18:
@@ -461,13 +470,13 @@ function () {
                   break;
                 }
 
-                return _context7.abrupt("return", (0, _classPrivateFieldLooseBase2["default"])(this, _authEndpoint)[_authEndpoint]);
+                return _context7.abrupt("return", (0, _classPrivateFieldGet2["default"])(this, _authEndpoint));
 
               case 2:
                 _context7.prev = 2;
                 _context7.next = 5;
                 return Database.Modify(false, 'platform', {
-                  platformUrl: (0, _classPrivateFieldLooseBase2["default"])(this, _platformUrl)[_platformUrl]
+                  platformUrl: (0, _classPrivateFieldGet2["default"])(this, _platformUrl)
                 }, {
                   authEndpoint: authEndpoint
                 });
@@ -483,7 +492,7 @@ function () {
                 return _context7.abrupt("return", false);
 
               case 11:
-                (0, _classPrivateFieldLooseBase2["default"])(this, _authEndpoint)[_authEndpoint] = authEndpoint;
+                (0, _classPrivateFieldSet2["default"])(this, _authEndpoint, authEndpoint);
                 return _context7.abrupt("return", this);
 
               case 13:
@@ -520,13 +529,13 @@ function () {
                   break;
                 }
 
-                return _context8.abrupt("return", (0, _classPrivateFieldLooseBase2["default"])(this, _accesstokenEndpoint)[_accesstokenEndpoint]);
+                return _context8.abrupt("return", (0, _classPrivateFieldGet2["default"])(this, _accesstokenEndpoint));
 
               case 2:
                 _context8.prev = 2;
                 _context8.next = 5;
                 return Database.Modify(false, 'platform', {
-                  platformUrl: (0, _classPrivateFieldLooseBase2["default"])(this, _platformUrl)[_platformUrl]
+                  platformUrl: (0, _classPrivateFieldGet2["default"])(this, _platformUrl)
                 }, {
                   accesstokenEndpoint: accesstokenEndpoint
                 });
@@ -542,7 +551,7 @@ function () {
                 return _context8.abrupt("return", false);
 
               case 11:
-                (0, _classPrivateFieldLooseBase2["default"])(this, _accesstokenEndpoint)[_accesstokenEndpoint] = accesstokenEndpoint;
+                (0, _classPrivateFieldSet2["default"])(this, _accesstokenEndpoint, accesstokenEndpoint);
                 return _context8.abrupt("return", this);
 
               case 13:
@@ -576,8 +585,8 @@ function () {
             switch (_context9.prev = _context9.next) {
               case 0:
                 _context9.next = 2;
-                return Database.Get((0, _classPrivateFieldLooseBase2["default"])(this, _ENCRYPTIONKEY2)[_ENCRYPTIONKEY2], 'accesstoken', {
-                  platformUrl: (0, _classPrivateFieldLooseBase2["default"])(this, _platformUrl)[_platformUrl]
+                return Database.Get((0, _classPrivateFieldGet2["default"])(this, _ENCRYPTIONKEY2), 'accesstoken', {
+                  platformUrl: (0, _classPrivateFieldGet2["default"])(this, _platformUrl)
                 });
 
               case 2:
@@ -588,11 +597,11 @@ function () {
                   break;
                 }
 
-                provPlatformDebug('Access_token for ' + (0, _classPrivateFieldLooseBase2["default"])(this, _platformUrl)[_platformUrl] + ' not found');
-                provPlatformDebug('Attempting to generate new access_token for ' + (0, _classPrivateFieldLooseBase2["default"])(this, _platformUrl)[_platformUrl]);
+                provPlatformDebug('Access_token for ' + (0, _classPrivateFieldGet2["default"])(this, _platformUrl) + ' not found');
+                provPlatformDebug('Attempting to generate new access_token for ' + (0, _classPrivateFieldGet2["default"])(this, _platformUrl));
                 _context9.prev = 6;
                 _context9.next = 9;
-                return Auth.getAccessToken(this, (0, _classPrivateFieldLooseBase2["default"])(this, _ENCRYPTIONKEY2)[_ENCRYPTIONKEY2]);
+                return Auth.getAccessToken(this, (0, _classPrivateFieldGet2["default"])(this, _ENCRYPTIONKEY2));
 
               case 9:
                 res = _context9.sent;
@@ -617,11 +626,11 @@ function () {
                 }
 
                 provPlatformDebug('Token expired');
-                provPlatformDebug('Access_token for ' + (0, _classPrivateFieldLooseBase2["default"])(this, _platformUrl)[_platformUrl] + ' not found');
-                provPlatformDebug('Attempting to generate new access_token for ' + (0, _classPrivateFieldLooseBase2["default"])(this, _platformUrl)[_platformUrl]);
+                provPlatformDebug('Access_token for ' + (0, _classPrivateFieldGet2["default"])(this, _platformUrl) + ' not found');
+                provPlatformDebug('Attempting to generate new access_token for ' + (0, _classPrivateFieldGet2["default"])(this, _platformUrl));
                 _context9.prev = 24;
                 _context9.next = 27;
-                return Auth.getAccessToken(this, (0, _classPrivateFieldLooseBase2["default"])(this, _ENCRYPTIONKEY2)[_ENCRYPTIONKEY2]);
+                return Auth.getAccessToken(this, (0, _classPrivateFieldGet2["default"])(this, _ENCRYPTIONKEY2));
 
               case 27:
                 _res = _context9.sent;
@@ -666,11 +675,11 @@ function () {
               case 0:
                 _context10.prev = 0;
                 return _context10.abrupt("return", Promise.all([Database.Delete('platform', {
-                  platformUrl: (0, _classPrivateFieldLooseBase2["default"])(this, _platformUrl)[_platformUrl]
+                  platformUrl: (0, _classPrivateFieldGet2["default"])(this, _platformUrl)
                 }), Database.Delete('publickey', {
-                  kid: (0, _classPrivateFieldLooseBase2["default"])(this, _kid)[_kid]
+                  kid: (0, _classPrivateFieldGet2["default"])(this, _kid)
                 }), Database.Delete('privatekey', {
-                  kid: (0, _classPrivateFieldLooseBase2["default"])(this, _kid)[_kid]
+                  kid: (0, _classPrivateFieldGet2["default"])(this, _kid)
                 })]));
 
               case 4:
@@ -697,20 +706,20 @@ function () {
   return Platform;
 }();
 
-var _platformName = (0, _classPrivateFieldLooseKey2["default"])("platformName");
+var _platformName = new WeakMap();
 
-var _platformUrl = (0, _classPrivateFieldLooseKey2["default"])("platformUrl");
+var _platformUrl = new WeakMap();
 
-var _clientId = (0, _classPrivateFieldLooseKey2["default"])("clientId");
+var _clientId = new WeakMap();
 
-var _authEndpoint = (0, _classPrivateFieldLooseKey2["default"])("authEndpoint");
+var _authEndpoint = new WeakMap();
 
-var _authConfig2 = (0, _classPrivateFieldLooseKey2["default"])("authConfig");
+var _authConfig2 = new WeakMap();
 
-var _ENCRYPTIONKEY2 = (0, _classPrivateFieldLooseKey2["default"])("ENCRYPTIONKEY");
+var _ENCRYPTIONKEY2 = new WeakMap();
 
-var _accesstokenEndpoint = (0, _classPrivateFieldLooseKey2["default"])("accesstokenEndpoint");
+var _accesstokenEndpoint = new WeakMap();
 
-var _kid = (0, _classPrivateFieldLooseKey2["default"])("kid");
+var _kid = new WeakMap();
 
 module.exports = Platform;
