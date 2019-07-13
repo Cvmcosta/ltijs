@@ -1,9 +1,10 @@
 {
   "name": "ltijs",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "description": "Turn your application into a fully integratable LTI 1.3 tool or platform.",
   "main": "index.js",
-  "engines" : { "node" : ">=8.0.0" },
+  "engineStrict" : true,
+  "engines" : { "node" : ">=8.6.0" },
   "scripts": {
     "test": "mocha --require @babel/register",
     "build": "standard 'src/**/*.js' --fix && babel src -d dist",
