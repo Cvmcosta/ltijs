@@ -322,7 +322,7 @@ class Provider {
           if (path) {
             path = issuer + path;
 
-            for (let key of Object.keys(cookies)) {
+            for (let key of Object.keys(cookies).sort((a, b) => b.length - a.length)) {
               if (key === issuer) continue;
 
               if (path.search(key) !== -1) {
