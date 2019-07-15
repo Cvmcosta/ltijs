@@ -19,6 +19,8 @@ class Server {
     this.app.use(cors())
     this.app.use(bodyParser.urlencoded({ extended: false }))
     this.app.use(bodyParser.json())
+    this.app.use(bodyParser.raw())
+    this.app.use(bodyParser.text())
     this.app.use(cookieParser(ENCRYPTIONKEY))
   }
 

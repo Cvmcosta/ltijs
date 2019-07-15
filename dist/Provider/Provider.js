@@ -254,7 +254,9 @@ class Provider {
 
           for (let i in requestParts) _urlArr.push(requestParts[i]);
 
-          urlArr = _urlArr;
+          urlArr = _urlArr; // Informs the system that is a API request
+
+          res.locals.isApiRequest = true;
         }
 
         for (let i in urlArr) if (parseInt(i) !== 0 && parseInt(i) !== 1) path = path + '/' + urlArr[i]; // Mathes path to cookie
@@ -382,7 +384,8 @@ class Provider {
     }); // Main app
 
     this.app.post((0, _classPrivateFieldGet2.default)(this, _appUrl) + ':iss', async (req, res, next) => {
-      (0, _classPrivateFieldGet2.default)(this, _connectCallback2).call(this, res.locals.token, req, res, next);
+      if (!res.locals.isApiRequest) return (0, _classPrivateFieldGet2.default)(this, _connectCallback2).call(this, res.locals.token, req, res, next);
+      return next();
     });
   }
   /**
