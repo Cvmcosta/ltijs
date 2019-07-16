@@ -334,9 +334,6 @@ class Provider {
       this.db.once('open', async () => {
         provMainDebug('Database connection open')
       })
-
-      if (this.db.readyState === 0) await mongoose.connect(this.#dbConnection.url, this.#dbConnection.options)
-
       this.db.on('error', async () => {
         mongoose.disconnect()
       })
@@ -356,6 +353,8 @@ class Provider {
           }
         }, 1000)
       })
+
+      if (this.db.readyState === 0) await mongoose.connect(this.#dbConnection.url, this.#dbConnection.options)
     } catch (err) {
       provMainDebug('Error in MongoDb connection: ' + err)
       throw new Error('Unable to connect to database')
