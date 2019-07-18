@@ -10,7 +10,7 @@ before_script:
   - mongo mydb_test --eval 'db.createUser({user:"travis",pwd:"test",roles:["readWrite"]});'
 install:
   - npm install -g codecov
-  - npm install -g istanbul
+  - npm install -g istanbul@^1.0.0-alpha.2
   
 jobs:
   include:
