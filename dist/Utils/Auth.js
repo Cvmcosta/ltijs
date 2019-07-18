@@ -89,7 +89,11 @@ class Auth {
           provAuthDebug('Retrieving key from jwk_set');
           if (!kid) throw new Error('NoKidFoundInToken');
           let keysEndpoint = authConfig.key;
-          let res = await got.get(keysEndpoint);
+          let res = await got.get(keysEndpoint, {
+            body: JSON.stringify({
+              request: 'keyset'
+            })
+          });
           let keyset = JSON.parse(res.body).keys;
           if (!keyset) throw new Error('NoKeySetFound');
           let key = jwk.jwk2pem(find(keyset, ['kid', kid]));

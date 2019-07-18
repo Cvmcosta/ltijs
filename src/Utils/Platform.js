@@ -192,26 +192,18 @@ class Platform {
     if (!token) {
       provPlatformDebug('Access_token for ' + this.#platformUrl + ' not found')
       provPlatformDebug('Attempting to generate new access_token for ' + this.#platformUrl)
-      try {
-        let res = await Auth.getAccessToken(this, this.#ENCRYPTIONKEY)
-        return res
-      } catch (err) {
-        provPlatformDebug(err)
-        return false
-      }
+
+      let res = await Auth.getAccessToken(this, this.#ENCRYPTIONKEY)
+      return res
     } else {
       provPlatformDebug('Access_token found')
       if ((Date.now() - token[0].createdAt) / 1000 > token[0].expires_in) {
         provPlatformDebug('Token expired')
         provPlatformDebug('Access_token for ' + this.#platformUrl + ' not found')
         provPlatformDebug('Attempting to generate new access_token for ' + this.#platformUrl)
-        try {
-          let res = await Auth.getAccessToken(this, this.#ENCRYPTIONKEY)
-          return res
-        } catch (err) {
-          provPlatformDebug(err)
-          return false
-        }
+
+        let res = await Auth.getAccessToken(this, this.#ENCRYPTIONKEY)
+        return res
       }
       return token[0].token
     }

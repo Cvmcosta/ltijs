@@ -138,7 +138,6 @@ class Provider {
     let sessionValidator = async (req, res, next) => {
       // Ckeck if request is attempting to initiate oidc login flow
       if (req.url === this.#loginUrl || req.url === this.#sessionTimeoutUrl || req.url === this.#invalidTokenUrl) return next()
-
       if (req.url === this.#appUrl) {
         let origin = req.get('origin')
         if (!origin || origin === 'null') origin = req.get('host')
@@ -156,11 +155,11 @@ class Provider {
         let cookies = req.signedCookies
 
         // Validate issuer_code to see if its a route or normal request
-        if (issuer.search('plat') === -1) isApiRequest = true
+        if (issuer.indexOf('plat') === -1) isApiRequest = true
         if (!isApiRequest) {
           try {
             let decode = Buffer.from(decodeURIComponent(issuer.split('plat')[1]), 'base64').toString('ascii')
-            if (!validator.isURL(decode) && decode.search('localhost') === -1) isApiRequest = true
+            if (!validator.isURL(decode) && decode.indexOf('localhost') === -1) isApiRequest = true
           } catch (err) {
             provMainDebug(err)
             isApiRequest = true
@@ -256,7 +255,7 @@ class Provider {
             path = issuer + path
             for (let key of Object.keys(cookies).sort((a, b) => b.length - a.length)) {
               if (key === issuer) continue
-              if (path.search(key) !== -1) {
+              if (path.indexOf(key) !== -1) {
                 isPath = cookies[key]
                 break
               }
@@ -323,6 +322,7 @@ class Provider {
   /**
      * @description Starts listening to a given port for LTI requests and opens connection to the database.
      * @param {number} port - The port the Provider should listen to.
+     * @returns {Promise<true| false>}
      */
   async deploy (port) {
     provMainDebug('Attempting to connect to database')
@@ -356,8 +356,8 @@ class Provider {
 
       if (this.db.readyState === 0) await mongoose.connect(this.#dbConnection.url, this.#dbConnection.options)
     } catch (err) {
-      provMainDebug('Error in MongoDb connection: ' + err)
-      throw new Error('Unable to connect to database')
+      provMainDebug(err)
+      return false
     }
 
     /* In case no port is provided uses 3000 */
@@ -369,6 +369,21 @@ class Provider {
   }
 
   /**
+   * @description Closes connection to database and stops server.
+   * @returns {Promise<true | false>}
+   */
+  async close () {
+    try {
+      await this.#server.close()
+      this.db.removeAllListeners()
+      await this.db.close()
+      return true
+    } catch (err) {
+      return false
+    }
+  }
+
+  /**
      * @description Sets the callback function called whenever theres a sucessfull connection, exposing a Conection object containing the id_token decoded parameters.
      * @param {Function} _connectCallback - Function that is going to be called everytime a platform sucessfully connects to the provider.
      * @param {Object} [options] - Options configuring the usage of cookies to pass the Id Token data to the client.
@@ -376,6 +391,7 @@ class Provider {
      * @param {Function} [options.sessionTimeout] - Route function executed everytime the session expires. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}).
      * @param {Function} [options.invalidToken] - Route function executed everytime the system receives an invalid token or cookie. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}).
      * @example .onConnect((conection, response)=>{response.send(connection)}, {secure: true})
+     * @returns {true}
      */
   onConnect (_connectCallback, options) {
     if (options) {
@@ -384,47 +400,59 @@ class Provider {
       if (options.invalidToken) this.#invalidToken = options.invalidToken
     }
 
-    this.#connectCallback = _connectCallback
+    if (_connectCallback) {
+      this.#connectCallback = _connectCallback
+      return true
+    }
+    throw new Error('Missing callback')
   }
 
   /**
      * @description Gets/Sets login Url responsible for dealing with the OIDC login flow. If no value is set "/login" is used.
      * @param {string} url - Login url.
      * @example provider.loginUrl('/login')
+     * @returns {String}
      */
   loginUrl (url) {
     if (!url) return this.#loginUrl
     this.#loginUrl = url
+    return this.#loginUrl
   }
 
   /**
      * @description Gets/Sets main application Url that will receive the final decoded Idtoken. If no value is set "/" (root) is used.
      * @param {string} url - App url.
      * @example provider.appUrl('/app')
+     * @returns {String}
      */
   appUrl (url) {
     if (!url) return this.#appUrl
     this.#appUrl = url
+    return this.#appUrl
   }
 
   /**
      * @description Gets/Sets session timeout Url that will be called whenever the system encounters a session timeout. If no value is set "/sessionTimeout" is used.
      * @param {string} url - Session timeout url.
      * @example provider.sessionTimeoutUrl('/sesstimeout')
+     * @returns {String}
      */
   sessionTimeoutUrl (url) {
     if (!url) return this.#sessionTimeoutUrl
     this.#sessionTimeoutUrl = url
+    return this.#sessionTimeoutUrl
   }
 
   /**
      * @description Gets/Sets invalid token Url that will be called whenever the system encounters a invalid token or cookie. If no value is set "/invalidToken" is used.
      * @param {string} url - Invalid token url.
      * @example provider.invalidTokenUrl('/invtoken')
+     * @returns {String}
      */
   invalidTokenUrl (url) {
     if (!url) return this.#invalidTokenUrl
     this.#invalidTokenUrl = url
+    return this.#invalidTokenUrl
   }
 
   /**
@@ -436,6 +464,7 @@ class Provider {
      * @param {object} authConfig - Authentication method and key for verifying messages from the platform. {method: "RSA_KEY", key:"PUBLIC KEY..."}
      * @param {String} authConfig.method - Method of authorization "RSA_KEY" or "JWK_KEY" or "JWK_SET".
      * @param {String} authConfig.key - Either the RSA public key provided by the platform, or the JWK key, or the JWK keyset address.
+     * @returns {Promise<Platform|false>}
      */
   async registerPlatform (url, name, clientId, authenticationEndpoint, accesstokenEndpoint, authConfig) {
     if (!name || !url || !clientId || !authenticationEndpoint || !accesstokenEndpoint || !authConfig) throw new Error('Error registering platform. Missing argument.')
@@ -466,6 +495,7 @@ class Provider {
      * @description Gets a platform.
      * @param {String} url - Platform url.
      * @param {String} [ENCRYPTIONKEY] - Encryption key. THIS PARAMETER IS ONLY IN A FEW SPECIFIC CALLS, DO NOT USE IN YOUR APPLICATION.
+     * @returns {Promise<Platform | false>}
      */
   async getPlatform (url, ENCRYPTIONKEY) {
     if (!url) throw new Error('No url provided')
@@ -493,6 +523,7 @@ class Provider {
   /**
      * @description Deletes a platform.
      * @param {string} url - Platform url.
+     * @returns {Promise<true | false>}
      */
   async deletePlatform (url) {
     if (!url) throw new Error('No url provided')
@@ -503,6 +534,7 @@ class Provider {
 
   /**
      * @description Gets all platforms.
+     * @returns {Promise<Array<Platform>| false>}
      */
   async getAllPlatforms () {
     let returnArray = []
@@ -541,7 +573,7 @@ class Provider {
       provMainDebug('Access_token retrieved for [' + idtoken.iss + ']')
       let lineitemsEndpoint = idtoken.endpoint.lineitems
 
-      let lineitemRes = await got.get(lineitemsEndpoint, { headers: { Authorization: tokenRes.token_type + ' ' + tokenRes.access_token } })
+      let lineitemRes = await got.get(lineitemsEndpoint, { headers: { Authorization: tokenRes.token_type + ' ' + tokenRes.access_token }, body: JSON.stringify({ request: 'lineitems' }) })
 
       let resourceId = idtoken.platformContext.resource
 
@@ -549,7 +581,7 @@ class Provider {
       let lineitemUrl = lineitem.id
       let scoreUrl = lineitemUrl + '/scores'
 
-      if (lineitemUrl.split('\?') !== -1) {
+      if (lineitemUrl.indexOf('?') !== -1) {
         let query = lineitemUrl.split('\?')[1]
         let url = lineitemUrl.split('\?')[0]
         scoreUrl = url + '/scores?' + query
@@ -562,10 +594,12 @@ class Provider {
       message.scoreMaximum = lineitem.scoreMaximum
       provMainDebug(message)
 
-      await got.post(scoreUrl, { headers: { Authorization: tokenRes.token_type + ' ' + tokenRes.access_token, 'Content-Type': 'application/vnd.ims.lis.v1.score+json' }, body: JSON.stringify(message) })
-
-      provMainDebug('Message successfully sent')
-      return true
+      let finalRes = await got.post(scoreUrl, { headers: { Authorization: tokenRes.token_type + ' ' + tokenRes.access_token, 'Content-Type': 'application/vnd.ims.lis.v1.score+json' }, body: JSON.stringify(message) })
+      if (finalRes.statusCode === 200) {
+        provMainDebug('Message successfully sent')
+        return true
+      }
+      return false
     } catch (err) {
       provMainDebug(err)
       return false
@@ -576,7 +610,7 @@ class Provider {
    * @description Redirect to a new location and sets it's cookie if the location represents a separate resource
    * @param {Object} res - Express response object
    * @param {String} path - Redirect path
-   * @param {Boolea} [isNewResource = false] - If true creates new resource and its cookie
+   * @param {Boolean} [isNewResource = false] - If true creates new resource and its cookie
    * @example lti.generatePathCookie(response, '/path', true)
    */
   async redirect (res, path, isNewResource) {

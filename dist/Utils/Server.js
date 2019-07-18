@@ -13,9 +13,12 @@ const cookieParser = require('cookie-parser');
 
 const cors = require('cors');
 
+const serverdebug = require('debug')('provider:server');
+
 class Server {
   constructor(https, ssl, ENCRYPTIONKEY) {
     this.app = express();
+    this.server = false;
     this.ssl = false;
     if (https) this.ssl = ssl;
     this.app.use(helmet({
@@ -32,11 +35,15 @@ class Server {
   }
 
   listen(port, message) {
-    if (this.ssl) https.createServer(this.ssl, this.app).listen(port, () => console.log(message));else this.app.listen(port, () => console.log(message));
+    if (this.ssl) this.server = https.createServer(this.ssl, this.app).listen(port, () => serverdebug(message));else this.server = this.app.listen(port, () => serverdebug(message));
   }
 
   setStaticPath(path) {
     this.app.use('/', express.static(path));
+  }
+
+  close() {
+    if (this.server) this.server.close();
   }
 
 }

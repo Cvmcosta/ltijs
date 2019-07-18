@@ -278,14 +278,8 @@ class Platform {
     if (!token) {
       provPlatformDebug('Access_token for ' + (0, _classPrivateFieldGet2.default)(this, _platformUrl) + ' not found');
       provPlatformDebug('Attempting to generate new access_token for ' + (0, _classPrivateFieldGet2.default)(this, _platformUrl));
-
-      try {
-        let res = await Auth.getAccessToken(this, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2));
-        return res;
-      } catch (err) {
-        provPlatformDebug(err);
-        return false;
-      }
+      let res = await Auth.getAccessToken(this, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2));
+      return res;
     } else {
       provPlatformDebug('Access_token found');
 
@@ -293,14 +287,8 @@ class Platform {
         provPlatformDebug('Token expired');
         provPlatformDebug('Access_token for ' + (0, _classPrivateFieldGet2.default)(this, _platformUrl) + ' not found');
         provPlatformDebug('Attempting to generate new access_token for ' + (0, _classPrivateFieldGet2.default)(this, _platformUrl));
-
-        try {
-          let res = await Auth.getAccessToken(this, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2));
-          return res;
-        } catch (err) {
-          provPlatformDebug(err);
-          return false;
-        }
+        let res = await Auth.getAccessToken(this, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2));
+        return res;
       }
 
       return token[0].token;

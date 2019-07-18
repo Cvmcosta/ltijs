@@ -1,12 +1,14 @@
 {
   "name": "ltijs",
-  "version": "1.0.16",
+  "version": "1.0.17",
   "description": "Turn your application into a fully integratable LTI 1.3 tool or platform.",
   "main": "index.js",
-  "engineStrict" : true,
-  "engines" : { "node" : ">=8.6.0" },
+  "engineStrict": true,
+  "engines": {
+    "node": ">=8.6.0"
+  },
   "scripts": {
-    "test": "mocha --require @babel/register",
+    "test": "mocha",
     "build": "standard 'src/**/*.js' --fix && babel src -d dist",
     "start": "node index.js"
   },
@@ -52,9 +54,11 @@
     "@babel/register": "^7.4.4",
     "babel-eslint": "^10.0.2",
     "chai": "^4.2.0",
+    "chai-as-promised": "^7.1.1",
     "chai-http": "^4.3.0",
     "eslint": "^6.0.1",
     "mocha": "^6.1.4",
+    "nock": "^10.0.6",
     "standard": "^12.0.1"
   },
   "standard": {
@@ -62,6 +66,9 @@
     "ignore": [
       "node_modules/",
       "dist/"
+    ],
+    "env": [
+      "mocha"
     ]
   }
 }

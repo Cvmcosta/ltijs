@@ -140,7 +140,7 @@ Express server object.
 
 **Type**: ```Express```
 
-#### Provider.constructor(encryptionkey, database, [, options]) 
+#### Provider.constructor(encryptionkey, database [, options]) 
 
 Exposes methods for easy manipulation of the LTI 1.3 standard as a LTI Provider and a "app" object to manipulate the [Express](https://expressjs.com/) server.
 
@@ -182,6 +182,18 @@ Starts listening to a given port for LTI requests and opens connection to the co
 ##### Returns
 
 - Promise that resolves ```true``` when connection to the database is stablished and the server starts listening.
+
+
+
+
+#### async Provider.close() 
+
+Closes connection to database and stops server.
+
+
+##### Returns
+
+- Promise that resolves ```true``` when it's done or ```false``` if something fails.
 
 
 
@@ -416,7 +428,7 @@ Sends a grade message to [Platform](platform.md).
 - Promise that resolves ```true``` if it succeeds and ```false``` if it fails.
 
 
-#### async Provider.redirect(idToken, message) 
+#### async Provider.redirect(response, path [, isNewResource]) 
 
 Redirects to another route, handles the context in the url and if the route is a specific resource, generates the context cookie for it.
 
@@ -427,7 +439,7 @@ Redirects to another route, handles the context in the url and if the route is a
 
 | Name | Type | Description |  |
 | ---- | ---- | ----------- | -------- |
-| res | `Object`  | Espress response object.| &nbsp; |
+| response | `Object`  | Espress response object.| &nbsp; |
 | path | `String`  | Redirect path. | &nbsp; |
 | isNewResource | `Boolean`  | = false] Set to true if path is a resource, the tool will create a new context cookie. | *Optional* |
 
