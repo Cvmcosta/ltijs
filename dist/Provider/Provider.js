@@ -148,6 +148,66 @@ class Provider {
     (0, _classPrivateFieldGet2.default)(this, _dbConnection).url = database.url;
     (0, _classPrivateFieldGet2.default)(this, _dbConnection).options = database.connection; // Creating database schemas
 
+    const idTokenSchema = new Schema({
+      iss: String,
+      issuer_code: String,
+      user: String,
+      roles: [String],
+      userInfo: {
+        given_name: String,
+        family_name: String,
+        name: String,
+        email: String
+      },
+      platformInfo: {
+        family_code: String,
+        version: String,
+        name: String,
+        description: String
+      },
+      endpoint: {
+        scope: [String],
+        lineitems: String,
+        lineitem: String
+      },
+      namesRoles: {
+        context_memberships_url: String,
+        service_versions: [String]
+      },
+      createdAt: {
+        type: Date,
+        expires: 3600 * 24,
+        default: Date.now
+      }
+    });
+    const contextTokenSchema = new Schema({
+      path: String,
+      user: String,
+      context: {
+        id: String,
+        label: String,
+        title: String,
+        type: Array
+      },
+      resource: {
+        title: String,
+        id: String
+      },
+      // Activity that originated login
+      custom: {
+        // Custom parameter sent by the platform
+        resource: String,
+        // Id for a requested resource
+        system_setting_url: String,
+        context_setting_url: String,
+        link_setting_url: String
+      },
+      createdAt: {
+        type: Date,
+        expires: 3600 * 24,
+        default: Date.now
+      }
+    });
     const platformSchema = new Schema({
       platformName: String,
       platformUrl: String,
@@ -185,6 +245,8 @@ class Provider {
     });
 
     try {
+      mongoose.model('idToken', idTokenSchema);
+      mongoose.model('contextToken', contextTokenSchema);
       mongoose.model('platform', platformSchema);
       mongoose.model('privatekey', keySchema);
       mongoose.model('publickey', keySchema);
@@ -276,9 +338,9 @@ class Provider {
           if (req.body.id_token) {
             provMainDebug('Received request containing token. Sending for validation');
             let valid = await Auth.validateToken(req.body.id_token, this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
-            provAuthDebug('Successfully validated token!'); // Mount platform cookie
+            provAuthDebug('Successfully validated token!'); // Mount platform token
 
-            let platformCookie = {
+            let platformToken = {
               iss: valid.iss,
               issuer_code: issuer,
               user: valid.sub,
@@ -298,16 +360,28 @@ class Provider {
               endpoint: valid['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint'],
               namesRoles: valid['https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice']
             };
-            res.cookie(issuer, platformCookie, (0, _classPrivateFieldGet2.default)(this, _cookieOptions)); // Mount context cookie
+            res.cookie(issuer, platformToken.user, (0, _classPrivateFieldGet2.default)(this, _cookieOptions)); // Store idToken in database
 
-            let contextCookie = {
+            if (await Database.Delete('idToken', {
+              issuer_code: issuer,
+              user: valid.sub
+            })) Database.Insert(false, 'idToken', platformToken); // Mount context token
+
+            let contextToken = {
+              path: issuer + '/',
+              user: valid.sub,
               context: valid['https://purl.imsglobal.org/spec/lti/claim/context'],
               resource: valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'],
               custom: valid['https://purl.imsglobal.org/spec/lti/claim/custom']
             };
-            res.cookie(issuer + '/', contextCookie, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
-            platformCookie.platformContext = contextCookie;
-            res.locals.token = platformCookie;
+            res.cookie(issuer + '/', contextToken.resource.id, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
+            platformToken.platformContext = contextToken; // Store contextToken in database
+
+            if (await Database.Delete('contextToken', {
+              path: issuer + '/',
+              user: valid.sub
+            })) Database.Insert(false, 'contextToken', contextToken);
+            res.locals.token = platformToken;
             res.locals.login = true;
             provMainDebug('Passing request to next handler');
             return next();
@@ -317,9 +391,13 @@ class Provider {
           }
         } else {
           provAuthDebug('Cookie found');
-          let valid = it;
-          res.cookie(issuer, valid, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
-          let isPath = false;
+          res.cookie(issuer, it, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
+          let valid = await Database.Get(false, 'idToken', {
+            issuer_code: issuer,
+            user: it
+          });
+          if (!valid) return res.redirect((0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl));
+          valid = valid[0];
 
           if (path) {
             path = issuer + path;
@@ -328,18 +406,26 @@ class Provider {
               if (key === issuer) continue;
 
               if (path.indexOf(key) !== -1) {
-                isPath = cookies[key];
+                let contextToken = await Database.Get(false, 'contextToken', {
+                  path: key,
+                  user: it,
+                  'resource.id': cookies[key]
+                });
+                if (!contextToken) throw new Error('No path cookie found');
+                contextToken = contextToken[0];
+                valid.platformContext = contextToken;
                 break;
               }
             }
-
-            if (isPath) {
-              valid.platformContext = isPath;
-              if (!valid.platformContext) throw new Error('No path cookie found');
-            }
           } else {
-            valid.platformContext = cookies[issuer + '/'];
-            if (!valid.platformContext) throw new Error('No path cookie found');
+            let contextToken = await Database.Get(false, 'contextToken', {
+              path: issuer + '/',
+              user: it,
+              'resource.id': cookies[issuer + '/']
+            });
+            if (!contextToken) throw new Error('No path cookie found');
+            contextToken = contextToken[0];
+            valid.platformContext = contextToken;
           }
 
           res.locals.token = valid;
@@ -719,17 +805,33 @@ class Provider {
    * @param {Object} res - Express response object
    * @param {String} path - Redirect path
    * @param {Boolean} [isNewResource = false] - If true creates new resource and its cookie
+   * @param {Boolean} [ignoreRoot = false] - If true deletes de main path (/) database tokenb on redirect, this saves storage space and is recommended if you are using your main root only to redirect
    * @example lti.generatePathCookie(response, '/path', true)
    */
 
 
-  async redirect(res, path, isNewResource) {
+  async redirect(res, path, isNewResource, ignoreRoot) {
+    let newPath = res.locals.token.issuer_code + path;
+
     if (res.locals.login && isNewResource) {
       provMainDebug('Setting up path cookie for this resource with path: ' + path);
-      res.cookie(res.locals.token.issuer_code + path, res.locals.token.platformContext, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
+      res.cookie(newPath, res.locals.token.platformContext.resource.id, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
+      res.locals.token.platformContext.path = newPath;
+      if (await Database.Delete('contextToken', {
+        path: newPath,
+        user: res.locals.token.user
+      })) Database.Insert(false, 'contextToken', res.locals.token.platformContext);
+
+      if (ignoreRoot) {
+        Database.Delete('contextToken', {
+          path: res.locals.token.issuer_code + '/',
+          user: res.locals.token.user
+        });
+        res.clearCookie(res.locals.token.issuer_code + '/');
+      }
     }
 
-    return res.redirect(res.locals.token.issuer_code + path);
+    return res.redirect(newPath);
   }
 
 }
