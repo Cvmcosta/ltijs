@@ -29,7 +29,7 @@ class Server {
 
   listen (port, message) {
     if (this.ssl) this.server = https.createServer(this.ssl, this.app).listen(port, () => serverdebug(message))
-    else this.server = this.app.listen(port, () => serverdebug(message))
+    else this.server = this.app.listen(port, () => console.log(message))
   }
 
   setStaticPath (path) {
