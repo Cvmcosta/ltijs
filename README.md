@@ -86,14 +86,10 @@ const lti = new LTI('EXAMPLEKEY',
               connection:{ user:'user',
                           pass: 'pass'} 
             }, 
-            { staticPath: path.join(__dirname, '/views/') })
+            { appUrl: '/', loginUrl: '/login', staticPath: path.join(__dirname, '/views/') })
 
 
 let setup = async () => {
-  // Configure main routes
-  lti.appUrl('/')
-  lti.loginUrl('/login')
-
   // Deploy and open connection to the database
   await lti.deploy()
 

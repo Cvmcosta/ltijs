@@ -53,7 +53,11 @@ class Provider {
      * @param {Object} [database.connection] - Database connection options (Ex: user, pass)
      * @param {String} [database.connection.user] - Database user for authentication if needed.
      * @param {String} [database.conenction.pass] - Database pass for authentication if needed.
-     * @param {Object} [options] - Lti Provider additional options.
+     * @param {Object} [options] - Lti Provider additional options,.
+     * @param {String} [options.appUrl = '/'] - Lti Provider main url. If no option is set '/' is used.
+     * @param {String} [options.loginUrl = '/login'] - Lti Provider login url. If no option is set '/login' is used.
+     * @param {String} [options.sessionTimeoutUrl = '/sessionTimeout'] - Lti Provider session timeout url. If no option is set '/sessionTimeout' is used.
+     * @param {String} [options.invalidTokenUrl = '/invalidToken'] - Lti Provider invalid token url. If no option is set '/invalidToken' is used.
      * @param {Boolean} [options.https = false] - Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https. If you set this option as true you can enable the secure flag in the cookies options of the onConnect method.
      * @param {Object} [options.ssl] - SSL certificate and key if https is enabled.
      * @param {String} [options.ssl.key] - SSL key.
@@ -127,6 +131,10 @@ class Provider {
     if (options && options.https && (!options.ssl || !options.ssl.key || !options.ssl.cert)) throw new Error('No ssl Key  or Certificate found for local https configuration.');
     if (!encryptionkey) throw new Error('Encryptionkey parameter missing in options.');
     if (!database || !database.url) throw new Error('Missing database configurations.');
+    if (options.appUrl) (0, _classPrivateFieldSet2.default)(this, _appUrl, options.appUrl);
+    if (options.loginUrl) (0, _classPrivateFieldSet2.default)(this, _loginUrl, options.loginUrl);
+    if (options.sessionTimeoutUrl) (0, _classPrivateFieldSet2.default)(this, _sessionTimeoutUrl, options.sessionTimeoutUrl);
+    if (options.invalidTokenUrl) (0, _classPrivateFieldSet2.default)(this, _invalidTokenUrl, options.invalidTokenUrl);
     (0, _classPrivateFieldSet2.default)(this, _ENCRYPTIONKEY, encryptionkey);
     (0, _classPrivateFieldSet2.default)(this, _server, new Server(options ? options.https : false, options ? options.ssl : false, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY))); // Starts database connection
 
@@ -566,55 +574,39 @@ class Provider {
     throw new Error('Missing callback');
   }
   /**
-     * @description Gets/Sets login Url responsible for dealing with the OIDC login flow. If no value is set "/login" is used.
-     * @param {string} url - Login url.
-     * @example provider.loginUrl('/login')
-     * @returns {String}
-     */
+   * @description Gets the login Url responsible for dealing with the OIDC login flow.
+   * @returns {String}
+   */
 
 
-  loginUrl(url) {
-    if (!url) return (0, _classPrivateFieldGet2.default)(this, _loginUrl);
-    (0, _classPrivateFieldSet2.default)(this, _loginUrl, url);
+  loginUrl() {
     return (0, _classPrivateFieldGet2.default)(this, _loginUrl);
   }
   /**
-     * @description Gets/Sets main application Url that will receive the final decoded Idtoken. If no value is set "/" (root) is used.
-     * @param {string} url - App url.
-     * @example provider.appUrl('/app')
-     * @returns {String}
-     */
+   * @description Gets the main application Url that will receive the final decoded Idtoken.
+   * @returns {String}
+   */
 
 
-  appUrl(url) {
-    if (!url) return (0, _classPrivateFieldGet2.default)(this, _appUrl);
-    (0, _classPrivateFieldSet2.default)(this, _appUrl, url);
+  appUrl() {
     return (0, _classPrivateFieldGet2.default)(this, _appUrl);
   }
   /**
-     * @description Gets/Sets session timeout Url that will be called whenever the system encounters a session timeout. If no value is set "/sessionTimeout" is used.
-     * @param {string} url - Session timeout url.
-     * @example provider.sessionTimeoutUrl('/sesstimeout')
+     * @description Gets the session timeout Url that will be called whenever the system encounters a session timeout.
      * @returns {String}
      */
 
 
-  sessionTimeoutUrl(url) {
-    if (!url) return (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl);
-    (0, _classPrivateFieldSet2.default)(this, _sessionTimeoutUrl, url);
+  sessionTimeoutUrl() {
     return (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl);
   }
   /**
-     * @description Gets/Sets invalid token Url that will be called whenever the system encounters a invalid token or cookie. If no value is set "/invalidToken" is used.
-     * @param {string} url - Invalid token url.
-     * @example provider.invalidTokenUrl('/invtoken')
+     * @description Gets the invalid token Url that will be called whenever the system encounters a invalid token or cookie.
      * @returns {String}
      */
 
 
-  invalidTokenUrl(url) {
-    if (!url) return (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl);
-    (0, _classPrivateFieldSet2.default)(this, _invalidTokenUrl, url);
+  invalidTokenUrl() {
     return (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl);
   }
   /**

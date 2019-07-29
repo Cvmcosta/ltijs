@@ -59,14 +59,10 @@ const lti = new LTI('EXAMPLEKEY',
               connection:{ user:'user',
                           pass: 'pass'} 
             }, 
-            { staticPath: path.join(__dirname, '/views/') })
+            { appUrl: '/', loginUrl: '/login', staticPath: path.join(__dirname, '/views/') })
 
 
 let setup = async () => {
-  // Configure main routes
-  lti.appUrl('/')
-  lti.loginUrl('/login')
-
   // Deploy and open connection to the database
   await lti.deploy()
 
@@ -160,6 +156,10 @@ Exposes methods for easy manipulation of the LTI 1.3 standard as a LTI Provider 
 | database.connection.user | `String`  | Database user for authentication if needed. | *Optional* |
 | database.connection.pass | `String`  | Database pass for authentication if needed. | *Optional* |
 | options | `Object`  | LTI Provider options. | *Optional* |
+| options.appUrl | `String`  | = '/'] - Lti Provider main url. If no option is set '/' is used. | *Optional* |
+| options.loginUrl | `String`  | = '/login'] - Lti Provider login url. If no option is set '/login' is used. | *Optional* |
+| options.sessionTimeoutUrl | `String`  | = '/sessionTimeout'] - Lti Provider session timeout url. If no option is set '/sessionTimeout' is used. | *Optional* |
+| options.invalidTokenUrl | `String`  | = '/invalidToken'] - Lti Provider invalid token url. If no option is set '/invalidToken' is used. | *Optional* |
 | options.https | `Boolean`  | = false]  Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https. ***If you set this option as true you can enable the secure flag in the cookies options of the onConnect method***. | *Optional* |
 | options.ssl | `Object`  | SSL certificate and key if https is enabled. | *Optional* |
 | options.ssl.key | `String`  | SSL key. | *Optional* |
@@ -227,19 +227,25 @@ Sets the callback function called whenever theres a sucessfull connection, expos
 
 
 
+#### Provider.loginUrl() 
 
-#### Provider.loginUrl(url) 
-
-Gets/Sets login Url responsible for dealing with the OIDC login flow. If no value is set "/login" is used.
-
+Gets the login Url responsible for dealing with the OIDC login flow.
 
 
 
-##### Parameters
+##### Examples
 
-| Name | Type | Description |  |
-| ---- | ---- | ----------- | -------- |
-| url | `String`  | Login url. | &nbsp; |
+```javascript
+provider.loginUrl()
+```
+
+
+
+
+#### Provider.appUrl() 
+
+Gets the main application Url that will receive the final decoded Idtoken.
+
 
 
 
@@ -247,24 +253,32 @@ Gets/Sets login Url responsible for dealing with the OIDC login flow. If no valu
 ##### Examples
 
 ```javascript
-provider.loginUrl('/login')
+provider.appUrl()
 ```
 
 
 
 
-#### Provider.appUrl(url) 
 
-Gets/Sets main application Url that will receive the final decoded Idtoken. If no value is set "/" (root) is used.
+#### Provider.sessionTimeoutUrl() 
+
+Gets the session timeout Url that will be called whenever the system encounters a session timeout.
+
+
+
+##### Examples
+
+```javascript
+provider.sessionTimeoutUrl()
+```
 
 
 
 
-##### Parameters
+#### Provider.invalidTokenUrl() 
 
-| Name | Type | Description |  |
-| ---- | ---- | ----------- | -------- |
-| url | `String`  | App url. | &nbsp; |
+Gets the invalid token Url that will be called whenever the system encounters a invalid token or cookie.
+
 
 
 
@@ -272,61 +286,8 @@ Gets/Sets main application Url that will receive the final decoded Idtoken. If n
 ##### Examples
 
 ```javascript
-provider.appUrl('/app')
+provider.invalidTokenUrl()
 ```
-
-
-
-
-
-#### Provider.sessionTimeoutUrl(url) 
-
-Gets/Sets session timeout Url that will be called whenever the system encounters a session timeout. If no value is set "/sessionTimeout" is used.
-
-
-
-
-##### Parameters
-
-| Name | Type | Description |  |
-| ---- | ---- | ----------- | -------- |
-| url | `String`  | Session timeout url. | &nbsp; |
-
-
-
-
-##### Examples
-
-```javascript
-provider.sessionTimeoutUrl('/sesstimeout')
-```
-
-
-
-
-#### Provider.invalidTokenUrl(url) 
-
-Gets/Sets invalid token Url that will be called whenever the system encounters a invalid token or cookie. If no value is set "/invalidToken" is used.
-
-
-
-
-##### Parameters
-
-| Name | Type | Description |  |
-| ---- | ---- | ----------- | -------- |
-| url | `String`  | Invalid token url. | &nbsp; |
-
-
-
-
-##### Examples
-
-```javascript
-provider.invalidTokenUrl('/invtoken')
-```
-
-
 
 
 

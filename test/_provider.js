@@ -26,7 +26,7 @@ describe('Testing Provider', function () {
       lti = new LTI('EXAMPLEKEY',
         { url: 'mongodb://127.0.0.1/database'
         },
-        { staticPath: path.join(__dirname, '/views/') })
+        { appUrl: '/', loginUrl: '/login', staticPath: path.join(__dirname, '/views/') })
       return lti
     }
     expect(fn).to.not.throw(Error)
