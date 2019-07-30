@@ -8,7 +8,7 @@
 [![Node Version](https://img.shields.io/node/v/ltijs.svg)](https://www.npmjs.com/package/ltijs)
 [![NPM package](https://img.shields.io/npm/v/ltijs.svg)](https://www.npmjs.com/package/ltijs)
 [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
-[![APACHE2 License](https://img.shields.io/github/license/cvmcosta/ltijs)](LICENSE)
+[![APACHE2 License](https://img.shields.io/github/license/cvmcosta/ltijs)](#LICENSE)
 
 ## Table of Contents
 
