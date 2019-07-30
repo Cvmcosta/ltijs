@@ -1,5 +1,6 @@
 /* eslint-disable require-atomic-updates */
 /* eslint-disable no-useless-escape */
+
 /* Main class for the Provider functionalities */
 
 const Server = require('../Utils/Server')
@@ -71,10 +72,10 @@ class Provider {
     if (!encryptionkey) throw new Error('Encryptionkey parameter missing in options.')
     if (!database || !database.url) throw new Error('Missing database configurations.')
 
-    if (options.appUrl) this.#appUrl = options.appUrl
-    if (options.loginUrl) this.#loginUrl = options.loginUrl
-    if (options.sessionTimeoutUrl) this.#sessionTimeoutUrl = options.sessionTimeoutUrl
-    if (options.invalidTokenUrl) this.#invalidTokenUrl = options.invalidTokenUrl
+    if (options && options.appUrl) this.#appUrl = options.appUrl
+    if (options && options.loginUrl) this.#loginUrl = options.loginUrl
+    if (options && options.sessionTimeoutUrl) this.#sessionTimeoutUrl = options.sessionTimeoutUrl
+    if (options && options.invalidTokenUrl) this.#invalidTokenUrl = options.invalidTokenUrl
 
     this.#ENCRYPTIONKEY = encryptionkey
     this.#server = new Server(options ? options.https : false, options ? options.ssl : false, this.#ENCRYPTIONKEY)
