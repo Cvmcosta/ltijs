@@ -8,7 +8,7 @@
 [![Node Version](https://img.shields.io/node/v/ltijs.svg)](https://www.npmjs.com/package/ltijs)
 [![NPM package](https://img.shields.io/npm/v/ltijs.svg)](https://www.npmjs.com/package/ltijs)
 [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
-[![MIT License](https://img.shields.io/github/license/Cvmcosta/ltijs.svg)](LICENSE)
+[![APACHE2 License](https://img.shields.io/github/license/cvmcosta/ltijs)](LICENSE)
 
 
 ## Table of Contents
@@ -99,7 +99,4 @@ You can find the project documentation [here](https://cvmcosta.github.io/ltijs/#
 
 
 ## License
-
-[![MIT License](https://img.shields.io/github/license/Cvmcosta/ltijs.svg)](LICENSE)
-
-- **[MIT license](http://opensource.org/licenses/mit-license.php)**
+[![APACHE2 License](https://img.shields.io/github/license/cvmcosta/ltijs)](LICENSE)
