@@ -500,7 +500,7 @@ Outside of it's first argument `connection`, that is the user's validated `idtok
 
 ```javascript
 lti.onConnect(
-  (conection, response, request, next) => {
+  (conection, request, response, next) => {
     response.send('User connected!')
   }
 )
@@ -510,7 +510,7 @@ The method also allows you to configure a few things regarding to how the idtoke
 
 ```javascript
 lti.onConnect(
-  (conection, response, request, next) => {
+  (conection, request, response,  next) => {
     response.send('User connected!')
   },{
     secure: true, // Cookie is only passed through secure https requests
