@@ -131,10 +131,10 @@ class Provider {
     if (options && options.https && (!options.ssl || !options.ssl.key || !options.ssl.cert)) throw new Error('No ssl Key  or Certificate found for local https configuration.');
     if (!encryptionkey) throw new Error('Encryptionkey parameter missing in options.');
     if (!database || !database.url) throw new Error('Missing database configurations.');
-    if (options.appUrl) (0, _classPrivateFieldSet2.default)(this, _appUrl, options.appUrl);
-    if (options.loginUrl) (0, _classPrivateFieldSet2.default)(this, _loginUrl, options.loginUrl);
-    if (options.sessionTimeoutUrl) (0, _classPrivateFieldSet2.default)(this, _sessionTimeoutUrl, options.sessionTimeoutUrl);
-    if (options.invalidTokenUrl) (0, _classPrivateFieldSet2.default)(this, _invalidTokenUrl, options.invalidTokenUrl);
+    if (options && options.appUrl) (0, _classPrivateFieldSet2.default)(this, _appUrl, options.appUrl);
+    if (options && options.loginUrl) (0, _classPrivateFieldSet2.default)(this, _loginUrl, options.loginUrl);
+    if (options && options.sessionTimeoutUrl) (0, _classPrivateFieldSet2.default)(this, _sessionTimeoutUrl, options.sessionTimeoutUrl);
+    if (options && options.invalidTokenUrl) (0, _classPrivateFieldSet2.default)(this, _invalidTokenUrl, options.invalidTokenUrl);
     (0, _classPrivateFieldSet2.default)(this, _ENCRYPTIONKEY, encryptionkey);
     (0, _classPrivateFieldSet2.default)(this, _server, new Server(options ? options.https : false, options ? options.ssl : false, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY))); // Starts database connection
 
