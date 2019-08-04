@@ -145,7 +145,7 @@ You can find the project documentation [here](https://cvmcosta.github.io/ltijs).
 
 If you find a bug or think that something is hard to understand feel free to open an issue or contact me on twitter [@cvmcosta](https://twitter.com/cvmcosta) :)
 
-I'm currently working on turning the Database stuff into a more plugin-like structureto allow the use of other types of database easely. *(And because someone reuploaded the entire repository changing the database to postgres, which is obsviously not the most ethical way to contribute to this project. So i want to make it easy for someone to improve and add things without having to do this sort of uncool stuff)*
+I'm currently working on turning the Database stuff into a more plugin-like structure to allow the use of other types of database easely. *(And because someone reuploaded the entire repository changing the database to postgres, which is obsviously not the most ethical way to contribute to this project. So i want to make it easy for someone to improve and add things without having to do this sort of uncool stuff)*
 
 
 
