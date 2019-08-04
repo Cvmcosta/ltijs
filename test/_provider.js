@@ -20,7 +20,7 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
 let lti
 
 describe('Testing Provider', function () {
-  this.timeout(8000)
+  this.timeout(10000)
   it('Provider.contructor expected to not throw Error', () => {
     let fn = () => {
       lti = new LTI('EXAMPLEKEY',
@@ -43,16 +43,20 @@ describe('Testing Provider', function () {
   it('Provider.invalidTokenUrl expected to return a String equal to argument', () => {
     expect(lti.invalidTokenUrl('/invalidToken')).to.be.a('string').equal('/invalidToken')
   })
+  it('Provider.whitelist expected to return true', () => {
+    expect(lti.whitelist(['/1', '/2'])).to.be.equal(true)
+  })
   it('Provider.deploy expected to resolve true', async () => {
     await expect(lti.deploy()).to.eventually.become(true)
   })
   it('Provider.registerPlatform expected to resolve Platform object', () => {
-    return expect(lti.registerPlatform(
-      'https://platform.com',
-      'Platform Name', 'ClientIdThePlatformCreatedForYourApp',
-      'https://platform.com/AuthorizationUrl',
-      'https://platform.com/AccessTokenUrl',
-      { method: 'JWK_SET', key: 'https://platform.com/keyset' })).to.eventually.be.instanceOf(Platform)
+    return expect(lti.registerPlatform({
+      url: 'https://platform.com',
+      name: 'Platform Name',
+      clientId: 'ClientIdThePlatformCreatedForYourApp',
+      authenticationEndpoint: 'https://platform.com/AuthorizationUrl',
+      accesstokenEndpoint: 'https://platform.com/AccessTokenUrl',
+      authConfig: { method: 'JWK_SET', key: 'https://platform.com/keyset' } })).to.eventually.be.instanceOf(Platform)
   })
   it('Provider.getPlatform expected to resolve Platform object', async () => {
     return expect(lti.getPlatform('https://platform.com')).to.eventually.be.instanceOf(Platform)
@@ -211,6 +215,7 @@ describe('Testing Provider', function () {
         type: [Array]
       },
       'https://purl.imsglobal.org/spec/lti/claim/resource_link': { title: 'teste local', id: '5' },
+      'https://purl.imsglobal.org/spec/lti/claim/ ': { title: 'teste local', id: '5' },
       'https://purl.imsglobal.org/spec/lti-bos/claim/basicoutcomesservice': {
         lis_result_sourcedid: '{"data":{"instanceid":"5","userid":"22","typeid":"2","launchid":932474241},"hash":"86f641f363947a7c5e8b0007f612f5dda68c3b7a708b9be0812b7132df5b4075"}',
         lis_outcome_service_url: 'https://alfa.educsaite.org/mod/lti/service.php'
@@ -268,7 +273,7 @@ describe('Testing Provider', function () {
     '-----END RSA PRIVATE KEY-----', { algorithm: 'RS256', keyid: '123456' })
 
     lti.onConnect((token, req, res) => {
-      lti.redirect(res, '/finalRoute', true)
+      lti.redirect(res, '/finalRoute', { isNewResource: true })
     })
 
     nock('https://platform.com').get('/keyset').reply(200, {
@@ -283,7 +288,7 @@ describe('Testing Provider', function () {
     })
   })
 
-  it('Provider.messagePlatform expected to return true', async () => {
+  it('Provider.Grade.ScorePublish expected to return true', async () => {
     let token = {
       iss: 'https://platform.com',
       issuer_code: 'platformCode',
@@ -344,7 +349,7 @@ describe('Testing Provider', function () {
       scope: 'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem https://purl.imsglobal.org/spec/lti-ags/scope/score https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly'
     })
 
-    nock('https://platform.com').get('/lineitems/url').reply(200, [{
+    nock('https://platform.com').get('/lineitems/url').query({ resource_link_id: '1g3k4dlk49fk' }).reply(200, [{
       'id': 'https://lms.example.com/context/2923/lineitems/1',
       'scoreMaximum': 60,
       'label': 'Chapter 5 Test',
@@ -357,7 +362,305 @@ describe('Testing Provider', function () {
 
     nock('https://lms.example.com').post('/context/2923/lineitems/1/scores').reply(200)
 
-    return expect(lti.messagePlatform(token, message)).to.eventually.become(true)
+    return expect(lti.Grade.ScorePublish(token, message)).to.eventually.become(true)
+  })
+
+  it('Provider.Grade.Result expected to return object', async () => {
+    let token = {
+      iss: 'https://platform.com',
+      issuer_code: 'platformCode',
+      user: '2', // User id
+      roles: [
+        'http://purl.imsglobal.org/vocab/lis/v2/institution/person#Administrator',
+        'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor',
+        'http://purl.imsglobal.org/vocab/lis/v2/system/person#Administrator'
+      ],
+      userInfo: {
+        given_name: 'User Given Name',
+        family_name: 'Use Family Name',
+        name: 'User Full Name',
+        email: 'user@email.com'
+      },
+      platformInfo: {
+        family_code: 'platform_type', // ex: Moodle
+        version: 'versionNumber',
+        name: 'LTI',
+        description: 'LTI tool'
+      },
+      endpoint: {
+        scope: [ // List of scopes
+          'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem',
+          'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly',
+          'https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly',
+          'https://purl.imsglobal.org/spec/lti-ags/scope/score'
+        ],
+        lineitems: 'https://platform.com/lineitems/url',
+        lineitem: ''
+      },
+      namesRoles: {
+        context_memberships_url: 'https://platform.com/context/membership/url',
+        service_versions: [ '1.0', '2.0' ]
+      },
+      platformContext: { // Context of connection
+        context: { id: '2', label: 'course label', title: 'course title', type: [Array] },
+        resource: { title: 'Activity name', id: '1g3k4dlk49fk' }, // Activity that originated login
+        custom: { // Custom parameter sent by the platform
+          resource: '123456', // Id for a requested resource
+          system_setting_url: 'https://platform.com/customs/system/setting',
+          context_setting_url: 'https://platform.com/customs/context/setting',
+          link_setting_url: 'https://platform.com/customs/link/setting'
+        }
+      }
+    }
+    nock('https://platform.com').post('/AccessTokenUrl').reply(200, {
+      access_token: 'f3399be7242f95890887236756efa196',
+      token_type: 'Bearer',
+      expires_in: 3600,
+      scope: 'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem https://purl.imsglobal.org/spec/lti-ags/scope/score https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly'
+    })
+
+    nock('https://platform.com').get('/lineitems/url').query({ resource_link_id: '1g3k4dlk49fk' }).reply(200, [{
+      'id': 'https://lms.example.com/context/2923/lineitems/1',
+      'scoreMaximum': 60,
+      'label': 'Chapter 5 Test',
+      'resourceId': 'a-9334df-33',
+      'tag': 'grade',
+      'resourceLinkId': '1g3k4dlk49fk',
+      'startDateTime': '2018-03-06T20:05:02Z',
+      'endDateTime': '2018-04-06T22:05:03Z'
+    }])
+
+    nock('https://lms.example.com').get('/context/2923/lineitems/1/results?').reply(200, [{
+      'id': 'https://lms.example.com/context/2923/lineitems/1/results/5323497',
+      'scoreOf': 'https://lms.example.com/context/2923/lineitems/1',
+      'userId': '5323497',
+      'resultScore': 0.83,
+      'resultMaximum': 1,
+      'comment': 'This is exceptional work.'
+    }])
+
+    return expect(lti.Grade.Result(token)).to.eventually.deep.include.members([{
+      'id': 'https://lms.example.com/context/2923/lineitems/1/results/5323497',
+      'lineItem': 'Chapter 5 Test',
+      'scoreOf': 'https://lms.example.com/context/2923/lineitems/1',
+      'userId': '5323497',
+      'resultScore': 0.83,
+      'resultMaximum': 1,
+      'comment': 'This is exceptional work.'
+    }])
+  })
+
+  it('Provider.Grade.GetLineItems expected to return object containing lineitems', async () => {
+    let token = {
+      iss: 'https://platform.com',
+      issuer_code: 'platformCode',
+      user: '2', // User id
+      roles: [
+        'http://purl.imsglobal.org/vocab/lis/v2/institution/person#Administrator',
+        'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor',
+        'http://purl.imsglobal.org/vocab/lis/v2/system/person#Administrator'
+      ],
+      userInfo: {
+        given_name: 'User Given Name',
+        family_name: 'Use Family Name',
+        name: 'User Full Name',
+        email: 'user@email.com'
+      },
+      platformInfo: {
+        family_code: 'platform_type', // ex: Moodle
+        version: 'versionNumber',
+        name: 'LTI',
+        description: 'LTI tool'
+      },
+      endpoint: {
+        scope: [ // List of scopes
+          'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem',
+          'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly',
+          'https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly',
+          'https://purl.imsglobal.org/spec/lti-ags/scope/score'
+        ],
+        lineitems: 'https://platform.com/lineitems/url',
+        lineitem: ''
+      },
+      namesRoles: {
+        context_memberships_url: 'https://platform.com/context/membership/url',
+        service_versions: [ '1.0', '2.0' ]
+      },
+      platformContext: { // Context of connection
+        context: { id: '2', label: 'course label', title: 'course title', type: [Array] },
+        resource: { title: 'Activity name', id: '1g3k4dlk49fk' }, // Activity that originated login
+        custom: { // Custom parameter sent by the platform
+          resource: '123456', // Id for a requested resource
+          system_setting_url: 'https://platform.com/customs/system/setting',
+          context_setting_url: 'https://platform.com/customs/context/setting',
+          link_setting_url: 'https://platform.com/customs/link/setting'
+        }
+      }
+    }
+    nock('https://platform.com').post('/AccessTokenUrl').reply(200, {
+      access_token: 'f3399be7242f95890887236756efa196',
+      token_type: 'Bearer',
+      expires_in: 3600,
+      scope: 'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem https://purl.imsglobal.org/spec/lti-ags/scope/score https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly'
+    })
+
+    nock('https://platform.com').get('/lineitems/url').query({ resource_link_id: '1g3k4dlk49fk' }).reply(200, [{
+      'id': 'https://lms.example.com/context/2923/lineitems/1',
+      'scoreMaximum': 60,
+      'label': 'Chapter 5 Test',
+      'resourceId': 'a-9334df-33',
+      'tag': 'grade',
+      'resourceLinkId': '1g3k4dlk49fk',
+      'startDateTime': '2018-03-06T20:05:02Z',
+      'endDateTime': '2018-04-06T22:05:03Z'
+    }])
+
+    return expect(lti.Grade.GetLineItems(token, { resourceLinkId: '1g3k4dlk49fk' })).to.eventually.deep.include.members([{
+      'id': 'https://lms.example.com/context/2923/lineitems/1',
+      'scoreMaximum': 60,
+      'label': 'Chapter 5 Test',
+      'resourceId': 'a-9334df-33',
+      'tag': 'grade',
+      'resourceLinkId': '1g3k4dlk49fk',
+      'startDateTime': '2018-03-06T20:05:02Z',
+      'endDateTime': '2018-04-06T22:05:03Z'
+    }])
+  })
+
+  it('Provider.Grade.CreateLineItem expected to return true', async () => {
+    let token = {
+      iss: 'https://platform.com',
+      issuer_code: 'platformCode',
+      user: '2', // User id
+      roles: [
+        'http://purl.imsglobal.org/vocab/lis/v2/institution/person#Administrator',
+        'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor',
+        'http://purl.imsglobal.org/vocab/lis/v2/system/person#Administrator'
+      ],
+      userInfo: {
+        given_name: 'User Given Name',
+        family_name: 'Use Family Name',
+        name: 'User Full Name',
+        email: 'user@email.com'
+      },
+      platformInfo: {
+        family_code: 'platform_type', // ex: Moodle
+        version: 'versionNumber',
+        name: 'LTI',
+        description: 'LTI tool'
+      },
+      endpoint: {
+        scope: [ // List of scopes
+          'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem',
+          'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly',
+          'https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly',
+          'https://purl.imsglobal.org/spec/lti-ags/scope/score'
+        ],
+        lineitems: 'https://platform.com/lineitems/url',
+        lineitem: ''
+      },
+      namesRoles: {
+        context_memberships_url: 'https://platform.com/context/membership/url',
+        service_versions: [ '1.0', '2.0' ]
+      },
+      platformContext: { // Context of connection
+        context: { id: '2', label: 'course label', title: 'course title', type: [Array] },
+        resource: { title: 'Activity name', id: '1g3k4dlk49fk' }, // Activity that originated login
+        custom: { // Custom parameter sent by the platform
+          resource: '123456', // Id for a requested resource
+          system_setting_url: 'https://platform.com/customs/system/setting',
+          context_setting_url: 'https://platform.com/customs/context/setting',
+          link_setting_url: 'https://platform.com/customs/link/setting'
+        }
+      }
+    }
+    nock('https://platform.com').post('/AccessTokenUrl').reply(200, {
+      access_token: 'f3399be7242f95890887236756efa196',
+      token_type: 'Bearer',
+      expires_in: 3600,
+      scope: 'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem https://purl.imsglobal.org/spec/lti-ags/scope/score https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly'
+    })
+
+    nock('https://platform.com').post('/lineitems/url').reply(201)
+
+    return expect(lti.Grade.CreateLineItem(token, {
+      'scoreMaximum': 60,
+      'label': 'Chapter 5 Test',
+      'resourceId': 'quiz-231',
+      'tag': 'grade',
+      'startDateTime': '2018-03-06T20:05:02Z',
+      'endDateTime': '2018-04-06T22:05:03Z'
+    }, { resourceLinkId: '1g3k4dlk49fk' })).to.eventually.become(true)
+  })
+
+  it('Provider.Grade.DeleteLineItems expected to return true', async () => {
+    let token = {
+      iss: 'https://platform.com',
+      issuer_code: 'platformCode',
+      user: '2', // User id
+      roles: [
+        'http://purl.imsglobal.org/vocab/lis/v2/institution/person#Administrator',
+        'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor',
+        'http://purl.imsglobal.org/vocab/lis/v2/system/person#Administrator'
+      ],
+      userInfo: {
+        given_name: 'User Given Name',
+        family_name: 'Use Family Name',
+        name: 'User Full Name',
+        email: 'user@email.com'
+      },
+      platformInfo: {
+        family_code: 'platform_type', // ex: Moodle
+        version: 'versionNumber',
+        name: 'LTI',
+        description: 'LTI tool'
+      },
+      endpoint: {
+        scope: [ // List of scopes
+          'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem',
+          'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly',
+          'https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly',
+          'https://purl.imsglobal.org/spec/lti-ags/scope/score'
+        ],
+        lineitems: 'https://platform.com/lineitems/url',
+        lineitem: ''
+      },
+      namesRoles: {
+        context_memberships_url: 'https://platform.com/context/membership/url',
+        service_versions: [ '1.0', '2.0' ]
+      },
+      platformContext: { // Context of connection
+        context: { id: '2', label: 'course label', title: 'course title', type: [Array] },
+        resource: { title: 'Activity name', id: '1g3k4dlk49fk' }, // Activity that originated login
+        custom: { // Custom parameter sent by the platform
+          resource: '123456', // Id for a requested resource
+          system_setting_url: 'https://platform.com/customs/system/setting',
+          context_setting_url: 'https://platform.com/customs/context/setting',
+          link_setting_url: 'https://platform.com/customs/link/setting'
+        }
+      }
+    }
+    nock('https://platform.com').post('/AccessTokenUrl').reply(200, {
+      access_token: 'f3399be7242f95890887236756efa196',
+      token_type: 'Bearer',
+      expires_in: 3600,
+      scope: 'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem https://purl.imsglobal.org/spec/lti-ags/scope/score https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly'
+    })
+
+    nock('https://platform.com').get('/lineitems/url').reply(200, [{
+      'id': 'https://lms.example.com/context/2923/lineitems/1',
+      'scoreMaximum': 60,
+      'label': 'Chapter 5 Test',
+      'resourceId': 'a-9334df-33',
+      'tag': 'grade',
+      'resourceLinkId': '1g3k4dlk49fk',
+      'startDateTime': '2018-03-06T20:05:02Z',
+      'endDateTime': '2018-04-06T22:05:03Z'
+    }])
+
+    nock('https://lms.example.com').delete('/context/2923/lineitems/1').reply(204)
+
+    return expect(lti.Grade.DeleteLineItems(token)).to.eventually.become(true)
   })
 
   it('Provider.deletePlatform expected to resolve true and delete platform', async () => {

@@ -18,6 +18,7 @@
 - [Features](#features)
 - [Usage](#usage)
 - [Documentation](#documentation)
+- [Contributing](#contributing)
 - [License](#license)
 
 
@@ -47,10 +48,23 @@ $ npm install ltijs
 
 ## Features
 
+
+
+| Feature | Implementation | Documentation |
+| --------- | - | - |
+| Provider | <center>:heavy_check_mark:</center> | <center>:heavy_check_mark:</center> |
+| [Platform Class](platform.md) | <center>:heavy_check_mark:</center> | <center>:heavy_check_mark:</center> |
+| Grade Service Class | <center>:heavy_check_mark:</center> | <center></center> |
+| Keyset endpoint support | <center></center> | <center></center> |
+| Names and Roles Service Class | <center></center> | <center></center> |
+| Database plugins | <center></center> | <center></center> |
+
+
+
 This package implements LTI Provider and Consumer servers. See bellow for specific documentations.
 
-### [LTIjs Provider Documentation](https://cvmcosta.github.io/ltijs/#/provider) 
-   - [Platform class documentation](https://cvmcosta.github.io/ltijs/#/platform)
+### [LTIjs Provider Documentation](provider.md) 
+   - [Platform class documentation](platform.md)
 ### ~~LTIjs Consumer Documentation~~ (Coming soon)
 
 ---
@@ -94,13 +108,14 @@ let setup = async () => {
   await lti.deploy()
 
   // Register platform
-  let plat = await lti.registerPlatform(
-    'http://platform/url', 
-    'Platform Name', 'ClientIdThePlatformCreatedForYourApp', 
-    'http://platform/AuthorizationUrl', 
-    'http://platform/AccessTokenUrl', 
-    { method: 'JWK_SET', key: 'http://platform/keyset' }
-  )
+  let plat = await lti.registerPlatform({ 
+    url: 'https://platform.url',
+    name: 'Platform Name',
+    clientId: 'TOOLCLIENTID',
+    authenticationEndpoint: 'https://platform.url/auth',
+    accesstokenEndpoint: 'https://platform.url/token',
+    authConfig: { method: 'JWK_SET', key: 'https://platform.url/keyset' }
+})
 
   // Set connection callback
   lti.onConnect((connection, request, response) => {
@@ -122,6 +137,17 @@ setup()
 
 ## Documentation
 You can find the project documentation [here](https://cvmcosta.github.io/ltijs).
+
+---
+
+## Contributing
+
+
+If you find a bug or think that something is hard to understand feel free to open an issue or contact me on twitter [@cvmcosta](https://twitter.com/cvmcosta) :)
+
+I'm currently working on turning the Database stuff into a more plugin-like structureto allow the use of other types of database easely. *(And because someone reuploaded the entire repository changing the database to postgres, which is obsviously not the most ethical way to contribute to this project. So i want to make it easy for someone to improve and add things without having to do this sort of uncool stuff)*
+
+
 
 ---
 
