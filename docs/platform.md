@@ -1,4 +1,4 @@
-# [LTIjs](README.md) - Platform
+# <center>[![LTIjs](../assets/logo-300.svg)](https://cvmcosta.github.io/ltijs)</center>
 
 > Platform class
 

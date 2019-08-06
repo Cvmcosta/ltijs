@@ -26,9 +26,11 @@ const provMainDebug = require('debug')('provider:main')
 class Provider {
   // Pre-initiated variables
   #loginUrl = '/login'
+
   #appUrl = '/'
 
   #sessionTimeoutUrl = '/sessionTimeout'
+
   #invalidTokenUrl = '/invalidToken'
 
   #whitelistedUrls = []
@@ -40,6 +42,7 @@ class Provider {
     httpOnly: true,
     signed: true
   }
+
   #dbConnection = {}
 
   #connectCallback = () => {}
@@ -47,10 +50,13 @@ class Provider {
   #sessionTimedOut = (req, res) => {
     res.status(401).send('Token invalid or expired. Please reinitiate login.')
   }
+
   #invalidToken = (req, res) => {
     res.status(401).send('Invalid token. Please reinitiate login.')
   }
+
   #server
+
   /**
      * @description Exposes methods for easy manipualtion of the LTI 1.3 standard as a LTI Provider and a "server" object to manipulate the Express instance.
      * @param {String} encryptionkey - Secret used to sign cookies and encrypt other info.
@@ -196,14 +202,14 @@ class Provider {
     this.app.get('/favicon.ico', (req, res) => res.status(204))
 
     // Registers main athentication and routing middleware
-    let sessionValidator = async (req, res, next) => {
+    const sessionValidator = async (req, res, next) => {
       // Ckeck if request is attempting to initiate oidc login flow
       if (req.url === this.#loginUrl || req.url === this.#sessionTimeoutUrl || req.url === this.#invalidTokenUrl || this.#whitelistedUrls.indexOf(req.url) !== -1) return next()
       if (req.url === this.#appUrl) {
         let origin = req.get('origin')
         if (!origin || origin === 'null') origin = req.get('host')
         if (!origin) return res.redirect(this.#invalidTokenUrl)
-        let iss = 'plat' + encodeURIComponent(Buffer.from(origin).toString('base64'))
+        const iss = 'plat' + encodeURIComponent(Buffer.from(origin).toString('base64'))
         return res.redirect(307, '/' + iss)
       }
 
@@ -213,13 +219,13 @@ class Provider {
         let issuer = urlArr[1]
         let path = ''
         let isApiRequest = false
-        let cookies = req.signedCookies
+        const cookies = req.signedCookies
 
         // Validate issuer_code to see if its a route or normal request
         if (issuer.indexOf('plat') === -1) isApiRequest = true
         if (!isApiRequest) {
           try {
-            let decode = Buffer.from(decodeURIComponent(issuer.split('plat')[1]), 'base64').toString('ascii')
+            const decode = Buffer.from(decodeURIComponent(issuer.split('plat')[1]), 'base64').toString('ascii')
             if (!validator.isURL(decode) && decode.indexOf('localhost') === -1) isApiRequest = true
           } catch (err) {
             provMainDebug(err)
@@ -236,17 +242,17 @@ class Provider {
             return res.status(400).send('Missing context parameter in request.')
           }
           issuer = encodeURIComponent(requestParts[1])
-          let _urlArr = []
-          for (let i in requestParts) _urlArr.push(requestParts[i])
+          const _urlArr = []
+          for (const i in requestParts) _urlArr.push(requestParts[i])
           urlArr = _urlArr
 
           // Informs the system that is a API request
           res.locals.isApiRequest = true
         }
-        for (let i in urlArr) if (parseInt(i) !== 0 && parseInt(i) !== 1) path = path + '/' + urlArr[i]
+        for (const i in urlArr) if (parseInt(i) !== 0 && parseInt(i) !== 1) path = path + '/' + urlArr[i]
 
         // Mathes path to cookie
-        for (let key of Object.keys(cookies)) {
+        for (const key of Object.keys(cookies)) {
           if (key === issuer) {
             it = cookies[key]
             break
@@ -258,11 +264,11 @@ class Provider {
           provMainDebug('No cookie found')
           if (req.body.id_token) {
             provMainDebug('Received request containing token. Sending for validation')
-            let valid = await Auth.validateToken(req.body.id_token, this.getPlatform, this.#ENCRYPTIONKEY)
+            const valid = await Auth.validateToken(req.body.id_token, this.getPlatform, this.#ENCRYPTIONKEY)
             provAuthDebug('Successfully validated token!')
 
             // Mount platform token
-            let platformToken = {
+            const platformToken = {
               iss: valid.iss,
               issuer_code: issuer,
               user: valid.sub,
@@ -289,7 +295,7 @@ class Provider {
             if (await Database.Delete('idToken', { issuer_code: issuer, user: valid.sub })) Database.Insert(false, 'idToken', platformToken)
 
             // Mount context token
-            let contextToken = {
+            const contextToken = {
               path: issuer + '/',
               user: valid.sub,
               context: valid['https://purl.imsglobal.org/spec/lti/claim/context'],
@@ -323,7 +329,7 @@ class Provider {
 
           if (path) {
             path = issuer + path
-            for (let key of Object.keys(cookies).sort((a, b) => b.length - a.length)) {
+            for (const key of Object.keys(cookies).sort((a, b) => b.length - a.length)) {
               if (key === issuer) continue
               if (path.indexOf(key) !== -1) {
                 let contextToken = await Database.Get(false, 'contextToken', { path: key, user: it, 'resource.id': cookies[key] })
@@ -356,12 +362,12 @@ class Provider {
 
     this.app.post(this.#loginUrl, async (req, res) => {
       provMainDebug('Receiving a login request from: ' + req.body.iss)
-      let platform = await this.getPlatform(req.body.iss)
+      const platform = await this.getPlatform(req.body.iss)
       if (platform) {
         let origin = req.get('origin')
         if (!origin || origin === 'null') origin = req.get('host')
         if (!origin) return res.redirect(this.#invalidTokenUrl)
-        let cookieName = 'plat' + encodeURIComponent(Buffer.from(origin).toString('base64'))
+        const cookieName = 'plat' + encodeURIComponent(Buffer.from(origin).toString('base64'))
         provMainDebug('Redirecting to platform authentication endpoint')
         res.clearCookie(cookieName, this.#cookieOptions)
         res.redirect(url.format({
@@ -535,14 +541,14 @@ class Provider {
   async registerPlatform (platform) {
     if (!platform || !platform.name || !platform.url || !platform.clientId || !platform.authenticationEndpoint || !platform.accesstokenEndpoint || !platform.authConfig) throw new Error('Error registering platform. Missing argument.')
     try {
-      let _platform = await this.getPlatform(platform.url)
+      const _platform = await this.getPlatform(platform.url)
 
       if (!_platform) {
-        let kid = await Auth.generateProviderKeyPair(this.#ENCRYPTIONKEY)
-        let plat = new Platform(platform.name, platform.url, platform.clientId, platform.authenticationEndpoint, platform.accesstokenEndpoint, kid, this.#ENCRYPTIONKEY, platform.authConfig)
+        const kid = await Auth.generateProviderKeyPair(this.#ENCRYPTIONKEY)
+        const plat = new Platform(platform.name, platform.url, platform.clientId, platform.authenticationEndpoint, platform.accesstokenEndpoint, kid, this.#ENCRYPTIONKEY, platform.authConfig)
 
         // Save platform to db
-        let isregisteredPlat = await Database.Get(false, 'platform', { platformUrl: platform.url })
+        const isregisteredPlat = await Database.Get(false, 'platform', { platformUrl: platform.url })
         if (!isregisteredPlat) {
           provMainDebug('Registering new platform: ' + platform.url)
           await Database.Insert(false, 'platform', { platformName: platform.name, platformUrl: platform.url, clientId: platform.clientId, authEndpoint: platform.authenticationEndpoint, accesstokenEndpoint: platform.accesstokenEndpoint, kid: kid, authConfig: platform.authConfig })
@@ -566,9 +572,9 @@ class Provider {
   async getPlatform (url, ENCRYPTIONKEY) {
     if (!url) throw new Error('No url provided')
     try {
-      let plat = await Database.Get(false, 'platform', { platformUrl: url })
+      const plat = await Database.Get(false, 'platform', { platformUrl: url })
       if (!plat) return false
-      let obj = plat[0]
+      const obj = plat[0]
 
       if (!obj) return false
 
@@ -593,7 +599,7 @@ class Provider {
      */
   async deletePlatform (url) {
     if (!url) throw new Error('No url provided')
-    let platform = await this.getPlatform(url)
+    const platform = await this.getPlatform(url)
     if (platform) return platform.remove()
     return false
   }
@@ -603,12 +609,12 @@ class Provider {
      * @returns {Promise<Array<Platform>| false>}
      */
   async getAllPlatforms () {
-    let returnArray = []
+    const returnArray = []
     try {
-      let platforms = await Database.Get(false, 'platform')
+      const platforms = await Database.Get(false, 'platform')
 
       if (platforms) {
-        for (let obj of platforms) returnArray.push(new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, this.#ENCRYPTIONKEY, obj.authConfig))
+        for (const obj of platforms) returnArray.push(new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, this.#ENCRYPTIONKEY, obj.authConfig))
         return returnArray
       }
       return []
@@ -629,7 +635,7 @@ class Provider {
    */
   async redirect (res, path, options) {
     if (this.#whitelistedUrls.indexOf(path) !== -1) return res.redirect(path)
-    let newPath = res.locals.token.issuer_code + path
+    const newPath = res.locals.token.issuer_code + path
     if (res.locals.login && (options && options.isNewResource)) {
       provMainDebug('Setting up path cookie for this resource with path: ' + path)
       res.cookie(newPath, res.locals.token.platformContext.resource.id, this.#cookieOptions)

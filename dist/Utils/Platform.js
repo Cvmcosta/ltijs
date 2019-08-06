@@ -163,7 +163,7 @@ class Platform {
 
   async platformPublicKey() {
     try {
-      let key = await Database.Get((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), 'publickey', {
+      const key = await Database.Get((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), 'publickey', {
         kid: (0, _classPrivateFieldGet2.default)(this, _kid)
       });
       return key[0].key;
@@ -180,7 +180,7 @@ class Platform {
 
   async platformPrivateKey() {
     try {
-      let key = await Database.Get((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), 'privatekey', {
+      const key = await Database.Get((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), 'privatekey', {
         kid: (0, _classPrivateFieldGet2.default)(this, _kid)
       });
       return key[0].key;
@@ -200,7 +200,7 @@ class Platform {
     if (!method && !key) return (0, _classPrivateFieldGet2.default)(this, _authConfig2);
     if (method !== 'RSA_KEY' && method !== 'JWK_KEY' && method !== 'JWK_SET') throw new Error('Invalid message validation method. Valid methods are "RSA_KEY", "JWK_KEY", "JWK_SET"');
     if (!key) throw new Error('Missing secong argument key or keyset_url.');
-    let authConfig = {
+    const authConfig = {
       method: method,
       key: key
     };
@@ -271,14 +271,14 @@ class Platform {
 
 
   async platformAccessToken() {
-    let token = await Database.Get((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), 'accesstoken', {
+    const token = await Database.Get((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), 'accesstoken', {
       platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl)
     });
 
     if (!token) {
       provPlatformDebug('Access_token for ' + (0, _classPrivateFieldGet2.default)(this, _platformUrl) + ' not found');
       provPlatformDebug('Attempting to generate new access_token for ' + (0, _classPrivateFieldGet2.default)(this, _platformUrl));
-      let res = await Auth.getAccessToken(this, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2));
+      const res = await Auth.getAccessToken(this, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2));
       return res;
     } else {
       provPlatformDebug('Access_token found');
@@ -287,7 +287,7 @@ class Platform {
         provPlatformDebug('Token expired');
         provPlatformDebug('Access_token for ' + (0, _classPrivateFieldGet2.default)(this, _platformUrl) + ' not found');
         provPlatformDebug('Attempting to generate new access_token for ' + (0, _classPrivateFieldGet2.default)(this, _platformUrl));
-        let res = await Auth.getAccessToken(this, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2));
+        const res = await Auth.getAccessToken(this, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2));
         return res;
       }
 

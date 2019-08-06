@@ -285,7 +285,7 @@ class Provider {
     if (options && options.staticPath) (0, _classPrivateFieldGet2.default)(this, _server).setStaticPath(options.staticPath);
     this.app.get('/favicon.ico', (req, res) => res.status(204)); // Registers main athentication and routing middleware
 
-    let sessionValidator = async (req, res, next) => {
+    const sessionValidator = async (req, res, next) => {
       // Ckeck if request is attempting to initiate oidc login flow
       if (req.url === (0, _classPrivateFieldGet2.default)(this, _loginUrl) || req.url === (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl) || req.url === (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl) || (0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(req.url) !== -1) return next();
 
@@ -293,7 +293,7 @@ class Provider {
         let origin = req.get('origin');
         if (!origin || origin === 'null') origin = req.get('host');
         if (!origin) return res.redirect((0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl));
-        let iss = 'plat' + encodeURIComponent(Buffer.from(origin).toString('base64'));
+        const iss = 'plat' + encodeURIComponent(Buffer.from(origin).toString('base64'));
         return res.redirect(307, '/' + iss);
       }
 
@@ -303,13 +303,13 @@ class Provider {
         let issuer = urlArr[1];
         let path = '';
         let isApiRequest = false;
-        let cookies = req.signedCookies; // Validate issuer_code to see if its a route or normal request
+        const cookies = req.signedCookies; // Validate issuer_code to see if its a route or normal request
 
         if (issuer.indexOf('plat') === -1) isApiRequest = true;
 
         if (!isApiRequest) {
           try {
-            let decode = Buffer.from(decodeURIComponent(issuer.split('plat')[1]), 'base64').toString('ascii');
+            const decode = Buffer.from(decodeURIComponent(issuer.split('plat')[1]), 'base64').toString('ascii');
             if (!validator.isURL(decode) && decode.indexOf('localhost') === -1) isApiRequest = true;
           } catch (err) {
             provMainDebug(err);
@@ -328,19 +328,19 @@ class Provider {
           }
 
           issuer = encodeURIComponent(requestParts[1]);
-          let _urlArr = [];
+          const _urlArr = [];
 
-          for (let i in requestParts) _urlArr.push(requestParts[i]);
+          for (const i in requestParts) _urlArr.push(requestParts[i]);
 
           urlArr = _urlArr; // Informs the system that is a API request
 
           res.locals.isApiRequest = true;
         }
 
-        for (let i in urlArr) if (parseInt(i) !== 0 && parseInt(i) !== 1) path = path + '/' + urlArr[i]; // Mathes path to cookie
+        for (const i in urlArr) if (parseInt(i) !== 0 && parseInt(i) !== 1) path = path + '/' + urlArr[i]; // Mathes path to cookie
 
 
-        for (let key of Object.keys(cookies)) {
+        for (const key of Object.keys(cookies)) {
           if (key === issuer) {
             it = cookies[key];
             break;
@@ -353,10 +353,10 @@ class Provider {
 
           if (req.body.id_token) {
             provMainDebug('Received request containing token. Sending for validation');
-            let valid = await Auth.validateToken(req.body.id_token, this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
+            const valid = await Auth.validateToken(req.body.id_token, this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
             provAuthDebug('Successfully validated token!'); // Mount platform token
 
-            let platformToken = {
+            const platformToken = {
               iss: valid.iss,
               issuer_code: issuer,
               user: valid.sub,
@@ -383,7 +383,7 @@ class Provider {
               user: valid.sub
             })) Database.Insert(false, 'idToken', platformToken); // Mount context token
 
-            let contextToken = {
+            const contextToken = {
               path: issuer + '/',
               user: valid.sub,
               context: valid['https://purl.imsglobal.org/spec/lti/claim/context'],
@@ -419,7 +419,7 @@ class Provider {
           if (path) {
             path = issuer + path;
 
-            for (let key of Object.keys(cookies).sort((a, b) => b.length - a.length)) {
+            for (const key of Object.keys(cookies).sort((a, b) => b.length - a.length)) {
               if (key === issuer) continue;
 
               if (path.indexOf(key) !== -1) {
@@ -460,13 +460,13 @@ class Provider {
     this.app.use(sessionValidator);
     this.app.post((0, _classPrivateFieldGet2.default)(this, _loginUrl), async (req, res) => {
       provMainDebug('Receiving a login request from: ' + req.body.iss);
-      let platform = await this.getPlatform(req.body.iss);
+      const platform = await this.getPlatform(req.body.iss);
 
       if (platform) {
         let origin = req.get('origin');
         if (!origin || origin === 'null') origin = req.get('host');
         if (!origin) return res.redirect((0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl));
-        let cookieName = 'plat' + encodeURIComponent(Buffer.from(origin).toString('base64'));
+        const cookieName = 'plat' + encodeURIComponent(Buffer.from(origin).toString('base64'));
         provMainDebug('Redirecting to platform authentication endpoint');
         res.clearCookie(cookieName, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
         res.redirect(url.format({
@@ -648,13 +648,13 @@ class Provider {
     if (!platform || !platform.name || !platform.url || !platform.clientId || !platform.authenticationEndpoint || !platform.accesstokenEndpoint || !platform.authConfig) throw new Error('Error registering platform. Missing argument.');
 
     try {
-      let _platform = await this.getPlatform(platform.url);
+      const _platform = await this.getPlatform(platform.url);
 
       if (!_platform) {
-        let kid = await Auth.generateProviderKeyPair((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
-        let plat = new Platform(platform.name, platform.url, platform.clientId, platform.authenticationEndpoint, platform.accesstokenEndpoint, kid, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), platform.authConfig); // Save platform to db
+        const kid = await Auth.generateProviderKeyPair((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
+        const plat = new Platform(platform.name, platform.url, platform.clientId, platform.authenticationEndpoint, platform.accesstokenEndpoint, kid, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), platform.authConfig); // Save platform to db
 
-        let isregisteredPlat = await Database.Get(false, 'platform', {
+        const isregisteredPlat = await Database.Get(false, 'platform', {
           platformUrl: platform.url
         });
 
@@ -692,11 +692,11 @@ class Provider {
     if (!url) throw new Error('No url provided');
 
     try {
-      let plat = await Database.Get(false, 'platform', {
+      const plat = await Database.Get(false, 'platform', {
         platformUrl: url
       });
       if (!plat) return false;
-      let obj = plat[0];
+      const obj = plat[0];
       if (!obj) return false;
       let result;
 
@@ -721,7 +721,7 @@ class Provider {
 
   async deletePlatform(url) {
     if (!url) throw new Error('No url provided');
-    let platform = await this.getPlatform(url);
+    const platform = await this.getPlatform(url);
     if (platform) return platform.remove();
     return false;
   }
@@ -732,13 +732,13 @@ class Provider {
 
 
   async getAllPlatforms() {
-    let returnArray = [];
+    const returnArray = [];
 
     try {
-      let platforms = await Database.Get(false, 'platform');
+      const platforms = await Database.Get(false, 'platform');
 
       if (platforms) {
-        for (let obj of platforms) returnArray.push(new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), obj.authConfig));
+        for (const obj of platforms) returnArray.push(new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), obj.authConfig));
 
         return returnArray;
       }
@@ -762,7 +762,7 @@ class Provider {
 
   async redirect(res, path, options) {
     if ((0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(path) !== -1) return res.redirect(path);
-    let newPath = res.locals.token.issuer_code + path;
+    const newPath = res.locals.token.issuer_code + path;
 
     if (res.locals.login && options && options.isNewResource) {
       provMainDebug('Setting up path cookie for this resource with path: ' + path);

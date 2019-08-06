@@ -48,7 +48,7 @@ class Grade {
     }
 
     provGradeServiceDebug('Target platform: ' + idtoken.iss);
-    let platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
+    const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
 
     if (!platform) {
       provGradeServiceDebug('Platform not found, returning false');
@@ -58,13 +58,13 @@ class Grade {
     provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']');
 
     try {
-      let tokenRes = await platform.platformAccessToken();
+      const tokenRes = await platform.platformAccessToken();
       provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']');
-      let lineitemsEndpoint = idtoken.endpoint.lineitems;
+      const lineitemsEndpoint = idtoken.endpoint.lineitems;
       let query = '';
 
       if (filters) {
-        let queryParams = [];
+        const queryParams = [];
         if (filters.resourceLinkId) queryParams.push(['resource_link_id', idtoken.platformContext.resource.id]);
         if (filters.limit) queryParams.push(['limit', filters.limit]);
         if (filters.tag) queryParams.push(['tag', filters.tag]);
@@ -118,7 +118,7 @@ class Grade {
     }
 
     provGradeServiceDebug('Target platform: ' + idtoken.iss);
-    let platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
+    const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
 
     if (!platform) {
       provGradeServiceDebug('Platform not found, returning false');
@@ -128,9 +128,9 @@ class Grade {
     provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']');
 
     try {
-      let tokenRes = await platform.platformAccessToken();
+      const tokenRes = await platform.platformAccessToken();
       provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']');
-      let lineitemsEndpoint = idtoken.endpoint.lineitems;
+      const lineitemsEndpoint = idtoken.endpoint.lineitems;
       await got.post(lineitemsEndpoint, {
         headers: {
           Authorization: tokenRes.token_type + ' ' + tokenRes.access_token,
@@ -163,7 +163,7 @@ class Grade {
     }
 
     provGradeServiceDebug('Target platform: ' + idtoken.iss);
-    let platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
+    const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
 
     if (!platform) {
       provGradeServiceDebug('Platform not found, returning false');
@@ -173,13 +173,13 @@ class Grade {
     provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']');
 
     try {
-      let tokenRes = await platform.platformAccessToken();
+      const tokenRes = await platform.platformAccessToken();
       provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']');
-      let lineitemsEndpoint = idtoken.endpoint.lineitems;
+      const lineitemsEndpoint = idtoken.endpoint.lineitems;
       let query = '';
 
       if (filters) {
-        let queryParams = [];
+        const queryParams = [];
         if (filters.resourceLinkId) queryParams.push(['resource_link_id', idtoken.platformContext.resource.id]);
         if (filters.limit) queryParams.push(['limit', filters.limit]);
         if (filters.tag) queryParams.push(['tag', filters.tag]);
@@ -199,9 +199,9 @@ class Grade {
       lineitemRes = JSON.parse(lineitemRes.body);
       let success = true;
 
-      for (let lineitem of lineitemRes) {
+      for (const lineitem of lineitemRes) {
         try {
-          let lineitemUrl = lineitem.id;
+          const lineitemUrl = lineitem.id;
           provGradeServiceDebug('Deleting: ' + lineitemUrl);
           await got.delete(lineitemUrl, {
             headers: {
@@ -248,7 +248,7 @@ class Grade {
     }
 
     provGradeServiceDebug('Target platform: ' + idtoken.iss);
-    let platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
+    const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
 
     if (!platform) {
       provGradeServiceDebug('Platform not found, returning false');
@@ -258,18 +258,18 @@ class Grade {
     provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']');
 
     try {
-      let tokenRes = await platform.platformAccessToken();
+      const tokenRes = await platform.platformAccessToken();
       provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']');
       if (filters) filters.resourceLinkId = true;else {
         filters = {
           resourceLinkId: true
         };
       }
-      let lineitemsEndpoint = idtoken.endpoint.lineitems;
+      const lineitemsEndpoint = idtoken.endpoint.lineitems;
       let query = '';
 
       if (filters) {
-        let queryParams = [];
+        const queryParams = [];
         if (filters.resourceLinkId) queryParams.push(['resource_link_id', idtoken.platformContext.resource.id]);
         if (filters.limit) queryParams.push(['limit', filters.limit]);
         if (filters.tag) queryParams.push(['tag', filters.tag]);
@@ -289,14 +289,14 @@ class Grade {
       lineitemRes = JSON.parse(lineitemRes.body);
       let success = true;
 
-      for (let lineitem of lineitemRes) {
+      for (const lineitem of lineitemRes) {
         try {
-          let lineitemUrl = lineitem.id;
+          const lineitemUrl = lineitem.id;
           let scoreUrl = lineitemUrl + '/scores';
 
           if (lineitemUrl.indexOf('?') !== -1) {
-            let query = lineitemUrl.split('\?')[1];
-            let url = lineitemUrl.split('\?')[0];
+            const query = lineitemUrl.split('\?')[1];
+            const url = lineitemUrl.split('\?')[0];
             scoreUrl = url + '/scores?' + query;
           }
 
@@ -344,7 +344,7 @@ class Grade {
     }
 
     provGradeServiceDebug('Target platform: ' + idtoken.iss);
-    let platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
+    const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
 
     if (!platform) {
       provGradeServiceDebug('Platform not found, returning false');
@@ -354,18 +354,18 @@ class Grade {
     provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']');
 
     try {
-      let tokenRes = await platform.platformAccessToken();
+      const tokenRes = await platform.platformAccessToken();
       provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']');
       if (filters) filters.resourceLinkId = true;else {
         filters = {
           resourceLinkId: true
         };
       }
-      let lineitemsEndpoint = idtoken.endpoint.lineitems;
+      const lineitemsEndpoint = idtoken.endpoint.lineitems;
       let query = '';
 
       if (filters) {
-        let queryParams = [];
+        const queryParams = [];
         if (filters.resourceLinkId) queryParams.push(['resource_link_id', idtoken.platformContext.resource.id]);
         if (filters.tag) queryParams.push(['tag', filters.tag]);
         if (filters.resourceId) queryParams.push(['resource_id', filters.resourceId]);
@@ -382,16 +382,16 @@ class Grade {
         })
       });
       lineitemRes = JSON.parse(lineitemRes.body);
-      let resultsArray = [];
+      const resultsArray = [];
 
-      for (let lineitem of lineitemRes) {
+      for (const lineitem of lineitemRes) {
         try {
-          let lineitemUrl = lineitem.id;
+          const lineitemUrl = lineitem.id;
           let resultsUrl = lineitemUrl + '/results';
 
           if (lineitemUrl.indexOf('?') !== -1) {
-            let query = lineitemUrl.split('\?')[1];
-            let url = lineitemUrl.split('\?')[0];
+            const query = lineitemUrl.split('\?')[1];
+            const url = lineitemUrl.split('\?')[0];
             resultsUrl = url + '/results?' + query;
           }
 
@@ -399,7 +399,7 @@ class Grade {
           let query = '';
 
           if (filters) {
-            let queryParams = [];
+            const queryParams = [];
             if (filters.userId) queryParams.push(['user_id', idtoken.user]);
             if (filters.limit) queryParams.push(['limit', filters.limit]);
             query = new URLSearchParams(queryParams);
@@ -417,7 +417,7 @@ class Grade {
           finalRes = JSON.parse(finalRes.body);
 
           if (finalRes.length > 0) {
-            for (let result of finalRes) {
+            for (const result of finalRes) {
               result.lineItem = lineitem.label;
               resultsArray.push(result);
             }

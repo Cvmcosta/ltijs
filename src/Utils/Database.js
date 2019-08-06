@@ -14,15 +14,15 @@ class Database {
   static async Get (ENCRYPTIONKEY, collection, query) {
     if (!collection) throw new Error('Missing collection argument.')
 
-    let Model = mongoose.model(collection)
-    let result = await Model.find(query)
+    const Model = mongoose.model(collection)
+    const result = await Model.find(query)
 
     if (ENCRYPTIONKEY) {
-      for (let i in result) {
-        let temp = result[i]
+      for (const i in result) {
+        const temp = result[i]
         result[i] = JSON.parse(await this.Decrypt(result[i].data, result[i].iv, ENCRYPTIONKEY))
         if (temp.createdAt) {
-          let createdAt = Date.parse(temp.createdAt)
+          const createdAt = Date.parse(temp.createdAt)
           result[i].createdAt = createdAt
         }
       }
@@ -42,17 +42,17 @@ class Database {
   static async Insert (ENCRYPTIONKEY, collection, item, index) {
     if (!collection || !item || (ENCRYPTIONKEY && !index)) throw new Error('Missing argument.')
 
-    let Model = mongoose.model(collection)
+    const Model = mongoose.model(collection)
     let newDocData = item
     if (ENCRYPTIONKEY) {
-      let encrypted = await this.Encrypt(JSON.stringify(item), ENCRYPTIONKEY)
+      const encrypted = await this.Encrypt(JSON.stringify(item), ENCRYPTIONKEY)
       newDocData = {
         [Object.keys(index)[0]]: Object.values(index)[0],
         iv: encrypted.iv,
         data: encrypted.data
       }
     }
-    let newDoc = new Model(newDocData)
+    const newDoc = new Model(newDocData)
     await newDoc.save()
     return true
   }
@@ -67,7 +67,7 @@ class Database {
   static async Modify (ENCRYPTIONKEY, collection, query, modification) {
     if (!collection || !query || !modification) throw new Error('Missing argument.')
 
-    let Model = mongoose.model(collection)
+    const Model = mongoose.model(collection)
 
     let newMod = modification
     if (ENCRYPTIONKEY) {
@@ -90,7 +90,7 @@ class Database {
      */
   static async Delete (collection, query) {
     if (!collection || !query) throw new Error('Missing argument.')
-    let Model = mongoose.model(collection)
+    const Model = mongoose.model(collection)
     await Model.deleteMany(query)
     return true
   }
@@ -103,9 +103,9 @@ class Database {
   static async Encrypt (data, secret) {
     const hash = crypto.createHash('sha256')
     hash.update(secret)
-    let key = hash.digest().slice(0, 32)
-    let iv = crypto.randomBytes(16)
-    let cipher = crypto.createCipheriv('aes-256-cbc', key, iv)
+    const key = hash.digest().slice(0, 32)
+    const iv = crypto.randomBytes(16)
+    const cipher = crypto.createCipheriv('aes-256-cbc', key, iv)
     let encrypted = cipher.update(data)
     encrypted = Buffer.concat([encrypted, cipher.final()])
     return { iv: iv.toString('hex'), data: encrypted.toString('hex') }
@@ -120,10 +120,10 @@ class Database {
   static async Decrypt (data, _iv, secret) {
     const hash = crypto.createHash('sha256')
     hash.update(secret)
-    let key = hash.digest().slice(0, 32)
-    let iv = Buffer.from(_iv, 'hex')
-    let encryptedText = Buffer.from(data, 'hex')
-    let decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(key), iv)
+    const key = hash.digest().slice(0, 32)
+    const iv = Buffer.from(_iv, 'hex')
+    const encryptedText = Buffer.from(data, 'hex')
+    const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(key), iv)
     let decrypted = decipher.update(encryptedText)
     decrypted = Buffer.concat([decrypted, decipher.final()])
     return decrypted.toString()

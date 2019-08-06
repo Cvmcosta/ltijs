@@ -1,6 +1,5 @@
-# [LTIjs](README.md) 
-
-> Turn your application into a fully integratable LTI 1.3 tool or platform.
+# <center>[![LTIjs](../assets/logo-300.svg)](https://cvmcosta.github.io/ltijs)</center>
+> Turn your application into a fully integratable LTI 1.3 tool provider or consumer.
 
 [![travisci](https://img.shields.io/travis/cvmcosta/ltijs.svg)](https://travis-ci.org/Cvmcosta/ltijs)
 [![codecov](https://codecov.io/gh/Cvmcosta/ltijs/branch/master/graph/badge.svg)](https://codecov.io/gh/Cvmcosta/ltijs)

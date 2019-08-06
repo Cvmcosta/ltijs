@@ -9,12 +9,19 @@ const provPlatformDebug = require('debug')('provider:platform')
  */
 class Platform {
   #platformName
+
   #platformUrl
+
   #clientId
+
   #authEndpoint
+
   #authConfig
+
   #ENCRYPTIONKEY
+
   #accesstokenEndpoint
+
   #kid
 
   /**
@@ -100,7 +107,7 @@ class Platform {
      */
   async platformPublicKey () {
     try {
-      let key = await Database.Get(this.#ENCRYPTIONKEY, 'publickey', { kid: this.#kid })
+      const key = await Database.Get(this.#ENCRYPTIONKEY, 'publickey', { kid: this.#kid })
       return key[0].key
     } catch (err) {
       provPlatformDebug(err)
@@ -114,7 +121,7 @@ class Platform {
      */
   async platformPrivateKey () {
     try {
-      let key = await Database.Get(this.#ENCRYPTIONKEY, 'privatekey', { kid: this.#kid })
+      const key = await Database.Get(this.#ENCRYPTIONKEY, 'privatekey', { kid: this.#kid })
       return key[0].key
     } catch (err) {
       provPlatformDebug(err)
@@ -134,7 +141,7 @@ class Platform {
 
     if (!key) throw new Error('Missing secong argument key or keyset_url.')
 
-    let authConfig = {
+    const authConfig = {
       method: method,
       key: key
     }
@@ -187,13 +194,13 @@ class Platform {
      * @description Gets the platform access token or attempts to generate a new one.
      */
   async platformAccessToken () {
-    let token = await Database.Get(this.#ENCRYPTIONKEY, 'accesstoken', { platformUrl: this.#platformUrl })
+    const token = await Database.Get(this.#ENCRYPTIONKEY, 'accesstoken', { platformUrl: this.#platformUrl })
 
     if (!token) {
       provPlatformDebug('Access_token for ' + this.#platformUrl + ' not found')
       provPlatformDebug('Attempting to generate new access_token for ' + this.#platformUrl)
 
-      let res = await Auth.getAccessToken(this, this.#ENCRYPTIONKEY)
+      const res = await Auth.getAccessToken(this, this.#ENCRYPTIONKEY)
       return res
     } else {
       provPlatformDebug('Access_token found')
@@ -202,7 +209,7 @@ class Platform {
         provPlatformDebug('Access_token for ' + this.#platformUrl + ' not found')
         provPlatformDebug('Attempting to generate new access_token for ' + this.#platformUrl)
 
-        let res = await Auth.getAccessToken(this, this.#ENCRYPTIONKEY)
+        const res = await Auth.getAccessToken(this, this.#ENCRYPTIONKEY)
         return res
       }
       return token[0].token

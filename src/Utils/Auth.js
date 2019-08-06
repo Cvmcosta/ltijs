@@ -24,7 +24,7 @@ class Auth {
       kid = crypto.randomBytes(16).toString('hex')
     }
 
-    let keys = crypto.generateKeyPairSync('rsa', {
+    const keys = crypto.generateKeyPairSync('rsa', {
       modulusLength: 4096,
       publicKeyEncoding: {
         type: 'spki',
@@ -36,12 +36,12 @@ class Auth {
       }
     })
 
-    let { publicKey, privateKey } = keys
+    const { publicKey, privateKey } = keys
 
-    let pubkeyobj = {
+    const pubkeyobj = {
       key: publicKey
     }
-    let privkeyobj = {
+    const privkeyobj = {
       key: privateKey
     }
 
@@ -59,46 +59,46 @@ class Auth {
      * @returns {Promise}
      */
   static async validateToken (token, getPlatform, ENCRYPTIONKEY) {
-    let decodedToken = jwt.decode(token, { complete: true })
-    let kid = decodedToken.header.kid
-    let alg = decodedToken.header.alg
+    const decodedToken = jwt.decode(token, { complete: true })
+    const kid = decodedToken.header.kid
+    const alg = decodedToken.header.alg
 
     provAuthDebug('Attempting to retrieve registered platform')
-    let platform = await getPlatform(decodedToken.payload.iss, ENCRYPTIONKEY)
+    const platform = await getPlatform(decodedToken.payload.iss, ENCRYPTIONKEY)
     if (!platform) throw new Error('NoPlatformRegistered')
 
-    let authConfig = await platform.platformAuthConfig()
+    const authConfig = await platform.platformAuthConfig()
 
     switch (authConfig.method) {
       case 'JWK_SET': {
         provAuthDebug('Retrieving key from jwk_set')
         if (!kid) throw new Error('NoKidFoundInToken')
 
-        let keysEndpoint = authConfig.key
-        let res = await got.get(keysEndpoint, { body: JSON.stringify({ request: 'keyset' }) })
-        let keyset = JSON.parse(res.body).keys
+        const keysEndpoint = authConfig.key
+        const res = await got.get(keysEndpoint, { body: JSON.stringify({ request: 'keyset' }) })
+        const keyset = JSON.parse(res.body).keys
         if (!keyset) throw new Error('NoKeySetFound')
-        let key = jwk.jwk2pem(find(keyset, ['kid', kid]))
+        const key = jwk.jwk2pem(find(keyset, ['kid', kid]))
         if (!key) throw new Error('NoKeyFound')
 
-        let verified = await this.verifyToken(token, key, alg, platform)
+        const verified = await this.verifyToken(token, key, alg, platform)
         return (verified)
       }
       case 'JWK_KEY': {
         provAuthDebug('Retrieving key from jwk_key')
         if (!authConfig.key) throw new Error('NoKeyFound')
 
-        let key = jwk.jwk2pem(authConfig.key)
+        const key = jwk.jwk2pem(authConfig.key)
 
-        let verified = await this.verifyToken(token, key, alg, platform)
+        const verified = await this.verifyToken(token, key, alg, platform)
         return (verified)
       }
       case 'RSA_KEY': {
         provAuthDebug('Retrieving key from rsa_key')
-        let key = authConfig.key
+        const key = authConfig.key
         if (!key) throw new Error('NoKeyFound')
 
-        let verified = await this.verifyToken(token, key, alg, platform)
+        const verified = await this.verifyToken(token, key, alg, platform)
         return (verified)
       }
       default: {
@@ -118,7 +118,7 @@ class Auth {
   static async verifyToken (token, key, alg, platform) {
     provAuthDebug('Attempting to verify JWT with the given key')
 
-    let decoded = jwt.verify(token, key, { algorithms: [alg] })
+    const decoded = jwt.verify(token, key, { algorithms: [alg] })
     await this.oidcValidationSteps(decoded, platform, alg)
 
     return decoded
@@ -134,10 +134,10 @@ class Auth {
     provAuthDebug('Token signature verified')
     provAuthDebug('Initiating OIDC aditional validation steps')
 
-    let aud = this.validateAud(token, platform)
-    let _alg = this.validateAlg(alg)
-    let iat = this.validateIat(token)
-    let nonce = this.validateNonce(token)
+    const aud = this.validateAud(token, platform)
+    const _alg = this.validateAlg(alg)
+    const iat = this.validateIat(token)
+    const nonce = this.validateNonce(token)
 
     return Promise.all([aud, _alg, iat, nonce])
   }
@@ -176,9 +176,9 @@ class Auth {
   static async validateIat (token) {
     provAuthDebug('Checking iat claim to prevent old tokens from being passed.')
     provAuthDebug('Iat claim: ' + token.iat)
-    let curTime = Date.now() / 1000
+    const curTime = Date.now() / 1000
     provAuthDebug('Current_time: ' + curTime)
-    let timePassed = curTime - token.iat
+    const timePassed = curTime - token.iat
     provAuthDebug('Time passed: ' + timePassed)
     if (timePassed > 10) throw new Error('TokenTooOld')
     return true
@@ -204,7 +204,7 @@ class Auth {
      * @param {Platform} platform - Platform object of the platform you want to access.
      */
   static async getAccessToken (platform, ENCRYPTIONKEY) {
-    let confjwt = {
+    const confjwt = {
       iss: await platform.platformClientId(),
       sub: await platform.platformClientId(),
       aud: await platform.platformAccessTokenEndpoint(),
@@ -213,9 +213,9 @@ class Auth {
       jti: crypto.randomBytes(16).toString('base64')
     }
 
-    let token = jwt.sign(confjwt, await platform.platformPrivateKey(), { algorithm: 'RS256', keyid: await platform.platformKid() })
+    const token = jwt.sign(confjwt, await platform.platformPrivateKey(), { algorithm: 'RS256', keyid: await platform.platformKid() })
 
-    let message = {
+    const message = {
       grant_type: 'client_credentials',
       client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
       client_assertion: token,
@@ -224,10 +224,10 @@ class Auth {
     }
 
     provAuthDebug('Awaiting return from the platform')
-    let res = await got(await platform.platformAccessTokenEndpoint(), { body: message, form: true })
+    const res = await got(await platform.platformAccessTokenEndpoint(), { body: message, form: true })
 
     provAuthDebug('Successfully generated new access_token')
-    let access = JSON.parse(res.body)
+    const access = JSON.parse(res.body)
 
     await Database.Insert(ENCRYPTIONKEY, 'accesstoken', { token: access }, { platformUrl: await platform.platformUrl() })
 

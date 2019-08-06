@@ -8,7 +8,7 @@ class Request {
      * @param {object} platform - Platform Object.
      */
   static async ltiAdvantageLogin (request, platform) {
-    let response = {
+    const response = {
       response_type: 'id_token',
       response_mode: 'form_post',
       id_token_signed_response_alg: 'RS256',
