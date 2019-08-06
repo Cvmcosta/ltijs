@@ -1,7 +1,7 @@
 <div align="center">
 	<br>
 	<br>
-	<a href="https://cvmcosta.github.io/ltijs"><img width="360" src="docs/logo-300.svg"></img></a>
+	<a href="https://cvmcosta.github.io/ltijs"><img width="360" src="docs/logo-300.png"></img></a>
 </div>
 
 
