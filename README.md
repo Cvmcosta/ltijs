@@ -1,4 +1,10 @@
-# <center>[![LTIjs](docs/logo-300.svg)](https://cvmcosta.github.io/ltijs)</center>
+<div align="center">
+	<br>
+	<br>
+	<a href="https://cvmcosta.github.io/ltijs"><img width="360" src="docs/logo-300.svg"></img></a>
+</div>
+
+
 
 > Turn your application into a fully integratable LTI 1.3 tool provider or consumer.
 

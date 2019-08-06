@@ -1,4 +1,11 @@
-# <center>[![LTIjs](./logo-300.svg)](https://cvmcosta.github.io/ltijs)</center>
+
+
+<div align="center">
+	<br>
+	<br>
+	<a href="https://cvmcosta.github.io/ltijs"><img width="360" src="logo-300.svg"></img></a>
+</div>
+
 
 > Platform class
 
