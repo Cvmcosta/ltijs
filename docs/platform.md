@@ -1,4 +1,4 @@
-# <center>[![LTIjs](../assets/logo-300.svg)](https://cvmcosta.github.io/ltijs)</center>
+# <center>[![LTIjs](./logo-300.svg)](https://cvmcosta.github.io/ltijs)</center>
 
 > Platform class
 
