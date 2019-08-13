@@ -458,7 +458,7 @@ class Provider {
     };
 
     this.app.use(sessionValidator);
-    this.app.post((0, _classPrivateFieldGet2.default)(this, _loginUrl), async (req, res) => {
+    this.app.all((0, _classPrivateFieldGet2.default)(this, _loginUrl), async (req, res) => {
       provMainDebug('Receiving a login request from: ' + req.body.iss);
       const platform = await this.getPlatform(req.body.iss);
 
@@ -537,7 +537,7 @@ class Provider {
 
     port = port || 3000; // Starts server on given port
 
-    (0, _classPrivateFieldGet2.default)(this, _server).listen(port, 'Lti Provider tool is listening on port ' + port + '!\n\nLTI provider config: \n>Initiate login URL: ' + (0, _classPrivateFieldGet2.default)(this, _loginUrl) + '\n>App Url: ' + (0, _classPrivateFieldGet2.default)(this, _appUrl) + '\n>Session Timeout Url: ' + (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl) + '\n>Invalid Token Url: ' + (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl));
+    (0, _classPrivateFieldGet2.default)(this, _server).listen(port, 'LTI Provider is listening on port ' + port + '!\n\n LTI provider config: \n >Initiate login URL: ' + (0, _classPrivateFieldGet2.default)(this, _loginUrl) + '\n >App Url: ' + (0, _classPrivateFieldGet2.default)(this, _appUrl) + '\n >Session Timeout Url: ' + (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl) + '\n >Invalid Token Url: ' + (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl));
     return true;
   }
   /**

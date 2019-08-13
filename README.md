@@ -18,6 +18,17 @@
 [![devDependencies Status](https://david-dm.org/cvmcosta/ltijs/dev-status.svg)](https://david-dm.org/cvmcosta/ltijs?type=dev)
 [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
 [![APACHE2 License](https://img.shields.io/github/license/cvmcosta/ltijs)](LICENSE)
+[![Donate](https://img.shields.io/badge/Donate-Buy%20me%20a%20coffe-blue)](https://www.buymeacoffee.com/UL5fBsi)
+
+
+> v1.1.0
+> - Changed Request builder to include some optional LTI launch parameters.
+> - Changed the login route handler to deal with multiple HTTP methods.
+> - Added figlet on deploy.
+> - Added update notifier.
+
+> - View entire [CHANGELOG](https://cvmcosta.github.io/ltijs/#/changelog)
+
 
 
 ## Table of Contents
@@ -62,9 +73,10 @@ $ npm install ltijs
 | Feature | Implementation | Documentation |
 | --------- | - | - |
 | Provider | <center>:heavy_check_mark:</center> | <center>:heavy_check_mark:</center> |
-| [Platform Class](platform.md) | <center>:heavy_check_mark:</center> | <center>:heavy_check_mark:</center> |
+| [Platform Class](https://cvmcosta.github.io/ltijs/#/platform) | <center>:heavy_check_mark:</center> | <center>:heavy_check_mark:</center> |
 | Grade Service Class | <center>:heavy_check_mark:</center> | <center></center> |
 | Keyset endpoint support | <center></center> | <center></center> |
+| Redis caching | <center></center> | <center></center> |
 | Names and Roles Service Class | <center></center> | <center></center> |
 | Database plugins | <center></center> | <center></center> |
 
@@ -72,8 +84,9 @@ $ npm install ltijs
 
 This package implements LTI Provider and Consumer servers. See bellow for specific documentations.
 
-### [LTIjs Provider Documentation](provider.md) 
-   - [Platform class documentation](platform.md)
+### [LTIjs Provider Documentation](https://cvmcosta.github.io/ltijs/#/provider) 
+   - [Platform class documentation](https://cvmcosta.github.io/ltijs/#/platform)
+
 ### ~~LTIjs Consumer Documentation~~ (Coming soon)
 
 ---
@@ -152,9 +165,12 @@ You can find the project documentation [here](https://cvmcosta.github.io/ltijs).
 ## Contributing
 
 
-If you find a bug or think that something is hard to understand feel free to open an issue or contact me on twitter [@cvmcosta](https://twitter.com/cvmcosta) :)
+If you find a bug or think that something is hard to understand feel free to open an issue or contact me on twitter [@cvmcosta](https://twitter.com/cvmcosta), pull requests are also welcome :)
 
-I'm currently working on turning the Database stuff into a more plugin-like structure to allow the use of other types of database easely. *(And because someone reuploaded the entire repository changing the database to postgres, which is obsviously not the most ethical way to contribute to this project. So i want to make it easy for someone to improve and add things without having to do this sort of uncool stuff)*
+
+And if you feel like it, you can donate any amount of money through paypal, it helps a lot.
+
+[![Donate](https://img.shields.io/badge/Donate-Buy%20me%20a%20coffe-blue)](https://www.buymeacoffee.com/UL5fBsi)
 
 
 

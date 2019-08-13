@@ -29,7 +29,14 @@ class Server {
 
   listen (port, message) {
     if (this.ssl) this.server = https.createServer(this.ssl, this.app).listen(port, () => serverdebug(message))
-    else this.server = this.app.listen(port, () => console.log(message))
+    else {
+      this.server = this.app.listen(port, () => console.log('   _   _______ _____     _  _____ \n' +
+                                                            '  | | |__   __|_   _|   | |/ ____|\n' +
+                                                            '  | |    | |    | |     | | (___  \n' +
+                                                            '  | |    | |    | | _   | |\\___ \\ \n' +
+                                                            '  | |____| |   _| || |__| |____) |\n' +
+                                                            '  |______|_|  |_____\\____/|_____/\n\n', message))
+    }
   }
 
   setStaticPath (path) {

@@ -360,7 +360,7 @@ class Provider {
 
     this.app.use(sessionValidator)
 
-    this.app.post(this.#loginUrl, async (req, res) => {
+    this.app.all(this.#loginUrl, async (req, res) => {
       provMainDebug('Receiving a login request from: ' + req.body.iss)
       const platform = await this.getPlatform(req.body.iss)
       if (platform) {
@@ -439,7 +439,7 @@ class Provider {
     /* In case no port is provided uses 3000 */
     port = port || 3000
     // Starts server on given port
-    this.#server.listen(port, 'Lti Provider tool is listening on port ' + port + '!\n\nLTI provider config: \n>Initiate login URL: ' + this.#loginUrl + '\n>App Url: ' + this.#appUrl + '\n>Session Timeout Url: ' + this.#sessionTimeoutUrl + '\n>Invalid Token Url: ' + this.#invalidTokenUrl)
+    this.#server.listen(port, 'LTI Provider is listening on port ' + port + '!\n\n LTI provider config: \n >Initiate login URL: ' + this.#loginUrl + '\n >App Url: ' + this.#appUrl + '\n >Session Timeout Url: ' + this.#sessionTimeoutUrl + '\n >Invalid Token Url: ' + this.#invalidTokenUrl)
 
     return true
   }
