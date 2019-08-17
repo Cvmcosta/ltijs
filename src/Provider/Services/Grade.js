@@ -11,9 +11,12 @@ class Grade {
 
   #ENCRYPTIONKEY = ''
 
-  constructor (getPlatform, ENCRYPTIONKEY) {
+  #logger
+
+  constructor (getPlatform, ENCRYPTIONKEY, logger) {
     this.#getPlatform = getPlatform
     this.#ENCRYPTIONKEY = ENCRYPTIONKEY
+    this.#logger = logger
   }
 
   /**
@@ -29,7 +32,7 @@ class Grade {
     if (!idtoken) { provGradeServiceDebug('IdToken object missing.'); return false }
     provGradeServiceDebug('Target platform: ' + idtoken.iss)
 
-    const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY)
+    const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#logger)
 
     if (!platform) {
       provGradeServiceDebug('Platform not found, returning false')
@@ -57,7 +60,8 @@ class Grade {
 
       return lineitemRes
     } catch (err) {
-      provGradeServiceDebug(err)
+      provGradeServiceDebug(err.message)
+      if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
       return false
     }
   }
@@ -84,7 +88,7 @@ class Grade {
 
     provGradeServiceDebug('Target platform: ' + idtoken.iss)
 
-    const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY)
+    const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#logger)
 
     if (!platform) {
       provGradeServiceDebug('Platform not found, returning false')
@@ -102,7 +106,8 @@ class Grade {
       provGradeServiceDebug('LineItem successfully created')
       return true
     } catch (err) {
-      provGradeServiceDebug(err)
+      provGradeServiceDebug(err.message)
+      if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
       return false
     }
   }
@@ -121,7 +126,7 @@ class Grade {
 
     provGradeServiceDebug('Target platform: ' + idtoken.iss)
 
-    const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY)
+    const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#logger)
 
     if (!platform) {
       provGradeServiceDebug('Platform not found, returning false')
@@ -155,14 +160,16 @@ class Grade {
           await got.delete(lineitemUrl, { headers: { Authorization: tokenRes.token_type + ' ' + tokenRes.access_token }, body: JSON.stringify({ request: 'lineitems' }) })
           provGradeServiceDebug('LineItem sucessfully deleted')
         } catch (err) {
-          provGradeServiceDebug(err)
+          provGradeServiceDebug(err.message)
+          if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
           success = false
           continue
         }
       }
       return success
     } catch (err) {
-      provGradeServiceDebug(err)
+      provGradeServiceDebug(err.message)
+      if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
       return false
     }
   }
@@ -181,7 +188,7 @@ class Grade {
     if (!score) { provGradeServiceDebug('Score object missing.'); return false }
     provGradeServiceDebug('Target platform: ' + idtoken.iss)
 
-    const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY)
+    const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#logger)
 
     if (!platform) {
       provGradeServiceDebug('Platform not found, returning false')
@@ -236,14 +243,16 @@ class Grade {
 
           provGradeServiceDebug('Score successfully sent')
         } catch (err) {
-          provGradeServiceDebug(err)
+          provGradeServiceDebug(err.message)
+          if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
           success = false
           continue
         }
       }
       return success
     } catch (err) {
-      provGradeServiceDebug(err)
+      provGradeServiceDebug(err.message)
+      if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
       return false
     }
   }
@@ -262,7 +271,7 @@ class Grade {
 
     provGradeServiceDebug('Target platform: ' + idtoken.iss)
 
-    const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY)
+    const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#logger)
 
     if (!platform) {
       provGradeServiceDebug('Platform not found, returning false')
@@ -327,13 +336,15 @@ class Grade {
             }
           }
         } catch (err) {
-          provGradeServiceDebug(err)
+          provGradeServiceDebug(err.message)
+          if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
           continue
         }
       }
       return resultsArray
     } catch (err) {
-      provGradeServiceDebug(err)
+      provGradeServiceDebug(err.message)
+      if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
       return false
     }
   }

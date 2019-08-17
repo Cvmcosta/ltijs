@@ -7,10 +7,9 @@ const cookieParser = require('cookie-parser')
 const cors = require('cors')
 const serverdebug = require('debug')('provider:server')
 const morgan = require('morgan')
-const winston = require('winston')
 
 class Server {
-  constructor (https, ssl, ENCRYPTIONKEY) {
+  constructor (https, ssl, ENCRYPTIONKEY, logger) {
     this.app = express()
 
     this.server = false
@@ -19,29 +18,9 @@ class Server {
     if (https) this.ssl = ssl
 
     // Setting up Logger
-    const loggerServer = winston.createLogger({
-      format: winston.format.combine(
-        winston.format.timestamp(),
-        winston.format.prettyPrint()
-      ),
-      transports: [
-        new winston.transports.File({ filename: 'ltijs_server.log',
-          handleExceptions: true,
-          json: true,
-          maxsize: 5000000, // 5MB
-          maxFiles: 2,
-          colorize: false,
-          tailable: true })
-      ],
-      exitOnError: false
-    })
-
-    loggerServer.stream = {
-      write: function (message, encoding) {
-        loggerServer.info(message)
-      }
+    if (logger) {
+      this.app.use(morgan('combined', { stream: logger.stream }))
     }
-    this.app.use(morgan('combined', { stream: loggerServer.stream }))
 
     // Setting up helmet
     this.app.use(helmet({

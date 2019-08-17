@@ -28,7 +28,7 @@ class Platform {
      * @param {string} _ENCRYPTIONKEY - Encryption key used
      * @param {Object} _authConfig - Authentication configurations for the platform.
      */
-  constructor(name, platformUrl, clientId, authenticationEndpoint, accesstokenEndpoint, kid, _ENCRYPTIONKEY, _authConfig) {
+  constructor(name, platformUrl, clientId, authenticationEndpoint, accesstokenEndpoint, kid, _ENCRYPTIONKEY, _authConfig, logger) {
     _platformName.set(this, {
       writable: true,
       value: void 0
@@ -69,6 +69,11 @@ class Platform {
       value: void 0
     });
 
+    _logger.set(this, {
+      writable: true,
+      value: void 0
+    });
+
     (0, _classPrivateFieldSet2.default)(this, _authConfig2, _authConfig);
     (0, _classPrivateFieldSet2.default)(this, _ENCRYPTIONKEY2, _ENCRYPTIONKEY);
     (0, _classPrivateFieldSet2.default)(this, _platformName, name);
@@ -77,6 +82,7 @@ class Platform {
     (0, _classPrivateFieldSet2.default)(this, _authEndpoint, authenticationEndpoint);
     (0, _classPrivateFieldSet2.default)(this, _accesstokenEndpoint, accesstokenEndpoint);
     (0, _classPrivateFieldSet2.default)(this, _kid, kid);
+    (0, _classPrivateFieldSet2.default)(this, _logger, logger);
   }
   /**
      * @description Sets/Gets the platform name.
@@ -94,7 +100,11 @@ class Platform {
         platformName: name
       });
     } catch (err) {
-      provPlatformDebug(err);
+      provPlatformDebug(err.message);
+      if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
+        level: 'error',
+        message: 'Message: ' + err.message + '\nStack: ' + err.stack
+      });
       return false;
     }
 
@@ -117,7 +127,11 @@ class Platform {
         platformUrl: url
       });
     } catch (err) {
-      provPlatformDebug(err);
+      provPlatformDebug(err.message);
+      if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
+        level: 'error',
+        message: 'Message: ' + err.message + '\nStack: ' + err.stack
+      });
       return false;
     }
 
@@ -140,7 +154,11 @@ class Platform {
         clientId: clientId
       });
     } catch (err) {
-      provPlatformDebug(err);
+      provPlatformDebug(err.message);
+      if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
+        level: 'error',
+        message: 'Message: ' + err.message + '\nStack: ' + err.stack
+      });
       return false;
     }
 
@@ -168,7 +186,11 @@ class Platform {
       });
       return key[0].key;
     } catch (err) {
-      provPlatformDebug(err);
+      provPlatformDebug(err.message);
+      if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
+        level: 'error',
+        message: 'Message: ' + err.message + '\nStack: ' + err.stack
+      });
       return false;
     }
   }
@@ -185,7 +207,11 @@ class Platform {
       });
       return key[0].key;
     } catch (err) {
-      provPlatformDebug(err);
+      provPlatformDebug(err.message);
+      if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
+        level: 'error',
+        message: 'Message: ' + err.message + '\nStack: ' + err.stack
+      });
       return false;
     }
   }
@@ -212,7 +238,11 @@ class Platform {
         authConfig: authConfig
       });
     } catch (err) {
-      provPlatformDebug(err);
+      provPlatformDebug(err.message);
+      if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
+        level: 'error',
+        message: 'Message: ' + err.message + '\nStack: ' + err.stack
+      });
       return false;
     }
 
@@ -235,7 +265,11 @@ class Platform {
         authEndpoint: authEndpoint
       });
     } catch (err) {
-      provPlatformDebug(err);
+      provPlatformDebug(err.message);
+      if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
+        level: 'error',
+        message: 'Message: ' + err.message + '\nStack: ' + err.stack
+      });
       return false;
     }
 
@@ -258,7 +292,11 @@ class Platform {
         accesstokenEndpoint: accesstokenEndpoint
       });
     } catch (err) {
-      provPlatformDebug(err);
+      provPlatformDebug(err.message);
+      if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
+        level: 'error',
+        message: 'Message: ' + err.message + '\nStack: ' + err.stack
+      });
       return false;
     }
 
@@ -309,7 +347,11 @@ class Platform {
         kid: (0, _classPrivateFieldGet2.default)(this, _kid)
       })]);
     } catch (err) {
-      provPlatformDebug(err);
+      provPlatformDebug(err.message);
+      if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
+        level: 'error',
+        message: 'Message: ' + err.message + '\nStack: ' + err.stack
+      });
       return false;
     }
   }
@@ -331,5 +373,7 @@ var _ENCRYPTIONKEY2 = new WeakMap();
 var _accesstokenEndpoint = new WeakMap();
 
 var _kid = new WeakMap();
+
+var _logger = new WeakMap();
 
 module.exports = Platform;
