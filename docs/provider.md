@@ -39,6 +39,7 @@
 - [Usage](#usage)
   - [Setting up provider](#setting-up-provider)
   - [The Provider object](#the-provider-object)
+  - [Serving static files](#serving-static-files)
   - [Deploy and the onConnect() Callback](#deploy)
   - [The Platform object](#the-platform-object)
   - [The idToken object](#the-idtoken-object)
@@ -46,7 +47,7 @@
 - [Provider Grading Services](#provider-grading-services)
   - [Sending Grades to platform](#sending-grades-to-a-platform)
   - [Retrieving Grades from a platform](#retrieving-grades-from-a-platform)
-- [Debugging](#debugging)
+- [Logging and Debugging](#logging-and-debugging)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -90,11 +91,8 @@ const LTI = require('ltijs').Provider
 
 // Configure provider
 const lti = new LTI('EXAMPLEKEY', 
-            { url: 'mongodb://localhost/database', 
-              connection:{ user:'user',
-                          pass: 'pass'} 
-            }, 
-            { appUrl: '/', loginUrl: '/login', staticPath: path.join(__dirname, '/views/') })
+            { url: 'mongodb://localhost/database' }, 
+            { appUrl: '/', loginUrl: '/login', logger: true })
 
 
 let setup = async () => {
@@ -202,7 +200,7 @@ Exposes methods for easy manipulation of the LTI 1.3 standard as a LTI Provider 
 | options.ssl.key | `String`  | SSL key. | *Optional* |
 | options.ssl.cert | `String`  | SSL certificate. | *Optional* |
 | options.staticPath | `String`  | The path for the static files your application might serve (Ex: _dirname+"/public") | *Optional* |
-
+| options.logger | `Boolean`  | If true, allows LTIJS to generate logging files for server requests and errors. | *Optional* |
 
 
 
@@ -333,12 +331,13 @@ Whitelists Urls to bypass the lti 1.3 authentication protocol. These Url dont ha
 
 | Param | Type | Description |
 | --- | --- | --- |
-| urls | <code>Array&lt;String&gt;</code> | Array containing the urls to be whitelisted |
+| urls | <code>String</code> | Urls to be whitelisted |
 
 ##### Examples
 
 ```javascript
-provider.whitelist(['/log', '/home'])
+provider.whitelist('/log', '/home')
+provider.whitelist('/log', '/home', '/route')
 ```
 
 
@@ -471,13 +470,10 @@ const lti = new LTI('EXAMPLEKEY',
             }, 
             { staticPath: path.join(__dirname, '/views/') })
 ```
-The second parameter of the contructor, `database`, is an object with an `url` field, that should be the database url, and a `connection` field, that must contain [MongoDB Driver's connection options](http://mongodb.github.io/node-mongodb-native/2.2/api/MongoClient.html#connect).
+The second parameter of the contructor, `database`, is an object with an `url` field, that should be the database url, and, ***if your database requires authentication***, a `connection` field, that must contain [MongoDB Driver's connection options](http://mongodb.github.io/node-mongodb-native/2.2/api/MongoClient.html#connect).
 
 
-The third parameter, `options`, allows you to configure a staticPath from where the server serves static files, as well as setup a server using https: 
-
-
-##### Using ssl
+The third parameter, `options`, allows you to configure a staticPath from where the express server serves static files, setup the usage of https, and setup the server logger, and customize the server main routes: 
 
 
 ```javascript
@@ -486,7 +482,8 @@ const lti = new LTI('EXAMPLEKEY',
               connection:{ user:'user',
                           pass: 'pass'} 
             }, 
-            { staticPath: path.join(__dirname, '/views/'),
+            { appUrl: '/', loginUrl: '/login', 
+              staticPath: path.join(__dirname, '/views/'),
               https: true, 
               ssl: { key: privateKey, 
                      cert: certificate 
@@ -497,9 +494,9 @@ const lti = new LTI('EXAMPLEKEY',
 
 
 
-#### The Provider object
+### The Provider object
 
-You can configure the main routes (login, main app, session timeout, invalid token) through the given methods: 
+You can configure the main routes (login, main app, session timeout, invalid token): 
 
 
 ##### Setting custom main routes
@@ -526,10 +523,23 @@ loginUrl = '/login'
 sessionTimeoutUrl = '/sessionTimeout'
 invalidTokenUrl = '/invalidToken'
 ```
-***These functions must be called before `deploy()`, otherwise the changed will not be applied.***
+
+##### Serving static files
+
+Express allows you to specify a path from where static files will be served.
+
+LTIjs can use this functionality by setting the staticPath parameter of the constructor's additional options. 
+
+```javascript
+//Configure provider
+const lti = new LTI('EXAMPLEKEY', 
+            { url: 'mongodb://localhost/database', 
+            }, 
+            { staticPath: 'public' })
+```
 
 
-### Deploy
+#### Deploy
 
 Deploying the application opens a connection to the configured database and starts the express server.
 
@@ -841,13 +851,16 @@ got.get('https://provider/gettoken?context=' + context, (err, response)=>{
 })
 ```
 
-##### Whitelisted routes
+This request will be handled by `lti.app.get('/gettoken')` and will have access to the idtoken.
+
+
+##### Whitelisting routes
 
 You can whitelist routes to bypass the LTI 1.3 security protocol, but these routes won't have access to an idToken.
 
 
 ```javascript
-lti.whitelist(['/main', '/home'])
+lti.whitelist('/main', '/home') // You can add as many as you want lti.whitelist('/main', '/home', '/route')
 ```
 
 Now calls to ```/main``` will be handled by `lti.app.get('/main')` and will not have access to an idToken.
@@ -901,7 +914,24 @@ let result  = await lti.Grade.Result(res.locals.token, { userId: true })
 
 ---
 
-## Debugging
+## Logging and Debugging
+
+### Logging
+
+**LTIjs** generates error and server logs if the logger parameter of the constructor's additional options is set to true.
+
+```javascript
+// Configure provider
+const lti = new LTI('EXAMPLEKEY', 
+            { url: 'mongodb://localhost/database'
+            }, 
+            { logger: true })
+```
+
+Logs will be generated inside a `logs` folder in the root of your project.
+
+
+### Debugging
 
 
 **LTIjs** uses [debug](https://www.npmjs.com/package/debug) to log various events in the console. Just append `DEBUG='provider:*'` before yout node or npm command and it should be working.
