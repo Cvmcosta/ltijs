@@ -250,7 +250,6 @@ class Provider {
     this.Grade = new GradeService(this.getPlatform, this.#ENCRYPTIONKEY, this.#logger)
 
     if (options && options.staticPath) this.#server.setStaticPath(options.staticPath)
-    this.app.get('/favicon.ico', (req, res) => res.status(204))
 
     // Registers main athentication and routing middleware
     const sessionValidator = async (req, res, next) => {

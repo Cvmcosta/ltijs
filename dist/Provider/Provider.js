@@ -334,8 +334,7 @@ class Provider {
      */
 
     this.Grade = new GradeService(this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger));
-    if (options && options.staticPath) (0, _classPrivateFieldGet2.default)(this, _server).setStaticPath(options.staticPath);
-    this.app.get('/favicon.ico', (req, res) => res.status(204)); // Registers main athentication and routing middleware
+    if (options && options.staticPath) (0, _classPrivateFieldGet2.default)(this, _server).setStaticPath(options.staticPath); // Registers main athentication and routing middleware
 
     const sessionValidator = async (req, res, next) => {
       // Ckeck if request is attempting to initiate oidc login flow
