@@ -708,7 +708,6 @@ class Provider {
 
   whitelist(...urls) {
     if (!urls) throw new Error('No url passed');
-    console.log(urls);
     (0, _classPrivateFieldSet2.default)(this, _whitelistedUrls, urls);
     return true;
   }
