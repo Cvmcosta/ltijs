@@ -702,12 +702,13 @@ class Provider {
   }
   /**
    * @description Whitelists Urls to bypass the lti 1.3 authentication protocol. These Url dont have access to a idtoken
-   * @param {Array<String>} urls - Array containing the urls to be whitelisted
+   * @param {String} urls - Urls to be whitelisted
    */
 
 
-  whitelist(urls) {
-    if (!urls) throw new Error('Missing "urls" argument');
+  whitelist(...urls) {
+    if (!urls) throw new Error('No url passed');
+    console.log(urls);
     (0, _classPrivateFieldSet2.default)(this, _whitelistedUrls, urls);
     return true;
   }
