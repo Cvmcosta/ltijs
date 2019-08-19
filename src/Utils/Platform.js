@@ -24,6 +24,8 @@ class Platform {
 
   #kid
 
+  #logger
+
   /**
      * @param {string} name - Platform name.
      * @param {string} platformUrl - Platform url.
@@ -34,7 +36,7 @@ class Platform {
      * @param {string} _ENCRYPTIONKEY - Encryption key used
      * @param {Object} _authConfig - Authentication configurations for the platform.
      */
-  constructor (name, platformUrl, clientId, authenticationEndpoint, accesstokenEndpoint, kid, _ENCRYPTIONKEY, _authConfig) {
+  constructor (name, platformUrl, clientId, authenticationEndpoint, accesstokenEndpoint, kid, _ENCRYPTIONKEY, _authConfig, logger) {
     this.#authConfig = _authConfig
     this.#ENCRYPTIONKEY = _ENCRYPTIONKEY
 
@@ -44,6 +46,7 @@ class Platform {
     this.#authEndpoint = authenticationEndpoint
     this.#accesstokenEndpoint = accesstokenEndpoint
     this.#kid = kid
+    this.#logger = logger
   }
 
   /**
@@ -55,7 +58,8 @@ class Platform {
     try {
       await Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { platformName: name })
     } catch (err) {
-      provPlatformDebug(err)
+      provPlatformDebug(err.message)
+      if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
       return false
     }
     this.#platformName = name
@@ -71,7 +75,8 @@ class Platform {
     try {
       await Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { platformUrl: url })
     } catch (err) {
-      provPlatformDebug(err)
+      provPlatformDebug(err.message)
+      if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
       return false
     }
     this.#platformUrl = url
@@ -87,7 +92,8 @@ class Platform {
     try {
       await Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { clientId: clientId })
     } catch (err) {
-      provPlatformDebug(err)
+      provPlatformDebug(err.message)
+      if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
       return false
     }
     this.#clientId = clientId
@@ -110,7 +116,8 @@ class Platform {
       const key = await Database.Get(this.#ENCRYPTIONKEY, 'publickey', { kid: this.#kid })
       return key[0].key
     } catch (err) {
-      provPlatformDebug(err)
+      provPlatformDebug(err.message)
+      if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
       return false
     }
   }
@@ -124,7 +131,8 @@ class Platform {
       const key = await Database.Get(this.#ENCRYPTIONKEY, 'privatekey', { kid: this.#kid })
       return key[0].key
     } catch (err) {
-      provPlatformDebug(err)
+      provPlatformDebug(err.message)
+      if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
       return false
     }
   }
@@ -149,7 +157,8 @@ class Platform {
     try {
       await Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { authConfig: authConfig })
     } catch (err) {
-      provPlatformDebug(err)
+      provPlatformDebug(err.message)
+      if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
       return false
     }
 
@@ -167,7 +176,8 @@ class Platform {
     try {
       await Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { authEndpoint: authEndpoint })
     } catch (err) {
-      provPlatformDebug(err)
+      provPlatformDebug(err.message)
+      if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
       return false
     }
     this.#authEndpoint = authEndpoint
@@ -183,7 +193,8 @@ class Platform {
     try {
       await Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { accesstokenEndpoint: accesstokenEndpoint })
     } catch (err) {
-      provPlatformDebug(err)
+      provPlatformDebug(err.message)
+      if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
       return false
     }
     this.#accesstokenEndpoint = accesstokenEndpoint
@@ -223,7 +234,8 @@ class Platform {
     try {
       return Promise.all([Database.Delete('platform', { platformUrl: this.#platformUrl }), Database.Delete('publickey', { kid: this.#kid }), Database.Delete('privatekey', { kid: this.#kid })])
     } catch (err) {
-      provPlatformDebug(err)
+      provPlatformDebug(err.message)
+      if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
       return false
     }
   }

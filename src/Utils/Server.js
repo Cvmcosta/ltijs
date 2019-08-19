@@ -6,9 +6,10 @@ const helmet = require('helmet')
 const cookieParser = require('cookie-parser')
 const cors = require('cors')
 const serverdebug = require('debug')('provider:server')
+const morgan = require('morgan')
 
 class Server {
-  constructor (https, ssl, ENCRYPTIONKEY) {
+  constructor (https, ssl, ENCRYPTIONKEY, logger) {
     this.app = express()
 
     this.server = false
@@ -16,8 +17,14 @@ class Server {
     this.ssl = false
     if (https) this.ssl = ssl
 
+    // Setting up Logger
+    if (logger) {
+      this.app.use(morgan('combined', { stream: logger.stream }))
+    }
+
+    // Setting up helmet
     this.app.use(helmet({
-      frameguard: false
+      frameguard: false // Disabling frameguard so that LTIJS can send resources to iframes inside LMS's
     }))
     this.app.use(cors())
     this.app.use(bodyParser.urlencoded({ extended: false }))
@@ -40,7 +47,7 @@ class Server {
   }
 
   setStaticPath (path) {
-    this.app.use('/', express.static(path))
+    this.app.use(/\/plat[^\/]*/, express.static(path)) // eslint-disable-line no-useless-escape
   }
 
   close () {

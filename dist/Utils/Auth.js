@@ -72,14 +72,14 @@ class Auth {
      */
 
 
-  static async validateToken(token, getPlatform, ENCRYPTIONKEY) {
+  static async validateToken(token, getPlatform, ENCRYPTIONKEY, logger) {
     const decodedToken = jwt.decode(token, {
       complete: true
     });
     const kid = decodedToken.header.kid;
     const alg = decodedToken.header.alg;
     provAuthDebug('Attempting to retrieve registered platform');
-    const platform = await getPlatform(decodedToken.payload.iss, ENCRYPTIONKEY);
+    const platform = await getPlatform(decodedToken.payload.iss, ENCRYPTIONKEY, logger);
     if (!platform) throw new Error('NoPlatformRegistered');
     const authConfig = await platform.platformAuthConfig();
 

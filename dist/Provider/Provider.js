@@ -27,6 +27,8 @@ const url = require('url');
 
 const validator = require('validator');
 
+const winston = require('winston');
+
 const mongoose = require('mongoose');
 
 mongoose.set('useCreateIndex', true);
@@ -61,6 +63,7 @@ class Provider {
      * @param {String} [options.ssl.key] - SSL key.
      * @param {String} [options.ssl.cert] - SSL certificate.
      * @param {String} [options.staticPath] - The path for the static files your application might serve (Ex: _dirname+"/public")
+     * @param {String} [options.logger = false] - If true, allows LTIJS to generate loggin files for server and errors.
      */
   constructor(encryptionkey, database, options) {
     _loginUrl.set(this, {
@@ -91,6 +94,11 @@ class Provider {
     _ENCRYPTIONKEY.set(this, {
       writable: true,
       value: void 0
+    });
+
+    _logger.set(this, {
+      writable: true,
+      value: false
     });
 
     _cookieOptions.set(this, {
@@ -137,9 +145,49 @@ class Provider {
     if (options && options.appUrl) (0, _classPrivateFieldSet2.default)(this, _appUrl, options.appUrl);
     if (options && options.loginUrl) (0, _classPrivateFieldSet2.default)(this, _loginUrl, options.loginUrl);
     if (options && options.sessionTimeoutUrl) (0, _classPrivateFieldSet2.default)(this, _sessionTimeoutUrl, options.sessionTimeoutUrl);
-    if (options && options.invalidTokenUrl) (0, _classPrivateFieldSet2.default)(this, _invalidTokenUrl, options.invalidTokenUrl);
+    if (options && options.invalidTokenUrl) (0, _classPrivateFieldSet2.default)(this, _invalidTokenUrl, options.invalidTokenUrl); // Setting up logger
+
+    let loggerServer = false;
+
+    if (options && options.logger) {
+      (0, _classPrivateFieldSet2.default)(this, _logger, winston.createLogger({
+        format: winston.format.combine(winston.format.timestamp(), winston.format.json(), winston.format.prettyPrint()),
+        transports: [new winston.transports.File({
+          filename: 'logs/ltijs_error.log',
+          level: 'error',
+          handleExceptions: true,
+          maxsize: 250000,
+          // 500kb (with two files)
+          maxFiles: 1,
+          colorize: false,
+          tailable: true
+        })],
+        exitOnError: false
+      })); // Server logger
+
+      loggerServer = winston.createLogger({
+        format: winston.format.combine(winston.format.timestamp(), winston.format.prettyPrint()),
+        transports: [new winston.transports.File({
+          filename: 'logs/ltijs_server.log',
+          handleExceptions: true,
+          json: true,
+          maxsize: 250000,
+          // 500kb (with two files)
+          maxFiles: 1,
+          colorize: false,
+          tailable: true
+        })],
+        exitOnError: false
+      });
+      loggerServer.stream = {
+        write: function (message, encoding) {
+          loggerServer.info(message);
+        }
+      };
+    }
+
     (0, _classPrivateFieldSet2.default)(this, _ENCRYPTIONKEY, encryptionkey);
-    (0, _classPrivateFieldSet2.default)(this, _server, new Server(options ? options.https : false, options ? options.ssl : false, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY))); // Starts database connection
+    (0, _classPrivateFieldSet2.default)(this, _server, new Server(options ? options.https : false, options ? options.ssl : false, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), loggerServer)); // Starts database connection
 
     if (database.connection) {
       if (!database.connection.useNewUrlParser) database.connection.useNewUrlParser = true;
@@ -264,6 +312,10 @@ class Provider {
       mongoose.model('accesstoken', accessTokenSchema);
       mongoose.model('nonce', nonceSchema);
     } catch (err) {
+      if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
+        level: 'error',
+        message: 'Message: ' + err.message + '\nStack: ' + err.stack
+      });
       provMainDebug('Model already registered. Continuing');
     }
     /**
@@ -281,9 +333,8 @@ class Provider {
      * @description Grading service.
      */
 
-    this.Grade = new GradeService(this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
-    if (options && options.staticPath) (0, _classPrivateFieldGet2.default)(this, _server).setStaticPath(options.staticPath);
-    this.app.get('/favicon.ico', (req, res) => res.status(204)); // Registers main athentication and routing middleware
+    this.Grade = new GradeService(this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger));
+    if (options && options.staticPath) (0, _classPrivateFieldGet2.default)(this, _server).setStaticPath(options.staticPath); // Registers main athentication and routing middleware
 
     const sessionValidator = async (req, res, next) => {
       // Ckeck if request is attempting to initiate oidc login flow
@@ -312,7 +363,11 @@ class Provider {
             const decode = Buffer.from(decodeURIComponent(issuer.split('plat')[1]), 'base64').toString('ascii');
             if (!validator.isURL(decode) && decode.indexOf('localhost') === -1) isApiRequest = true;
           } catch (err) {
-            provMainDebug(err);
+            provMainDebug(err.message);
+            if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
+              level: 'error',
+              message: 'Message: ' + err.message + '\nStack: ' + err.stack
+            });
             isApiRequest = true;
           }
         } // Mount request path and issuer_code
@@ -353,7 +408,7 @@ class Provider {
 
           if (req.body.id_token) {
             provMainDebug('Received request containing token. Sending for validation');
-            const valid = await Auth.validateToken(req.body.id_token, this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
+            const valid = await Auth.validateToken(req.body.id_token, this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger));
             provAuthDebug('Successfully validated token!'); // Mount platform token
 
             const platformToken = {
@@ -451,7 +506,11 @@ class Provider {
           return next();
         }
       } catch (err) {
-        provAuthDebug(err);
+        provAuthDebug(err.message);
+        if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
+          level: 'error',
+          message: 'Message: ' + err.message + '\nStack: ' + err.stack
+        });
         provMainDebug('Error retrieving or validating token. Passing request to invalid token handler');
         return res.redirect((0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl));
       }
@@ -460,22 +519,32 @@ class Provider {
     this.app.use(sessionValidator);
     this.app.all((0, _classPrivateFieldGet2.default)(this, _loginUrl), async (req, res) => {
       provMainDebug('Receiving a login request from: ' + req.body.iss);
-      const platform = await this.getPlatform(req.body.iss);
 
-      if (platform) {
-        let origin = req.get('origin');
-        if (!origin || origin === 'null') origin = req.get('host');
-        if (!origin) return res.redirect((0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl));
-        const cookieName = 'plat' + encodeURIComponent(Buffer.from(origin).toString('base64'));
-        provMainDebug('Redirecting to platform authentication endpoint');
-        res.clearCookie(cookieName, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
-        res.redirect(url.format({
-          pathname: await platform.platformAuthEndpoint(),
-          query: await Request.ltiAdvantageLogin(req.body, platform)
-        }));
-      } else {
-        provMainDebug('Unregistered platform attempting connection: ' + req.body.iss);
-        res.status(401).send('Unregistered platform.');
+      try {
+        const platform = await this.getPlatform(req.body.iss);
+
+        if (platform) {
+          let origin = req.get('origin');
+          if (!origin || origin === 'null') origin = req.get('host');
+          if (!origin) return res.redirect((0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl));
+          const cookieName = 'plat' + encodeURIComponent(Buffer.from(origin).toString('base64'));
+          provMainDebug('Redirecting to platform authentication endpoint');
+          res.clearCookie(cookieName, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
+          res.redirect(url.format({
+            pathname: await platform.platformAuthEndpoint(),
+            query: await Request.ltiAdvantageLogin(req.body, platform)
+          }));
+        } else {
+          provMainDebug('Unregistered platform attempting connection: ' + req.body.iss);
+          return res.status(401).send('Unregistered platform.');
+        }
+      } catch (err) {
+        provAuthDebug(err.message);
+        if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
+          level: 'error',
+          message: 'Message: ' + err.message + '\nStack: ' + err.stack
+        });
+        return res.status(400).send('Bad Request.');
       }
     }); // Session timeout and invalid token urls
 
@@ -523,13 +592,21 @@ class Provider {
               await mongoose.connect((0, _classPrivateFieldGet2.default)(this, _dbConnection).url, (0, _classPrivateFieldGet2.default)(this, _dbConnection).options);
             } catch (err) {
               provMainDebug('Error in MongoDb connection: ' + err);
+              if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
+                level: 'error',
+                message: 'Message: ' + err.message + '\nStack: ' + err.stack
+              });
             }
           }
         }, 1000);
       });
       if (this.db.readyState === 0) await mongoose.connect((0, _classPrivateFieldGet2.default)(this, _dbConnection).url, (0, _classPrivateFieldGet2.default)(this, _dbConnection).options);
     } catch (err) {
-      provMainDebug(err);
+      provMainDebug(err.message);
+      if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
+        level: 'error',
+        message: 'Message: ' + err.message + '\nStack: ' + err.stack
+      });
       return false;
     }
     /* In case no port is provided uses 3000 */
@@ -553,6 +630,11 @@ class Provider {
       await this.db.close();
       return true;
     } catch (err) {
+      provMainDebug(err.message);
+      if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
+        level: 'error',
+        message: 'Message: ' + err.message + '\nStack: ' + err.stack
+      });
       return false;
     }
   }
@@ -620,12 +702,12 @@ class Provider {
   }
   /**
    * @description Whitelists Urls to bypass the lti 1.3 authentication protocol. These Url dont have access to a idtoken
-   * @param {Array<String>} urls - Array containing the urls to be whitelisted
+   * @param {String} urls - Urls to be whitelisted
    */
 
 
-  whitelist(urls) {
-    if (!urls) throw new Error('Missing "urls" argument');
+  whitelist(...urls) {
+    if (!urls) throw new Error('No url passed');
     (0, _classPrivateFieldSet2.default)(this, _whitelistedUrls, urls);
     return true;
   }
@@ -652,7 +734,7 @@ class Provider {
 
       if (!_platform) {
         const kid = await Auth.generateProviderKeyPair((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
-        const plat = new Platform(platform.name, platform.url, platform.clientId, platform.authenticationEndpoint, platform.accesstokenEndpoint, kid, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), platform.authConfig); // Save platform to db
+        const plat = new Platform(platform.name, platform.url, platform.clientId, platform.authenticationEndpoint, platform.accesstokenEndpoint, kid, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), platform.authConfig, (0, _classPrivateFieldGet2.default)(this, _logger)); // Save platform to db
 
         const isregisteredPlat = await Database.Get(false, 'platform', {
           platformUrl: platform.url
@@ -676,19 +758,22 @@ class Provider {
         return _platform;
       }
     } catch (err) {
-      provAuthDebug(err);
+      provAuthDebug(err.message);
+      if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
+        level: 'error',
+        message: 'Message: ' + err.message + '\nStack: ' + err.stack
+      });
       return false;
     }
   }
   /**
      * @description Gets a platform.
      * @param {String} url - Platform url.
-     * @param {String} [ENCRYPTIONKEY] - Encryption key. THIS PARAMETER IS ONLY IN A FEW SPECIFIC CALLS, DO NOT USE IN YOUR APPLICATION.
      * @returns {Promise<Platform | false>}
      */
 
 
-  async getPlatform(url, ENCRYPTIONKEY) {
+  async getPlatform(url, ENCRYPTIONKEY, logger) {
     if (!url) throw new Error('No url provided');
 
     try {
@@ -700,15 +785,19 @@ class Provider {
       if (!obj) return false;
       let result;
 
-      if (ENCRYPTIONKEY) {
-        result = new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, ENCRYPTIONKEY, obj.authConfig);
+      if (ENCRYPTIONKEY && logger !== undefined) {
+        result = new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, ENCRYPTIONKEY, obj.authConfig, logger);
       } else {
-        result = new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), obj.authConfig);
+        result = new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), obj.authConfig, (0, _classPrivateFieldGet2.default)(this, _logger));
       }
 
       return result;
     } catch (err) {
-      provAuthDebug(err);
+      provAuthDebug(err.message);
+      if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
+        level: 'error',
+        message: 'Message: ' + err.message + '\nStack: ' + err.stack
+      });
       return false;
     }
   }
@@ -738,14 +827,18 @@ class Provider {
       const platforms = await Database.Get(false, 'platform');
 
       if (platforms) {
-        for (const obj of platforms) returnArray.push(new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), obj.authConfig));
+        for (const obj of platforms) returnArray.push(new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), obj.authConfig, (0, _classPrivateFieldGet2.default)(this, _logger)));
 
         return returnArray;
       }
 
       return [];
     } catch (err) {
-      provAuthDebug(err);
+      provAuthDebug(err.message);
+      if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
+        level: 'error',
+        message: 'Message: ' + err.message + '\nStack: ' + err.stack
+      });
       return false;
     }
   }
@@ -798,6 +891,8 @@ var _invalidTokenUrl = new WeakMap();
 var _whitelistedUrls = new WeakMap();
 
 var _ENCRYPTIONKEY = new WeakMap();
+
+var _logger = new WeakMap();
 
 var _cookieOptions = new WeakMap();
 
