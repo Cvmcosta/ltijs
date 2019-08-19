@@ -583,7 +583,6 @@ class Provider {
    */
   whitelist (...urls) {
     if (!urls) throw new Error('No url passed')
-    console.log(urls)
     this.#whitelistedUrls = urls
     return true
   }
