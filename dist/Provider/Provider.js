@@ -63,7 +63,7 @@ class Provider {
      * @param {String} [options.ssl.key] - SSL key.
      * @param {String} [options.ssl.cert] - SSL certificate.
      * @param {String} [options.staticPath] - The path for the static files your application might serve (Ex: _dirname+"/public")
-     * @param {String} [options.logger = false] - If true, allows LTIJS to generate loggin files for server and errors.
+     * @param {Boolean} [options.logger = false] - If true, allows LTIJS to generate logging files for server requests and errors.
      */
   constructor(encryptionkey, database, options) {
     _loginUrl.set(this, {

@@ -78,7 +78,7 @@ class Provider {
      * @param {String} [options.ssl.key] - SSL key.
      * @param {String} [options.ssl.cert] - SSL certificate.
      * @param {String} [options.staticPath] - The path for the static files your application might serve (Ex: _dirname+"/public")
-     * @param {String} [options.logger = false] - If true, allows LTIJS to generate loggin files for server and errors.
+     * @param {Boolean} [options.logger = false] - If true, allows LTIJS to generate logging files for server requests and errors.
      */
   constructor (encryptionkey, database, options) {
     if (options && options.https && (!options.ssl || !options.ssl.key || !options.ssl.cert)) throw new Error('No ssl Key  or Certificate found for local https configuration.')

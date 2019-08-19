@@ -21,11 +21,10 @@
 [![Donate](https://img.shields.io/badge/Donate-Buy%20me%20a%20coffe-blue)](https://www.buymeacoffee.com/UL5fBsi)
 
 
-> v1.1.0
-> - Changed Request builder to include some optional LTI launch parameters.
-> - Changed the login route handler to deal with multiple HTTP methods.
-> - Added figlet on deploy.
-> - Added update notifier.
+> v1.2.0
+> - Implemented error and server request logging.
+> - Fixed Static path property, that now works as expected and making it possible to serve static files.
+> - Changed Provider.whitelist method to receive strings as rest parameter to make it easier.
 
 > - View entire [CHANGELOG](https://cvmcosta.github.io/ltijs/#/changelog)
 
@@ -118,11 +117,8 @@ const LTI = require('ltijs').Provider
 
 // Configure provider
 const lti = new LTI('EXAMPLEKEY', 
-            { url: 'mongodb://localhost/database', 
-              connection:{ user:'user',
-                          pass: 'pass'} 
-            }, 
-            { appUrl: '/', loginUrl: '/login', staticPath: path.join(__dirname, '/views/') })
+            { url: 'mongodb://localhost/database' }, 
+            { appUrl: '/', loginUrl: '/login', logger: true })
 
 
 let setup = async () => {

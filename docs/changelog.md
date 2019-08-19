@@ -9,6 +9,14 @@
 ### CHANGELOG
 
 
+#### V1.2.0
+
+> 2019-08-19
+> - Implemented error and server request logging.
+> - Fixed Static path property, that now works as expected and making it possible to serve static files.
+> - Changed Provider.whitelist method to receive strings as rest parameter to make it easier.
+
+
 #### V1.1.0 
 
 > 2019-08-13
