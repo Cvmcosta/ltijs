@@ -52,7 +52,7 @@ class Server {
   }
 
   setStaticPath(path) {
-    this.app.use(/\/plat[^\/]*/, express.static(path)); // eslint-disable-line no-useless-escape
+    this.app.use(express.static(path));
   }
 
   close() {
