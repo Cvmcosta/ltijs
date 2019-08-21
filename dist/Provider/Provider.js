@@ -25,7 +25,9 @@ const GradeService = require('./Services/Grade');
 
 const url = require('url');
 
-const validator = require('validator');
+const _path = require('path');
+
+const jwt = require('jsonwebtoken');
 
 const winston = require('winston');
 
@@ -38,7 +40,7 @@ const provAuthDebug = require('debug')('provider:auth');
 
 const provMainDebug = require('debug')('provider:main');
 /**
- * @descripttion Exposes methods for easy manipualtion of the LTI 1.3 standard as a LTI Provider and a "server" object to manipulate the Express instance
+ * @descripttion Exposes methods for easy manipulation of the LTI 1.3 standard as a LTI Provider and a "server" object to manipulate the Express instance
  */
 
 
@@ -340,70 +342,39 @@ class Provider {
       // Ckeck if request is attempting to initiate oidc login flow
       if (req.url === (0, _classPrivateFieldGet2.default)(this, _loginUrl) || req.url === (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl) || req.url === (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl) || (0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(req.url) !== -1) return next();
 
-      if (req.url === (0, _classPrivateFieldGet2.default)(this, _appUrl)) {
+      if (req.url === (0, _classPrivateFieldGet2.default)(this, _appUrl) && !req.query.ltik) {
         let origin = req.get('origin');
         if (!origin || origin === 'null') origin = req.get('host');
         if (!origin) return res.redirect((0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl));
         const iss = 'plat' + encodeURIComponent(Buffer.from(origin).toString('base64'));
-        return res.redirect(307, '/' + iss);
+        let token = {
+          issuer: iss,
+          path: (0, _classPrivateFieldGet2.default)(this, _appUrl) // Signing context token
+
+        };
+        token = jwt.sign(token, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
+        return res.redirect(307, (0, _classPrivateFieldGet2.default)(this, _appUrl) + '?ltik=' + token);
       }
 
       try {
-        let it = false;
-        let urlArr = req.url.split('/');
-        let issuer = urlArr[1];
-        let path = '';
-        let isApiRequest = false;
-        const cookies = req.signedCookies; // Validate issuer_code to see if its a route or normal request
+        if (!req.query.ltik) return res.redirect((0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl));
+        const validLtik = jwt.verify(req.query.ltik, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
+        let user = false;
+        const issuer = validLtik.issuer;
 
-        if (issuer.indexOf('plat') === -1) isApiRequest = true;
+        const contextPath = _path.join(issuer, validLtik.path);
 
-        if (!isApiRequest) {
-          try {
-            const decode = Buffer.from(decodeURIComponent(issuer.split('plat')[1]), 'base64').toString('ascii');
-            if (!validator.isURL(decode) && decode.indexOf('localhost') === -1) isApiRequest = true;
-          } catch (err) {
-            provMainDebug(err.message);
-            if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
-              level: 'error',
-              message: 'Message: ' + err.message + '\nStack: ' + err.stack
-            });
-            isApiRequest = true;
-          }
-        } // Mount request path and issuer_code
-
-
-        if (isApiRequest) {
-          let requestParts;
-
-          if (req.query.context) {
-            requestParts = req.query.context.split('/');
-          } else {
-            return res.status(400).send('Missing context parameter in request.');
-          }
-
-          issuer = encodeURIComponent(requestParts[1]);
-          const _urlArr = [];
-
-          for (const i in requestParts) _urlArr.push(requestParts[i]);
-
-          urlArr = _urlArr; // Informs the system that is a API request
-
-          res.locals.isApiRequest = true;
-        }
-
-        for (const i in urlArr) if (parseInt(i) !== 0 && parseInt(i) !== 1) path = path + '/' + urlArr[i]; // Mathes path to cookie
-
+        const cookies = req.signedCookies; // Matches path to cookie
 
         for (const key of Object.keys(cookies)) {
           if (key === issuer) {
-            it = cookies[key];
+            user = cookies[key];
             break;
           }
         } // Check if user already has session cookie stored in its browser
 
 
-        if (!it) {
+        if (!user) {
           provMainDebug('No cookie found');
 
           if (req.body.id_token) {
@@ -439,69 +410,62 @@ class Provider {
             })) Database.Insert(false, 'idToken', platformToken); // Mount context token
 
             const contextToken = {
-              path: issuer + '/',
+              path: contextPath,
               user: valid.sub,
               context: valid['https://purl.imsglobal.org/spec/lti/claim/context'],
               resource: valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'],
               custom: valid['https://purl.imsglobal.org/spec/lti/claim/custom']
             };
-            res.cookie(issuer + '/', contextToken.resource.id, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
+            res.cookie(contextPath, contextToken.resource.id, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
             platformToken.platformContext = contextToken; // Store contextToken in database
 
             if (await Database.Delete('contextToken', {
-              path: issuer + '/',
-              user: valid.sub
+              path: contextPath,
+              user: valid.sub,
+              'resource.id': contextToken.resource.id
             })) Database.Insert(false, 'contextToken', contextToken);
+            res.locals.contextToken = req.query.ltik;
             res.locals.token = platformToken;
-            res.locals.login = true;
             provMainDebug('Passing request to next handler');
             return next();
           } else {
             provMainDebug(req.body);
+            if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
+              level: 'error',
+              message: req.body
+            });
             provMainDebug('Passing request to session timeout handler');
             return res.redirect((0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl));
           }
         } else {
-          provAuthDebug('Cookie found');
-          res.cookie(issuer, it, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
-          let valid = await Database.Get(false, 'idToken', {
+          provAuthDebug('Cookie found'); // Gets correspondent id token from database
+
+          let idToken = await Database.Get(false, 'idToken', {
             issuer_code: issuer,
-            user: it
+            user: user
           });
-          if (!valid) return res.redirect((0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl));
-          valid = valid[0];
+          if (!idToken) throw new Error('No id token found');
+          idToken = idToken[0];
+          let contextTokenName; // Matches path to cookie
 
-          if (path) {
-            path = issuer + path;
-
-            for (const key of Object.keys(cookies).sort((a, b) => b.length - a.length)) {
-              if (key === issuer) continue;
-
-              if (path.indexOf(key) !== -1) {
-                let contextToken = await Database.Get(false, 'contextToken', {
-                  path: key,
-                  user: it,
-                  'resource.id': cookies[key]
-                });
-                if (!contextToken) throw new Error('No path cookie found');
-                contextToken = contextToken[0];
-                valid.platformContext = contextToken;
-                break;
-              }
+          for (const key of Object.keys(cookies).sort((a, b) => b.length - a.length)) {
+            if (contextPath.indexOf(key) !== -1) {
+              contextTokenName = key;
+              break;
             }
-          } else {
-            let contextToken = await Database.Get(false, 'contextToken', {
-              path: issuer + '/',
-              user: it,
-              'resource.id': cookies[issuer + '/']
-            });
-            if (!contextToken) throw new Error('No path cookie found');
-            contextToken = contextToken[0];
-            valid.platformContext = contextToken;
-          }
+          } // Gets correspondent context token from database
 
-          res.locals.token = valid;
-          res.locals.login = false;
+
+          let contextToken = await Database.Get(false, 'contextToken', {
+            path: contextTokenName,
+            user: user,
+            'resource.id': cookies[contextTokenName]
+          });
+          if (!contextToken) throw new Error('No context token found');
+          contextToken = contextToken[0];
+          idToken.platformContext = contextToken;
+          res.locals.contextToken = req.query.ltik;
+          res.locals.token = idToken;
           provMainDebug('Passing request to next handler');
           return next();
         }
@@ -511,7 +475,7 @@ class Provider {
           level: 'error',
           message: 'Message: ' + err.message + '\nStack: ' + err.stack
         });
-        provMainDebug('Error retrieving or validating token. Passing request to invalid token handler');
+        provMainDebug('Passing request to invalid token handler');
         return res.redirect((0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl));
       }
     };
@@ -555,9 +519,8 @@ class Provider {
       (0, _classPrivateFieldGet2.default)(this, _invalidToken).call(this, req, res, next);
     }); // Main app
 
-    this.app.post((0, _classPrivateFieldGet2.default)(this, _appUrl) + ':iss', async (req, res, next) => {
-      if (!res.locals.isApiRequest) return (0, _classPrivateFieldGet2.default)(this, _connectCallback2).call(this, res.locals.token, req, res, next);
-      return next();
+    this.app.all((0, _classPrivateFieldGet2.default)(this, _appUrl), async (req, res, next) => {
+      return (0, _classPrivateFieldGet2.default)(this, _connectCallback2).call(this, res.locals.token, req, res, next);
     });
   }
   /**
@@ -855,27 +818,43 @@ class Provider {
 
   async redirect(res, path, options) {
     if ((0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(path) !== -1) return res.redirect(path);
-    const newPath = res.locals.token.issuer_code + path;
+    const code = res.locals.token.issuer_code;
 
-    if (res.locals.login && options && options.isNewResource) {
+    const newPath = _path.join(code, path);
+
+    let token = {
+      issuer: code,
+      path: path // Signing context token
+
+    };
+    token = jwt.sign(token, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
+
+    if (options && options.isNewResource) {
       provMainDebug('Setting up path cookie for this resource with path: ' + path);
       res.cookie(newPath, res.locals.token.platformContext.resource.id, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
-      res.locals.token.platformContext.path = newPath;
+      const newContextToken = {
+        resource: res.locals.token.platformContext.resource,
+        custom: res.locals.token.platformContext.custom,
+        context: res.locals.token.platformContext.context,
+        path: newPath,
+        user: res.locals.token.platformContext.user
+      };
       if (await Database.Delete('contextToken', {
         path: newPath,
-        user: res.locals.token.user
-      })) Database.Insert(false, 'contextToken', res.locals.token.platformContext);
+        user: res.locals.token.user,
+        'resource.id': res.locals.token.platformContext.resource.id
+      })) Database.Insert(false, 'contextToken', newContextToken);
 
       if (options && options.ignoreRoot) {
         Database.Delete('contextToken', {
-          path: res.locals.token.issuer_code + '/',
+          path: code + (0, _classPrivateFieldGet2.default)(this, _appUrl),
           user: res.locals.token.user
         });
-        res.clearCookie(res.locals.token.issuer_code + '/');
+        res.clearCookie(code + (0, _classPrivateFieldGet2.default)(this, _appUrl));
       }
     }
 
-    return res.redirect(newPath);
+    return res.redirect(path + '?ltik=' + token);
   }
 
 }
