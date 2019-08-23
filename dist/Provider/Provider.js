@@ -525,12 +525,14 @@ class Provider {
   }
   /**
      * @description Starts listening to a given port for LTI requests and opens connection to the database.
-     * @param {number} port - The port the Provider should listen to.
+     * @param {Object} [options] - Deployment options.
+     * @param {Number} [options.port] - Deployment port. 3000 by default.
+     * @param {Boolean} [options.silent] - If true, disables initial startup message.
      * @returns {Promise<true| false>}
      */
 
 
-  async deploy(port) {
+  async deploy(options) {
     provMainDebug('Attempting to connect to database');
 
     try {
@@ -572,12 +574,15 @@ class Provider {
       });
       return false;
     }
-    /* In case no port is provided uses 3000 */
 
+    const conf = {
+      port: 3000,
+      silent: false
+    };
+    if (options && options.port) conf.port = options.port;
+    if (options && options.silent) conf.silent = options.silent; // Starts server on given port
 
-    port = port || 3000; // Starts server on given port
-
-    (0, _classPrivateFieldGet2.default)(this, _server).listen(port, 'LTI Provider is listening on port ' + port + '!\n\n LTI provider config: \n >Initiate login URL: ' + (0, _classPrivateFieldGet2.default)(this, _loginUrl) + '\n >App Url: ' + (0, _classPrivateFieldGet2.default)(this, _appUrl) + '\n >Session Timeout Url: ' + (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl) + '\n >Invalid Token Url: ' + (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl));
+    (0, _classPrivateFieldGet2.default)(this, _server).listen(conf, 'LTI Provider is listening on port ' + conf.port + '!\n\n LTI provider config: \n >Initiate login URL: ' + (0, _classPrivateFieldGet2.default)(this, _loginUrl) + '\n >App Url: ' + (0, _classPrivateFieldGet2.default)(this, _appUrl) + '\n >Session Timeout Url: ' + (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl) + '\n >Invalid Token Url: ' + (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl));
     return true;
   }
   /**
