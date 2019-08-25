@@ -13,10 +13,13 @@ class Grade {
 
   #logger
 
-  constructor (getPlatform, ENCRYPTIONKEY, logger) {
+  #Database
+
+  constructor (getPlatform, ENCRYPTIONKEY, logger, Database) {
     this.#getPlatform = getPlatform
     this.#ENCRYPTIONKEY = ENCRYPTIONKEY
     this.#logger = logger
+    this.#Database = Database
   }
 
   /**
@@ -32,7 +35,7 @@ class Grade {
     if (!idtoken) { provGradeServiceDebug('IdToken object missing.'); return false }
     provGradeServiceDebug('Target platform: ' + idtoken.iss)
 
-    const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#logger)
+    const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#logger, this.#Database)
 
     if (!platform) {
       provGradeServiceDebug('Platform not found, returning false')
@@ -88,7 +91,7 @@ class Grade {
 
     provGradeServiceDebug('Target platform: ' + idtoken.iss)
 
-    const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#logger)
+    const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#logger, this.#Database)
 
     if (!platform) {
       provGradeServiceDebug('Platform not found, returning false')
@@ -126,7 +129,7 @@ class Grade {
 
     provGradeServiceDebug('Target platform: ' + idtoken.iss)
 
-    const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#logger)
+    const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#logger, this.#Database)
 
     if (!platform) {
       provGradeServiceDebug('Platform not found, returning false')
@@ -188,7 +191,7 @@ class Grade {
     if (!score) { provGradeServiceDebug('Score object missing.'); return false }
     provGradeServiceDebug('Target platform: ' + idtoken.iss)
 
-    const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#logger)
+    const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#logger, this.#Database)
 
     if (!platform) {
       provGradeServiceDebug('Platform not found, returning false')
@@ -271,7 +274,7 @@ class Grade {
 
     provGradeServiceDebug('Target platform: ' + idtoken.iss)
 
-    const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#logger)
+    const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#logger, this.#Database)
 
     if (!platform) {
       provGradeServiceDebug('Platform not found, returning false')

@@ -7,8 +7,6 @@ var _classPrivateFieldGet2 = _interopRequireDefault(require("@babel/runtime/help
 var _classPrivateFieldSet2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldSet"));
 
 // Utis
-const Database = require('./Database');
-
 const Auth = require('./Auth');
 
 const provPlatformDebug = require('debug')('provider:platform');
@@ -28,7 +26,7 @@ class Platform {
      * @param {string} _ENCRYPTIONKEY - Encryption key used
      * @param {Object} _authConfig - Authentication configurations for the platform.
      */
-  constructor(name, platformUrl, clientId, authenticationEndpoint, accesstokenEndpoint, kid, _ENCRYPTIONKEY, _authConfig, logger) {
+  constructor(name, platformUrl, clientId, authenticationEndpoint, accesstokenEndpoint, kid, _ENCRYPTIONKEY, _authConfig, logger, Database) {
     _platformName.set(this, {
       writable: true,
       value: void 0
@@ -74,6 +72,11 @@ class Platform {
       value: void 0
     });
 
+    _Database.set(this, {
+      writable: true,
+      value: void 0
+    });
+
     (0, _classPrivateFieldSet2.default)(this, _authConfig2, _authConfig);
     (0, _classPrivateFieldSet2.default)(this, _ENCRYPTIONKEY2, _ENCRYPTIONKEY);
     (0, _classPrivateFieldSet2.default)(this, _platformName, name);
@@ -83,6 +86,7 @@ class Platform {
     (0, _classPrivateFieldSet2.default)(this, _accesstokenEndpoint, accesstokenEndpoint);
     (0, _classPrivateFieldSet2.default)(this, _kid, kid);
     (0, _classPrivateFieldSet2.default)(this, _logger, logger);
+    (0, _classPrivateFieldSet2.default)(this, _Database, Database);
   }
   /**
      * @description Sets/Gets the platform name.
@@ -94,7 +98,7 @@ class Platform {
     if (!name) return (0, _classPrivateFieldGet2.default)(this, _platformName);
 
     try {
-      await Database.Modify(false, 'platform', {
+      await (0, _classPrivateFieldGet2.default)(this, _Database).Modify(false, 'platform', {
         platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl)
       }, {
         platformName: name
@@ -121,7 +125,7 @@ class Platform {
     if (!url) return (0, _classPrivateFieldGet2.default)(this, _platformUrl);
 
     try {
-      await Database.Modify(false, 'platform', {
+      await (0, _classPrivateFieldGet2.default)(this, _Database).Modify(false, 'platform', {
         platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl)
       }, {
         platformUrl: url
@@ -148,7 +152,7 @@ class Platform {
     if (!clientId) return (0, _classPrivateFieldGet2.default)(this, _clientId);
 
     try {
-      await Database.Modify(false, 'platform', {
+      await (0, _classPrivateFieldGet2.default)(this, _Database).Modify(false, 'platform', {
         platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl)
       }, {
         clientId: clientId
@@ -181,7 +185,7 @@ class Platform {
 
   async platformPublicKey() {
     try {
-      const key = await Database.Get((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), 'publickey', {
+      const key = await (0, _classPrivateFieldGet2.default)(this, _Database).Get((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), 'publickey', {
         kid: (0, _classPrivateFieldGet2.default)(this, _kid)
       });
       return key[0].key;
@@ -202,7 +206,7 @@ class Platform {
 
   async platformPrivateKey() {
     try {
-      const key = await Database.Get((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), 'privatekey', {
+      const key = await (0, _classPrivateFieldGet2.default)(this, _Database).Get((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), 'privatekey', {
         kid: (0, _classPrivateFieldGet2.default)(this, _kid)
       });
       return key[0].key;
@@ -232,7 +236,7 @@ class Platform {
     };
 
     try {
-      await Database.Modify(false, 'platform', {
+      await (0, _classPrivateFieldGet2.default)(this, _Database).Modify(false, 'platform', {
         platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl)
       }, {
         authConfig: authConfig
@@ -259,7 +263,7 @@ class Platform {
     if (!authEndpoint) return (0, _classPrivateFieldGet2.default)(this, _authEndpoint);
 
     try {
-      await Database.Modify(false, 'platform', {
+      await (0, _classPrivateFieldGet2.default)(this, _Database).Modify(false, 'platform', {
         platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl)
       }, {
         authEndpoint: authEndpoint
@@ -286,7 +290,7 @@ class Platform {
     if (!accesstokenEndpoint) return (0, _classPrivateFieldGet2.default)(this, _accesstokenEndpoint);
 
     try {
-      await Database.Modify(false, 'platform', {
+      await (0, _classPrivateFieldGet2.default)(this, _Database).Modify(false, 'platform', {
         platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl)
       }, {
         accesstokenEndpoint: accesstokenEndpoint
@@ -309,14 +313,14 @@ class Platform {
 
 
   async platformAccessToken() {
-    const token = await Database.Get((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), 'accesstoken', {
+    const token = await (0, _classPrivateFieldGet2.default)(this, _Database).Get((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), 'accesstoken', {
       platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl)
     });
 
     if (!token) {
       provPlatformDebug('Access_token for ' + (0, _classPrivateFieldGet2.default)(this, _platformUrl) + ' not found');
       provPlatformDebug('Attempting to generate new access_token for ' + (0, _classPrivateFieldGet2.default)(this, _platformUrl));
-      const res = await Auth.getAccessToken(this, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2));
+      const res = await Auth.getAccessToken(this, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), (0, _classPrivateFieldGet2.default)(this, _Database));
       return res;
     } else {
       provPlatformDebug('Access_token found');
@@ -325,7 +329,7 @@ class Platform {
         provPlatformDebug('Token expired');
         provPlatformDebug('Access_token for ' + (0, _classPrivateFieldGet2.default)(this, _platformUrl) + ' not found');
         provPlatformDebug('Attempting to generate new access_token for ' + (0, _classPrivateFieldGet2.default)(this, _platformUrl));
-        const res = await Auth.getAccessToken(this, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2));
+        const res = await Auth.getAccessToken(this, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), (0, _classPrivateFieldGet2.default)(this, _Database));
         return res;
       }
 
@@ -339,11 +343,11 @@ class Platform {
 
   async remove() {
     try {
-      return Promise.all([Database.Delete('platform', {
+      return Promise.all([(0, _classPrivateFieldGet2.default)(this, _Database).Delete('platform', {
         platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl)
-      }), Database.Delete('publickey', {
+      }), (0, _classPrivateFieldGet2.default)(this, _Database).Delete('publickey', {
         kid: (0, _classPrivateFieldGet2.default)(this, _kid)
-      }), Database.Delete('privatekey', {
+      }), (0, _classPrivateFieldGet2.default)(this, _Database).Delete('privatekey', {
         kid: (0, _classPrivateFieldGet2.default)(this, _kid)
       })]);
     } catch (err) {
@@ -375,5 +379,7 @@ var _accesstokenEndpoint = new WeakMap();
 var _kid = new WeakMap();
 
 var _logger = new WeakMap();
+
+var _Database = new WeakMap();
 
 module.exports = Platform;

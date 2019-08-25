@@ -1,5 +1,3 @@
-
-const Database = require('./Database')
 const crypto = require('crypto')
 const jwk = require('pem-jwk')
 const got = require('got')
@@ -17,7 +15,7 @@ class Auth {
      * @param {String} ENCRYPTIONKEY - Encryption key.
      * @returns {String} kid for the keypair.
      */
-  static async generateProviderKeyPair (ENCRYPTIONKEY) {
+  static async generateProviderKeyPair (ENCRYPTIONKEY, Database) {
     let kid = crypto.randomBytes(16).toString('hex')
 
     while (await Database.Get(false, 'publickey', { kid: kid })) {
@@ -58,13 +56,13 @@ class Auth {
      * @param {String} ENCRYPTIONKEY - Encription key.
      * @returns {Promise}
      */
-  static async validateToken (token, getPlatform, ENCRYPTIONKEY, logger) {
+  static async validateToken (token, getPlatform, ENCRYPTIONKEY, logger, Database) {
     const decodedToken = jwt.decode(token, { complete: true })
     const kid = decodedToken.header.kid
     const alg = decodedToken.header.alg
 
     provAuthDebug('Attempting to retrieve registered platform')
-    const platform = await getPlatform(decodedToken.payload.iss, ENCRYPTIONKEY, logger)
+    const platform = await getPlatform(decodedToken.payload.iss, ENCRYPTIONKEY, logger, Database)
     if (!platform) throw new Error('NoPlatformRegistered')
 
     const authConfig = await platform.platformAuthConfig()
@@ -81,7 +79,7 @@ class Auth {
         const key = jwk.jwk2pem(find(keyset, ['kid', kid]))
         if (!key) throw new Error('NoKeyFound')
 
-        const verified = await this.verifyToken(token, key, alg, platform)
+        const verified = await this.verifyToken(token, key, alg, platform, Database)
         return (verified)
       }
       case 'JWK_KEY': {
@@ -90,7 +88,7 @@ class Auth {
 
         const key = jwk.jwk2pem(authConfig.key)
 
-        const verified = await this.verifyToken(token, key, alg, platform)
+        const verified = await this.verifyToken(token, key, alg, platform, Database)
         return (verified)
       }
       case 'RSA_KEY': {
@@ -98,7 +96,7 @@ class Auth {
         const key = authConfig.key
         if (!key) throw new Error('NoKeyFound')
 
-        const verified = await this.verifyToken(token, key, alg, platform)
+        const verified = await this.verifyToken(token, key, alg, platform, Database)
         return (verified)
       }
       default: {
@@ -115,11 +113,11 @@ class Auth {
      * @param {String} alg - Algorithm used.
      * @param {Platform} platform - Issuer platform.
      */
-  static async verifyToken (token, key, alg, platform) {
+  static async verifyToken (token, key, alg, platform, Database) {
     provAuthDebug('Attempting to verify JWT with the given key')
 
     const decoded = jwt.verify(token, key, { algorithms: [alg] })
-    await this.oidcValidationSteps(decoded, platform, alg)
+    await this.oidcValidationSteps(decoded, platform, alg, Database)
 
     return decoded
   }
@@ -130,14 +128,14 @@ class Auth {
      * @param {Platform} platform - Platform object.
      * @param {String} alg - Algorithm used.
      */
-  static async oidcValidationSteps (token, platform, alg) {
+  static async oidcValidationSteps (token, platform, alg, Database) {
     provAuthDebug('Token signature verified')
     provAuthDebug('Initiating OIDC aditional validation steps')
 
     const aud = this.validateAud(token, platform)
     const _alg = this.validateAlg(alg)
     const iat = this.validateIat(token)
-    const nonce = this.validateNonce(token)
+    const nonce = this.validateNonce(token, Database)
 
     return Promise.all([aud, _alg, iat, nonce])
   }
@@ -188,7 +186,7 @@ class Auth {
      * @description Validates Nonce.
      * @param {Object} token - Id token you wish to validate.
      */
-  static async validateNonce (token) {
+  static async validateNonce (token, Database) {
     provAuthDebug('Validating nonce')
     provAuthDebug('Nonce: ' + token.nonce)
 
@@ -203,7 +201,7 @@ class Auth {
      * @description Gets a new access token from the platform.
      * @param {Platform} platform - Platform object of the platform you want to access.
      */
-  static async getAccessToken (platform, ENCRYPTIONKEY) {
+  static async getAccessToken (platform, ENCRYPTIONKEY, Database) {
     const confjwt = {
       iss: await platform.platformClientId(),
       sub: await platform.platformClientId(),

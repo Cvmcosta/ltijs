@@ -1,6 +1,5 @@
 
 // Utis
-const Database = require('./Database')
 const Auth = require('./Auth')
 const provPlatformDebug = require('debug')('provider:platform')
 
@@ -26,6 +25,8 @@ class Platform {
 
   #logger
 
+  #Database
+
   /**
      * @param {string} name - Platform name.
      * @param {string} platformUrl - Platform url.
@@ -36,7 +37,7 @@ class Platform {
      * @param {string} _ENCRYPTIONKEY - Encryption key used
      * @param {Object} _authConfig - Authentication configurations for the platform.
      */
-  constructor (name, platformUrl, clientId, authenticationEndpoint, accesstokenEndpoint, kid, _ENCRYPTIONKEY, _authConfig, logger) {
+  constructor (name, platformUrl, clientId, authenticationEndpoint, accesstokenEndpoint, kid, _ENCRYPTIONKEY, _authConfig, logger, Database) {
     this.#authConfig = _authConfig
     this.#ENCRYPTIONKEY = _ENCRYPTIONKEY
 
@@ -47,6 +48,7 @@ class Platform {
     this.#accesstokenEndpoint = accesstokenEndpoint
     this.#kid = kid
     this.#logger = logger
+    this.#Database = Database
   }
 
   /**
@@ -56,7 +58,7 @@ class Platform {
   async platformName (name) {
     if (!name) return this.#platformName
     try {
-      await Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { platformName: name })
+      await this.#Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { platformName: name })
     } catch (err) {
       provPlatformDebug(err.message)
       if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
@@ -73,7 +75,7 @@ class Platform {
   async platformUrl (url) {
     if (!url) return this.#platformUrl
     try {
-      await Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { platformUrl: url })
+      await this.#Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { platformUrl: url })
     } catch (err) {
       provPlatformDebug(err.message)
       if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
@@ -90,7 +92,7 @@ class Platform {
   async platformClientId (clientId) {
     if (!clientId) return this.#clientId
     try {
-      await Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { clientId: clientId })
+      await this.#Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { clientId: clientId })
     } catch (err) {
       provPlatformDebug(err.message)
       if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
@@ -113,7 +115,7 @@ class Platform {
      */
   async platformPublicKey () {
     try {
-      const key = await Database.Get(this.#ENCRYPTIONKEY, 'publickey', { kid: this.#kid })
+      const key = await this.#Database.Get(this.#ENCRYPTIONKEY, 'publickey', { kid: this.#kid })
       return key[0].key
     } catch (err) {
       provPlatformDebug(err.message)
@@ -128,7 +130,7 @@ class Platform {
      */
   async platformPrivateKey () {
     try {
-      const key = await Database.Get(this.#ENCRYPTIONKEY, 'privatekey', { kid: this.#kid })
+      const key = await this.#Database.Get(this.#ENCRYPTIONKEY, 'privatekey', { kid: this.#kid })
       return key[0].key
     } catch (err) {
       provPlatformDebug(err.message)
@@ -155,7 +157,7 @@ class Platform {
     }
 
     try {
-      await Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { authConfig: authConfig })
+      await this.#Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { authConfig: authConfig })
     } catch (err) {
       provPlatformDebug(err.message)
       if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
@@ -174,7 +176,7 @@ class Platform {
     if (!authEndpoint) return this.#authEndpoint
 
     try {
-      await Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { authEndpoint: authEndpoint })
+      await this.#Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { authEndpoint: authEndpoint })
     } catch (err) {
       provPlatformDebug(err.message)
       if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
@@ -191,7 +193,7 @@ class Platform {
   async platformAccessTokenEndpoint (accesstokenEndpoint) {
     if (!accesstokenEndpoint) return this.#accesstokenEndpoint
     try {
-      await Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { accesstokenEndpoint: accesstokenEndpoint })
+      await this.#Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { accesstokenEndpoint: accesstokenEndpoint })
     } catch (err) {
       provPlatformDebug(err.message)
       if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
@@ -205,13 +207,13 @@ class Platform {
      * @description Gets the platform access token or attempts to generate a new one.
      */
   async platformAccessToken () {
-    const token = await Database.Get(this.#ENCRYPTIONKEY, 'accesstoken', { platformUrl: this.#platformUrl })
+    const token = await this.#Database.Get(this.#ENCRYPTIONKEY, 'accesstoken', { platformUrl: this.#platformUrl })
 
     if (!token) {
       provPlatformDebug('Access_token for ' + this.#platformUrl + ' not found')
       provPlatformDebug('Attempting to generate new access_token for ' + this.#platformUrl)
 
-      const res = await Auth.getAccessToken(this, this.#ENCRYPTIONKEY)
+      const res = await Auth.getAccessToken(this, this.#ENCRYPTIONKEY, this.#Database)
       return res
     } else {
       provPlatformDebug('Access_token found')
@@ -220,7 +222,7 @@ class Platform {
         provPlatformDebug('Access_token for ' + this.#platformUrl + ' not found')
         provPlatformDebug('Attempting to generate new access_token for ' + this.#platformUrl)
 
-        const res = await Auth.getAccessToken(this, this.#ENCRYPTIONKEY)
+        const res = await Auth.getAccessToken(this, this.#ENCRYPTIONKEY, this.#Database)
         return res
       }
       return token[0].token
@@ -232,7 +234,7 @@ class Platform {
    */
   async remove () {
     try {
-      return Promise.all([Database.Delete('platform', { platformUrl: this.#platformUrl }), Database.Delete('publickey', { kid: this.#kid }), Database.Delete('privatekey', { kid: this.#kid })])
+      return Promise.all([this.#Database.Delete('platform', { platformUrl: this.#platformUrl }), this.#Database.Delete('publickey', { kid: this.#kid }), this.#Database.Delete('privatekey', { kid: this.#kid })])
     } catch (err) {
       provPlatformDebug(err.message)
       if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
