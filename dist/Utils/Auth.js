@@ -1,7 +1,5 @@
 "use strict";
 
-const Database = require('./Database');
-
 const crypto = require('crypto');
 
 const jwk = require('pem-jwk');
@@ -25,7 +23,7 @@ class Auth {
      * @param {String} ENCRYPTIONKEY - Encryption key.
      * @returns {String} kid for the keypair.
      */
-  static async generateProviderKeyPair(ENCRYPTIONKEY) {
+  static async generateProviderKeyPair(ENCRYPTIONKEY, Database) {
     let kid = crypto.randomBytes(16).toString('hex');
 
     while (await Database.Get(false, 'publickey', {
@@ -72,14 +70,14 @@ class Auth {
      */
 
 
-  static async validateToken(token, getPlatform, ENCRYPTIONKEY, logger) {
+  static async validateToken(token, getPlatform, ENCRYPTIONKEY, logger, Database) {
     const decodedToken = jwt.decode(token, {
       complete: true
     });
     const kid = decodedToken.header.kid;
     const alg = decodedToken.header.alg;
     provAuthDebug('Attempting to retrieve registered platform');
-    const platform = await getPlatform(decodedToken.payload.iss, ENCRYPTIONKEY, logger);
+    const platform = await getPlatform(decodedToken.payload.iss, ENCRYPTIONKEY, logger, Database);
     if (!platform) throw new Error('NoPlatformRegistered');
     const authConfig = await platform.platformAuthConfig();
 
@@ -98,7 +96,7 @@ class Auth {
           if (!keyset) throw new Error('NoKeySetFound');
           const key = jwk.jwk2pem(find(keyset, ['kid', kid]));
           if (!key) throw new Error('NoKeyFound');
-          const verified = await this.verifyToken(token, key, alg, platform);
+          const verified = await this.verifyToken(token, key, alg, platform, Database);
           return verified;
         }
 
@@ -107,7 +105,7 @@ class Auth {
           provAuthDebug('Retrieving key from jwk_key');
           if (!authConfig.key) throw new Error('NoKeyFound');
           const key = jwk.jwk2pem(authConfig.key);
-          const verified = await this.verifyToken(token, key, alg, platform);
+          const verified = await this.verifyToken(token, key, alg, platform, Database);
           return verified;
         }
 
@@ -116,7 +114,7 @@ class Auth {
           provAuthDebug('Retrieving key from rsa_key');
           const key = authConfig.key;
           if (!key) throw new Error('NoKeyFound');
-          const verified = await this.verifyToken(token, key, alg, platform);
+          const verified = await this.verifyToken(token, key, alg, platform, Database);
           return verified;
         }
 
@@ -136,12 +134,12 @@ class Auth {
      */
 
 
-  static async verifyToken(token, key, alg, platform) {
+  static async verifyToken(token, key, alg, platform, Database) {
     provAuthDebug('Attempting to verify JWT with the given key');
     const decoded = jwt.verify(token, key, {
       algorithms: [alg]
     });
-    await this.oidcValidationSteps(decoded, platform, alg);
+    await this.oidcValidationSteps(decoded, platform, alg, Database);
     return decoded;
   }
   /**
@@ -152,7 +150,7 @@ class Auth {
      */
 
 
-  static async oidcValidationSteps(token, platform, alg) {
+  static async oidcValidationSteps(token, platform, alg, Database) {
     provAuthDebug('Token signature verified');
     provAuthDebug('Initiating OIDC aditional validation steps');
     const aud = this.validateAud(token, platform);
@@ -160,7 +158,7 @@ class Auth {
     const _alg = this.validateAlg(alg);
 
     const iat = this.validateIat(token);
-    const nonce = this.validateNonce(token);
+    const nonce = this.validateNonce(token, Database);
     return Promise.all([aud, _alg, iat, nonce]);
   }
   /**
@@ -216,7 +214,7 @@ class Auth {
      */
 
 
-  static async validateNonce(token) {
+  static async validateNonce(token, Database) {
     provAuthDebug('Validating nonce');
     provAuthDebug('Nonce: ' + token.nonce);
     if (await Database.Get(false, 'nonce', {
@@ -234,7 +232,7 @@ class Auth {
      */
 
 
-  static async getAccessToken(platform, ENCRYPTIONKEY) {
+  static async getAccessToken(platform, ENCRYPTIONKEY, Database) {
     const confjwt = {
       iss: await platform.platformClientId(),
       sub: await platform.platformClientId(),

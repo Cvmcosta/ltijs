@@ -19,7 +19,7 @@ const Platform = require('../Utils/Platform');
 
 const Auth = require('../Utils/Auth');
 
-const Database = require('../Utils/Database');
+const Mongodb = require('../Utils/Database');
 
 const GradeService = require('./Services/Grade');
 
@@ -30,11 +30,6 @@ const _path = require('path');
 const jwt = require('jsonwebtoken');
 
 const winston = require('winston');
-
-const mongoose = require('mongoose');
-
-mongoose.set('useCreateIndex', true);
-const Schema = mongoose.Schema;
 
 const provAuthDebug = require('debug')('provider:auth');
 
@@ -51,7 +46,8 @@ class Provider {
      * @description Exposes methods for easy manipualtion of the LTI 1.3 standard as a LTI Provider and a "server" object to manipulate the Express instance.
      * @param {String} encryptionkey - Secret used to sign cookies and encrypt other info.
      * @param {Object} database - The Database configurations to open and manage connection, uses MongoDB Driver.
-     * @param {String} database.url - Database Url (Ex: mongodb://localhost/applicationdb).
+     * @param {String} [database.url] - Database Url (Ex: mongodb://localhost/applicationdb).
+     * @param {Object} [database.plugin] - If set, must be the Database object of the desired database plugin.
      * @param {Object} [database.connection] - Database connection options (Ex: user, pass)
      * @param {String} [database.connection.user] - Database user for authentication if needed.
      * @param {String} [database.conenction.pass] - Database pass for authentication if needed.
@@ -112,9 +108,9 @@ class Provider {
       }
     });
 
-    _dbConnection.set(this, {
+    _Database.set(this, {
       writable: true,
-      value: {}
+      value: void 0
     });
 
     _connectCallback2.set(this, {
@@ -143,7 +139,8 @@ class Provider {
 
     if (options && options.https && (!options.ssl || !options.ssl.key || !options.ssl.cert)) throw new Error('No ssl Key  or Certificate found for local https configuration.');
     if (!encryptionkey) throw new Error('Encryptionkey parameter missing in options.');
-    if (!database || !database.url) throw new Error('Missing database configurations.');
+    if (!database) throw new Error('Missing database configurations.');
+    if (!database.plugin) (0, _classPrivateFieldSet2.default)(this, _Database, new Mongodb(database));else (0, _classPrivateFieldSet2.default)(this, _Database, database.plugin);
     if (options && options.appUrl) (0, _classPrivateFieldSet2.default)(this, _appUrl, options.appUrl);
     if (options && options.loginUrl) (0, _classPrivateFieldSet2.default)(this, _loginUrl, options.loginUrl);
     if (options && options.sessionTimeoutUrl) (0, _classPrivateFieldSet2.default)(this, _sessionTimeoutUrl, options.sessionTimeoutUrl);
@@ -189,143 +186,7 @@ class Provider {
     }
 
     (0, _classPrivateFieldSet2.default)(this, _ENCRYPTIONKEY, encryptionkey);
-    (0, _classPrivateFieldSet2.default)(this, _server, new Server(options ? options.https : false, options ? options.ssl : false, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), loggerServer)); // Starts database connection
-
-    if (database.connection) {
-      if (!database.connection.useNewUrlParser) database.connection.useNewUrlParser = true;
-      if (!database.connection.autoReconnect) database.connection.autoReconnect = true;
-      if (!database.connection.keepAlive) database.connection.keepAlive = true;
-      if (!database.connection.keepAliveInitialDelay) database.connection.keepAliveInitialDelay = 300000;
-    } else {
-      database.connection = {
-        useNewUrlParser: true,
-        autoReconnect: true,
-        keepAlive: true,
-        keepAliveInitialDelay: 300000,
-        connectTimeoutMS: 300000
-      };
-    }
-
-    (0, _classPrivateFieldGet2.default)(this, _dbConnection).url = database.url;
-    (0, _classPrivateFieldGet2.default)(this, _dbConnection).options = database.connection; // Creating database schemas
-
-    const idTokenSchema = new Schema({
-      iss: String,
-      issuer_code: String,
-      user: String,
-      roles: [String],
-      userInfo: {
-        given_name: String,
-        family_name: String,
-        name: String,
-        email: String
-      },
-      platformInfo: {
-        family_code: String,
-        version: String,
-        name: String,
-        description: String
-      },
-      endpoint: {
-        scope: [String],
-        lineitems: String,
-        lineitem: String
-      },
-      namesRoles: {
-        context_memberships_url: String,
-        service_versions: [String]
-      },
-      createdAt: {
-        type: Date,
-        expires: 3600 * 24,
-        default: Date.now
-      }
-    });
-    const contextTokenSchema = new Schema({
-      path: String,
-      user: String,
-      context: {
-        id: String,
-        label: String,
-        title: String,
-        type: Array
-      },
-      resource: {
-        title: String,
-        id: String
-      },
-      // Activity that originated login
-      custom: {
-        // Custom parameter sent by the platform
-        resource: String,
-        // Id for a requested resource
-        system_setting_url: String,
-        context_setting_url: String,
-        link_setting_url: String
-      },
-      createdAt: {
-        type: Date,
-        expires: 3600 * 24,
-        default: Date.now
-      }
-    });
-    const platformSchema = new Schema({
-      platformName: String,
-      platformUrl: String,
-      clientId: String,
-      authEndpoint: String,
-      accesstokenEndpoint: String,
-      kid: String,
-      authConfig: {
-        method: String,
-        key: String
-      }
-    });
-    const keySchema = new Schema({
-      kid: String,
-      iv: String,
-      data: String
-    });
-    const accessTokenSchema = new Schema({
-      platformUrl: String,
-      iv: String,
-      data: String,
-      createdAt: {
-        type: Date,
-        expires: 3600,
-        default: Date.now
-      }
-    });
-    const nonceSchema = new Schema({
-      nonce: String,
-      createdAt: {
-        type: Date,
-        expires: 10,
-        default: Date.now
-      }
-    });
-
-    try {
-      mongoose.model('idToken', idTokenSchema);
-      mongoose.model('contextToken', contextTokenSchema);
-      mongoose.model('platform', platformSchema);
-      mongoose.model('privatekey', keySchema);
-      mongoose.model('publickey', keySchema);
-      mongoose.model('accesstoken', accessTokenSchema);
-      mongoose.model('nonce', nonceSchema);
-    } catch (err) {
-      if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
-        level: 'error',
-        message: 'Message: ' + err.message + '\nStack: ' + err.stack
-      });
-      provMainDebug('Model already registered. Continuing');
-    }
-    /**
-     * @description Database connection object.
-     */
-
-
-    this.db = mongoose.connection;
+    (0, _classPrivateFieldSet2.default)(this, _server, new Server(options ? options.https : false, options ? options.ssl : false, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), loggerServer));
     /**
      * @description Express server object.
      */
@@ -335,7 +196,7 @@ class Provider {
      * @description Grading service.
      */
 
-    this.Grade = new GradeService(this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger));
+    this.Grade = new GradeService(this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger), (0, _classPrivateFieldGet2.default)(this, _Database));
     if (options && options.staticPath) (0, _classPrivateFieldGet2.default)(this, _server).setStaticPath(options.staticPath); // Registers main athentication and routing middleware
 
     const sessionValidator = async (req, res, next) => {
@@ -379,7 +240,7 @@ class Provider {
 
           if (req.body.id_token) {
             provMainDebug('Received request containing token. Sending for validation');
-            const valid = await Auth.validateToken(req.body.id_token, this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger));
+            const valid = await Auth.validateToken(req.body.id_token, this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger), (0, _classPrivateFieldGet2.default)(this, _Database));
             provAuthDebug('Successfully validated token!'); // Mount platform token
 
             const platformToken = {
@@ -404,10 +265,10 @@ class Provider {
             };
             res.cookie(issuer, platformToken.user, (0, _classPrivateFieldGet2.default)(this, _cookieOptions)); // Store idToken in database
 
-            if (await Database.Delete('idToken', {
+            if (await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('idToken', {
               issuer_code: issuer,
               user: valid.sub
-            })) Database.Insert(false, 'idToken', platformToken); // Mount context token
+            })) (0, _classPrivateFieldGet2.default)(this, _Database).Insert(false, 'idToken', platformToken); // Mount context token
 
             const contextToken = {
               path: contextPath,
@@ -419,11 +280,11 @@ class Provider {
             res.cookie(contextPath, contextToken.resource.id, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
             platformToken.platformContext = contextToken; // Store contextToken in database
 
-            if (await Database.Delete('contextToken', {
+            if (await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('contextToken', {
               path: contextPath,
               user: valid.sub,
               'resource.id': contextToken.resource.id
-            })) Database.Insert(false, 'contextToken', contextToken);
+            })) (0, _classPrivateFieldGet2.default)(this, _Database).Insert(false, 'contextToken', contextToken);
             res.locals.contextToken = req.query.ltik;
             res.locals.token = platformToken;
             provMainDebug('Passing request to next handler');
@@ -440,7 +301,7 @@ class Provider {
         } else {
           provAuthDebug('Cookie found'); // Gets correspondent id token from database
 
-          let idToken = await Database.Get(false, 'idToken', {
+          let idToken = await (0, _classPrivateFieldGet2.default)(this, _Database).Get(false, 'idToken', {
             issuer_code: issuer,
             user: user
           });
@@ -456,7 +317,7 @@ class Provider {
           } // Gets correspondent context token from database
 
 
-          let contextToken = await Database.Get(false, 'contextToken', {
+          let contextToken = await (0, _classPrivateFieldGet2.default)(this, _Database).Get(false, 'contextToken', {
             path: contextTokenName,
             user: user,
             'resource.id': cookies[contextTokenName]
@@ -536,36 +397,7 @@ class Provider {
     provMainDebug('Attempting to connect to database');
 
     try {
-      this.db.on('connected', async () => {
-        provMainDebug('Database connected');
-      });
-      this.db.once('open', async () => {
-        provMainDebug('Database connection open');
-      });
-      this.db.on('error', async () => {
-        mongoose.disconnect();
-      });
-      this.db.on('reconnected', async () => {
-        provMainDebug('Database reconnected');
-      });
-      this.db.on('disconnected', async () => {
-        provMainDebug('Database disconnected');
-        provMainDebug('Attempting to reconnect');
-        setTimeout(async () => {
-          if (this.db.readyState === 0) {
-            try {
-              await mongoose.connect((0, _classPrivateFieldGet2.default)(this, _dbConnection).url, (0, _classPrivateFieldGet2.default)(this, _dbConnection).options);
-            } catch (err) {
-              provMainDebug('Error in MongoDb connection: ' + err);
-              if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
-                level: 'error',
-                message: 'Message: ' + err.message + '\nStack: ' + err.stack
-              });
-            }
-          }
-        }, 1000);
-      });
-      if (this.db.readyState === 0) await mongoose.connect((0, _classPrivateFieldGet2.default)(this, _dbConnection).url, (0, _classPrivateFieldGet2.default)(this, _dbConnection).options);
+      await (0, _classPrivateFieldGet2.default)(this, _Database).setup();
     } catch (err) {
       provMainDebug(err.message);
       if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
@@ -701,26 +533,19 @@ class Provider {
       const _platform = await this.getPlatform(platform.url);
 
       if (!_platform) {
-        const kid = await Auth.generateProviderKeyPair((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
-        const plat = new Platform(platform.name, platform.url, platform.clientId, platform.authenticationEndpoint, platform.accesstokenEndpoint, kid, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), platform.authConfig, (0, _classPrivateFieldGet2.default)(this, _logger)); // Save platform to db
+        const kid = await Auth.generateProviderKeyPair((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database));
+        const plat = new Platform(platform.name, platform.url, platform.clientId, platform.authenticationEndpoint, platform.accesstokenEndpoint, kid, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), platform.authConfig, (0, _classPrivateFieldGet2.default)(this, _logger), (0, _classPrivateFieldGet2.default)(this, _Database)); // Save platform to db
 
-        const isregisteredPlat = await Database.Get(false, 'platform', {
-          platformUrl: platform.url
+        provMainDebug('Registering new platform: ' + platform.url);
+        await (0, _classPrivateFieldGet2.default)(this, _Database).Insert(false, 'platform', {
+          platformName: platform.name,
+          platformUrl: platform.url,
+          clientId: platform.clientId,
+          authEndpoint: platform.authenticationEndpoint,
+          accesstokenEndpoint: platform.accesstokenEndpoint,
+          kid: kid,
+          authConfig: platform.authConfig
         });
-
-        if (!isregisteredPlat) {
-          provMainDebug('Registering new platform: ' + platform.url);
-          await Database.Insert(false, 'platform', {
-            platformName: platform.name,
-            platformUrl: platform.url,
-            clientId: platform.clientId,
-            authEndpoint: platform.authenticationEndpoint,
-            accesstokenEndpoint: platform.accesstokenEndpoint,
-            kid: kid,
-            authConfig: platform.authConfig
-          });
-        }
-
         return plat;
       } else {
         return _platform;
@@ -741,28 +566,27 @@ class Provider {
      */
 
 
-  async getPlatform(url, ENCRYPTIONKEY, logger) {
+  async getPlatform(url, ENCRYPTIONKEY, logger, Database) {
     if (!url) throw new Error('No url provided');
 
     try {
-      const plat = await Database.Get(false, 'platform', {
+      const plat = Database !== undefined ? await Database.Get(false, 'platform', {
+        platformUrl: url
+      }) : await (0, _classPrivateFieldGet2.default)(this, _Database).Get(false, 'platform', {
         platformUrl: url
       });
       if (!plat) return false;
       const obj = plat[0];
       if (!obj) return false;
-      let result;
-
-      if (ENCRYPTIONKEY && logger !== undefined) {
-        result = new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, ENCRYPTIONKEY, obj.authConfig, logger);
-      } else {
-        result = new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), obj.authConfig, (0, _classPrivateFieldGet2.default)(this, _logger));
-      }
-
+      const result = new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, ENCRYPTIONKEY !== undefined ? ENCRYPTIONKEY : (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), obj.authConfig, logger !== undefined ? logger : (0, _classPrivateFieldGet2.default)(this, _logger), Database !== undefined ? Database : (0, _classPrivateFieldGet2.default)(this, _Database));
       return result;
     } catch (err) {
-      provAuthDebug(err.message);
-      if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
+      provAuthDebug(err.message); // If logger is set (Function was called by the Auth or Grade service) and is set to true, or if the scope logger variable is true, print the log
+
+      if (logger !== undefined && logger || (0, _classPrivateFieldGet2.default)(this, _logger)) logger !== undefined ? logger.log({
+        level: 'error',
+        message: 'Message: ' + err.message + '\nStack: ' + err.stack
+      }) : (0, _classPrivateFieldGet2.default)(this, _logger).log({
         level: 'error',
         message: 'Message: ' + err.message + '\nStack: ' + err.stack
       });
@@ -792,10 +616,10 @@ class Provider {
     const returnArray = [];
 
     try {
-      const platforms = await Database.Get(false, 'platform');
+      const platforms = await (0, _classPrivateFieldGet2.default)(this, _Database).Get(false, 'platform');
 
       if (platforms) {
-        for (const obj of platforms) returnArray.push(new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), obj.authConfig, (0, _classPrivateFieldGet2.default)(this, _logger)));
+        for (const obj of platforms) returnArray.push(new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), obj.authConfig, (0, _classPrivateFieldGet2.default)(this, _logger), (0, _classPrivateFieldGet2.default)(this, _Database)));
 
         return returnArray;
       }
@@ -844,14 +668,14 @@ class Provider {
         path: newPath,
         user: res.locals.token.platformContext.user
       };
-      if (await Database.Delete('contextToken', {
+      if (await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('contextToken', {
         path: newPath,
         user: res.locals.token.user,
         'resource.id': res.locals.token.platformContext.resource.id
-      })) Database.Insert(false, 'contextToken', newContextToken);
+      })) (0, _classPrivateFieldGet2.default)(this, _Database).Insert(false, 'contextToken', newContextToken);
 
       if (options && options.ignoreRoot) {
-        Database.Delete('contextToken', {
+        (0, _classPrivateFieldGet2.default)(this, _Database).Delete('contextToken', {
           path: code + (0, _classPrivateFieldGet2.default)(this, _appUrl),
           user: res.locals.token.user
         });
@@ -880,7 +704,7 @@ var _logger = new WeakMap();
 
 var _cookieOptions = new WeakMap();
 
-var _dbConnection = new WeakMap();
+var _Database = new WeakMap();
 
 var _connectCallback2 = new WeakMap();
 
