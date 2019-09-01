@@ -99,8 +99,8 @@ class Database {
     })
 
     try {
-      mongoose.model('idToken', idTokenSchema)
-      mongoose.model('contextToken', contextTokenSchema)
+      mongoose.model('idtoken', idTokenSchema)
+      mongoose.model('contexttoken', contextTokenSchema)
       mongoose.model('platform', platformSchema)
       mongoose.model('privatekey', keySchema)
       mongoose.model('publickey', keySchema)
@@ -144,6 +144,13 @@ class Database {
     })
 
     if (this.db.readyState === 0) await mongoose.connect(this.#dbConnection.url, this.#dbConnection.options)
+    return true
+  }
+
+  // Closes connection to the database
+  async Close () {
+    mongoose.connection.removeAllListeners()
+    await mongoose.connection.close()
     return true
   }
 

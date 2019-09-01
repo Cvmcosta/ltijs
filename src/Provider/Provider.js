@@ -227,7 +227,7 @@ class Provider {
             res.cookie(issuer, platformToken.user, this.#cookieOptions)
 
             // Store idToken in database
-            if (await this.#Database.Delete('idToken', { issuer_code: issuer, user: valid.sub })) this.#Database.Insert(false, 'idToken', platformToken)
+            if (await this.#Database.Delete('idtoken', { issuer_code: issuer, user: valid.sub })) this.#Database.Insert(false, 'idtoken', platformToken)
 
             // Mount context token
             const contextToken = {
@@ -243,7 +243,7 @@ class Provider {
             platformToken.platformContext = contextToken
 
             // Store contextToken in database
-            if (await this.#Database.Delete('contextToken', { path: contextPath, user: valid.sub, 'resource.id': contextToken.resource.id })) this.#Database.Insert(false, 'contextToken', contextToken)
+            if (await this.#Database.Delete('contexttoken', { path: contextPath, user: valid.sub, 'resource.id': contextToken.resource.id })) this.#Database.Insert(false, 'contexttoken', contextToken)
 
             res.locals.contextToken = req.query.ltik
             res.locals.token = platformToken
@@ -259,7 +259,7 @@ class Provider {
         } else {
           provAuthDebug('Cookie found')
           // Gets correspondent id token from database
-          let idToken = await this.#Database.Get(false, 'idToken', { issuer_code: issuer, user: user })
+          let idToken = await this.#Database.Get(false, 'idtoken', { issuer_code: issuer, user: user })
           if (!idToken) throw new Error('No id token found')
           idToken = idToken[0]
 
@@ -273,7 +273,7 @@ class Provider {
           }
 
           // Gets correspondent context token from database
-          let contextToken = await this.#Database.Get(false, 'contextToken', { path: contextTokenName, user: user, 'resource.id': cookies[contextTokenName] })
+          let contextToken = await this.#Database.Get(false, 'contexttoken', { path: contextTokenName, user: user, 'resource.id': cookies[contextTokenName] })
           if (!contextToken) throw new Error('No context token found')
           contextToken = contextToken[0]
           idToken.platformContext = contextToken
@@ -360,6 +360,12 @@ class Provider {
     // Starts server on given port
     this.#server.listen(conf, 'LTI Provider is listening on port ' + conf.port + '!\n\n LTI provider config: \n >Initiate login URL: ' + this.#loginUrl + '\n >App Url: ' + this.#appUrl + '\n >Session Timeout Url: ' + this.#sessionTimeoutUrl + '\n >Invalid Token Url: ' + this.#invalidTokenUrl)
 
+    // Sets up gracefull shutdown
+    process.on('SIGINT', async () => {
+      await this.close(options)
+      process.exit()
+    })
+
     return true
   }
 
@@ -367,11 +373,13 @@ class Provider {
    * @description Closes connection to database and stops server.
    * @returns {Promise<true | false>}
    */
-  async close () {
+  async close (options) {
     try {
+      if (!options || options.silent !== true) console.log('Closing server...')
       await this.#server.close()
-      this.db.removeAllListeners()
-      await this.db.close()
+      if (!options || options.silent !== true) console.log('Closing connection to the database...')
+      await this.#Database.Close()
+      if (!options || options.silent !== true) console.log('All done')
       return true
     } catch (err) {
       provMainDebug(err.message)
@@ -574,9 +582,9 @@ class Provider {
         user: res.locals.token.platformContext.user
       }
 
-      if (await this.#Database.Delete('contextToken', { path: newPath, user: res.locals.token.user, 'resource.id': res.locals.token.platformContext.resource.id })) this.#Database.Insert(false, 'contextToken', newContextToken)
+      if (await this.#Database.Delete('contexttoken', { path: newPath, user: res.locals.token.user, 'resource.id': res.locals.token.platformContext.resource.id })) this.#Database.Insert(false, 'contexttoken', newContextToken)
       if (options && options.ignoreRoot) {
-        this.#Database.Delete('contextToken', { path: code + this.#appUrl, user: res.locals.token.user })
+        this.#Database.Delete('contexttoken', { path: code + this.#appUrl, user: res.locals.token.user })
         res.clearCookie(code + this.#appUrl)
       }
     }

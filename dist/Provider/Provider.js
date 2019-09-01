@@ -265,10 +265,10 @@ class Provider {
             };
             res.cookie(issuer, platformToken.user, (0, _classPrivateFieldGet2.default)(this, _cookieOptions)); // Store idToken in database
 
-            if (await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('idToken', {
+            if (await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('idtoken', {
               issuer_code: issuer,
               user: valid.sub
-            })) (0, _classPrivateFieldGet2.default)(this, _Database).Insert(false, 'idToken', platformToken); // Mount context token
+            })) (0, _classPrivateFieldGet2.default)(this, _Database).Insert(false, 'idtoken', platformToken); // Mount context token
 
             const contextToken = {
               path: contextPath,
@@ -280,11 +280,11 @@ class Provider {
             res.cookie(contextPath, contextToken.resource.id, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
             platformToken.platformContext = contextToken; // Store contextToken in database
 
-            if (await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('contextToken', {
+            if (await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('contexttoken', {
               path: contextPath,
               user: valid.sub,
               'resource.id': contextToken.resource.id
-            })) (0, _classPrivateFieldGet2.default)(this, _Database).Insert(false, 'contextToken', contextToken);
+            })) (0, _classPrivateFieldGet2.default)(this, _Database).Insert(false, 'contexttoken', contextToken);
             res.locals.contextToken = req.query.ltik;
             res.locals.token = platformToken;
             provMainDebug('Passing request to next handler');
@@ -301,7 +301,7 @@ class Provider {
         } else {
           provAuthDebug('Cookie found'); // Gets correspondent id token from database
 
-          let idToken = await (0, _classPrivateFieldGet2.default)(this, _Database).Get(false, 'idToken', {
+          let idToken = await (0, _classPrivateFieldGet2.default)(this, _Database).Get(false, 'idtoken', {
             issuer_code: issuer,
             user: user
           });
@@ -317,7 +317,7 @@ class Provider {
           } // Gets correspondent context token from database
 
 
-          let contextToken = await (0, _classPrivateFieldGet2.default)(this, _Database).Get(false, 'contextToken', {
+          let contextToken = await (0, _classPrivateFieldGet2.default)(this, _Database).Get(false, 'contexttoken', {
             path: contextTokenName,
             user: user,
             'resource.id': cookies[contextTokenName]
@@ -414,7 +414,12 @@ class Provider {
     if (options && options.port) conf.port = options.port;
     if (options && options.silent) conf.silent = options.silent; // Starts server on given port
 
-    (0, _classPrivateFieldGet2.default)(this, _server).listen(conf, 'LTI Provider is listening on port ' + conf.port + '!\n\n LTI provider config: \n >Initiate login URL: ' + (0, _classPrivateFieldGet2.default)(this, _loginUrl) + '\n >App Url: ' + (0, _classPrivateFieldGet2.default)(this, _appUrl) + '\n >Session Timeout Url: ' + (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl) + '\n >Invalid Token Url: ' + (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl));
+    (0, _classPrivateFieldGet2.default)(this, _server).listen(conf, 'LTI Provider is listening on port ' + conf.port + '!\n\n LTI provider config: \n >Initiate login URL: ' + (0, _classPrivateFieldGet2.default)(this, _loginUrl) + '\n >App Url: ' + (0, _classPrivateFieldGet2.default)(this, _appUrl) + '\n >Session Timeout Url: ' + (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl) + '\n >Invalid Token Url: ' + (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl)); // Sets up gracefull shutdown
+
+    process.on('SIGINT', async () => {
+      await this.close(options);
+      process.exit();
+    });
     return true;
   }
   /**
@@ -423,11 +428,13 @@ class Provider {
    */
 
 
-  async close() {
+  async close(options) {
     try {
+      if (!options || options.silent !== true) console.log('Closing server...');
       await (0, _classPrivateFieldGet2.default)(this, _server).close();
-      this.db.removeAllListeners();
-      await this.db.close();
+      if (!options || options.silent !== true) console.log('Closing connection to the database...');
+      await (0, _classPrivateFieldGet2.default)(this, _Database).Close();
+      if (!options || options.silent !== true) console.log('All done');
       return true;
     } catch (err) {
       provMainDebug(err.message);
@@ -668,14 +675,14 @@ class Provider {
         path: newPath,
         user: res.locals.token.platformContext.user
       };
-      if (await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('contextToken', {
+      if (await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('contexttoken', {
         path: newPath,
         user: res.locals.token.user,
         'resource.id': res.locals.token.platformContext.resource.id
-      })) (0, _classPrivateFieldGet2.default)(this, _Database).Insert(false, 'contextToken', newContextToken);
+      })) (0, _classPrivateFieldGet2.default)(this, _Database).Insert(false, 'contexttoken', newContextToken);
 
       if (options && options.ignoreRoot) {
-        (0, _classPrivateFieldGet2.default)(this, _Database).Delete('contextToken', {
+        (0, _classPrivateFieldGet2.default)(this, _Database).Delete('contexttoken', {
           path: code + (0, _classPrivateFieldGet2.default)(this, _appUrl),
           user: res.locals.token.user
         });

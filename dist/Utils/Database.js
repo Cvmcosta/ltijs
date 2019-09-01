@@ -145,8 +145,8 @@ class Database {
     });
 
     try {
-      mongoose.model('idToken', idTokenSchema);
-      mongoose.model('contextToken', contextTokenSchema);
+      mongoose.model('idtoken', idTokenSchema);
+      mongoose.model('contexttoken', contextTokenSchema);
       mongoose.model('platform', platformSchema);
       mongoose.model('privatekey', keySchema);
       mongoose.model('publickey', keySchema);
@@ -190,6 +190,13 @@ class Database {
       }, 1000);
     });
     if (this.db.readyState === 0) await mongoose.connect((0, _classPrivateFieldGet2.default)(this, _dbConnection).url, (0, _classPrivateFieldGet2.default)(this, _dbConnection).options);
+    return true;
+  } // Closes connection to the database
+
+
+  async Close() {
+    mongoose.connection.removeAllListeners();
+    await mongoose.connection.close();
     return true;
   }
   /**
