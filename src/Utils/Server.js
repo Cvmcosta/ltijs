@@ -5,7 +5,6 @@ const https = require('https')
 const helmet = require('helmet')
 const cookieParser = require('cookie-parser')
 const cors = require('cors')
-const serverdebug = require('debug')('provider:server')
 const morgan = require('morgan')
 
 class Server {
@@ -34,20 +33,34 @@ class Server {
     this.app.use(cookieParser(ENCRYPTIONKEY))
   }
 
-  listen (port, message) {
-    if (this.ssl) this.server = https.createServer(this.ssl, this.app).listen(port, () => serverdebug(message))
-    else {
-      this.server = this.app.listen(port, () => console.log('  _   _______ _____       _  _____\n' +
-                                                            ' | | |__   __|_   _|     | |/ ____|\n' +
-                                                            ' | |    | |    | |       | | (___  \n' +
-                                                            ' | |    | |    | |   _   | |\\___ \\ \n' +
-                                                            ' | |____| |   _| |_ | |__| |____) |\n' +
-                                                            ' |______|_|  |_____(_)____/|_____/ \n\n', message))
+  listen (conf, message) {
+    if (this.ssl) {
+      this.server = https.createServer(this.ssl, this.app).listen(conf.port, () => {
+        if (!conf.silent) {
+          console.log('  _   _______ _____       _  _____\n' +
+                      ' | | |__   __|_   _|     | |/ ____|\n' +
+                      ' | |    | |    | |       | | (___  \n' +
+                      ' | |    | |    | |   _   | |\\___ \\ \n' +
+                      ' | |____| |   _| |_ | |__| |____) |\n' +
+                      ' |______|_|  |_____(_)____/|_____/ \n\n', message)
+        }
+      })
+    } else {
+      this.server = this.app.listen(conf.port, () => {
+        if (!conf.silent) {
+          console.log('  _   _______ _____       _  _____\n' +
+                      ' | | |__   __|_   _|     | |/ ____|\n' +
+                      ' | |    | |    | |       | | (___  \n' +
+                      ' | |    | |    | |   _   | |\\___ \\ \n' +
+                      ' | |____| |   _| |_ | |__| |____) |\n' +
+                      ' |______|_|  |_____(_)____/|_____/ \n\n', message)
+        }
+      })
     }
   }
 
   setStaticPath (path) {
-    this.app.use(/\/plat[^\/]*/, express.static(path)) // eslint-disable-line no-useless-escape
+    this.app.use('/', express.static(path, { index: '_' }))
   }
 
   close () {
