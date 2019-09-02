@@ -21,14 +21,20 @@
 [![Donate](https://img.shields.io/badge/Donate-Buy%20me%20a%20coffe-blue)](https://www.buymeacoffee.com/UL5fBsi)
 
 
+## Features
+
 | Feature | Implementation | Documentation |
 | --------- | - | - |
 | Provider | <center>:heavy_check_mark:</center> | <center>:heavy_check_mark:</center> |
-| [Platform Class](platform.md) | <center>:heavy_check_mark:</center> | <center>:heavy_check_mark:</center> |
+| [Platform Class](https://cvmcosta.github.io/ltijs/#/platform) | <center>:heavy_check_mark:</center> | <center>:heavy_check_mark:</center> |
+| Database plugins | <center>:heavy_check_mark:</center> | <center>:heavy_check_mark:</center> |
 | Grade Service Class | <center>:heavy_check_mark:</center> | <center></center> |
 | Keyset endpoint support | <center></center> | <center></center> |
+| Redis caching | <center></center> | <center></center> |
 | Names and Roles Service Class | <center></center> | <center></center> |
-| Database plugins | <center></center> | <center></center> |
+
+
+
 
 
 ## Table of Contents
@@ -79,6 +85,9 @@ $ npm install ltijs
 
  - [Installing mongoDB](https://docs.mongodb.com/manual/administration/install-community)
 
+> Alternatively you can use Postgresql database via the [ltijs-postgresql](https://www.npmjs.com/package/ltijs-postgresql) plugin
+
+- [Using PostgreSQL with LTIJS](https://www.npmjs.com/package/ltijs-postgresql)
 
 > Instantiate and use Provider class
 
@@ -97,7 +106,7 @@ const lti = new LTI('EXAMPLEKEY',
 
 let setup = async () => {
   // Deploy and open connection to the database
-  await lti.deploy()
+  await lti.deploy({ port: 3000 })
 
   // Register platform
   let plat = await lti.registerPlatform({ 
@@ -115,8 +124,8 @@ let setup = async () => {
     lti.redirect(response, '/main')
   })
 
-  // Set route accounting for issuer context
-  lti.app.get('/:iss/main', (req, res) => {
+  // Set main route 
+  lti.app.get('/main', (req, res) => {
     // Id token
     console.log(res.locals.token)
     res.send('It\'s alive!')
@@ -133,7 +142,7 @@ setup()
 > And checkout the **[Platform class documentation](platform.md)**
 
 
-**Routing with LTIjs is a bit diferent from regular Express routing  so here's a useful tutorial:** 
+**Routing with LTIjs is a bit diferent from regular Express routing so here's a useful tutorial:** 
 
 
 > **[Understand routing and context with LTIjs](#routing-and-context)**
@@ -190,6 +199,7 @@ Exposes methods for easy manipulation of the LTI 1.3 standard as a LTI Provider 
 | database.connection | `Object`  | Database connection options. Can be any option supported by the [MongoDB Driver](http://mongodb.github.io/node-mongodb-native/2.2/api/MongoClient.html#connect) | *Optional* |
 | database.connection.user | `String`  | Database user for authentication if needed. | *Optional* |
 | database.connection.pass | `String`  | Database pass for authentication if needed. | *Optional* |
+| database.plugin | `Object`  | If set, uses the given database plugin instead of the default MongoDB. | *Optional* |
 | options | `Object`  | LTI Provider options. | *Optional* |
 | options.appUrl | `String`  | = '/'] - Lti Provider main url. If no option is set '/' is used. | *Optional* |
 | options.loginUrl | `String`  | = '/login'] - Lti Provider login url. If no option is set '/login' is used. | *Optional* |
@@ -204,7 +214,7 @@ Exposes methods for easy manipulation of the LTI 1.3 standard as a LTI Provider 
 
 
 
-#### async Provider.deploy(port) 
+#### async Provider.deploy(options) 
 
 Starts listening to a given port for LTI requests and opens connection to the configured database.
 
@@ -213,8 +223,9 @@ Starts listening to a given port for LTI requests and opens connection to the co
 
 | Name | Type | Description |  |
 | ---- | ---- | ----------- | -------- |
-| port | `number`  | The port the Provider should listen to | &nbsp; |
-
+| options | `Object`  | Deployment options | *Optional* |
+| options.port | `Number`  | The port the Provider should listen to. If no value is set, listens to port 3000 | *Optional* |
+| options.silent | `Boolean`  | If true supresses the initial console logs and the graceful shutdown console logs | *Optional* |
 
 ##### Returns
 
@@ -547,6 +558,18 @@ Deploying the application opens a connection to the configured database and star
 await lti.deploy() // resolves false if it fails
 ```
 
+The `deploy` method accepts a object containing the `port` and `silent` configurations.
+
+
+```javascript
+await lti.deploy({ port: 3000, silent: false })
+```
+
+The default values for these configurations are respectively `3000 and false`.
+
+If set to `true`, the `silent` option supressess the default console logs that occurs during the startup and graceful shutdown routines.
+
+
 #### The onConnect() method
 
 The `onConnect()` method is called whenever a request successfully arrives at the main app url, and you can specify the callback function that is called. 
@@ -660,7 +683,7 @@ When using the LTI 1.3 protocol, every successful login between tool and platfor
 Everytime a login request or call to route is sucessfully validated, either by validating the idtoken received according to the [LTI 1.3 security specifications](https://www.imsglobal.org/spec/security/v1p0/), or retrieving the session cookie generated when the idtoken validation is completed, a **IdToken** object is passed to the application inside the **res.locals.token** property of the Express route function.
 
 ```javascript
-lti.app.get('/:iss/route', (req, res) => {
+lti.app.get('/route', (req, res) => {
   console.log(res.locals.token)
 })
 ```
@@ -723,11 +746,13 @@ The token consists of:
 
 Your tool can be used with an unlimited amount of platforms, that is the idea behind LTI, so it needs a way to track which platform and resource is currently being accessed and return the correct token information relevant to each context.
 
-In **LTIjs** this is done matching the context url with it's corresponding session cookies stored in the user's browser.
+In **LTIjs** this is done matching the **ltik** token (passed to the application via a query parameter) with it's corresponding session cookies stored in the user's browser.
 
-- Url context formatting
+- Example application endpoint:
 
-**<center>DOMAIN / platPLATFORM_ID / PATH</center>**
+**<center>http://myltiprovider/app?ltik=LTIKTOKEN</center>**
+
+The **ltik** parameter is a signed JWT that contains the platform id and context for the current user.
 
 - Corresponding cookies
 
@@ -740,13 +765,13 @@ In **LTIjs** this is done matching the context url with it's corresponding sessi
 > As you can see there is more than one cookie stored, that is because LTIjs also keeps track of multiple activities linked to the tool within a same platform, so the path specific cookie keeps track of activity specific information, like custom parameters, that might point to a specific resource.
 
 
-The PLATFORM_ID is a url encoded base64 value that represents a platform url, this value is automatically generated and prepended to the PATH when the `redirect()` function is called:
+The PLATFORM_ID is a url encoded base64 value that represents a platform url, this value is automatically generated, stored in the ltik JWT and passed to the application when the `redirect()` function is called:
 
 
 ```javascript
 lti.onConnect((connection, request, response) => {
   // Call redirect function
-  lti.redirect(response, '/main') // Redirects to http://provider/PLATFORM_ID/main
+  lti.redirect(response, '/main') // Redirects to http://provider/main?ltik=LTIKTOKEN
 })
 ```
 
@@ -769,7 +794,7 @@ That happens because the call `lti.redirect(response, '/main')`, doesn't specify
 ```javascript
 lti.onConnect((connection, request, response) => {
   // Call redirect function
-  lti.redirect(response, '/main', { isNewResource: true }) // Redirects to http://provider/PLATFORM_ID/main within a new context
+  lti.redirect(response, '/main', { isNewResource: true }) // Redirects to http://provider/main?ltik=LTIKTOKEN within a new context
 })
 ```
 
@@ -794,7 +819,7 @@ If you don't want to have a cookie representing the ```\``` route (if you are no
 ```javascript
 lti.onConnect((connection, request, response) => {
   // Call redirect function
-  lti.redirect(response, '/main', { isNewResource: true, ignoreRoot: true }) // Redirects to http://provider/PLATFORM_ID/main within a new context
+  lti.redirect(response, '/main', { isNewResource: true, ignoreRoot: true }) // Redirects to http://provider/main?ltik=LTIKTOKEN within a new context
 })
 ```
 
@@ -811,50 +836,44 @@ Then the cookie representing the ```\``` route wont be generated:
 
 
 
-And now calls to the `http://provider/PLATFORM_ID/main` url will get the information from these cookies, assemble a **IdToken** and pass it to the request handler (`lti.app.get('/:iss/main')`).
+And now calls to the `http://provider/main?ltik=LTIKTOKEN` url will get the information from these cookies, assemble a **IdToken** and pass it to the request handler (`lti.app.get('/main')`).
 
 
 
-> **How do i handle these redirects?**
+Everytime a application is launched it is **HIGHLY RECOMMENDED** to store in the session storage the **ltik** query parameter, so that you can later more easely retrieve in the client and pass it back to the provider when requesting or sending information.
+
 
 #### Routes
 
-Because of how the context system works, a redirect to `/main`, **wont be handled by a regular `lti.app.get('/main')` route**, instead you **MUST** prepend **`/:iss`** to the handled path so that the route takes into account the platform context 
+Routes in LTIJS can be created using the **lti.app object**, in the same way you would do in a regular Express server.
 
 ```javascript
-lti.app.get('/:iss/main', (req, res) => { // Handles requests to /main
-  console.log(res.locals.token)
+lti.app.get('/getname', (req, res) => {
+  res.send('Working fine!')
 })
 ```
 
-You **can** make requests to regular routes if you send in the request the query parameter `context` containing the path context information, so that the request can validated it and return to the route the correct context idtoken.
-
-**<center>http://provider/getidtoken?context=/platPLATFORM_ID/PATH</center>**
-
-> With javascript you can easily get this information in the client by calling **window.location.pathname**
-
-##### Making requests from the client
-
-The client can call regular routes to get information from the provider by passing the query parameter `context` containing the path context information as described above, failing to do so will return a **400 bad request status**.
-
-> Example request from the client:
+But these routes can only be accessed via the `lti.redirect(res, route)` method, that receives a Express response object and the desired route. Or via the ltik query parameter, that can be used to make requests from the client.
 
 ```javascript
-let context = window.location.pathname
-got.get('https://provider/gettoken?context=' + context, (err, response)=>{
-    if(err){
-      console.log(err)
-      return false
-    }else{
-      console.log(response)
-    }
+lti.app.get('/redirect', (req, res) => {
+  lti.redirect(res, '/newroute')
 })
 ```
 
-This request will be handled by `lti.app.get('/gettoken')` and will have access to the idtoken.
+The `lti.redirect` method, automatically adds the **ltik** parameter to the request, giving the route access to the **idtoken**.
 
 
-##### Whitelisting routes
+
+
+#### Making requests from the client
+
+The client can call routes to get or send information to the provider by passing the query parameter `ltik` containing the given token as described above, failing to do so will return a **400 bad request status**.
+
+A request to `https://myprovider/gettoken?ltik=LTIKTOKEN` will be handled by `lti.app.get('/gettoken')` and will have access to the idtoken.
+
+
+#### Whitelisting routes
 
 You can whitelist routes to bypass the LTI 1.3 security protocol, but these routes won't have access to an idToken.
 
@@ -863,7 +882,7 @@ You can whitelist routes to bypass the LTI 1.3 security protocol, but these rout
 lti.whitelist('/main', '/home') // You can add as many as you want lti.whitelist('/main', '/home', '/route')
 ```
 
-Now calls to ```/main``` will be handled by `lti.app.get('/main')` and will not have access to an idToken.
+Now calls to ```/main``` don't require the ltik token to be passed. The requests will be handled by `lti.app.get('/main')` and will not have access to an idToken.
 
 
 ---

@@ -21,10 +21,14 @@
 [![Donate](https://img.shields.io/badge/Donate-Buy%20me%20a%20coffe-blue)](https://www.buymeacoffee.com/UL5fBsi)
 
 
-> v1.2.0
-> - Implemented error and server request logging.
-> - Fixed Static path property, that now works as expected and making it possible to serve static files.
-> - Changed Provider.whitelist method to receive strings as rest parameter to make it easier.
+> v2.0.0
+>BREAKING CHANGES
+> - New authentication system, now uses a query parameter 'ltik', to pass the ltijs key to the application instead of embedding it into the path.
+> - As a result, simplified routing, without needing to account for the context path.
+> - Silent option added to the deploy method, that supresses the initial console logs.
+> - Ltijs now works with Postgresql database via the ltijs-postgresql plugin.
+> - Fixed staticPath option where it used to disable the invalidToken route if some index.html was present in the given path.
+> - Graceful shutdown added, closing connection to databases.
 
 > - View entire [CHANGELOG](https://cvmcosta.github.io/ltijs/#/changelog)
 
@@ -63,21 +67,25 @@ $ npm install ltijs
 - This package uses mongoDB to store and manage the server data, so you need to have it installed, see link bellow for further instructions.
 [Installing mongoDB](https://docs.mongodb.com/manual/administration/install-community/)
 
+### PostgreSQL
+- This package can also use PosgreSQL to store and manage the server data, it does so through the plugin [ltijs-postgresql](https://www.npmjs.com/package/ltijs-postgresql).
+
+
+
 ---
 
 ## Features
-
-
 
 | Feature | Implementation | Documentation |
 | --------- | - | - |
 | Provider | <center>:heavy_check_mark:</center> | <center>:heavy_check_mark:</center> |
 | [Platform Class](https://cvmcosta.github.io/ltijs/#/platform) | <center>:heavy_check_mark:</center> | <center>:heavy_check_mark:</center> |
+| Database plugins | <center>:heavy_check_mark:</center> | <center>:heavy_check_mark:</center> |
 | Grade Service Class | <center>:heavy_check_mark:</center> | <center></center> |
 | Keyset endpoint support | <center></center> | <center></center> |
 | Redis caching | <center></center> | <center></center> |
 | Names and Roles Service Class | <center></center> | <center></center> |
-| Database plugins | <center></center> | <center></center> |
+
 
 
 
@@ -141,8 +149,8 @@ let setup = async () => {
     lti.redirect(response, '/main')
   })
 
-  // Set route accounting for issuer context
-  lti.app.get('/:iss/main', (req, res) => {
+  // Set main endpoint route
+  lti.app.get('/main', (req, res) => {
     // Id token
     console.log(res.locals.token)
     res.send('It\'s alive!')
