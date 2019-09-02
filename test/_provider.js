@@ -670,7 +670,6 @@ describe('Testing Provider', function () {
 
   // Closes connections
   it('Provider.close expected to return true', async () => {
-    await lti.db.dropDatabase()
     return expect(lti.close()).to.eventually.equal(true)
   })
 })
