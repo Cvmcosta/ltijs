@@ -15,6 +15,7 @@ const url = require('url')
 const _path = require('path')
 const jwt = require('jsonwebtoken')
 const winston = require('winston')
+const parseDomain = require('parse-domain')
 
 const provAuthDebug = require('debug')('provider:auth')
 const provMainDebug = require('debug')('provider:main')
@@ -570,8 +571,13 @@ class Provider {
     // Signing context token
     token = jwt.sign(token, this.#ENCRYPTIONKEY)
 
-    if (options && options.isNewResource) {
+    // Checking the type of redirect
+    const externalRequest = parseDomain(path)
+
+    if ((options && options.isNewResource) || externalRequest) {
       provMainDebug('Setting up path cookie for this resource with path: ' + path)
+      if (externalRequest) this.#cookieOptions.domain = '.' + externalRequest.domain + '.' + externalRequest.tld
+
       res.cookie(newPath, res.locals.token.platformContext.resource.id, this.#cookieOptions)
 
       const newContextToken = {
