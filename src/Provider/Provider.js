@@ -79,6 +79,7 @@ class Provider {
      * @param {String} [options.ssl.cert] - SSL certificate.
      * @param {String} [options.staticPath] - The path for the static files your application might serve (Ex: _dirname+"/public")
      * @param {Boolean} [options.logger = false] - If true, allows LTIJS to generate logging files for server requests and errors.
+     * @param {Boolean} [options.cors = true] - If false, disables cors.
      */
   constructor (encryptionkey, database, options) {
     if (options && options.https && (!options.ssl || !options.ssl.key || !options.ssl.cert)) throw new Error('No ssl Key  or Certificate found for local https configuration.')
@@ -144,7 +145,7 @@ class Provider {
     }
 
     this.#ENCRYPTIONKEY = encryptionkey
-    this.#server = new Server(options ? options.https : false, options ? options.ssl : false, this.#ENCRYPTIONKEY, loggerServer)
+    this.#server = new Server(options ? options.https : false, options ? options.ssl : false, this.#ENCRYPTIONKEY, loggerServer, options ? options.cors : true)
 
     /**
      * @description Express server object.

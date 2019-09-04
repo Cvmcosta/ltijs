@@ -8,7 +8,7 @@ const cors = require('cors')
 const morgan = require('morgan')
 
 class Server {
-  constructor (https, ssl, ENCRYPTIONKEY, logger) {
+  constructor (https, ssl, ENCRYPTIONKEY, logger, corsOpt) {
     this.app = express()
 
     this.server = false
@@ -25,7 +25,8 @@ class Server {
     this.app.use(helmet({
       frameguard: false // Disabling frameguard so that LTIJS can send resources to iframes inside LMS's
     }))
-    this.app.use(cors())
+
+    if (corsOpt === undefined || corsOpt) this.app.use(cors())
     this.app.use(bodyParser.urlencoded({ extended: false }))
     this.app.use(bodyParser.json())
     this.app.use(bodyParser.raw())
