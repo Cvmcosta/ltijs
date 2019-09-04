@@ -189,9 +189,11 @@ class Provider {
         const cookies = req.signedCookies
 
         // Matches path to cookie
-        for (const key of Object.keys(cookies)) {
-          if (key === issuer) {
+        let contextTokenName
+        for (const key of Object.keys(cookies).sort((a, b) => b.length - a.length)) {
+          if (contextPath.indexOf(key) !== -1) {
             user = cookies[key]
+            contextTokenName = key
             break
           }
         }
@@ -226,8 +228,6 @@ class Provider {
               namesRoles: valid['https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice']
             }
 
-            res.cookie(issuer, platformToken.user, this.#cookieOptions)
-
             // Store idToken in database
             if (await this.#Database.Delete('idtoken', { issuer_code: issuer, user: valid.sub })) this.#Database.Insert(false, 'idtoken', platformToken)
 
@@ -240,12 +240,12 @@ class Provider {
               custom: valid['https://purl.imsglobal.org/spec/lti/claim/custom']
             }
 
-            res.cookie(contextPath, contextToken.resource.id, this.#cookieOptions)
+            res.cookie(contextPath, platformToken.user, this.#cookieOptions)
 
             platformToken.platformContext = contextToken
 
             // Store contextToken in database
-            if (await this.#Database.Delete('contexttoken', { path: contextPath, user: valid.sub, 'resource.id': contextToken.resource.id })) this.#Database.Insert(false, 'contexttoken', contextToken)
+            if (await this.#Database.Delete('contexttoken', { path: contextPath, user: valid.sub })) this.#Database.Insert(false, 'contexttoken', contextToken)
 
             res.locals.contextToken = req.query.ltik
             res.locals.token = platformToken
@@ -265,17 +265,8 @@ class Provider {
           if (!idToken) throw new Error('No id token found')
           idToken = idToken[0]
 
-          let contextTokenName
-          // Matches path to cookie
-          for (const key of Object.keys(cookies).sort((a, b) => b.length - a.length)) {
-            if (contextPath.indexOf(key) !== -1) {
-              contextTokenName = key
-              break
-            }
-          }
-
           // Gets correspondent context token from database
-          let contextToken = await this.#Database.Get(false, 'contexttoken', { path: contextTokenName, user: user, 'resource.id': cookies[contextTokenName] })
+          let contextToken = await this.#Database.Get(false, 'contexttoken', { path: contextTokenName, user: user })
           if (!contextToken) throw new Error('No context token found')
           contextToken = contextToken[0]
           idToken.platformContext = contextToken
@@ -304,7 +295,7 @@ class Provider {
           let origin = req.get('origin')
           if (!origin || origin === 'null') origin = req.get('host')
           if (!origin) return res.redirect(this.#invalidTokenUrl)
-          const cookieName = 'plat' + encodeURIComponent(Buffer.from(origin).toString('base64'))
+          const cookieName = 'plat' + encodeURIComponent(Buffer.from(origin).toString('base64')) + this.#appUrl
           provMainDebug('Redirecting to platform authentication endpoint')
           res.clearCookie(cookieName, this.#cookieOptions)
           res.redirect(url.format({
@@ -579,7 +570,7 @@ class Provider {
       provMainDebug('Setting up path cookie for this resource with path: ' + path)
       if (externalRequest) this.#cookieOptions.domain = '.' + externalRequest.domain + '.' + externalRequest.tld
 
-      res.cookie(newPath, res.locals.token.platformContext.resource.id, this.#cookieOptions)
+      res.cookie(newPath, res.locals.token.user, this.#cookieOptions)
 
       const newContextToken = {
         resource: res.locals.token.platformContext.resource,
@@ -589,10 +580,10 @@ class Provider {
         user: res.locals.token.platformContext.user
       }
 
-      if (await this.#Database.Delete('contexttoken', { path: newPath, user: res.locals.token.user, 'resource.id': res.locals.token.platformContext.resource.id })) this.#Database.Insert(false, 'contexttoken', newContextToken)
+      if (await this.#Database.Delete('contexttoken', { path: newPath, user: res.locals.token.user })) this.#Database.Insert(false, 'contexttoken', newContextToken)
       if (options && options.ignoreRoot) {
         this.#Database.Delete('contexttoken', { path: code + this.#appUrl, user: res.locals.token.user })
-        res.clearCookie(code + this.#appUrl)
+        res.clearCookie(code + this.#appUrl, this.#cookieOptions)
       }
     }
     return res.redirect(path + '?ltik=' + token)
