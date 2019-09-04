@@ -64,6 +64,7 @@ class Provider {
      * @param {String} [options.ssl.cert] - SSL certificate.
      * @param {String} [options.staticPath] - The path for the static files your application might serve (Ex: _dirname+"/public")
      * @param {Boolean} [options.logger = false] - If true, allows LTIJS to generate logging files for server requests and errors.
+     * @param {Boolean} [options.cors = true] - If false, disables cors.
      */
   constructor(encryptionkey, database, options) {
     _loginUrl.set(this, {
@@ -188,7 +189,7 @@ class Provider {
     }
 
     (0, _classPrivateFieldSet2.default)(this, _ENCRYPTIONKEY, encryptionkey);
-    (0, _classPrivateFieldSet2.default)(this, _server, new Server(options ? options.https : false, options ? options.ssl : false, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), loggerServer));
+    (0, _classPrivateFieldSet2.default)(this, _server, new Server(options ? options.https : false, options ? options.ssl : false, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), loggerServer, options ? options.cors : true));
     /**
      * @description Express server object.
      */
