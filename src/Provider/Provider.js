@@ -145,6 +145,7 @@ class Provider {
     }
 
     this.#ENCRYPTIONKEY = encryptionkey
+
     this.#server = new Server(options ? options.https : false, options ? options.ssl : false, this.#ENCRYPTIONKEY, loggerServer, options ? options.cors : true)
 
     /**
@@ -568,9 +569,10 @@ class Provider {
 
     if ((options && options.isNewResource) || externalRequest) {
       provMainDebug('Setting up path cookie for this resource with path: ' + path)
-      if (externalRequest) this.#cookieOptions.domain = '.' + externalRequest.domain + '.' + externalRequest.tld
+      const cookieOptions = this.#cookieOptions
+      if (externalRequest) cookieOptions.domain = '.' + externalRequest.domain + '.' + externalRequest.tld
 
-      res.cookie(newPath, res.locals.token.user, this.#cookieOptions)
+      res.cookie(newPath, res.locals.token.user, cookieOptions)
 
       const newContextToken = {
         resource: res.locals.token.platformContext.resource,

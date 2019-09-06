@@ -663,8 +663,9 @@ class Provider {
 
     if (options && options.isNewResource || externalRequest) {
       provMainDebug('Setting up path cookie for this resource with path: ' + path);
-      if (externalRequest) (0, _classPrivateFieldGet2.default)(this, _cookieOptions).domain = '.' + externalRequest.domain + '.' + externalRequest.tld;
-      res.cookie(newPath, res.locals.token.user, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
+      const cookieOptions = (0, _classPrivateFieldGet2.default)(this, _cookieOptions);
+      if (externalRequest) cookieOptions.domain = '.' + externalRequest.domain + '.' + externalRequest.tld;
+      res.cookie(newPath, res.locals.token.user, cookieOptions);
       const newContextToken = {
         resource: res.locals.token.platformContext.resource,
         custom: res.locals.token.platformContext.custom,

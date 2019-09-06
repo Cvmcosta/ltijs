@@ -26,7 +26,17 @@ class Server {
       frameguard: false // Disabling frameguard so that LTIJS can send resources to iframes inside LMS's
     }))
 
-    if (corsOpt === undefined || corsOpt) this.app.use(cors())
+    // Controlling cors, having in mind that resources in another domain need to be explicitly allowed, and that ltijs controls origin blocking unregistered platforms
+    // This block of code allows cors specifying the host instead of just returnin '*'. And then ltijs blocks requests from unregistered platforms. (Except for whitelisted routes)
+    if (corsOpt === undefined || corsOpt) {
+      this.app.use(cors({
+        origin: (origin, callback) => {
+          callback(null, true)
+        },
+        credentials: true
+      }))
+      this.app.options('*', cors())
+    }
     this.app.use(bodyParser.urlencoded({ extended: false }))
     this.app.use(bodyParser.json())
     this.app.use(bodyParser.raw())
