@@ -569,7 +569,7 @@ class Provider {
 
     if ((options && options.isNewResource) || externalRequest) {
       provMainDebug('Setting up path cookie for this resource with path: ' + path)
-      const cookieOptions = this.#cookieOptions
+      const cookieOptions = JSON.parse(JSON.stringify(this.#cookieOptions))
       if (externalRequest) cookieOptions.domain = '.' + externalRequest.domain + '.' + externalRequest.tld
 
       res.cookie(newPath, res.locals.token.user, cookieOptions)
