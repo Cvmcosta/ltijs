@@ -94,14 +94,7 @@ class Database {
         id: String
       },
       // Activity that originated login
-      custom: {
-        // Custom parameter sent by the platform
-        resource: String,
-        // Id for a requested resource
-        system_setting_url: String,
-        context_setting_url: String,
-        link_setting_url: String
-      },
+      custom: JSON,
       createdAt: {
         type: Date,
         expires: 3600 * 24,
