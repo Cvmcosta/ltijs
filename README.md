@@ -82,6 +82,7 @@ $ npm install ltijs
 | [Platform Class](https://cvmcosta.github.io/ltijs/#/platform) | <center>:heavy_check_mark:</center> | <center>:heavy_check_mark:</center> |
 | Database plugins | <center>:heavy_check_mark:</center> | <center>:heavy_check_mark:</center> |
 | Grade Service Class | <center>:heavy_check_mark:</center> | <center></center> |
+| Firebase support | <center></center> | <center></center> |
 | Keyset endpoint support | <center></center> | <center></center> |
 | Redis caching | <center></center> | <center></center> |
 | Names and Roles Service Class | <center></center> | <center></center> |
