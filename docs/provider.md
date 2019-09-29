@@ -29,6 +29,8 @@
 | [Platform Class](https://cvmcosta.github.io/ltijs/#/platform) | <center>:heavy_check_mark:</center> | <center>:heavy_check_mark:</center> |
 | Database plugins | <center>:heavy_check_mark:</center> | <center>:heavy_check_mark:</center> |
 | Grade Service Class | <center>:heavy_check_mark:</center> | <center></center> |
+| Firebase support | <center>✔️</center> | <center></center> |
+| MySql support | <center></center> | <center></center> |
 | Keyset endpoint support | <center></center> | <center></center> |
 | Redis caching | <center></center> | <center></center> |
 | Names and Roles Service Class | <center></center> | <center></center> |
@@ -88,6 +90,11 @@ $ npm install ltijs
 > Alternatively you can use Postgresql database via the [ltijs-postgresql](https://www.npmjs.com/package/ltijs-postgresql) plugin
 
 - [Using PostgreSQL with LTIJS](https://www.npmjs.com/package/ltijs-postgresql)
+
+
+> Alternatively you can use Firestore database via the [ltijs-firestore](https://github.com/lucastercas/ltijs-firestore) plugin
+
+- [Using Firestore with LTIJS](https://github.com/lucastercas/ltijs-firestore)
 
 > Instantiate and use Provider class
 
@@ -964,13 +971,26 @@ DEBUG='provider:*' npm start
 
 ## Contributing
 
-
 If you find a bug or think that something is hard to understand feel free to open an issue or contact me on twitter [@cvmcosta](https://twitter.com/cvmcosta), pull requests are also welcome :)
 
 
 And if you feel like it, you can donate any amount of money through paypal, it helps a lot.
 
 [![Donate](https://img.shields.io/badge/Donate-Buy%20me%20a%20coffe-blue)](https://www.buymeacoffee.com/UL5fBsi)
+
+
+### Contributors
+
+<table>
+  <tr>
+    <td align="center"><a href="https://github.com/Cvmcosta"><img src="https://avatars2.githubusercontent.com/u/13905368?s=460&v=4" width="100px;" alt="Carlos Costa"/><br /><sub><b>Carlos Costa</b></sub></a><br /><a href="#" title="Code">💻</a><a href="#" title="Answering Questions">💬</a> <a href="#" title="Documentation">📖</a> <a href="#" title="Reviewed Pull Requests">👀</a> <a href="#" title="Talks">📢</a></td>
+    <td align="center"><a href="https://github.com/lucastercas"><img src="https://avatars1.githubusercontent.com/u/45924589?s=460&v=4" width="100px;" alt="Lucas Terças"/><br /><sub><b>Lucas Terças</b></sub></a><br /><a href="#" title="Documentation">📖</a> <a href="https://github.com/lucastercas/ltijs-firestore" title="Tools">🔧</a></td>
+    <td align="center"><a href="https://github.com/micaelgoms"><img src="https://avatars0.githubusercontent.com/u/23768058?s=460&v=4" width="100px;" alt="Micael Gomes"/><br /><sub><b>Micael Gomes</b></sub></a><br /><a href="#" title="Design">🎨</a></td>    
+  
+  </tr>
+  
+</table>
+
 
 
 ---
