@@ -25,10 +25,10 @@
 
 | Feature | Implementation | Documentation |
 | --------- | - | - |
-| Provider | <center>:heavy_check_mark:</center> | <center>:heavy_check_mark:</center> |
-| [Platform Class](https://cvmcosta.github.io/ltijs/#/platform) | <center>:heavy_check_mark:</center> | <center>:heavy_check_mark:</center> |
-| Database plugins | <center>:heavy_check_mark:</center> | <center>:heavy_check_mark:</center> |
-| Grade Service Class | <center>:heavy_check_mark:</center> | <center></center> |
+| Provider | <center>✔️</center> | <center>✔️</center> |
+| [Platform Class](https://cvmcosta.github.io/ltijs/#/platform) | <center>✔️</center> | <center>✔️</center> |
+| Database plugins | <center>✔️</center> | <center>✔️</center> |
+| Grade Service Class | <center>✔️</center> | <center></center> |
 | Firebase support | <center>✔️</center> | <center></center> |
 | MySql support | <center></center> | <center></center> |
 | Keyset endpoint support | <center></center> | <center></center> |
@@ -349,13 +349,14 @@ Whitelists Urls to bypass the lti 1.3 authentication protocol. These Url dont ha
 
 | Param | Type | Description |
 | --- | --- | --- |
-| urls | <code>String</code> | Urls to be whitelisted |
+| urls | <code>String</code> | Urls to be whitelisted. Optionally you can pass an object containing the route and the specific method. |
 
 ##### Examples
 
 ```javascript
 provider.whitelist('/log', '/home')
 provider.whitelist('/log', '/home', '/route')
+provider.whitelist('/log', '/home', { route: '/route', method: 'POST' })
 ```
 
 
@@ -886,7 +887,7 @@ You can whitelist routes to bypass the LTI 1.3 security protocol, but these rout
 
 
 ```javascript
-lti.whitelist('/main', '/home') // You can add as many as you want lti.whitelist('/main', '/home', '/route')
+lti.whitelist('/main', '/home', { route: '/route', method: 'POST' }) // You can add as many as you want lti.whitelist('/main', '/home', '/route')
 ```
 
 Now calls to ```/main``` don't require the ltik token to be passed. The requests will be handled by `lti.app.get('/main')` and will not have access to an idToken.

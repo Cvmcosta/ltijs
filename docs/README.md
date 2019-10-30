@@ -21,14 +21,9 @@
 
 
 
-> v2.0.0
->BREAKING CHANGES
-> - New authentication system, now uses a query parameter 'ltik', to pass the ltijs key to the application instead of embedding it into the path.
-> - As a result, simplified routing, without needing to account for the context path.
-> - Silent option added to the deploy method, that supresses the initial console logs.
-> - Ltijs now works with Postgresql database via the ltijs-postgresql plugin.
-> - Fixed staticPath option where it used to disable the invalidToken route if some index.html was present in the given path.
-> - Graceful shutdown added, closing connection to databases.
+> v2.1.5
+> MINOR CHANGE
+> - whitelist() method now accepts objects with the format `{ route: '/route', method: 'POST' }`.
 
 
 > - View entire [CHANGELOG](changelog.md)
@@ -81,10 +76,10 @@ $ npm install ltijs
 
 | Feature | Implementation | Documentation |
 | --------- | - | - |
-| Provider | <center>:heavy_check_mark:</center> | <center>:heavy_check_mark:</center> |
-| [Platform Class](https://cvmcosta.github.io/ltijs/#/platform) | <center>:heavy_check_mark:</center> | <center>:heavy_check_mark:</center> |
-| Database plugins | <center>:heavy_check_mark:</center> | <center>:heavy_check_mark:</center> |
-| Grade Service Class | <center>:heavy_check_mark:</center> | <center></center> |
+| Provider | <center>✔️</center> | <center>✔️</center> |
+| [Platform Class](https://cvmcosta.github.io/ltijs/#/platform) | <center>✔️</center> | <center>✔️</center> |
+| Database plugins | <center>✔️</center> | <center>✔️</center> |
+| Grade Service Class | <center>✔️</center> | <center></center> |
 | Firebase support | <center>✔️</center> | <center></center> |
 | MySql support | <center></center> | <center></center> |
 | Keyset endpoint support | <center></center> | <center></center> |

@@ -8,6 +8,13 @@
 
 ### CHANGELOG
 
+#### V2.1.5
+
+> 2019-10-30
+> MINOR CHANGE
+> - whitelist() method now accepts objects with the format `{ route: '/route', method: 'POST' }`.
+
+
 #### V2.0.0
 
 > 2019-09-01

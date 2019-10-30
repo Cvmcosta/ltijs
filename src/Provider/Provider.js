@@ -163,7 +163,7 @@ class Provider {
     // Registers main athentication and routing middleware
     const sessionValidator = async (req, res, next) => {
       // Ckeck if request is attempting to initiate oidc login flow
-      if (req.url === this.#loginUrl || req.url === this.#sessionTimeoutUrl || req.url === this.#invalidTokenUrl || this.#whitelistedUrls.indexOf(req.url) !== -1) return next()
+      if (req.url === this.#loginUrl || req.url === this.#sessionTimeoutUrl || req.url === this.#invalidTokenUrl || this.#whitelistedUrls.indexOf(req.url) !== -1 || this.#whitelistedUrls.indexOf(req.url + '-method-' + req.method.toUpperCase()) !== -1) return next()
       if (req.url === this.#appUrl && !req.query.ltik) {
         let origin = req.get('origin')
         if (!origin || origin === 'null') origin = req.get('host')
@@ -443,8 +443,16 @@ class Provider {
    * @param {String} urls - Urls to be whitelisted
    */
   whitelist (...urls) {
-    if (!urls) throw new Error('No url passed')
-    this.#whitelistedUrls = urls
+    if (!urls) throw new Error('No url passed.')
+    const formattedUrls = []
+    for (const url of urls) {
+      const isObject = url === Object(url)
+      if (isObject) {
+        if (!url.route || !url.method) throw new Error('Wrong object format on route. Expects string ("/route") or object ({ route: "/route", method: "POST" })')
+        formattedUrls.push(url.route + '-method-' + url.method.toUpperCase())
+      } else formattedUrls.push(url)
+    }
+    this.#whitelistedUrls = formattedUrls
     return true
   }
 

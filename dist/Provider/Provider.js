@@ -204,7 +204,7 @@ class Provider {
 
     const sessionValidator = async (req, res, next) => {
       // Ckeck if request is attempting to initiate oidc login flow
-      if (req.url === (0, _classPrivateFieldGet2.default)(this, _loginUrl) || req.url === (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl) || req.url === (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl) || (0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(req.url) !== -1) return next();
+      if (req.url === (0, _classPrivateFieldGet2.default)(this, _loginUrl) || req.url === (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl) || req.url === (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl) || (0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(req.url) !== -1 || (0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(req.url + '-method-' + req.method.toUpperCase()) !== -1) return next();
 
       if (req.url === (0, _classPrivateFieldGet2.default)(this, _appUrl) && !req.query.ltik) {
         let origin = req.get('origin');
@@ -508,8 +508,19 @@ class Provider {
 
 
   whitelist(...urls) {
-    if (!urls) throw new Error('No url passed');
-    (0, _classPrivateFieldSet2.default)(this, _whitelistedUrls, urls);
+    if (!urls) throw new Error('No url passed.');
+    const formattedUrls = [];
+
+    for (const url of urls) {
+      const isObject = url === Object(url);
+
+      if (isObject) {
+        if (!url.route || !url.method) throw new Error('Wrong object format on route. Expects string ("/route") or object ({ route: "/route", method: "POST" })');
+        formattedUrls.push(url.route + '-method-' + url.method.toUpperCase());
+      } else formattedUrls.push(url);
+    }
+
+    (0, _classPrivateFieldSet2.default)(this, _whitelistedUrls, formattedUrls);
     return true;
   }
   /**
