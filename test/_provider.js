@@ -44,7 +44,7 @@ describe('Testing Provider', function () {
     expect(lti.invalidTokenUrl('/invalidToken')).to.be.a('string').equal('/invalidToken')
   })
   it('Provider.whitelist expected to return true', () => {
-    expect(lti.whitelist(['/1', '/2'])).to.be.equal(true)
+    expect(lti.whitelist('/1', '/2')).to.be.equal(true)
   })
   it('Provider.deploy expected to resolve true', async () => {
     await expect(lti.deploy()).to.eventually.become(true)
