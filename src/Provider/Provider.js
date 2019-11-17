@@ -42,7 +42,8 @@ class Provider {
   #cookieOptions = {
     secure: false,
     httpOnly: true,
-    signed: true
+    signed: true,
+    sameSite: 'None'
   }
 
   #Database
@@ -138,7 +139,7 @@ class Provider {
       })
 
       loggerServer.stream = {
-        write: function (message, encoding) {
+        write: function (message) {
           loggerServer.info(message)
         }
       }
@@ -596,6 +597,7 @@ class Provider {
         res.clearCookie(code + this.#appUrl, this.#cookieOptions)
       }
     }
+    res.header('Access-Control-Allow-Credentials', 'true')
     return res.redirect(path + '?ltik=' + token)
   }
 }
