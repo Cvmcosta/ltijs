@@ -107,7 +107,8 @@ class Provider {
       value: {
         secure: false,
         httpOnly: true,
-        signed: true
+        signed: true,
+        sameSite: 'None'
       }
     });
 
@@ -182,7 +183,7 @@ class Provider {
         exitOnError: false
       });
       loggerServer.stream = {
-        write: function (message, encoding) {
+        write: function (message) {
           loggerServer.info(message);
         }
       };
@@ -698,6 +699,7 @@ class Provider {
       }
     }
 
+    res.header('Access-Control-Allow-Credentials', 'true');
     return res.redirect(path + '?ltik=' + token);
   }
 
