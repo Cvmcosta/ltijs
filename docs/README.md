@@ -34,6 +34,7 @@
 - [Introduction](#introduction)
 - [Installation](#installation)
 - [Features](#features)
+- [Tutorial](#tutorial)
 - [Usage](#usage)
 - [Contributing](#contributing)
 - [License](#license)
@@ -96,6 +97,11 @@ This package implements LTI Provider and Consumer servers. See bellow for specif
 ### ~~LTIjs Consumer Documentation~~ (Coming soon)
 
 ---
+
+
+## Tutorial
+
+You can find a quick tutorial on how to set ltijs up and use it to send grades to a platform [here](https://medium.com/@cvmcosta2/creating-a-lti-provider-with-ltijs-8b569d94825c).
 
 ## Usage
 

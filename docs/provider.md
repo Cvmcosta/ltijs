@@ -43,6 +43,7 @@
 
 - [Introduction](#introduction)
 - [Example](#example)
+- [Tutorial](#tutorial)
 - [Documentation](#documentation)
 - [Usage](#usage)
   - [Setting up provider](#setting-up-provider)
@@ -159,9 +160,11 @@ setup()
 
 > **[Serving multiple resources](#serving-multiple-resources)**
 
-For more examples:
 
-> ~~**Check examples folder on Github**~~
+## Tutorial
+
+You can find a quick tutorial on how to set ltijs up and use it to send grades to a platform [here](https://medium.com/@cvmcosta2/creating-a-lti-provider-with-ltijs-8b569d94825c).
+
 
 ---
 

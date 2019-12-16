@@ -37,6 +37,7 @@
 - [Features](#features)
 - [Usage](#usage)
 - [Documentation](#documentation)
+- [Tutorial](#tutorial)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -164,6 +165,10 @@ setup()
 
 ## Documentation
 You can find the project documentation [here](https://cvmcosta.github.io/ltijs).
+
+## Tutorial
+
+You can find a quick tutorial on how to set ltijs up and use it to send grades to a platform [here](https://medium.com/@cvmcosta2/creating-a-lti-provider-with-ltijs-8b569d94825c).
 
 ---
 
