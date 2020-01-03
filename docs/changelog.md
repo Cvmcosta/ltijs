@@ -8,6 +8,12 @@
 
 ### CHANGELOG
 
+#### V2.3.1
+
+> 2020-01-03
+> MAJOR CHANGE
+> - Added a public JWK keyset endpoint to facilitate usage with Canvas LMS (default /keys).
+
 #### V2.1.5
 
 > 2019-10-30

@@ -37,10 +37,12 @@ class Auth {
     const { publicKey, privateKey } = keys
 
     const pubkeyobj = {
-      key: publicKey
+      key: publicKey,
+      kid: kid
     }
     const privkeyobj = {
-      key: privateKey
+      key: privateKey,
+      kid: kid
     }
 
     await Database.Insert(ENCRYPTIONKEY, 'publickey', pubkeyobj, { kid: kid })

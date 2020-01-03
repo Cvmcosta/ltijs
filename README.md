@@ -21,9 +21,9 @@
 [![Donate](https://img.shields.io/badge/Donate-Buy%20me%20a%20coffe-blue)](https://www.buymeacoffee.com/UL5fBsi)
 
 
-> v2.1.5
-> MINOR CHANGE
-> - whitelist() method now accepts objects with the format `{ route: '/route', method: 'POST' }`.
+> v2.3.1
+> MAJOR CHANGE
+> - Added a public JWK keyset endpoint to facilitate usage with Canvas LMS.
 
 
 > - View entire [CHANGELOG](https://cvmcosta.github.io/ltijs/#/changelog)
@@ -81,10 +81,10 @@ $ npm install ltijs
 | Provider | <center>✔️</center> | <center>✔️</center> |
 | [Platform Class](https://cvmcosta.github.io/ltijs/#/platform) | <center>✔️</center> | <center>✔️</center> |
 | Database plugins | <center>✔️</center> | <center>✔️</center> |
+| [Keyset endpoint support](https://cvmcosta.me/ltijs/#/provider?id=keyset-endpoint) | <center>✔️</center> | <center>✔️</center> |
 | Grade Service Class | <center>✔️</center> | <center></center> |
 | Firebase support | <center>✔️</center> | <center></center> |
 | MySql support | <center></center> | <center></center> |
-| Keyset endpoint support | <center></center> | <center></center> |
 | Redis caching | <center></center> | <center></center> |
 | Names and Roles Service Class | <center></center> | <center></center> |
 
@@ -104,7 +104,7 @@ This package implements LTI Provider and Consumer servers. See bellow for specif
 
 ### Example of provider usage
 
-> Update and install this package first
+> Install LTIJS
 
 ```shell
 $ npm install ltijs
@@ -168,7 +168,7 @@ You can find the project documentation [here](https://cvmcosta.github.io/ltijs).
 
 ## Tutorial
 
-You can find a quick tutorial on how to set ltijs up and use it to send grades to a platform [here](https://medium.com/@cvmcosta2/creating-a-lti-provider-with-ltijs-8b569d94825c).
+You can find a quick tutorial on how to set ltijs up and use it to send grades to a Moodle platform [here](https://medium.com/@cvmcosta2/creating-a-lti-provider-with-ltijs-8b569d94825c).
 
 ---
 

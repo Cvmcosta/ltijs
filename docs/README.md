@@ -21,9 +21,9 @@
 
 
 
-> v2.1.5
-> MINOR CHANGE
-> - whitelist() method now accepts objects with the format `{ route: '/route', method: 'POST' }`.
+> v2.3.1
+> MAJOR CHANGE
+> - Added a public JWK keyset endpoint to facilitate usage with Canvas LMS.
 
 
 > - View entire [CHANGELOG](changelog.md)
@@ -80,10 +80,10 @@ $ npm install ltijs
 | Provider | <center>✔️</center> | <center>✔️</center> |
 | [Platform Class](https://cvmcosta.github.io/ltijs/#/platform) | <center>✔️</center> | <center>✔️</center> |
 | Database plugins | <center>✔️</center> | <center>✔️</center> |
+| [Keyset endpoint support](https://cvmcosta.me/ltijs/#/provider?id=keyset-endpoint) | <center>✔️</center> | <center>✔️</center> |
 | Grade Service Class | <center>✔️</center> | <center></center> |
 | Firebase support | <center>✔️</center> | <center></center> |
 | MySql support | <center></center> | <center></center> |
-| Keyset endpoint support | <center></center> | <center></center> |
 | Redis caching | <center></center> | <center></center> |
 | Names and Roles Service Class | <center></center> | <center></center> |
 
@@ -101,13 +101,13 @@ This package implements LTI Provider and Consumer servers. See bellow for specif
 
 ## Tutorial
 
-You can find a quick tutorial on how to set ltijs up and use it to send grades to a platform [here](https://medium.com/@cvmcosta2/creating-a-lti-provider-with-ltijs-8b569d94825c).
+You can find a quick tutorial on how to set ltijs up and use it to send grades to a Moodle platform [here](https://medium.com/@cvmcosta2/creating-a-lti-provider-with-ltijs-8b569d94825c).
 
 ## Usage
 
 ### Example of provider usage
 
-> Update and install this package first
+> Install LTIJS
 
 ```shell
 $ npm install ltijs

@@ -8,6 +8,7 @@ const Request = require('../Utils/Request')
 const Platform = require('../Utils/Platform')
 const Auth = require('../Utils/Auth')
 const Mongodb = require('../Utils/Database')
+const Keyset = require('../Utils/Keyset')
 
 const GradeService = require('./Services/Grade')
 
@@ -33,6 +34,8 @@ class Provider {
 
   #invalidTokenUrl = '/invalidToken'
 
+  #keysetUrl = '/keys'
+
   #whitelistedUrls = []
 
   #ENCRYPTIONKEY
@@ -51,11 +54,22 @@ class Provider {
   #connectCallback = () => {}
 
   #sessionTimedOut = (req, res) => {
-    res.status(401).send('Token invalid or expired. Please reinitiate login.')
+    return res.status(401).send('Token invalid or expired. Please reinitiate login.')
   }
 
   #invalidToken = (req, res) => {
-    res.status(401).send('Invalid token. Please reinitiate login.')
+    return res.status(401).send('Invalid token. Please reinitiate login.')
+  }
+
+  // Assembles and sends keyset
+  #keyset = async (req, res) => {
+    try {
+      const keyset = await Keyset.build(this.#Database, this.#ENCRYPTIONKEY, this.#logger)
+      return res.status(200).send(keyset)
+    } catch (err) {
+      provMainDebug(err.message)
+      return res.status(500).send(err.message)
+    }
   }
 
   #server
@@ -74,6 +88,7 @@ class Provider {
      * @param {String} [options.loginUrl = '/login'] - Lti Provider login url. If no option is set '/login' is used.
      * @param {String} [options.sessionTimeoutUrl = '/sessionTimeout'] - Lti Provider session timeout url. If no option is set '/sessionTimeout' is used.
      * @param {String} [options.invalidTokenUrl = '/invalidToken'] - Lti Provider invalid token url. If no option is set '/invalidToken' is used.
+     * @param {String} [options.keysetUrl = '/keys'] - Lti Provider public jwk keyset url. If no option is set '/keys' is used.
      * @param {Boolean} [options.https = false] - Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https. If you set this option as true you can enable the secure flag in the cookies options of the onConnect method.
      * @param {Object} [options.ssl] - SSL certificate and key if https is enabled.
      * @param {String} [options.ssl.key] - SSL key.
@@ -94,6 +109,7 @@ class Provider {
     if (options && options.loginUrl) this.#loginUrl = options.loginUrl
     if (options && options.sessionTimeoutUrl) this.#sessionTimeoutUrl = options.sessionTimeoutUrl
     if (options && options.invalidTokenUrl) this.#invalidTokenUrl = options.invalidTokenUrl
+    if (options && options.keysetUrl) this.#keysetUrl = options.keysetUrl
 
     // Setting up logger
     let loggerServer = false
@@ -164,7 +180,7 @@ class Provider {
     // Registers main athentication and routing middleware
     const sessionValidator = async (req, res, next) => {
       // Ckeck if request is attempting to initiate oidc login flow
-      if (req.url === this.#loginUrl || req.url === this.#sessionTimeoutUrl || req.url === this.#invalidTokenUrl || this.#whitelistedUrls.indexOf(req.url) !== -1 || this.#whitelistedUrls.indexOf(req.url + '-method-' + req.method.toUpperCase()) !== -1) return next()
+      if (req.url === this.#loginUrl || req.url === this.#sessionTimeoutUrl || req.url === this.#invalidTokenUrl || req.url === this.#keysetUrl || this.#whitelistedUrls.indexOf(req.url) !== -1 || this.#whitelistedUrls.indexOf(req.url + '-method-' + req.method.toUpperCase()) !== -1) return next()
       if (req.url === this.#appUrl && !req.query.ltik) {
         let origin = req.get('origin')
         if (!origin || origin === 'null') origin = req.get('host')
@@ -315,12 +331,15 @@ class Provider {
       }
     })
 
-    // Session timeout and invalid token urls
+    // Session timeout, invalid token and keyset urls
     this.app.all(this.#sessionTimeoutUrl, async (req, res, next) => {
       this.#sessionTimedOut(req, res, next)
     })
     this.app.all(this.#invalidTokenUrl, async (req, res, next) => {
       this.#invalidToken(req, res, next)
+    })
+    this.app.get(this.#keysetUrl, async (req, res, next) => {
+      this.#keyset(req, res, next)
     })
 
     // Main app
@@ -437,6 +456,14 @@ class Provider {
      */
   invalidTokenUrl () {
     return this.#invalidTokenUrl
+  }
+
+  /**
+     * @description Gets the keyset Url that will be used to retrieve a public jwk keyset.
+     * @returns {String}
+     */
+  keysetUrl () {
+    return this.#keysetUrl
   }
 
   /**

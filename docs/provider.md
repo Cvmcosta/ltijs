@@ -28,10 +28,10 @@
 | Provider | <center>✔️</center> | <center>✔️</center> |
 | [Platform Class](https://cvmcosta.github.io/ltijs/#/platform) | <center>✔️</center> | <center>✔️</center> |
 | Database plugins | <center>✔️</center> | <center>✔️</center> |
+| [Keyset endpoint support](#keyset-endpoint) | <center>✔️</center> | <center>✔️</center> |
 | Grade Service Class | <center>✔️</center> | <center></center> |
 | Firebase support | <center>✔️</center> | <center></center> |
 | MySql support | <center></center> | <center></center> |
-| Keyset endpoint support | <center></center> | <center></center> |
 | Redis caching | <center></center> | <center></center> |
 | Names and Roles Service Class | <center></center> | <center></center> |
 
@@ -42,11 +42,12 @@
 ## Table of Contents
 
 - [Introduction](#introduction)
-- [Example](#example)
+- [Examples](#examples)
 - [Tutorial](#tutorial)
 - [Documentation](#documentation)
 - [Usage](#usage)
   - [Setting up provider](#setting-up-provider)
+  - [Using the keyset endpoint](#keyset-endpoint)
   - [The Provider object](#the-provider-object)
   - [Serving static files](#serving-static-files)
   - [Deploy and the onConnect() Callback](#deploy)
@@ -78,13 +79,13 @@ This package implements a tool provider as an [Express](https://expressjs.com/) 
 
 Example of provider usage
 
-> Install this package
+> Install LTIJS
 
 ```shell
 $ npm install ltijs
 ```
 
-> Install mongoDB. LTIjs  uses mongodb to store and manage information
+> Install mongoDB. LTIJS  uses mongodb to store and manage information
 
  - [Installing mongoDB](https://docs.mongodb.com/manual/administration/install-community)
 
@@ -150,7 +151,7 @@ setup()
 > And checkout the **[Platform class documentation](platform.md)**
 
 
-**Routing with LTIjs is a bit diferent from regular Express routing so here's a useful tutorial:** 
+**Routing with LTIjs is a bit diferent from regular Express routing so here's an useful tutorial:** 
 
 
 > **[Understand routing and context with LTIjs](#routing-and-context)**
@@ -163,7 +164,7 @@ setup()
 
 ## Tutorial
 
-You can find a quick tutorial on how to set ltijs up and use it to send grades to a platform [here](https://medium.com/@cvmcosta2/creating-a-lti-provider-with-ltijs-8b569d94825c).
+You can find a quick tutorial on how to set ltijs up and use it to send grades to a Moodle platform [here](https://medium.com/@cvmcosta2/creating-a-lti-provider-with-ltijs-8b569d94825c).
 
 
 ---
@@ -345,6 +346,23 @@ Gets the invalid token Url that will be called whenever the system encounters a 
 provider.invalidTokenUrl()
 ```
 
+
+
+
+#### Provider.keysetUrl() 
+
+Gets the public JWK keyset Url.
+
+
+
+
+
+##### Examples
+
+```javascript
+provider.keysetUrl()
+```
+
 #### Provider.whitelist(urls)
 Whitelists Urls to bypass the lti 1.3 authentication protocol. These Url dont have access to an idtoken.
 
@@ -515,10 +533,9 @@ const lti = new LTI('EXAMPLEKEY',
 ```
 
 
-
 ### The Provider object
 
-You can configure the main routes (login, main app, session timeout, invalid token): 
+You can configure the main routes (login, main app, session timeout, invalid token, keyset): 
 
 
 ##### Setting custom main routes
@@ -534,7 +551,8 @@ const lti = new LTI('EXAMPLEKEY',
             { appUrl: '/main', 
               loginUrl: '/login', 
               sessionTimeoutUrl: '/sessionTimeout', 
-              invalidTokenUrl: '/invalidToken' })
+              invalidTokenUrl: '/invalidToken',
+              keysetUrl: '/keys' })
 ```
 
 If no routes are specified the system defaults to:
@@ -544,6 +562,7 @@ appUrl = '/'
 loginUrl = '/login'
 sessionTimeoutUrl = '/sessionTimeout'
 invalidTokenUrl = '/invalidToken'
+keysetUrl = '/keys'
 ```
 
 ##### Serving static files
@@ -624,6 +643,26 @@ The LTI object gives you a `app` property that is an instance of the Express ser
 lti.app.get('/stuff', (req,res,next) => {
   res.send('Here\'s yo stuff!')
 })
+```
+
+
+### Keyset Endpoint
+
+In order to make it easier to register your tool with any LMS, LTIJS gives you a public JWK keyset endpoint, where platforms such as Canvas can retrieve their correspondent JWK public key.
+
+By default the publick keyset endpoint is `/keys` and it returns a keyset containig every public key registered within the tool.
+
+You can change the path to this route in the constructor options for ltijs.
+
+
+```javascript
+//Configure provider
+const lti = new LTI('EXAMPLEKEY', 
+            { url: 'mongodb://localhost/database', 
+              connection:{ user:'user',
+                          pass: 'pass'} 
+            }, 
+            {  keysetUrl: '/keyset' }) // Changed from '/keys' to '/keyset'
 ```
 
 

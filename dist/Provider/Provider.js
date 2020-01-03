@@ -2,9 +2,9 @@
 
 var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefault");
 
-var _classPrivateFieldGet2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldGet"));
-
 var _classPrivateFieldSet2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldSet"));
+
+var _classPrivateFieldGet2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldGet"));
 
 /* eslint-disable require-atomic-updates */
 
@@ -20,6 +20,8 @@ const Platform = require('../Utils/Platform');
 const Auth = require('../Utils/Auth');
 
 const Mongodb = require('../Utils/Database');
+
+const Keyset = require('../Utils/Keyset');
 
 const GradeService = require('./Services/Grade');
 
@@ -43,6 +45,7 @@ const provMainDebug = require('debug')('provider:main');
 
 class Provider {
   // Pre-initiated variables
+  // Assembles and sends keyset
 
   /**
      * @description Exposes methods for easy manipualtion of the LTI 1.3 standard as a LTI Provider and a "server" object to manipulate the Express instance.
@@ -58,6 +61,7 @@ class Provider {
      * @param {String} [options.loginUrl = '/login'] - Lti Provider login url. If no option is set '/login' is used.
      * @param {String} [options.sessionTimeoutUrl = '/sessionTimeout'] - Lti Provider session timeout url. If no option is set '/sessionTimeout' is used.
      * @param {String} [options.invalidTokenUrl = '/invalidToken'] - Lti Provider invalid token url. If no option is set '/invalidToken' is used.
+     * @param {String} [options.keysetUrl = '/keys'] - Lti Provider public jwk keyset url. If no option is set '/keys' is used.
      * @param {Boolean} [options.https = false] - Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https. If you set this option as true you can enable the secure flag in the cookies options of the onConnect method.
      * @param {Object} [options.ssl] - SSL certificate and key if https is enabled.
      * @param {String} [options.ssl.key] - SSL key.
@@ -85,6 +89,11 @@ class Provider {
     _invalidTokenUrl.set(this, {
       writable: true,
       value: '/invalidToken'
+    });
+
+    _keysetUrl.set(this, {
+      writable: true,
+      value: '/keys'
     });
 
     _whitelistedUrls.set(this, {
@@ -125,14 +134,27 @@ class Provider {
     _sessionTimedOut.set(this, {
       writable: true,
       value: (req, res) => {
-        res.status(401).send('Token invalid or expired. Please reinitiate login.');
+        return res.status(401).send('Token invalid or expired. Please reinitiate login.');
       }
     });
 
     _invalidToken.set(this, {
       writable: true,
       value: (req, res) => {
-        res.status(401).send('Invalid token. Please reinitiate login.');
+        return res.status(401).send('Invalid token. Please reinitiate login.');
+      }
+    });
+
+    _keyset.set(this, {
+      writable: true,
+      value: async (req, res) => {
+        try {
+          const keyset = await Keyset.build((0, _classPrivateFieldGet2.default)(this, _Database), (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger));
+          return res.status(200).send(keyset);
+        } catch (err) {
+          provMainDebug(err.message);
+          return res.status(500).send(err.message);
+        }
       }
     });
 
@@ -148,7 +170,8 @@ class Provider {
     if (options && options.appUrl) (0, _classPrivateFieldSet2.default)(this, _appUrl, options.appUrl);
     if (options && options.loginUrl) (0, _classPrivateFieldSet2.default)(this, _loginUrl, options.loginUrl);
     if (options && options.sessionTimeoutUrl) (0, _classPrivateFieldSet2.default)(this, _sessionTimeoutUrl, options.sessionTimeoutUrl);
-    if (options && options.invalidTokenUrl) (0, _classPrivateFieldSet2.default)(this, _invalidTokenUrl, options.invalidTokenUrl); // Setting up logger
+    if (options && options.invalidTokenUrl) (0, _classPrivateFieldSet2.default)(this, _invalidTokenUrl, options.invalidTokenUrl);
+    if (options && options.keysetUrl) (0, _classPrivateFieldSet2.default)(this, _keysetUrl, options.keysetUrl); // Setting up logger
 
     let loggerServer = false;
 
@@ -205,7 +228,7 @@ class Provider {
 
     const sessionValidator = async (req, res, next) => {
       // Ckeck if request is attempting to initiate oidc login flow
-      if (req.url === (0, _classPrivateFieldGet2.default)(this, _loginUrl) || req.url === (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl) || req.url === (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl) || (0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(req.url) !== -1 || (0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(req.url + '-method-' + req.method.toUpperCase()) !== -1) return next();
+      if (req.url === (0, _classPrivateFieldGet2.default)(this, _loginUrl) || req.url === (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl) || req.url === (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl) || req.url === (0, _classPrivateFieldGet2.default)(this, _keysetUrl) || (0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(req.url) !== -1 || (0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(req.url + '-method-' + req.method.toUpperCase()) !== -1) return next();
 
       if (req.url === (0, _classPrivateFieldGet2.default)(this, _appUrl) && !req.query.ltik) {
         let origin = req.get('origin');
@@ -366,13 +389,16 @@ class Provider {
         });
         return res.status(400).send('Bad Request.');
       }
-    }); // Session timeout and invalid token urls
+    }); // Session timeout, invalid token and keyset urls
 
     this.app.all((0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl), async (req, res, next) => {
       (0, _classPrivateFieldGet2.default)(this, _sessionTimedOut).call(this, req, res, next);
     });
     this.app.all((0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl), async (req, res, next) => {
       (0, _classPrivateFieldGet2.default)(this, _invalidToken).call(this, req, res, next);
+    });
+    this.app.get((0, _classPrivateFieldGet2.default)(this, _keysetUrl), async (req, res, next) => {
+      (0, _classPrivateFieldGet2.default)(this, _keyset).call(this, req, res, next);
     }); // Main app
 
     this.app.all((0, _classPrivateFieldGet2.default)(this, _appUrl), async (req, res, next) => {
@@ -501,6 +527,15 @@ class Provider {
 
   invalidTokenUrl() {
     return (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl);
+  }
+  /**
+     * @description Gets the keyset Url that will be used to retrieve a public jwk keyset.
+     * @returns {String}
+     */
+
+
+  keysetUrl() {
+    return (0, _classPrivateFieldGet2.default)(this, _keysetUrl);
   }
   /**
    * @description Whitelists Urls to bypass the lti 1.3 authentication protocol. These Url dont have access to a idtoken
@@ -713,6 +748,8 @@ var _sessionTimeoutUrl = new WeakMap();
 
 var _invalidTokenUrl = new WeakMap();
 
+var _keysetUrl = new WeakMap();
+
 var _whitelistedUrls = new WeakMap();
 
 var _ENCRYPTIONKEY = new WeakMap();
@@ -728,6 +765,8 @@ var _connectCallback2 = new WeakMap();
 var _sessionTimedOut = new WeakMap();
 
 var _invalidToken = new WeakMap();
+
+var _keyset = new WeakMap();
 
 var _server = new WeakMap();
 

@@ -24,7 +24,7 @@ describe('Testing Provider', function () {
   it('Provider.contructor expected to not throw Error', () => {
     let fn = () => {
       lti = new LTI('EXAMPLEKEY',
-        { url: 'mongodb://127.0.0.1/database'
+        { url: 'mongodb://127.0.0.1/testdatabase'
         },
         { appUrl: '/', loginUrl: '/login', staticPath: path.join(__dirname, '/views/') })
       return lti
@@ -50,13 +50,22 @@ describe('Testing Provider', function () {
     await expect(lti.deploy()).to.eventually.become(true)
   })
   it('Provider.registerPlatform expected to resolve Platform object', () => {
+    lti.registerPlatform({
+      url: 'https://platform2.com',
+      name: 'Platform Name',
+      clientId: 'ClientIdThePlatformCreatedForYourApp',
+      authenticationEndpoint: 'https://platform.com/AuthorizationUrl',
+      accesstokenEndpoint: 'https://platform.com/AccessTokenUrl',
+      authConfig: { method: 'JWK_SET', key: 'https://platform.com/keyset' }
+    })
     return expect(lti.registerPlatform({
       url: 'https://platform.com',
       name: 'Platform Name',
       clientId: 'ClientIdThePlatformCreatedForYourApp',
       authenticationEndpoint: 'https://platform.com/AuthorizationUrl',
       accesstokenEndpoint: 'https://platform.com/AccessTokenUrl',
-      authConfig: { method: 'JWK_SET', key: 'https://platform.com/keyset' } })).to.eventually.be.instanceOf(Platform)
+      authConfig: { method: 'JWK_SET', key: 'https://platform.com/keyset' }
+    })).to.eventually.be.instanceOf(Platform)
   })
   it('Provider.getPlatform expected to resolve Platform object', async () => {
     return expect(lti.getPlatform('https://platform.com')).to.eventually.be.instanceOf(Platform)
@@ -663,7 +672,15 @@ describe('Testing Provider', function () {
     return expect(lti.Grade.DeleteLineItems(token)).to.eventually.become(true)
   })
 
+  it('Provider.keyset expected to return a keyset', async () => {
+    const url = await lti.keysetUrl()
+    return chai.request(lti.app).get(url).then(res => {
+      expect(res.body).to.have.key('keys')
+    })
+  })
+
   it('Provider.deletePlatform expected to resolve true and delete platform', async () => {
+    await lti.deletePlatform('https://platform2.com')
     await expect(lti.deletePlatform('https://platform.com')).to.eventually.include(true)
     return expect(lti.getPlatform('https://platform.com')).to.eventually.become(false)
   })
