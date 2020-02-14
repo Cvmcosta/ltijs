@@ -32,12 +32,12 @@
 
 | Version | Moodle | Canvas |
 | ---- | - | - |
-| 2.4.0 | <center>✔️</center> | <center></center> |
-| 2.3.1 | <center>✔️</center> | <center>✔️</center> |
-| 2.1.5 | <center>✔️</center> | <center>✔️</center> |
-| 2.0.0 | <center>✔️</center> | <center>✔️</center> |
+| 2.4 | <center>✔️</center> | <center></center> |
+| 2.3 | <center>✔️</center> | <center>✔️</center> |
+| 2.1 | <center>✔️</center> | <center>✔️</center> |
+| 2.0 | <center>✔️</center> | <center>✔️</center> |
 
-<sub>\**Previous versions are no longer officially supported*\*</sub>
+<sub>**Previous versions are no longer officially supported*</sub>
 
 ## Table of Contents
 
@@ -183,11 +183,12 @@ You can find a quick tutorial on how to set ltijs up and use it to send grades t
 
 ## Contributing
 
+Please ⭐️ the repo, it always helps! 
 
 If you find a bug or think that something is hard to understand feel free to open an issue or contact me on twitter [@cvmcosta](https://twitter.com/cvmcosta), pull requests are also welcome :)
 
 
-And if you feel like it, you can donate any amount of money through paypal, it helps a lot.
+And if you feel like it, you can donate any amount through paypal, it helps a lot.
 
 [![Donate](https://img.shields.io/badge/Donate-Buy%20me%20a%20coffe-blue)](https://www.buymeacoffee.com/UL5fBsi)
 
