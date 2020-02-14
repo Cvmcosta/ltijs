@@ -88,10 +88,7 @@ class Grade {
         query: query,
         headers: {
           Authorization: tokenRes.token_type + ' ' + tokenRes.access_token
-        },
-        body: JSON.stringify({
-          request: 'lineitems'
-        })
+        }
       });
       lineitemRes = JSON.parse(lineitemRes.body);
       return lineitemRes;
@@ -211,10 +208,7 @@ class Grade {
         query: query,
         headers: {
           Authorization: tokenRes.token_type + ' ' + tokenRes.access_token
-        },
-        body: JSON.stringify({
-          request: 'lineitems'
-        })
+        }
       });
       lineitemRes = JSON.parse(lineitemRes.body);
       let success = true;
@@ -226,10 +220,7 @@ class Grade {
           await got.delete(lineitemUrl, {
             headers: {
               Authorization: tokenRes.token_type + ' ' + tokenRes.access_token
-            },
-            body: JSON.stringify({
-              request: 'lineitems'
-            })
+            }
           });
           provGradeServiceDebug('LineItem sucessfully deleted');
         } catch (err) {
@@ -309,10 +300,7 @@ class Grade {
         query: query,
         headers: {
           Authorization: tokenRes.token_type + ' ' + tokenRes.access_token
-        },
-        body: JSON.stringify({
-          request: 'lineitems'
-        })
+        }
       });
       lineitemRes = JSON.parse(lineitemRes.body);
       let success = true;
@@ -412,10 +400,7 @@ class Grade {
         query: query,
         headers: {
           Authorization: tokenRes.token_type + ' ' + tokenRes.access_token
-        },
-        body: JSON.stringify({
-          request: 'lineitems'
-        })
+        }
       });
       lineitemRes = JSON.parse(lineitemRes.body);
       const resultsArray = [];
@@ -445,10 +430,7 @@ class Grade {
             query: query,
             headers: {
               Authorization: tokenRes.token_type + ' ' + tokenRes.access_token
-            },
-            body: JSON.stringify({
-              request: 'results'
-            })
+            }
           });
           finalRes = JSON.parse(finalRes.body);
 

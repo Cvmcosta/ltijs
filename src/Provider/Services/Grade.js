@@ -58,7 +58,7 @@ class Grade {
         query = new URLSearchParams(queryParams)
       }
 
-      let lineitemRes = await got.get(lineitemsEndpoint, { query: query, headers: { Authorization: tokenRes.token_type + ' ' + tokenRes.access_token }, body: JSON.stringify({ request: 'lineitems' }) })
+      let lineitemRes = await got.get(lineitemsEndpoint, { query: query, headers: { Authorization: tokenRes.token_type + ' ' + tokenRes.access_token } })
       lineitemRes = JSON.parse(lineitemRes.body)
 
       return lineitemRes
@@ -152,7 +152,7 @@ class Grade {
         query = new URLSearchParams(queryParams)
       }
 
-      let lineitemRes = await got.get(lineitemsEndpoint, { query: query, headers: { Authorization: tokenRes.token_type + ' ' + tokenRes.access_token }, body: JSON.stringify({ request: 'lineitems' }) })
+      let lineitemRes = await got.get(lineitemsEndpoint, { query: query, headers: { Authorization: tokenRes.token_type + ' ' + tokenRes.access_token } })
       lineitemRes = JSON.parse(lineitemRes.body)
       let success = true
       for (const lineitem of lineitemRes) {
@@ -160,7 +160,7 @@ class Grade {
           const lineitemUrl = lineitem.id
 
           provGradeServiceDebug('Deleting: ' + lineitemUrl)
-          await got.delete(lineitemUrl, { headers: { Authorization: tokenRes.token_type + ' ' + tokenRes.access_token }, body: JSON.stringify({ request: 'lineitems' }) })
+          await got.delete(lineitemUrl, { headers: { Authorization: tokenRes.token_type + ' ' + tokenRes.access_token } })
           provGradeServiceDebug('LineItem sucessfully deleted')
         } catch (err) {
           provGradeServiceDebug(err.message)
@@ -220,7 +220,7 @@ class Grade {
         query = new URLSearchParams(queryParams)
       }
 
-      let lineitemRes = await got.get(lineitemsEndpoint, { query: query, headers: { Authorization: tokenRes.token_type + ' ' + tokenRes.access_token }, body: JSON.stringify({ request: 'lineitems' }) })
+      let lineitemRes = await got.get(lineitemsEndpoint, { query: query, headers: { Authorization: tokenRes.token_type + ' ' + tokenRes.access_token } })
       lineitemRes = JSON.parse(lineitemRes.body)
       let success = true
 
@@ -304,7 +304,7 @@ class Grade {
         query = new URLSearchParams(queryParams)
       }
 
-      let lineitemRes = await got.get(lineitemsEndpoint, { query: query, headers: { Authorization: tokenRes.token_type + ' ' + tokenRes.access_token }, body: JSON.stringify({ request: 'lineitems' }) })
+      let lineitemRes = await got.get(lineitemsEndpoint, { query: query, headers: { Authorization: tokenRes.token_type + ' ' + tokenRes.access_token } })
       lineitemRes = JSON.parse(lineitemRes.body)
 
       const resultsArray = []
@@ -329,7 +329,7 @@ class Grade {
             query = new URLSearchParams(queryParams)
           }
 
-          let finalRes = await got.get(resultsUrl, { query: query, headers: { Authorization: tokenRes.token_type + ' ' + tokenRes.access_token }, body: JSON.stringify({ request: 'results' }) })
+          let finalRes = await got.get(resultsUrl, { query: query, headers: { Authorization: tokenRes.token_type + ' ' + tokenRes.access_token } })
 
           finalRes = JSON.parse(finalRes.body)
           if (finalRes.length > 0) {

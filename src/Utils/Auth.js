@@ -87,7 +87,7 @@ class Auth {
         if (!kid) throw new Error('NoKidFoundInToken')
 
         const keysEndpoint = authConfig.key
-        const res = await got.get(keysEndpoint, { body: JSON.stringify({ request: 'keyset' }) })
+        const res = await got.get(keysEndpoint)
         const keyset = JSON.parse(res.body).keys
         if (!keyset) throw new Error('NoKeySetFound')
         const key = jwk.jwk2pem(find(keyset, ['kid', kid]))
@@ -236,7 +236,7 @@ class Auth {
     }
 
     provAuthDebug('Awaiting return from the platform')
-    const res = await got(await platform.platformAccessTokenEndpoint(), { body: message, form: true })
+    const res = await got.post(await platform.platformAccessTokenEndpoint(), { form: message })
 
     provAuthDebug('Successfully generated new access_token')
     const access = JSON.parse(res.body)
