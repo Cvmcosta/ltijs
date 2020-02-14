@@ -6,9 +6,10 @@ class Request {
      * @description Handles the Lti 1.3 initial login flow (OIDC protocol).
      * @param {object} request - Login request object sent by consumer.
      * @param {object} platform - Platform Object.
+     * @param {String} state - State parameter, used to validate the response.
      */
-  static async ltiAdvantageLogin (request, platform) {
-    const response = {
+  static async ltiAdvantageLogin (request, platform, state) {
+    const query = {
       response_type: 'id_token',
       response_mode: 'form_post',
       id_token_signed_response_alg: 'RS256',
@@ -17,12 +18,13 @@ class Request {
       redirect_uri: request.target_link_uri,
       login_hint: request.login_hint,
       nonce: crypto.randomBytes(16).toString('base64'),
-      prompt: 'none'
+      prompt: 'none',
+      state: state
     }
-    if (request.lti_message_hint) response.lti_message_hint = request.lti_message_hint
-    if (request.lti_deployment_id) response.lti_deployment_id = request.lti_deployment_id
+    if (request.lti_message_hint) query.lti_message_hint = request.lti_message_hint
+    if (request.lti_deployment_id) query.lti_deployment_id = request.lti_deployment_id
 
-    return response
+    return query
   }
 }
 

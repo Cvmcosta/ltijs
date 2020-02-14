@@ -21,12 +21,24 @@
 
 
 
-> v2.3.1
+> v2.4.0
 > MAJOR CHANGE
-> - Added a public JWK keyset endpoint to facilitate usage with Canvas LMS.
+> - Security update, `state` parameter is now validated at the end of the OIDC login flow.
+> - Security update, `iss` parameter is now validated at the end of the OIDC login flow.
 
 
 > - View entire [CHANGELOG](changelog.md)
+
+#### Tested on:
+
+| Version | Moodle | Canvas |
+| ---- | - | - |
+| 2.4.0 | <center>✔️</center> | <center></center> |
+| 2.3.1 | <center>✔️</center> | <center>✔️</center> |
+| 2.1.5 | <center>✔️</center> | <center>✔️</center> |
+| 2.0.0 | <center>✔️</center> | <center>✔️</center> |
+
+<sub>\**Previous versions are no longer officially supported*\*</sub>
 
 
 ## Table of Contents

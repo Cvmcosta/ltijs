@@ -8,6 +8,13 @@
 
 ### CHANGELOG
 
+#### V2.4.0
+
+> 2020-02-13
+> MAJOR CHANGE
+> - Security update, `state` parameter is now validated at the end of the OIDC login flow.
+> - Security update, `iss` parameter is now validated at the end of the OIDC login flow.
+
 #### V2.3.1
 
 > 2020-01-03

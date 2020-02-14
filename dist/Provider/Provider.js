@@ -35,6 +35,8 @@ const winston = require('winston');
 
 const parseDomain = require('parse-domain');
 
+const crypto = require('crypto');
+
 const provAuthDebug = require('debug')('provider:auth');
 
 const provMainDebug = require('debug')('provider:main');
@@ -227,12 +229,13 @@ class Provider {
     if (options && options.staticPath) (0, _classPrivateFieldGet2.default)(this, _server).setStaticPath(options.staticPath); // Registers main athentication and routing middleware
 
     const sessionValidator = async (req, res, next) => {
-      // Ckeck if request is attempting to initiate oidc login flow
-      if (req.url === (0, _classPrivateFieldGet2.default)(this, _loginUrl) || req.url === (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl) || req.url === (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl) || req.url === (0, _classPrivateFieldGet2.default)(this, _keysetUrl) || (0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(req.url) !== -1 || (0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(req.url + '-method-' + req.method.toUpperCase()) !== -1) return next();
+      // Ckeck if request is attempting to initiate oidc login flow or access reserved or whitelisted routes
+      if (req.url === (0, _classPrivateFieldGet2.default)(this, _loginUrl) || req.url === (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl) || req.url === (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl) || req.url === (0, _classPrivateFieldGet2.default)(this, _keysetUrl) || (0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(req.url) !== -1 || (0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(req.url + '-method-' + req.method.toUpperCase()) !== -1) return next(); // Determine origin of request
+
+      let origin = req.get('origin');
+      if (!origin || origin === 'null') origin = req.get('host'); // Creates ltik for appUrl
 
       if (req.url === (0, _classPrivateFieldGet2.default)(this, _appUrl) && !req.query.ltik) {
-        let origin = req.get('origin');
-        if (!origin || origin === 'null') origin = req.get('host');
         if (!origin) return res.redirect((0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl));
         const iss = 'plat' + encodeURIComponent(Buffer.from(origin).toString('base64'));
         let token = {
@@ -269,8 +272,16 @@ class Provider {
           provMainDebug('No cookie found');
 
           if (req.body.id_token) {
-            provMainDebug('Received request containing token. Sending for validation');
-            const valid = await Auth.validateToken(req.body.id_token, this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger), (0, _classPrivateFieldGet2.default)(this, _Database));
+            provMainDebug('Received request containing token. Sending for validation'); // Retrieving validation parameters from cookies
+
+            const validationParameters = {
+              state: cookies[contextPath + '-state'],
+              iss: cookies[contextPath + '-iss']
+            };
+            const valid = await Auth.validateToken(req.body.id_token, req.body.state, validationParameters, this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger), (0, _classPrivateFieldGet2.default)(this, _Database)); // Deleting validation cookies
+
+            res.clearCookie(contextPath + '-state', (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
+            res.clearCookie(contextPath + '-iss', (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
             provAuthDebug('Successfully validated token!'); // Mount platform token
 
             const platformToken = {
@@ -372,10 +383,18 @@ class Provider {
           if (!origin) return res.redirect((0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl));
           const cookieName = 'plat' + encodeURIComponent(Buffer.from(origin).toString('base64')) + (0, _classPrivateFieldGet2.default)(this, _appUrl);
           provMainDebug('Redirecting to platform authentication endpoint');
-          res.clearCookie(cookieName, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
+          res.clearCookie(cookieName, (0, _classPrivateFieldGet2.default)(this, _cookieOptions)); // Create state parameter used to validade authentication response
+
+          const state = crypto.randomBytes(16).toString('base64'); // Create iss parameter used to validade authentication response
+
+          const iss = req.body.iss; // Setting up validation cookies
+
+          res.cookie(cookieName + '-state', state, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
+          res.cookie(cookieName + '-iss', iss, (0, _classPrivateFieldGet2.default)(this, _cookieOptions)); // Redirect to authentication endpoint
+
           res.redirect(url.format({
             pathname: await platform.platformAuthEndpoint(),
-            query: await Request.ltiAdvantageLogin(req.body, platform)
+            query: await Request.ltiAdvantageLogin(req.body, platform, state)
           }));
         } else {
           provMainDebug('Unregistered platform attempting connection: ' + req.body.iss);

@@ -17,6 +17,7 @@ const _path = require('path')
 const jwt = require('jsonwebtoken')
 const winston = require('winston')
 const parseDomain = require('parse-domain')
+const crypto = require('crypto')
 
 const provAuthDebug = require('debug')('provider:auth')
 const provMainDebug = require('debug')('provider:main')
@@ -179,11 +180,15 @@ class Provider {
 
     // Registers main athentication and routing middleware
     const sessionValidator = async (req, res, next) => {
-      // Ckeck if request is attempting to initiate oidc login flow
+      // Ckeck if request is attempting to initiate oidc login flow or access reserved or whitelisted routes
       if (req.url === this.#loginUrl || req.url === this.#sessionTimeoutUrl || req.url === this.#invalidTokenUrl || req.url === this.#keysetUrl || this.#whitelistedUrls.indexOf(req.url) !== -1 || this.#whitelistedUrls.indexOf(req.url + '-method-' + req.method.toUpperCase()) !== -1) return next()
+
+      // Determine origin of request
+      let origin = req.get('origin')
+      if (!origin || origin === 'null') origin = req.get('host')
+
+      // Creates ltik for appUrl
       if (req.url === this.#appUrl && !req.query.ltik) {
-        let origin = req.get('origin')
-        if (!origin || origin === 'null') origin = req.get('host')
         if (!origin) return res.redirect(this.#invalidTokenUrl)
         const iss = 'plat' + encodeURIComponent(Buffer.from(origin).toString('base64'))
 
@@ -221,7 +226,18 @@ class Provider {
           provMainDebug('No cookie found')
           if (req.body.id_token) {
             provMainDebug('Received request containing token. Sending for validation')
-            const valid = await Auth.validateToken(req.body.id_token, this.getPlatform, this.#ENCRYPTIONKEY, this.#logger, this.#Database)
+            // Retrieving validation parameters from cookies
+            const validationParameters = {
+              state: cookies[contextPath + '-state'],
+              iss: cookies[contextPath + '-iss']
+            }
+
+            const valid = await Auth.validateToken(req.body.id_token, req.body.state, validationParameters, this.getPlatform, this.#ENCRYPTIONKEY, this.#logger, this.#Database)
+
+            // Deleting validation cookies
+            res.clearCookie(contextPath + '-state', this.#cookieOptions)
+            res.clearCookie(contextPath + '-iss', this.#cookieOptions)
+
             provAuthDebug('Successfully validated token!')
 
             // Mount platform token
@@ -316,9 +332,20 @@ class Provider {
           const cookieName = 'plat' + encodeURIComponent(Buffer.from(origin).toString('base64')) + this.#appUrl
           provMainDebug('Redirecting to platform authentication endpoint')
           res.clearCookie(cookieName, this.#cookieOptions)
+
+          // Create state parameter used to validade authentication response
+          const state = crypto.randomBytes(16).toString('base64')
+          // Create iss parameter used to validade authentication response
+          const iss = req.body.iss
+
+          // Setting up validation cookies
+          res.cookie(cookieName + '-state', state, this.#cookieOptions)
+          res.cookie(cookieName + '-iss', iss, this.#cookieOptions)
+
+          // Redirect to authentication endpoint
           res.redirect(url.format({
             pathname: await platform.platformAuthEndpoint(),
-            query: await Request.ltiAdvantageLogin(req.body, platform)
+            query: await Request.ltiAdvantageLogin(req.body, platform, state)
           }))
         } else {
           provMainDebug('Unregistered platform attempting connection: ' + req.body.iss)
