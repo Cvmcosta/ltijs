@@ -322,9 +322,11 @@ class Provider {
     this.app.use(sessionValidator)
 
     this.app.all(this.#loginUrl, async (req, res) => {
-      provMainDebug('Receiving a login request from: ' + req.body.iss)
+      const params = { ...req.query, ...req.body }
       try {
-        const platform = await this.getPlatform(req.body.iss)
+        const iss = params.iss
+        provMainDebug('Receiving a login request from: ' + iss)
+        const platform = await this.getPlatform(iss)
         if (platform) {
           let origin = req.get('origin')
           if (!origin || origin === 'null') origin = req.get('host')
@@ -335,8 +337,6 @@ class Provider {
 
           // Create state parameter used to validade authentication response
           const state = crypto.randomBytes(16).toString('base64')
-          // Create iss parameter used to validade authentication response
-          const iss = req.body.iss
 
           // Setting up validation cookies
           res.cookie(cookieName + '-state', state, this.#cookieOptions)
@@ -345,10 +345,10 @@ class Provider {
           // Redirect to authentication endpoint
           res.redirect(url.format({
             pathname: await platform.platformAuthEndpoint(),
-            query: await Request.ltiAdvantageLogin(req.body, platform, state)
+            query: await Request.ltiAdvantageLogin(params, platform, state)
           }))
         } else {
-          provMainDebug('Unregistered platform attempting connection: ' + req.body.iss)
+          provMainDebug('Unregistered platform attempting connection: ' + iss)
           return res.status(401).send('Unregistered platform.')
         }
       } catch (err) {

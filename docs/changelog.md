@@ -8,6 +8,12 @@
 
 ### CHANGELOG
 
+#### V2.4.3
+
+> 2020-02-17
+> MINOR CHANGE
+> - Changes to the login handler method allow oidc flow to be initiated through GET request.
+
 #### V2.4.0
 
 > 2020-02-13

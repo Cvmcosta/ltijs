@@ -2,6 +2,8 @@
 
 var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefault");
 
+var _objectSpread2 = _interopRequireDefault(require("@babel/runtime/helpers/objectSpread"));
+
 var _classPrivateFieldSet2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldSet"));
 
 var _classPrivateFieldGet2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldGet"));
@@ -372,10 +374,12 @@ class Provider {
 
     this.app.use(sessionValidator);
     this.app.all((0, _classPrivateFieldGet2.default)(this, _loginUrl), async (req, res) => {
-      provMainDebug('Receiving a login request from: ' + req.body.iss);
+      const params = (0, _objectSpread2.default)({}, req.query, req.body);
 
       try {
-        const platform = await this.getPlatform(req.body.iss);
+        const iss = params.iss;
+        provMainDebug('Receiving a login request from: ' + iss);
+        const platform = await this.getPlatform(iss);
 
         if (platform) {
           let origin = req.get('origin');
@@ -385,19 +389,17 @@ class Provider {
           provMainDebug('Redirecting to platform authentication endpoint');
           res.clearCookie(cookieName, (0, _classPrivateFieldGet2.default)(this, _cookieOptions)); // Create state parameter used to validade authentication response
 
-          const state = crypto.randomBytes(16).toString('base64'); // Create iss parameter used to validade authentication response
-
-          const iss = req.body.iss; // Setting up validation cookies
+          const state = crypto.randomBytes(16).toString('base64'); // Setting up validation cookies
 
           res.cookie(cookieName + '-state', state, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
           res.cookie(cookieName + '-iss', iss, (0, _classPrivateFieldGet2.default)(this, _cookieOptions)); // Redirect to authentication endpoint
 
           res.redirect(url.format({
             pathname: await platform.platformAuthEndpoint(),
-            query: await Request.ltiAdvantageLogin(req.body, platform, state)
+            query: await Request.ltiAdvantageLogin(params, platform, state)
           }));
         } else {
-          provMainDebug('Unregistered platform attempting connection: ' + req.body.iss);
+          provMainDebug('Unregistered platform attempting connection: ' + iss);
           return res.status(401).send('Unregistered platform.');
         }
       } catch (err) {
