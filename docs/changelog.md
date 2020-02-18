@@ -8,9 +8,16 @@
 
 ### CHANGELOG
 
+#### V2.4.5
+
+> 2020-02-18
+> MINOR CHANGE
+> - Removed parse-domain as a dependency due to the unwanted inclusion of jest in it's dependencies. Added valid-url, it's much lighter and does the same job.
+
+
 #### V2.4.4
 
-> 2020-02-17
+> 2020-02-18
 > MINOR CHANGE
 > - Changes to the login handler method allow oidc flow to be initiated through GET request.
 
