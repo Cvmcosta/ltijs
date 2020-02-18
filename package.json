@@ -1,6 +1,6 @@
 {
   "name": "ltijs",
-  "version": "2.4.4",
+  "version": "2.4.5",
   "description": "Turn your application into a fully integratable LTI 1.3 tool or platform.",
   "main": "index.js",
   "engineStrict": true,
@@ -44,8 +44,8 @@
     "mongoose": "^5.6.2",
     "morgan": "^1.9.1",
     "node-jose": "^1.1.3",
-    "parse-domain": "^2.3.2",
     "pem-jwk": "^2.0.0",
+    "valid-url": "^1.0.9",
     "validator": "^12.2.0",
     "winston": "^3.2.1"
   },

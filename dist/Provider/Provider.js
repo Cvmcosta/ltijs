@@ -35,7 +35,7 @@ const jwt = require('jsonwebtoken');
 
 const winston = require('winston');
 
-const parseDomain = require('parse-domain');
+const validUrl = require('valid-url');
 
 const crypto = require('crypto');
 
@@ -739,7 +739,7 @@ class Provider {
     };
     token = jwt.sign(token, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY)); // Checking the type of redirect
 
-    const externalRequest = parseDomain(path);
+    const externalRequest = validUrl.isWebUri(path);
 
     if (options && options.isNewResource || externalRequest) {
       provMainDebug('Setting up path cookie for this resource with path: ' + path);
