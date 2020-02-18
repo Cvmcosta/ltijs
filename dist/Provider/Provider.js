@@ -231,13 +231,17 @@ class Provider {
     if (options && options.staticPath) (0, _classPrivateFieldGet2.default)(this, _server).setStaticPath(options.staticPath); // Registers main athentication and routing middleware
 
     const sessionValidator = async (req, res, next) => {
-      // Ckeck if request is attempting to initiate oidc login flow or access reserved or whitelisted routes
-      if (req.url === (0, _classPrivateFieldGet2.default)(this, _loginUrl) || req.url === (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl) || req.url === (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl) || req.url === (0, _classPrivateFieldGet2.default)(this, _keysetUrl) || (0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(req.url) !== -1 || (0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(req.url + '-method-' + req.method.toUpperCase()) !== -1) return next(); // Determine origin of request
+      provMainDebug('Receiving request at path: ' + req.path); // Ckeck if request is attempting to initiate oidc login flow or access reserved or whitelisted routes
+
+      if (req.path === (0, _classPrivateFieldGet2.default)(this, _loginUrl) || req.path === (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl) || req.path === (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl) || req.path === (0, _classPrivateFieldGet2.default)(this, _keysetUrl) || (0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(req.path) !== -1 || (0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(req.path + '-method-' + req.method.toUpperCase()) !== -1) return next();
+      provMainDebug('Path does not match reserved endpoints'); // Determine origin of request
 
       let origin = req.get('origin');
-      if (!origin || origin === 'null') origin = req.get('host'); // Creates ltik for appUrl
+      if (!origin || origin === 'null') origin = req.get('host');
+      provMainDebug('Request origin: ' + origin); // Creates ltik for appUrl
 
-      if (req.url === (0, _classPrivateFieldGet2.default)(this, _appUrl) && !req.query.ltik) {
+      if (req.path === (0, _classPrivateFieldGet2.default)(this, _appUrl) && !req.query.ltik) {
+        provMainDebug('No LTIK found in initial request to main endpoint, generating a new one');
         if (!origin) return res.redirect((0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl));
         const iss = 'plat' + encodeURIComponent(Buffer.from(origin).toString('base64'));
         let token = {
@@ -250,8 +254,15 @@ class Provider {
       }
 
       try {
-        if (!req.query.ltik) return res.redirect((0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl));
+        provMainDebug('Attempting to verify LTIK');
+
+        if (!req.query.ltik) {
+          provMainDebug('No LTIK found');
+          return res.redirect((0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl));
+        }
+
         const validLtik = jwt.verify(req.query.ltik, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
+        provMainDebug('LTIK successfully verified');
         let user = false;
         const issuer = validLtik.issuer;
 
@@ -259,6 +270,7 @@ class Provider {
 
         const cookies = req.signedCookies; // Matches path to cookie
 
+        provMainDebug('Attempting to retrieve matching sesison cookie');
         let contextTokenName;
 
         for (const key of Object.keys(cookies).sort((a, b) => b.length - a.length)) {
@@ -346,14 +358,14 @@ class Provider {
             issuer_code: issuer,
             user: user
           });
-          if (!idToken) throw new Error('No id token found');
+          if (!idToken) throw new Error('No id token found in database');
           idToken = idToken[0]; // Gets correspondent context token from database
 
           let contextToken = await (0, _classPrivateFieldGet2.default)(this, _Database).Get(false, 'contexttoken', {
             path: contextTokenName,
             user: user
           });
-          if (!contextToken) throw new Error('No context token found');
+          if (!contextToken) throw new Error('No context token found in database');
           contextToken = contextToken[0];
           idToken.platformContext = contextToken;
           res.locals.contextToken = req.query.ltik;

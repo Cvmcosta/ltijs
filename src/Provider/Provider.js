@@ -180,15 +180,21 @@ class Provider {
 
     // Registers main athentication and routing middleware
     const sessionValidator = async (req, res, next) => {
+      provMainDebug('Receiving request at path: ' + req.path)
       // Ckeck if request is attempting to initiate oidc login flow or access reserved or whitelisted routes
-      if (req.url === this.#loginUrl || req.url === this.#sessionTimeoutUrl || req.url === this.#invalidTokenUrl || req.url === this.#keysetUrl || this.#whitelistedUrls.indexOf(req.url) !== -1 || this.#whitelistedUrls.indexOf(req.url + '-method-' + req.method.toUpperCase()) !== -1) return next()
+      if (req.path === this.#loginUrl || req.path === this.#sessionTimeoutUrl || req.path === this.#invalidTokenUrl || req.path === this.#keysetUrl || this.#whitelistedUrls.indexOf(req.path) !== -1 || this.#whitelistedUrls.indexOf(req.path + '-method-' + req.method.toUpperCase()) !== -1) return next()
+
+      provMainDebug('Path does not match reserved endpoints')
 
       // Determine origin of request
       let origin = req.get('origin')
       if (!origin || origin === 'null') origin = req.get('host')
 
+      provMainDebug('Request origin: ' + origin)
+
       // Creates ltik for appUrl
-      if (req.url === this.#appUrl && !req.query.ltik) {
+      if (req.path === this.#appUrl && !req.query.ltik) {
+        provMainDebug('No LTIK found in initial request to main endpoint, generating a new one')
         if (!origin) return res.redirect(this.#invalidTokenUrl)
         const iss = 'plat' + encodeURIComponent(Buffer.from(origin).toString('base64'))
 
@@ -203,8 +209,15 @@ class Provider {
       }
 
       try {
-        if (!req.query.ltik) return res.redirect(this.#invalidTokenUrl)
+        provMainDebug('Attempting to verify LTIK')
+        if (!req.query.ltik) {
+          provMainDebug('No LTIK found')
+          return res.redirect(this.#invalidTokenUrl)
+        }
+
         const validLtik = jwt.verify(req.query.ltik, this.#ENCRYPTIONKEY)
+        provMainDebug('LTIK successfully verified')
+
         let user = false
 
         const issuer = validLtik.issuer
@@ -212,6 +225,7 @@ class Provider {
         const cookies = req.signedCookies
 
         // Matches path to cookie
+        provMainDebug('Attempting to retrieve matching sesison cookie')
         let contextTokenName
         for (const key of Object.keys(cookies).sort((a, b) => b.length - a.length)) {
           if (contextPath.indexOf(key) !== -1) {
@@ -296,12 +310,12 @@ class Provider {
           provAuthDebug('Cookie found')
           // Gets correspondent id token from database
           let idToken = await this.#Database.Get(false, 'idtoken', { issuer_code: issuer, user: user })
-          if (!idToken) throw new Error('No id token found')
+          if (!idToken) throw new Error('No id token found in database')
           idToken = idToken[0]
 
           // Gets correspondent context token from database
           let contextToken = await this.#Database.Get(false, 'contexttoken', { path: contextTokenName, user: user })
-          if (!contextToken) throw new Error('No context token found')
+          if (!contextToken) throw new Error('No context token found in database')
           contextToken = contextToken[0]
           idToken.platformContext = contextToken
 

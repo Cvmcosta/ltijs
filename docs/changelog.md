@@ -8,7 +8,7 @@
 
 ### CHANGELOG
 
-#### V2.4.3
+#### V2.4.4
 
 > 2020-02-17
 > MINOR CHANGE

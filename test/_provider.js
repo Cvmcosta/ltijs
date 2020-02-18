@@ -86,10 +86,18 @@ describe('Testing Provider', function () {
     })
   })
 
-  it('Login route with registered platform is expected to redirect to authenticationEndpoint', async () => {
+  it('Login route POST request with registered platform is expected to redirect to authenticationEndpoint', async () => {
     nock('http://localhost/moodle').get(/\/AuthorizationUrl.*/).reply(200)
     const url = await lti.loginUrl()
     return chai.request(lti.app).post(url).send({ iss: 'http://localhost/moodle' }).then(res => {
+      expect(res).to.redirectTo(/^http:\/\/localhost\/moodle\/AuthorizationUrl.*/)
+    })
+  })
+
+  it('Login route GET request with registered platform is expected to redirect to authenticationEndpoint', async () => {
+    nock('http://localhost/moodle').get(/\/AuthorizationUrl.*/).reply(200)
+    const url = await lti.loginUrl()
+    return chai.request(lti.app).get(url).query({ iss: 'http://localhost/moodle' }).then(res => {
       expect(res).to.redirectTo(/^http:\/\/localhost\/moodle\/AuthorizationUrl.*/)
     })
   })
