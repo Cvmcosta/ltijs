@@ -46,7 +46,8 @@ class Database {
     }
 
     (0, _classPrivateFieldGet2.default)(this, _dbConnection).url = database.url;
-    (0, _classPrivateFieldGet2.default)(this, _dbConnection).options = database.connection; // Creating database schemas
+    (0, _classPrivateFieldGet2.default)(this, _dbConnection).options = database.connection;
+    (0, _classPrivateFieldGet2.default)(this, _dbConnection).options.useUnifiedTopology = true; // Creating database schemas
 
     const idTokenSchema = new Schema({
       iss: String,

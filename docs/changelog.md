@@ -8,6 +8,15 @@
 
 ### CHANGELOG
 
+#### V2.5.0
+
+> 2020-02-20
+> MAJOR CHANGE
+> - Simplified the login flow, removed mentions to origin and host header that were causing issues in some situations.
+> - Cookie names and LTIK fields are now created based on the iss parameter sent with the login request and idtoken, therefore are more precise in identifying the platform that originated the request.
+> - Added a new local variable accessed via res.locals.context that contains information specific to that launch, eg: Custom variables.
+> - MongoDB now uses useUnifiedTopology: true to deal with the warning about the deprecated discovery and monitoring engine.
+
 #### V2.4.5
 
 > 2020-02-18

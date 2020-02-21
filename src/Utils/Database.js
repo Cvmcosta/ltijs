@@ -27,6 +27,7 @@ class Database {
     }
     this.#dbConnection.url = database.url
     this.#dbConnection.options = database.connection
+    this.#dbConnection.options.useUnifiedTopology = true
 
     // Creating database schemas
     const idTokenSchema = new Schema({

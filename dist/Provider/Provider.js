@@ -234,65 +234,32 @@ class Provider {
       provMainDebug('Receiving request at path: ' + req.path); // Ckeck if request is attempting to initiate oidc login flow or access reserved or whitelisted routes
 
       if (req.path === (0, _classPrivateFieldGet2.default)(this, _loginUrl) || req.path === (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl) || req.path === (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl) || req.path === (0, _classPrivateFieldGet2.default)(this, _keysetUrl) || (0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(req.path) !== -1 || (0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(req.path + '-method-' + req.method.toUpperCase()) !== -1) return next();
-      provMainDebug('Path does not match reserved endpoints'); // Determine origin of request
-
-      let origin = req.get('origin');
-      if (!origin || origin === 'null') origin = req.get('host');
-      provMainDebug('Request origin: ' + origin); // Creates ltik for appUrl
-
-      if (req.path === (0, _classPrivateFieldGet2.default)(this, _appUrl) && !req.query.ltik) {
-        provMainDebug('No LTIK found in initial request to main endpoint, generating a new one');
-        if (!origin) return res.redirect((0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl));
-        const iss = 'plat' + encodeURIComponent(Buffer.from(origin).toString('base64'));
-        let token = {
-          issuer: iss,
-          path: (0, _classPrivateFieldGet2.default)(this, _appUrl) // Signing context token
-
-        };
-        token = jwt.sign(token, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
-        return res.redirect(307, (0, _classPrivateFieldGet2.default)(this, _appUrl) + '?ltik=' + token);
-      }
+      provMainDebug('Path does not match reserved endpoints');
 
       try {
-        provMainDebug('Attempting to verify LTIK');
+        // Retrieving LTIK
+        const ltik = req.query.ltik; // Retrieving cookies
 
-        if (!req.query.ltik) {
-          provMainDebug('No LTIK found');
-          return res.redirect((0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl));
-        }
+        const cookies = req.signedCookies;
 
-        const validLtik = jwt.verify(req.query.ltik, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
-        provMainDebug('LTIK successfully verified');
-        let user = false;
-        const issuer = validLtik.issuer;
+        if (!ltik) {
+          const idtoken = req.body.id_token;
 
-        const contextPath = _path.join(issuer, validLtik.path);
+          if (req.path === (0, _classPrivateFieldGet2.default)(this, _appUrl) && idtoken) {
+            // No ltik found but request contains an idtoken
+            provMainDebug('Received idtoken for validation');
+            const decoded = jwt.decode(idtoken, {
+              complete: true
+            });
+            const iss = decoded.payload.iss;
+            const issuerCode = 'plat' + encodeURIComponent(Buffer.from(iss).toString('base64'));
+            const contextPath = issuerCode + (0, _classPrivateFieldGet2.default)(this, _appUrl); // Retrieving validation parameters from cookies
 
-        const cookies = req.signedCookies; // Matches path to cookie
-
-        provMainDebug('Attempting to retrieve matching sesison cookie');
-        let contextTokenName;
-
-        for (const key of Object.keys(cookies).sort((a, b) => b.length - a.length)) {
-          if (contextPath.indexOf(key) !== -1) {
-            user = cookies[key];
-            contextTokenName = key;
-            break;
-          }
-        } // Check if user already has session cookie stored in its browser
-
-
-        if (!user) {
-          provMainDebug('No cookie found');
-
-          if (req.body.id_token) {
-            provMainDebug('Received request containing token. Sending for validation'); // Retrieving validation parameters from cookies
-
-            const validationParameters = {
+            const validationCookies = {
               state: cookies[contextPath + '-state'],
               iss: cookies[contextPath + '-iss']
             };
-            const valid = await Auth.validateToken(req.body.id_token, req.body.state, validationParameters, this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger), (0, _classPrivateFieldGet2.default)(this, _Database)); // Deleting validation cookies
+            const valid = await Auth.validateToken(idtoken, decoded, req.body.state, validationCookies, this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger), (0, _classPrivateFieldGet2.default)(this, _Database)); // Deleting validation cookies
 
             res.clearCookie(contextPath + '-state', (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
             res.clearCookie(contextPath + '-iss', (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
@@ -300,7 +267,7 @@ class Provider {
 
             const platformToken = {
               iss: valid.iss,
-              issuer_code: issuer,
+              issuer_code: issuerCode,
               user: valid.sub,
               roles: valid['https://purl.imsglobal.org/spec/lti/claim/roles'],
               userInfo: {
@@ -320,7 +287,7 @@ class Provider {
 
             };
             if (await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('idtoken', {
-              issuer_code: issuer,
+              issuer_code: issuerCode,
               user: valid.sub
             })) (0, _classPrivateFieldGet2.default)(this, _Database).Insert(false, 'idtoken', platformToken); // Mount context token
 
@@ -329,33 +296,54 @@ class Provider {
               user: valid.sub,
               context: valid['https://purl.imsglobal.org/spec/lti/claim/context'],
               resource: valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'],
-              custom: valid['https://purl.imsglobal.org/spec/lti/claim/custom']
-            };
-            res.cookie(contextPath, platformToken.user, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
-            platformToken.platformContext = contextToken; // Store contextToken in database
+              custom: valid['https://purl.imsglobal.org/spec/lti/claim/custom'] // Store contextToken in database
 
+            };
             if (await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('contexttoken', {
               path: contextPath,
               user: valid.sub
             })) (0, _classPrivateFieldGet2.default)(this, _Database).Insert(false, 'contexttoken', contextToken);
-            res.locals.contextToken = req.query.ltik;
-            res.locals.token = platformToken;
-            provMainDebug('Passing request to next handler');
-            return next();
+            res.cookie(contextPath, platformToken.user, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
+            provMainDebug('Generating LTIK and redirecting to main endpoint');
+            const newLtikObj = {
+              issuer: issuerCode,
+              path: (0, _classPrivateFieldGet2.default)(this, _appUrl) // Signing context token
+
+            };
+            const newLtik = jwt.sign(newLtikObj, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
+            return res.redirect(307, (0, _classPrivateFieldGet2.default)(this, _appUrl) + '?ltik=' + newLtik);
           } else {
-            provMainDebug(req.body);
-            if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
-              level: 'error',
-              message: req.body
-            });
-            provMainDebug('Passing request to session timeout handler');
-            return res.redirect((0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl));
+            provMainDebug('No LTIK found');
+            return res.redirect((0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl));
           }
-        } else {
-          provAuthDebug('Cookie found'); // Gets correspondent id token from database
+        }
+
+        provMainDebug('LTIK found');
+        const validLtik = jwt.verify(ltik, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
+        provMainDebug('LTIK successfully verified');
+        let user = false;
+        const issuerCode = validLtik.issuer;
+
+        const contextPath = _path.join(issuerCode, validLtik.path); // Matches path to cookie
+
+
+        provMainDebug('Attempting to retrieve matching session cookie');
+        let contextTokenName;
+
+        for (const key of Object.keys(cookies).sort((a, b) => b.length - a.length)) {
+          if (contextPath.indexOf(key) !== -1) {
+            user = cookies[key];
+            contextTokenName = key;
+            break;
+          }
+        } // Check if user already has session cookie stored in its browser
+
+
+        if (user) {
+          provAuthDebug('Session cookie found'); // Gets correspondent id token from database
 
           let idToken = await (0, _classPrivateFieldGet2.default)(this, _Database).Get(false, 'idtoken', {
-            issuer_code: issuer,
+            issuer_code: issuerCode,
             user: user
           });
           if (!idToken) throw new Error('No id token found in database');
@@ -367,11 +355,21 @@ class Provider {
           });
           if (!contextToken) throw new Error('No context token found in database');
           contextToken = contextToken[0];
-          idToken.platformContext = contextToken;
-          res.locals.contextToken = req.query.ltik;
+          idToken.platformContext = contextToken; // Creating local variables
+
+          res.locals.context = contextToken;
           res.locals.token = idToken;
           provMainDebug('Passing request to next handler');
           return next();
+        } else {
+          provMainDebug('No session cookie found');
+          provMainDebug(req.body);
+          if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
+            level: 'error',
+            message: req.body
+          });
+          provMainDebug('Passing request to session timeout handler');
+          return res.redirect((0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl));
         }
       } catch (err) {
         provAuthDebug(err.message);
@@ -394,10 +392,7 @@ class Provider {
         const platform = await this.getPlatform(iss);
 
         if (platform) {
-          let origin = req.get('origin');
-          if (!origin || origin === 'null') origin = req.get('host');
-          if (!origin) return res.redirect((0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl));
-          const cookieName = 'plat' + encodeURIComponent(Buffer.from(origin).toString('base64')) + (0, _classPrivateFieldGet2.default)(this, _appUrl);
+          const cookieName = 'plat' + encodeURIComponent(Buffer.from(iss).toString('base64')) + (0, _classPrivateFieldGet2.default)(this, _appUrl);
           provMainDebug('Redirecting to platform authentication endpoint');
           res.clearCookie(cookieName, (0, _classPrivateFieldGet2.default)(this, _cookieOptions)); // Create state parameter used to validade authentication response
 

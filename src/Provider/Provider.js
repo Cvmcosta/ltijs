@@ -186,67 +186,30 @@ class Provider {
 
       provMainDebug('Path does not match reserved endpoints')
 
-      // Determine origin of request
-      let origin = req.get('origin')
-      if (!origin || origin === 'null') origin = req.get('host')
-
-      provMainDebug('Request origin: ' + origin)
-
-      // Creates ltik for appUrl
-      if (req.path === this.#appUrl && !req.query.ltik) {
-        provMainDebug('No LTIK found in initial request to main endpoint, generating a new one')
-        if (!origin) return res.redirect(this.#invalidTokenUrl)
-        const iss = 'plat' + encodeURIComponent(Buffer.from(origin).toString('base64'))
-
-        let token = {
-          issuer: iss,
-          path: this.#appUrl
-        }
-        // Signing context token
-        token = jwt.sign(token, this.#ENCRYPTIONKEY)
-
-        return res.redirect(307, this.#appUrl + '?ltik=' + token)
-      }
-
       try {
-        provMainDebug('Attempting to verify LTIK')
-        if (!req.query.ltik) {
-          provMainDebug('No LTIK found')
-          return res.redirect(this.#invalidTokenUrl)
-        }
-
-        const validLtik = jwt.verify(req.query.ltik, this.#ENCRYPTIONKEY)
-        provMainDebug('LTIK successfully verified')
-
-        let user = false
-
-        const issuer = validLtik.issuer
-        const contextPath = _path.join(issuer, validLtik.path)
+        // Retrieving LTIK
+        const ltik = req.query.ltik
+        // Retrieving cookies
         const cookies = req.signedCookies
 
-        // Matches path to cookie
-        provMainDebug('Attempting to retrieve matching sesison cookie')
-        let contextTokenName
-        for (const key of Object.keys(cookies).sort((a, b) => b.length - a.length)) {
-          if (contextPath.indexOf(key) !== -1) {
-            user = cookies[key]
-            contextTokenName = key
-            break
-          }
-        }
+        if (!ltik) {
+          const idtoken = req.body.id_token
+          if (req.path === this.#appUrl && idtoken) {
+            // No ltik found but request contains an idtoken
+            provMainDebug('Received idtoken for validation')
+            const decoded = jwt.decode(idtoken, { complete: true })
 
-        // Check if user already has session cookie stored in its browser
-        if (!user) {
-          provMainDebug('No cookie found')
-          if (req.body.id_token) {
-            provMainDebug('Received request containing token. Sending for validation')
+            const iss = decoded.payload.iss
+            const issuerCode = 'plat' + encodeURIComponent(Buffer.from(iss).toString('base64'))
+            const contextPath = issuerCode + this.#appUrl
+
             // Retrieving validation parameters from cookies
-            const validationParameters = {
+            const validationCookies = {
               state: cookies[contextPath + '-state'],
               iss: cookies[contextPath + '-iss']
             }
 
-            const valid = await Auth.validateToken(req.body.id_token, req.body.state, validationParameters, this.getPlatform, this.#ENCRYPTIONKEY, this.#logger, this.#Database)
+            const valid = await Auth.validateToken(idtoken, decoded, req.body.state, validationCookies, this.getPlatform, this.#ENCRYPTIONKEY, this.#logger, this.#Database)
 
             // Deleting validation cookies
             res.clearCookie(contextPath + '-state', this.#cookieOptions)
@@ -257,7 +220,7 @@ class Provider {
             // Mount platform token
             const platformToken = {
               iss: valid.iss,
-              issuer_code: issuer,
+              issuer_code: issuerCode,
               user: valid.sub,
               roles: valid['https://purl.imsglobal.org/spec/lti/claim/roles'],
               userInfo: {
@@ -277,7 +240,7 @@ class Provider {
             }
 
             // Store idToken in database
-            if (await this.#Database.Delete('idtoken', { issuer_code: issuer, user: valid.sub })) this.#Database.Insert(false, 'idtoken', platformToken)
+            if (await this.#Database.Delete('idtoken', { issuer_code: issuerCode, user: valid.sub })) this.#Database.Insert(false, 'idtoken', platformToken)
 
             // Mount context token
             const contextToken = {
@@ -288,28 +251,51 @@ class Provider {
               custom: valid['https://purl.imsglobal.org/spec/lti/claim/custom']
             }
 
-            res.cookie(contextPath, platformToken.user, this.#cookieOptions)
-
-            platformToken.platformContext = contextToken
-
             // Store contextToken in database
             if (await this.#Database.Delete('contexttoken', { path: contextPath, user: valid.sub })) this.#Database.Insert(false, 'contexttoken', contextToken)
 
-            res.locals.contextToken = req.query.ltik
-            res.locals.token = platformToken
+            res.cookie(contextPath, platformToken.user, this.#cookieOptions)
 
-            provMainDebug('Passing request to next handler')
-            return next()
+            provMainDebug('Generating LTIK and redirecting to main endpoint')
+            const newLtikObj = {
+              issuer: issuerCode,
+              path: this.#appUrl
+            }
+            // Signing context token
+            const newLtik = jwt.sign(newLtikObj, this.#ENCRYPTIONKEY)
+
+            return res.redirect(307, this.#appUrl + '?ltik=' + newLtik)
           } else {
-            provMainDebug(req.body)
-            if (this.#logger) this.#logger.log({ level: 'error', message: req.body })
-            provMainDebug('Passing request to session timeout handler')
-            return res.redirect(this.#sessionTimeoutUrl)
+            provMainDebug('No LTIK found')
+            return res.redirect(this.#invalidTokenUrl)
           }
-        } else {
-          provAuthDebug('Cookie found')
+        }
+
+        provMainDebug('LTIK found')
+        const validLtik = jwt.verify(ltik, this.#ENCRYPTIONKEY)
+        provMainDebug('LTIK successfully verified')
+
+        let user = false
+
+        const issuerCode = validLtik.issuer
+        const contextPath = _path.join(issuerCode, validLtik.path)
+
+        // Matches path to cookie
+        provMainDebug('Attempting to retrieve matching session cookie')
+        let contextTokenName
+        for (const key of Object.keys(cookies).sort((a, b) => b.length - a.length)) {
+          if (contextPath.indexOf(key) !== -1) {
+            user = cookies[key]
+            contextTokenName = key
+            break
+          }
+        }
+
+        // Check if user already has session cookie stored in its browser
+        if (user) {
+          provAuthDebug('Session cookie found')
           // Gets correspondent id token from database
-          let idToken = await this.#Database.Get(false, 'idtoken', { issuer_code: issuer, user: user })
+          let idToken = await this.#Database.Get(false, 'idtoken', { issuer_code: issuerCode, user: user })
           if (!idToken) throw new Error('No id token found in database')
           idToken = idToken[0]
 
@@ -319,11 +305,18 @@ class Provider {
           contextToken = contextToken[0]
           idToken.platformContext = contextToken
 
-          res.locals.contextToken = req.query.ltik
+          // Creating local variables
+          res.locals.context = contextToken
           res.locals.token = idToken
 
           provMainDebug('Passing request to next handler')
           return next()
+        } else {
+          provMainDebug('No session cookie found')
+          provMainDebug(req.body)
+          if (this.#logger) this.#logger.log({ level: 'error', message: req.body })
+          provMainDebug('Passing request to session timeout handler')
+          return res.redirect(this.#sessionTimeoutUrl)
         }
       } catch (err) {
         provAuthDebug(err.message)
@@ -342,10 +335,7 @@ class Provider {
         provMainDebug('Receiving a login request from: ' + iss)
         const platform = await this.getPlatform(iss)
         if (platform) {
-          let origin = req.get('origin')
-          if (!origin || origin === 'null') origin = req.get('host')
-          if (!origin) return res.redirect(this.#invalidTokenUrl)
-          const cookieName = 'plat' + encodeURIComponent(Buffer.from(origin).toString('base64')) + this.#appUrl
+          const cookieName = 'plat' + encodeURIComponent(Buffer.from(iss).toString('base64')) + this.#appUrl
           provMainDebug('Redirecting to platform authentication endpoint')
           res.clearCookie(cookieName, this.#cookieOptions)
 

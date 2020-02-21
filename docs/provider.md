@@ -790,6 +790,8 @@ The token consists of:
 }
 ```
 
+You can also get direct access to the **platformContext** portion of the token, that contains context specific information such as custom parameters, via the **res.locals.context** variable, accessible in every endpoint reached via the normal authentication flow.
+
 ---
 
 ### Routing and context

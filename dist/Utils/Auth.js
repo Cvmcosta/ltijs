@@ -66,6 +66,7 @@ class Auth {
   /**
      * @description Resolves a promisse if the token is valid following LTI 1.3 standards.
      * @param {String} token - JWT token to be verified.
+     * @param {Object} decoded - JWT decoded to give acess to payload.
      * @param {String} state - State validation parameter.
      * @param {Object} validationParameters - Stored validation parameters retrieved from cookies.
      * @param {Function} getPlatform - getPlatform function to get the platform that originated the token.
@@ -74,22 +75,19 @@ class Auth {
      */
 
 
-  static async validateToken(token, state, validationParameters, getPlatform, ENCRYPTIONKEY, logger, Database) {
-    const decodedToken = jwt.decode(token, {
-      complete: true
-    });
-    const kid = decodedToken.header.kid;
-    const alg = decodedToken.header.alg;
+  static async validateToken(token, decoded, state, validationParameters, getPlatform, ENCRYPTIONKEY, logger, Database) {
+    const kid = decoded.header.kid;
+    const alg = decoded.header.alg;
     provAuthDebug('Attempting to validate iss claim');
     provAuthDebug('Request Iss claim: ' + validationParameters.iss);
-    provAuthDebug('Response Iss claim: ' + decodedToken.payload.iss);
-    if (!validationParameters.iss || validationParameters.iss !== decodedToken.payload.iss) throw new Error('IssClaimDoesNotMatch');
+    provAuthDebug('Response Iss claim: ' + decoded.payload.iss);
+    if (!validationParameters.iss || validationParameters.iss !== decoded.payload.iss) throw new Error('IssClaimDoesNotMatch');
     provAuthDebug('Attempting to validate state');
     provAuthDebug('Request state: ' + validationParameters.state);
     provAuthDebug('Response state: ' + state);
     if (!validationParameters.state || validationParameters.state !== state) throw new Error('StateClaimDoesNotMatch');
     provAuthDebug('Attempting to retrieve registered platform');
-    const platform = await getPlatform(decodedToken.payload.iss, ENCRYPTIONKEY, logger, Database);
+    const platform = await getPlatform(decoded.payload.iss, ENCRYPTIONKEY, logger, Database);
     if (!platform) throw new Error('NoPlatformRegistered');
     const authConfig = await platform.platformAuthConfig();
 
@@ -144,11 +142,11 @@ class Auth {
 
   static async verifyToken(token, key, alg, platform, Database) {
     provAuthDebug('Attempting to verify JWT with the given key');
-    const decoded = jwt.verify(token, key, {
+    const verified = jwt.verify(token, key, {
       algorithms: [alg]
     });
-    await this.oidcValidationSteps(decoded, platform, alg, Database);
-    return decoded;
+    await this.oidcValidationSteps(verified, platform, alg, Database);
+    return verified;
   }
   /**
      * @description Validates de token based on the OIDC specifications.

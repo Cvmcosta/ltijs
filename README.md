@@ -21,10 +21,12 @@
 [![Donate](https://img.shields.io/badge/Donate-Buy%20me%20a%20coffe-blue)](https://www.buymeacoffee.com/UL5fBsi)
 
 
-> v2.4.0
+> v2.5.0
 > MAJOR CHANGE
-> - Security update, `state` parameter is now validated at the end of the OIDC login flow.
-> - Security update, `iss` parameter is now validated at the end of the OIDC login flow.
+> - Simplified the login flow, removed mentions to origin and host header that were causing issues in some situations.
+> - Cookie names and LTIK fields are now created based on the iss parameter sent with the login request and idtoken, therefore are more precise in identifying the platform that originated the request.
+> - Added a new local variable accessed via res.locals.context that contains information specific to that launch, eg: Custom variables.
+> - MongoDB now uses useUnifiedTopology: true to deal with the warning about the deprecated discovery and monitoring engine.
 
 > - View entire [CHANGELOG](https://cvmcosta.github.io/ltijs/#/changelog)
 
@@ -32,7 +34,8 @@
 
 | Version | Moodle | Canvas |
 | ---- | - | - |
-| 2.4 | <center>✔️</center> | <center></center> |
+| 2.5 | <center>✔️</center> | <center></center> |
+| 2.4 | <center>✔️</center> | <center>✔️</center> |
 | 2.3 | <center>✔️</center> | <center>✔️</center> |
 | 2.1 | <center>✔️</center> | <center>✔️</center> |
 | 2.0 | <center>✔️</center> | <center>✔️</center> |

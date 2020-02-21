@@ -105,11 +105,11 @@ describe('Testing Provider', function () {
   it('MainApp route receiving no idToken is expected to redirect to the session timeout route', async () => {
     const url = await lti.appUrl()
     return chai.request(lti.app).post(url).then(res => {
-      expect(res).to.redirectTo(/.*\/sessionTimeout/)
+      expect(res).to.redirectTo(/.*\/invalidToken/)
     })
   })
 
-  it('MainApp route receiving an idtoken is expected to generate cookies, present idToken on final endpoint and return status 200', async () => {
+  it('MainApp route receiving an idtoken is expected to return status 200', async () => {
     const plat = await lti.getPlatform('http://localhost/moodle')
     const clientId = await plat.platformClientId()
     const token = {
@@ -119,7 +119,7 @@ describe('Testing Provider', function () {
       aud: clientId,
       'https://purl.imsglobal.org/spec/lti/claim/deployment_id': '2',
       'https://purl.imsglobal.org/spec/lti/claim/target_link_uri': 'https://localhost',
-      sub: '22',
+      sub: '2',
       'https://purl.imsglobal.org/spec/lti/claim/lis': { person_sourcedid: '', course_section_sourcedid: '' },
       'https://purl.imsglobal.org/spec/lti/claim/roles': [
         'http://purl.imsglobal.org/vocab/lis/v2/institution/person#Administrator',
@@ -200,10 +200,8 @@ describe('Testing Provider', function () {
     })
 
     const url = await lti.appUrl()
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: 'ygmbtRwrUoxyq9Y7l5K4CA==' }).set('Cookie', ['plataHR0cDovL2xvY2FsaG9zdA%3D%3D/-state=s%3AygmbtRwrUoxyq9Y7l5K4CA%3D%3D.WK%2BJh3QGAJ9unhCI01TX3HAvJ2aKENfyTLh3kl1lmGM; Path=/; HttpOnly; SameSite=None', 'plataHR0cDovL2xvY2FsaG9zdA%3D%3D/-iss=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly; SameSite=None']).set('host', 'http://localhost').then(res => {
+    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: 'a8ahnCoEMgob1R7p8pvDOg==' }).set('Cookie', ['plataHR0cDovL2xvY2FsaG9zdC9tb29kbGU%3D/-state=s%3Aa8ahnCoEMgob1R7p8pvDOg%3D%3D.Q%2FbLkd9Ig6huVUo0VcIV2St1mIbfNYBi3nrkSnyo08E; Path=/; HttpOnly; SameSite=None', 'plataHR0cDovL2xvY2FsaG9zdC9tb29kbGU%3D/-iss=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly; SameSite=None', 'plataHR0cDovL2xvY2FsaG9zdC9tb29kbGU%3D/=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
       expect(res).to.have.status(200)
-      expect(JSON.parse(res.text).iss).to.equal('http://localhost/moodle')
-      expect(res.headers['set-cookie'][0].search(/^plat/)).to.not.equal(-1)
     })
   })
 
@@ -217,7 +215,7 @@ describe('Testing Provider', function () {
       aud: clientId,
       'https://purl.imsglobal.org/spec/lti/claim/deployment_id': '2',
       'https://purl.imsglobal.org/spec/lti/claim/target_link_uri': 'https://localhost',
-      sub: '22',
+      sub: '2',
       'https://purl.imsglobal.org/spec/lti/claim/lis': { person_sourcedid: '', course_section_sourcedid: '' },
       'https://purl.imsglobal.org/spec/lti/claim/roles': [
         'http://purl.imsglobal.org/vocab/lis/v2/institution/person#Administrator',
@@ -299,7 +297,7 @@ describe('Testing Provider', function () {
     })
 
     const url = await lti.appUrl()
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: 'ygmbtRwrUoxyq9Y7l5K4CA==' }).set('Cookie', ['plataHR0cDovL2xvY2FsaG9zdA%3D%3D/-state=s%3AygmbtRwrUoxyq9Y7l5K4CA%3D%3D.WK%2BJh3QGAJ9unhCI01TX3HAvJ2aKENfyTLh3kl1lmGM; Path=/; HttpOnly; SameSite=None', 'plataHR0cDovL2xvY2FsaG9zdA%3D%3D/-iss=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly; SameSite=None']).set('host', 'http://localhost').then(res => {
+    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: 'a8ahnCoEMgob1R7p8pvDOg==' }).set('Cookie', ['plataHR0cDovL2xvY2FsaG9zdC9tb29kbGU%3D/-state=s%3Aa8ahnCoEMgob1R7p8pvDOg%3D%3D.Q%2FbLkd9Ig6huVUo0VcIV2St1mIbfNYBi3nrkSnyo08E; Path=/; HttpOnly; SameSite=None', 'plataHR0cDovL2xvY2FsaG9zdC9tb29kbGU%3D/-iss=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly; SameSite=None', 'plataHR0cDovL2xvY2FsaG9zdC9tb29kbGU%3D/=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).set('host', 'http://localhost').then(res => {
       expect(res).to.redirectTo(/\/finalRoute/)
     })
   })
