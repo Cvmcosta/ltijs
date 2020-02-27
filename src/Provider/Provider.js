@@ -18,6 +18,7 @@ const jwt = require('jsonwebtoken')
 const winston = require('winston')
 const validUrl = require('valid-url')
 const crypto = require('crypto')
+const { getDomain } = require('tldjs')
 
 const provAuthDebug = require('debug')('provider:auth')
 const provMainDebug = require('debug')('provider:main')
@@ -191,6 +192,8 @@ class Provider {
         const ltik = req.query.ltik
         // Retrieving cookies
         const cookies = req.signedCookies
+        provMainDebug('Cookies received: ')
+        provMainDebug(cookies)
 
         if (!ltik) {
           const idtoken = req.body.id_token
@@ -637,7 +640,11 @@ class Provider {
     if ((options && options.isNewResource) || externalRequest) {
       provMainDebug('Setting up path cookie for this resource with path: ' + path)
       const cookieOptions = JSON.parse(JSON.stringify(this.#cookieOptions))
-      if (externalRequest) cookieOptions.domain = '.' + externalRequest.domain + '.' + externalRequest.tld
+      if (externalRequest) {
+        const domain = getDomain(externalRequest)
+        cookieOptions.domain = '.' + domain
+        provMainDebug('External request found for domain: .' + domain)
+      }
 
       res.cookie(newPath, res.locals.token.user, cookieOptions)
 

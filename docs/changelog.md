@@ -8,6 +8,14 @@
 
 ### CHANGELOG
 
+#### V2.5.1
+
+> 2020-02-27
+> MINOR CHANGE
+> - Added library ltdjs to parse the domain of external request urls on the redirect method.
+> - Added cookie logs.
+
+
 #### V2.5.0
 
 > 2020-02-20
