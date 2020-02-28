@@ -27,7 +27,7 @@ const Keyset = require('../Utils/Keyset');
 
 const GradeService = require('./Services/Grade');
 
-const url = require('url');
+const url = require('fast-url-parser');
 
 const _path = require('path');
 
@@ -39,9 +39,7 @@ const validUrl = require('valid-url');
 
 const crypto = require('crypto');
 
-const {
-  getDomain
-} = require('tldjs');
+const tldparser = require('tld-extract');
 
 const provAuthDebug = require('debug')('provider:auth');
 
@@ -747,7 +745,7 @@ class Provider {
       const cookieOptions = JSON.parse(JSON.stringify((0, _classPrivateFieldGet2.default)(this, _cookieOptions)));
 
       if (externalRequest) {
-        const domain = getDomain(externalRequest);
+        const domain = tldparser(externalRequest).domain;
         cookieOptions.domain = '.' + domain;
         provMainDebug('External request found for domain: .' + domain);
       }
@@ -772,10 +770,30 @@ class Provider {
         });
         res.clearCookie(code + (0, _classPrivateFieldGet2.default)(this, _appUrl), (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
       }
+    } // Formatting path with queries
+
+
+    const pathParts = url.parse(path);
+    const params = new URLSearchParams(pathParts.search);
+    const queries = {};
+
+    for (const [key, value] of params) {
+      queries[key] = value;
     }
 
+    const formattedPath = url.format({
+      protocol: pathParts.protocol,
+      hostname: pathParts.hostname,
+      pathname: pathParts.pathname,
+      port: pathParts.port,
+      auth: pathParts.auth,
+      query: (0, _objectSpread2.default)({}, queries, {
+        ltik: token
+      })
+    }); // Sets allow credentials header and redirects to path with queries
+
     res.header('Access-Control-Allow-Credentials', 'true');
-    return res.redirect(path + '?ltik=' + token);
+    return res.redirect(formattedPath);
   }
 
 }

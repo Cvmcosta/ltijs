@@ -8,11 +8,12 @@
 
 ### CHANGELOG
 
-#### V2.5.1
+#### V2.5.2
 
 > 2020-02-27
 > MINOR CHANGE
-> - Added library ltdjs to parse the domain of external request urls on the redirect method.
+> - Added library tld-extract to parse the domain of external request urls on the redirect method.
+> - lti.redirect now accepts urls with ports, users and queries.
 > - Added cookie logs.
 
 
