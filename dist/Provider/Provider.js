@@ -728,12 +728,21 @@ class Provider {
   async redirect(res, path, options) {
     if ((0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(path) !== -1) return res.redirect(path);
     const code = res.locals.token.issuer_code;
+    const pathParts = url.parse(path); // Create cookie name
 
-    const newPath = _path.join(code, path);
+    const cookiePath = url.format({
+      protocol: pathParts.protocol,
+      hostname: pathParts.hostname,
+      pathname: pathParts.pathname,
+      port: pathParts.port,
+      auth: pathParts.auth
+    });
+
+    const cookieName = _path.join(code, cookiePath);
 
     let token = {
       issuer: code,
-      path: path // Signing context token
+      path: cookiePath // Signing context token
 
     };
     token = jwt.sign(token, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY)); // Checking the type of redirect
@@ -750,16 +759,16 @@ class Provider {
         provMainDebug('External request found for domain: .' + domain);
       }
 
-      res.cookie(newPath, res.locals.token.user, cookieOptions);
+      res.cookie(cookieName, res.locals.token.user, cookieOptions);
       const newContextToken = {
         resource: res.locals.token.platformContext.resource,
         custom: res.locals.token.platformContext.custom,
         context: res.locals.token.platformContext.context,
-        path: newPath,
+        path: cookieName,
         user: res.locals.token.platformContext.user
       };
       if (await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('contexttoken', {
-        path: newPath,
+        path: cookieName,
         user: res.locals.token.user
       })) (0, _classPrivateFieldGet2.default)(this, _Database).Insert(false, 'contexttoken', newContextToken);
 
@@ -773,7 +782,6 @@ class Provider {
     } // Formatting path with queries
 
 
-    const pathParts = url.parse(path);
     const params = new URLSearchParams(pathParts.search);
     const queries = {};
 

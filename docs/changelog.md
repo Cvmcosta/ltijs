@@ -8,6 +8,12 @@
 
 ### CHANGELOG
 
+#### V2.5.3
+
+> 2020-02-28
+> MINOR CHANGE
+> - Fixing error on redirect method. Now accets queries correctly.
+
 #### V2.5.2
 
 > 2020-02-27

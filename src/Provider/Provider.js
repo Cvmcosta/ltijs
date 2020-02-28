@@ -625,11 +625,21 @@ class Provider {
   async redirect (res, path, options) {
     if (this.#whitelistedUrls.indexOf(path) !== -1) return res.redirect(path)
     const code = res.locals.token.issuer_code
-    const newPath = _path.join(code, path)
+    const pathParts = url.parse(path)
+
+    // Create cookie name
+    const cookiePath = url.format({
+      protocol: pathParts.protocol,
+      hostname: pathParts.hostname,
+      pathname: pathParts.pathname,
+      port: pathParts.port,
+      auth: pathParts.auth
+    })
+    const cookieName = _path.join(code, cookiePath)
 
     let token = {
       issuer: code,
-      path: path
+      path: cookiePath
     }
     // Signing context token
     token = jwt.sign(token, this.#ENCRYPTIONKEY)
@@ -646,17 +656,17 @@ class Provider {
         provMainDebug('External request found for domain: .' + domain)
       }
 
-      res.cookie(newPath, res.locals.token.user, cookieOptions)
+      res.cookie(cookieName, res.locals.token.user, cookieOptions)
 
       const newContextToken = {
         resource: res.locals.token.platformContext.resource,
         custom: res.locals.token.platformContext.custom,
         context: res.locals.token.platformContext.context,
-        path: newPath,
+        path: cookieName,
         user: res.locals.token.platformContext.user
       }
 
-      if (await this.#Database.Delete('contexttoken', { path: newPath, user: res.locals.token.user })) this.#Database.Insert(false, 'contexttoken', newContextToken)
+      if (await this.#Database.Delete('contexttoken', { path: cookieName, user: res.locals.token.user })) this.#Database.Insert(false, 'contexttoken', newContextToken)
       if (options && options.ignoreRoot) {
         this.#Database.Delete('contexttoken', { path: code + this.#appUrl, user: res.locals.token.user })
         res.clearCookie(code + this.#appUrl, this.#cookieOptions)
@@ -664,7 +674,6 @@ class Provider {
     }
 
     // Formatting path with queries
-    const pathParts = url.parse(path)
     const params = new URLSearchParams(pathParts.search)
     const queries = {}
     for (const [key, value] of params) { queries[key] = value }
