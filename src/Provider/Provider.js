@@ -203,27 +203,30 @@ class Provider {
             const decoded = jwt.decode(idtoken, { complete: true })
 
             const iss = decoded.payload.iss
-            const issuerCode = 'plat' + encodeURIComponent(Buffer.from(iss).toString('base64'))
-            const contextPath = issuerCode + this.#appUrl
+            const state = req.body.state
 
             // Retrieving validation parameters from cookies
             const validationCookies = {
-              state: cookies[contextPath + '-state'],
-              iss: cookies[contextPath + '-iss']
+              state: cookies[state + '-state'],
+              iss: cookies[state + '-iss']
             }
 
-            const valid = await Auth.validateToken(idtoken, decoded, req.body.state, validationCookies, this.getPlatform, this.#ENCRYPTIONKEY, this.#logger, this.#Database)
+            const valid = await Auth.validateToken(idtoken, decoded, state, validationCookies, this.getPlatform, this.#ENCRYPTIONKEY, this.#logger, this.#Database)
 
             // Deleting validation cookies
-            res.clearCookie(contextPath + '-state', this.#cookieOptions)
-            res.clearCookie(contextPath + '-iss', this.#cookieOptions)
+            res.clearCookie(state + '-state', this.#cookieOptions)
+            res.clearCookie(state + '-iss', this.#cookieOptions)
 
             provAuthDebug('Successfully validated token!')
+
+            const issuerCode = 'plat' + encodeURIComponent(Buffer.from(iss).toString('base64'))
+            const activityId = valid['https://purl.imsglobal.org/spec/lti/claim/context'].id + '_' + valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'].id
+            const contextPath = _path.join(issuerCode, this.#appUrl, activityId)
 
             // Mount platform token
             const platformToken = {
               iss: valid.iss,
-              issuer_code: issuerCode,
+              issuerCode: issuerCode,
               user: valid.sub,
               roles: valid['https://purl.imsglobal.org/spec/lti/claim/roles'],
               userInfo: {
@@ -238,31 +241,38 @@ class Provider {
                 name: valid['https://purl.imsglobal.org/spec/lti/claim/tool_platform'].name,
                 description: valid['https://purl.imsglobal.org/spec/lti/claim/tool_platform'].description
               },
+              lis: valid['https://purl.imsglobal.org/spec/lti/claim/lis'],
               endpoint: valid['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint'],
               namesRoles: valid['https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice']
             }
 
             // Store idToken in database
-            if (await this.#Database.Delete('idtoken', { issuer_code: issuerCode, user: valid.sub })) this.#Database.Insert(false, 'idtoken', platformToken)
+            if (await this.#Database.Delete('idtoken', { issuerCode: issuerCode, user: platformToken.user })) this.#Database.Insert(false, 'idtoken', platformToken)
 
             // Mount context token
             const contextToken = {
               path: contextPath,
               user: valid.sub,
+              deploymentId: valid['https://purl.imsglobal.org/spec/lti/claim/deployment_id'],
+              targetLinkUri: valid['https://purl.imsglobal.org/spec/lti/claim/target_link_uri'],
               context: valid['https://purl.imsglobal.org/spec/lti/claim/context'],
               resource: valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'],
-              custom: valid['https://purl.imsglobal.org/spec/lti/claim/custom']
+              custom: valid['https://purl.imsglobal.org/spec/lti/claim/custom'],
+              launchPresentation: valid['https://purl.imsglobal.org/spec/lti/claim/launch_presentation'],
+              messageType: valid['https://purl.imsglobal.org/spec/lti/claim/message_type'],
+              version: valid['https://purl.imsglobal.org/spec/lti/claim/version']
             }
 
             // Store contextToken in database
-            if (await this.#Database.Delete('contexttoken', { path: contextPath, user: valid.sub })) this.#Database.Insert(false, 'contexttoken', contextToken)
+            if (await this.#Database.Delete('contexttoken', { path: contextPath, user: contextToken.user })) this.#Database.Insert(false, 'contexttoken', contextToken)
 
             res.cookie(contextPath, platformToken.user, this.#cookieOptions)
 
             provMainDebug('Generating LTIK and redirecting to main endpoint')
             const newLtikObj = {
               issuer: issuerCode,
-              path: this.#appUrl
+              path: this.#appUrl,
+              activityId: activityId
             }
             // Signing context token
             const newLtik = jwt.sign(newLtikObj, this.#ENCRYPTIONKEY)
@@ -281,7 +291,7 @@ class Provider {
         let user = false
 
         const issuerCode = validLtik.issuer
-        const contextPath = _path.join(issuerCode, validLtik.path)
+        const contextPath = _path.join(issuerCode, validLtik.path, validLtik.activityId)
 
         // Matches path to cookie
         provMainDebug('Attempting to retrieve matching session cookie')
@@ -298,7 +308,7 @@ class Provider {
         if (user) {
           provAuthDebug('Session cookie found')
           // Gets correspondent id token from database
-          let idToken = await this.#Database.Get(false, 'idtoken', { issuer_code: issuerCode, user: user })
+          let idToken = await this.#Database.Get(false, 'idtoken', { issuerCode: issuerCode, user: user })
           if (!idToken) throw new Error('No id token found in database')
           idToken = idToken[0]
 
@@ -338,16 +348,14 @@ class Provider {
         provMainDebug('Receiving a login request from: ' + iss)
         const platform = await this.getPlatform(iss)
         if (platform) {
-          const cookieName = 'plat' + encodeURIComponent(Buffer.from(iss).toString('base64')) + this.#appUrl
           provMainDebug('Redirecting to platform authentication endpoint')
-          res.clearCookie(cookieName, this.#cookieOptions)
 
           // Create state parameter used to validade authentication response
-          const state = crypto.randomBytes(16).toString('base64')
+          const state = encodeURIComponent(crypto.randomBytes(16).toString('base64'))
 
           // Setting up validation cookies
-          res.cookie(cookieName + '-state', state, this.#cookieOptions)
-          res.cookie(cookieName + '-iss', iss, this.#cookieOptions)
+          res.cookie(state + '-state', state, this.#cookieOptions)
+          res.cookie(state + '-iss', iss, this.#cookieOptions)
 
           // Redirect to authentication endpoint
           res.redirect(url.format({
@@ -359,7 +367,7 @@ class Provider {
           return res.status(401).send('Unregistered platform.')
         }
       } catch (err) {
-        provAuthDebug(err.message)
+        provAuthDebug(err)
         if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
         return res.status(400).send('Bad Request.')
       }
@@ -624,7 +632,8 @@ class Provider {
    */
   async redirect (res, path, options) {
     if (this.#whitelistedUrls.indexOf(path) !== -1) return res.redirect(path)
-    const code = res.locals.token.issuer_code
+    const code = res.locals.token.issuerCode
+    const activityId = res.locals.token.platformContext.context.id + '_' + res.locals.token.platformContext.resource.id
     const pathParts = url.parse(path)
 
     // Create cookie name
@@ -635,11 +644,12 @@ class Provider {
       port: pathParts.port,
       auth: pathParts.auth
     })
-    const cookieName = _path.join(code, cookiePath)
+    const cookieName = _path.join(code, cookiePath, activityId)
 
     let token = {
       issuer: code,
-      path: cookiePath
+      path: cookiePath,
+      activityId: activityId
     }
     // Signing context token
     token = jwt.sign(token, this.#ENCRYPTIONKEY)
@@ -658,18 +668,25 @@ class Provider {
 
       res.cookie(cookieName, res.locals.token.user, cookieOptions)
 
+      const oldpath = res.locals.token.platformContext.path
+
       const newContextToken = {
         resource: res.locals.token.platformContext.resource,
         custom: res.locals.token.platformContext.custom,
         context: res.locals.token.platformContext.context,
         path: cookieName,
-        user: res.locals.token.platformContext.user
+        user: res.locals.token.platformContext.user,
+        deploymentId: res.locals.token.platformContext.deploymentId,
+        targetLinkUri: res.locals.token.platformContext.targetLinkUri,
+        launchPresentation: res.locals.token.platformContext.launchPresentation,
+        messageType: res.locals.token.platformContext.messageType,
+        version: res.locals.token.platformContext.version
       }
 
       if (await this.#Database.Delete('contexttoken', { path: cookieName, user: res.locals.token.user })) this.#Database.Insert(false, 'contexttoken', newContextToken)
       if (options && options.ignoreRoot) {
-        this.#Database.Delete('contexttoken', { path: code + this.#appUrl, user: res.locals.token.user })
-        res.clearCookie(code + this.#appUrl, this.#cookieOptions)
+        this.#Database.Delete('contexttoken', { path: oldpath, user: res.locals.token.user })
+        res.clearCookie(oldpath, this.#cookieOptions)
       }
     }
 

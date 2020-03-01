@@ -256,22 +256,26 @@ class Provider {
               complete: true
             });
             const iss = decoded.payload.iss;
-            const issuerCode = 'plat' + encodeURIComponent(Buffer.from(iss).toString('base64'));
-            const contextPath = issuerCode + (0, _classPrivateFieldGet2.default)(this, _appUrl); // Retrieving validation parameters from cookies
+            const state = req.body.state; // Retrieving validation parameters from cookies
 
             const validationCookies = {
-              state: cookies[contextPath + '-state'],
-              iss: cookies[contextPath + '-iss']
+              state: cookies[state + '-state'],
+              iss: cookies[state + '-iss']
             };
-            const valid = await Auth.validateToken(idtoken, decoded, req.body.state, validationCookies, this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger), (0, _classPrivateFieldGet2.default)(this, _Database)); // Deleting validation cookies
+            const valid = await Auth.validateToken(idtoken, decoded, state, validationCookies, this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger), (0, _classPrivateFieldGet2.default)(this, _Database)); // Deleting validation cookies
 
-            res.clearCookie(contextPath + '-state', (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
-            res.clearCookie(contextPath + '-iss', (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
-            provAuthDebug('Successfully validated token!'); // Mount platform token
+            res.clearCookie(state + '-state', (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
+            res.clearCookie(state + '-iss', (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
+            provAuthDebug('Successfully validated token!');
+            const issuerCode = 'plat' + encodeURIComponent(Buffer.from(iss).toString('base64'));
+            const activityId = valid['https://purl.imsglobal.org/spec/lti/claim/context'].id + '_' + valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'].id;
+
+            const contextPath = _path.join(issuerCode, (0, _classPrivateFieldGet2.default)(this, _appUrl), activityId); // Mount platform token
+
 
             const platformToken = {
               iss: valid.iss,
-              issuer_code: issuerCode,
+              issuerCode: issuerCode,
               user: valid.sub,
               roles: valid['https://purl.imsglobal.org/spec/lti/claim/roles'],
               userInfo: {
@@ -286,32 +290,39 @@ class Provider {
                 name: valid['https://purl.imsglobal.org/spec/lti/claim/tool_platform'].name,
                 description: valid['https://purl.imsglobal.org/spec/lti/claim/tool_platform'].description
               },
+              lis: valid['https://purl.imsglobal.org/spec/lti/claim/lis'],
               endpoint: valid['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint'],
               namesRoles: valid['https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice'] // Store idToken in database
 
             };
             if (await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('idtoken', {
-              issuer_code: issuerCode,
-              user: valid.sub
+              issuerCode: issuerCode,
+              user: platformToken.user
             })) (0, _classPrivateFieldGet2.default)(this, _Database).Insert(false, 'idtoken', platformToken); // Mount context token
 
             const contextToken = {
               path: contextPath,
               user: valid.sub,
+              deploymentId: valid['https://purl.imsglobal.org/spec/lti/claim/deployment_id'],
+              targetLinkUri: valid['https://purl.imsglobal.org/spec/lti/claim/target_link_uri'],
               context: valid['https://purl.imsglobal.org/spec/lti/claim/context'],
               resource: valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'],
-              custom: valid['https://purl.imsglobal.org/spec/lti/claim/custom'] // Store contextToken in database
+              custom: valid['https://purl.imsglobal.org/spec/lti/claim/custom'],
+              launchPresentation: valid['https://purl.imsglobal.org/spec/lti/claim/launch_presentation'],
+              messageType: valid['https://purl.imsglobal.org/spec/lti/claim/message_type'],
+              version: valid['https://purl.imsglobal.org/spec/lti/claim/version'] // Store contextToken in database
 
             };
             if (await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('contexttoken', {
               path: contextPath,
-              user: valid.sub
+              user: contextToken.user
             })) (0, _classPrivateFieldGet2.default)(this, _Database).Insert(false, 'contexttoken', contextToken);
             res.cookie(contextPath, platformToken.user, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
             provMainDebug('Generating LTIK and redirecting to main endpoint');
             const newLtikObj = {
               issuer: issuerCode,
-              path: (0, _classPrivateFieldGet2.default)(this, _appUrl) // Signing context token
+              path: (0, _classPrivateFieldGet2.default)(this, _appUrl),
+              activityId: activityId // Signing context token
 
             };
             const newLtik = jwt.sign(newLtikObj, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
@@ -328,7 +339,7 @@ class Provider {
         let user = false;
         const issuerCode = validLtik.issuer;
 
-        const contextPath = _path.join(issuerCode, validLtik.path); // Matches path to cookie
+        const contextPath = _path.join(issuerCode, validLtik.path, validLtik.activityId); // Matches path to cookie
 
 
         provMainDebug('Attempting to retrieve matching session cookie');
@@ -347,7 +358,7 @@ class Provider {
           provAuthDebug('Session cookie found'); // Gets correspondent id token from database
 
           let idToken = await (0, _classPrivateFieldGet2.default)(this, _Database).Get(false, 'idtoken', {
-            issuer_code: issuerCode,
+            issuerCode: issuerCode,
             user: user
           });
           if (!idToken) throw new Error('No id token found in database');
@@ -396,14 +407,12 @@ class Provider {
         const platform = await this.getPlatform(iss);
 
         if (platform) {
-          const cookieName = 'plat' + encodeURIComponent(Buffer.from(iss).toString('base64')) + (0, _classPrivateFieldGet2.default)(this, _appUrl);
-          provMainDebug('Redirecting to platform authentication endpoint');
-          res.clearCookie(cookieName, (0, _classPrivateFieldGet2.default)(this, _cookieOptions)); // Create state parameter used to validade authentication response
+          provMainDebug('Redirecting to platform authentication endpoint'); // Create state parameter used to validade authentication response
 
-          const state = crypto.randomBytes(16).toString('base64'); // Setting up validation cookies
+          const state = encodeURIComponent(crypto.randomBytes(16).toString('base64')); // Setting up validation cookies
 
-          res.cookie(cookieName + '-state', state, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
-          res.cookie(cookieName + '-iss', iss, (0, _classPrivateFieldGet2.default)(this, _cookieOptions)); // Redirect to authentication endpoint
+          res.cookie(state + '-state', state, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
+          res.cookie(state + '-iss', iss, (0, _classPrivateFieldGet2.default)(this, _cookieOptions)); // Redirect to authentication endpoint
 
           res.redirect(url.format({
             pathname: await platform.platformAuthEndpoint(),
@@ -414,7 +423,7 @@ class Provider {
           return res.status(401).send('Unregistered platform.');
         }
       } catch (err) {
-        provAuthDebug(err.message);
+        provAuthDebug(err);
         if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
           level: 'error',
           message: 'Message: ' + err.message + '\nStack: ' + err.stack
@@ -727,7 +736,8 @@ class Provider {
 
   async redirect(res, path, options) {
     if ((0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(path) !== -1) return res.redirect(path);
-    const code = res.locals.token.issuer_code;
+    const code = res.locals.token.issuerCode;
+    const activityId = res.locals.token.platformContext.context.id + '_' + res.locals.token.platformContext.resource.id;
     const pathParts = url.parse(path); // Create cookie name
 
     const cookiePath = url.format({
@@ -738,11 +748,12 @@ class Provider {
       auth: pathParts.auth
     });
 
-    const cookieName = _path.join(code, cookiePath);
+    const cookieName = _path.join(code, cookiePath, activityId);
 
     let token = {
       issuer: code,
-      path: cookiePath // Signing context token
+      path: cookiePath,
+      activityId: activityId // Signing context token
 
     };
     token = jwt.sign(token, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY)); // Checking the type of redirect
@@ -760,12 +771,18 @@ class Provider {
       }
 
       res.cookie(cookieName, res.locals.token.user, cookieOptions);
+      const oldpath = res.locals.token.platformContext.path;
       const newContextToken = {
         resource: res.locals.token.platformContext.resource,
         custom: res.locals.token.platformContext.custom,
         context: res.locals.token.platformContext.context,
         path: cookieName,
-        user: res.locals.token.platformContext.user
+        user: res.locals.token.platformContext.user,
+        deploymentId: res.locals.token.platformContext.deploymentId,
+        targetLinkUri: res.locals.token.platformContext.targetLinkUri,
+        launchPresentation: res.locals.token.platformContext.launchPresentation,
+        messageType: res.locals.token.platformContext.messageType,
+        version: res.locals.token.platformContext.version
       };
       if (await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('contexttoken', {
         path: cookieName,
@@ -774,10 +791,10 @@ class Provider {
 
       if (options && options.ignoreRoot) {
         (0, _classPrivateFieldGet2.default)(this, _Database).Delete('contexttoken', {
-          path: code + (0, _classPrivateFieldGet2.default)(this, _appUrl),
+          path: oldpath,
           user: res.locals.token.user
         });
-        res.clearCookie(code + (0, _classPrivateFieldGet2.default)(this, _appUrl), (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
+        res.clearCookie(oldpath, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
       }
     } // Formatting path with queries
 
