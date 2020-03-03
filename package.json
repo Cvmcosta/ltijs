@@ -48,7 +48,6 @@
     "pem-jwk": "^2.0.0",
     "tld-extract": "^1.1.2",
     "valid-url": "^1.0.9",
-    "validator": "^12.2.0",
     "winston": "^3.2.1"
   },
   "devDependencies": {

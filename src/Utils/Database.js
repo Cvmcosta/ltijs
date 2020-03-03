@@ -53,6 +53,7 @@ class Database {
       launchPresentation: JSON,
       messageType: String,
       version: String,
+      deepLinkingSettings: JSON,
       createdAt: { type: Date, expires: 3600 * 24, default: Date.now }
     })
     const platformSchema = new Schema({

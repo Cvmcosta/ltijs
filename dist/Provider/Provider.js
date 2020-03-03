@@ -27,6 +27,8 @@ const Keyset = require('../Utils/Keyset');
 
 const GradeService = require('./Services/Grade');
 
+const DeepLinkingService = require('./Services/DeepLinking');
+
 const url = require('fast-url-parser');
 
 const _path = require('path');
@@ -134,7 +136,16 @@ class Provider {
 
     _connectCallback2.set(this, {
       writable: true,
-      value: () => {}
+      value: (connection, req, res, next) => {
+        return res.send('It works!');
+      }
+    });
+
+    _deepLinkingCallback2.set(this, {
+      writable: true,
+      value: (connection, req, res, next) => {
+        return res.send('Deep Linking works!');
+      }
     });
 
     _sessionTimedOut.set(this, {
@@ -230,6 +241,11 @@ class Provider {
      */
 
     this.Grade = new GradeService(this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger), (0, _classPrivateFieldGet2.default)(this, _Database));
+    /**
+     * @description Deep Linking service.
+     */
+
+    this.DeepLinking = new DeepLinkingService(this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger), (0, _classPrivateFieldGet2.default)(this, _Database));
     if (options && options.staticPath) (0, _classPrivateFieldGet2.default)(this, _server).setStaticPath(options.staticPath); // Registers main athentication and routing middleware
 
     const sessionValidator = async (req, res, next) => {
@@ -268,10 +284,13 @@ class Provider {
             res.clearCookie(state + '-iss', (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
             provAuthDebug('Successfully validated token!');
             const issuerCode = 'plat' + encodeURIComponent(Buffer.from(iss).toString('base64'));
-            const activityId = valid['https://purl.imsglobal.org/spec/lti/claim/context'].id + '_' + valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'].id;
+            const courseId = valid['https://purl.imsglobal.org/spec/lti/claim/context'] ? valid['https://purl.imsglobal.org/spec/lti/claim/context'].id : 'NF';
+            const resourseId = valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'] ? valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'].id : 'NF';
+            const activityId = courseId + '_' + resourseId;
 
-            const contextPath = _path.join(issuerCode, (0, _classPrivateFieldGet2.default)(this, _appUrl), activityId); // Mount platform token
+            const contextPath = _path.join(issuerCode, (0, _classPrivateFieldGet2.default)(this, _appUrl), activityId);
 
+            console.log(valid); // Mount platform token
 
             const platformToken = {
               iss: valid.iss,
@@ -310,7 +329,8 @@ class Provider {
               custom: valid['https://purl.imsglobal.org/spec/lti/claim/custom'],
               launchPresentation: valid['https://purl.imsglobal.org/spec/lti/claim/launch_presentation'],
               messageType: valid['https://purl.imsglobal.org/spec/lti/claim/message_type'],
-              version: valid['https://purl.imsglobal.org/spec/lti/claim/version'] // Store contextToken in database
+              version: valid['https://purl.imsglobal.org/spec/lti/claim/version'],
+              deepLinkingSettings: valid['https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings'] // Store contextToken in database
 
             };
             if (await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('contexttoken', {
@@ -443,6 +463,7 @@ class Provider {
     }); // Main app
 
     this.app.all((0, _classPrivateFieldGet2.default)(this, _appUrl), async (req, res, next) => {
+      if (res.locals.context.messageType === 'LtiDeepLinkingRequest') return (0, _classPrivateFieldGet2.default)(this, _deepLinkingCallback2).call(this, res.locals.token, req, res, next);
       return (0, _classPrivateFieldGet2.default)(this, _connectCallback2).call(this, res.locals.token, req, res, next);
     });
   }
@@ -514,7 +535,7 @@ class Provider {
      * @param {Boolean} [options.secure = false] - Secure property of the cookie.
      * @param {Function} [options.sessionTimeout] - Route function executed everytime the session expires. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}).
      * @param {Function} [options.invalidToken] - Route function executed everytime the system receives an invalid token or cookie. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}).
-     * @example .onConnect((conection, response)=>{response.send(connection)}, {secure: true})
+     * @example .onConnect((conection, request, response)=>{response.send(connection)}, {secure: true})
      * @returns {true}
      */
 
@@ -528,6 +549,32 @@ class Provider {
 
     if (_connectCallback) {
       (0, _classPrivateFieldSet2.default)(this, _connectCallback2, _connectCallback);
+      return true;
+    }
+
+    throw new Error('Missing callback');
+  }
+  /**
+     * @description Sets the callback function called whenever theres a sucessfull deep linking request, exposing a Conection object containing the id_token decoded parameters.
+     * @param {Function} _deepLinkingCallback - Function that is going to be called everytime a platform sucessfully launches a deep linking request.
+     * @param {Object} [options] - Options configuring the usage of cookies to pass the Id Token data to the client.
+     * @param {Boolean} [options.secure = false] - Secure property of the cookie.
+     * @param {Function} [options.sessionTimeout] - Route function executed everytime the session expires. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}).
+     * @param {Function} [options.invalidToken] - Route function executed everytime the system receives an invalid token or cookie. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}).
+     * @example .onDeepLinking((conection, request, response)=>{response.send(connection)}, {secure: true})
+     * @returns {true}
+     */
+
+
+  onDeepLinking(_deepLinkingCallback, options) {
+    if (options) {
+      if (options.secure === true) (0, _classPrivateFieldGet2.default)(this, _cookieOptions).secure = options.secure;
+      if (options.sessionTimeout) (0, _classPrivateFieldSet2.default)(this, _sessionTimedOut, options.sessionTimeout);
+      if (options.invalidToken) (0, _classPrivateFieldSet2.default)(this, _invalidToken, options.invalidToken);
+    }
+
+    if (_deepLinkingCallback) {
+      (0, _classPrivateFieldSet2.default)(this, _deepLinkingCallback2, _deepLinkingCallback);
       return true;
     }
 
@@ -737,7 +784,9 @@ class Provider {
   async redirect(res, path, options) {
     if ((0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(path) !== -1) return res.redirect(path);
     const code = res.locals.token.issuerCode;
-    const activityId = res.locals.token.platformContext.context.id + '_' + res.locals.token.platformContext.resource.id;
+    const courseId = res.locals.token.platformContext.context ? res.locals.token.platformContext.context.id : 'NF';
+    const resourseId = res.locals.token.platformContext.resource ? res.locals.token.platformContext.resource.id : 'NF';
+    const activityId = courseId + '_' + resourseId;
     const pathParts = url.parse(path); // Create cookie name
 
     const cookiePath = url.format({
@@ -782,7 +831,8 @@ class Provider {
         targetLinkUri: res.locals.token.platformContext.targetLinkUri,
         launchPresentation: res.locals.token.platformContext.launchPresentation,
         messageType: res.locals.token.platformContext.messageType,
-        version: res.locals.token.platformContext.version
+        version: res.locals.token.platformContext.version,
+        deepLinkingSettings: res.locals.token.platformContext.deepLinkingSettings
       };
       if (await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('contexttoken', {
         path: cookieName,
@@ -844,6 +894,8 @@ var _cookieOptions = new WeakMap();
 var _Database = new WeakMap();
 
 var _connectCallback2 = new WeakMap();
+
+var _deepLinkingCallback2 = new WeakMap();
 
 var _sessionTimedOut = new WeakMap();
 
