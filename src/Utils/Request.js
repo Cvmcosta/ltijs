@@ -14,7 +14,7 @@ class Request {
       response_mode: 'form_post',
       id_token_signed_response_alg: 'RS256',
       scope: 'openid',
-      client_id: await platform.platformClientId(),
+      client_id: request.client_id || await platform.platformClientId(),
       redirect_uri: request.target_link_uri,
       login_hint: request.login_hint,
       nonce: crypto.randomBytes(16).toString('base64'),

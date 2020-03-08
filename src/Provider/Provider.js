@@ -11,6 +11,7 @@ const Mongodb = require('../Utils/Database')
 const Keyset = require('../Utils/Keyset')
 
 const GradeService = require('./Services/Grade')
+const DeepLinkingService = require('./Services/DeepLinking')
 
 const url = require('fast-url-parser')
 const _path = require('path')
@@ -53,7 +54,9 @@ class Provider {
 
   #Database
 
-  #connectCallback = () => {}
+  #connectCallback = (connection, req, res, next) => { return res.send('It works!') }
+
+  #deepLinkingCallback = (connection, req, res, next) => { return res.send('Deep Linking works!') }
 
   #sessionTimedOut = (req, res) => {
     return res.status(401).send('Token invalid or expired. Please reinitiate login.')
@@ -96,7 +99,7 @@ class Provider {
      * @param {String} [options.ssl.key] - SSL key.
      * @param {String} [options.ssl.cert] - SSL certificate.
      * @param {String} [options.staticPath] - The path for the static files your application might serve (Ex: _dirname+"/public")
-     * @param {Boolean} [options.logger = false] - If true, allows LTIJS to generate logging files for server requests and errors.
+     * @param {Boolean} [options.logger = false] - If true, allows Ltijs to generate logging files for server requests and errors.
      * @param {Boolean} [options.cors = true] - If false, disables cors.
      */
   constructor (encryptionkey, database, options) {
@@ -177,6 +180,11 @@ class Provider {
      */
     this.Grade = new GradeService(this.getPlatform, this.#ENCRYPTIONKEY, this.#logger, this.#Database)
 
+    /**
+     * @description Deep Linking service.
+     */
+    this.DeepLinking = new DeepLinkingService(this.getPlatform, this.#ENCRYPTIONKEY, this.#logger, this.#Database)
+
     if (options && options.staticPath) this.#server.setStaticPath(options.staticPath)
 
     // Registers main athentication and routing middleware
@@ -189,7 +197,7 @@ class Provider {
 
       try {
         // Retrieving LTIK
-        const ltik = req.query.ltik
+        const ltik = req.ltik
         // Retrieving cookies
         const cookies = req.signedCookies
         provMainDebug('Cookies received: ')
@@ -203,27 +211,34 @@ class Provider {
             const decoded = jwt.decode(idtoken, { complete: true })
 
             const iss = decoded.payload.iss
-            const issuerCode = 'plat' + encodeURIComponent(Buffer.from(iss).toString('base64'))
-            const contextPath = issuerCode + this.#appUrl
+            const state = req.body.state
 
             // Retrieving validation parameters from cookies
             const validationCookies = {
-              state: cookies[contextPath + '-state'],
-              iss: cookies[contextPath + '-iss']
+              state: cookies[state + '-state'],
+              iss: cookies[state + '-iss']
             }
 
-            const valid = await Auth.validateToken(idtoken, decoded, req.body.state, validationCookies, this.getPlatform, this.#ENCRYPTIONKEY, this.#logger, this.#Database)
+            const valid = await Auth.validateToken(idtoken, decoded, state, validationCookies, this.getPlatform, this.#ENCRYPTIONKEY, this.#logger, this.#Database)
 
             // Deleting validation cookies
-            res.clearCookie(contextPath + '-state', this.#cookieOptions)
-            res.clearCookie(contextPath + '-iss', this.#cookieOptions)
+            res.clearCookie(state + '-state', this.#cookieOptions)
+            res.clearCookie(state + '-iss', this.#cookieOptions)
 
             provAuthDebug('Successfully validated token!')
+
+            const issuerCode = 'plat' + encodeURIComponent(Buffer.from(iss).toString('base64'))
+
+            const courseId = valid['https://purl.imsglobal.org/spec/lti/claim/context'] ? valid['https://purl.imsglobal.org/spec/lti/claim/context'].id : 'NF'
+            const resourseId = valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'] ? valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'].id : 'NF'
+            const activityId = courseId + '_' + resourseId
+
+            const contextPath = _path.join(issuerCode, this.#appUrl, activityId)
 
             // Mount platform token
             const platformToken = {
               iss: valid.iss,
-              issuer_code: issuerCode,
+              issuerCode: issuerCode,
               user: valid.sub,
               roles: valid['https://purl.imsglobal.org/spec/lti/claim/roles'],
               userInfo: {
@@ -238,31 +253,39 @@ class Provider {
                 name: valid['https://purl.imsglobal.org/spec/lti/claim/tool_platform'].name,
                 description: valid['https://purl.imsglobal.org/spec/lti/claim/tool_platform'].description
               },
+              lis: valid['https://purl.imsglobal.org/spec/lti/claim/lis'],
               endpoint: valid['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint'],
               namesRoles: valid['https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice']
             }
 
             // Store idToken in database
-            if (await this.#Database.Delete('idtoken', { issuer_code: issuerCode, user: valid.sub })) this.#Database.Insert(false, 'idtoken', platformToken)
+            if (await this.#Database.Delete('idtoken', { issuerCode: issuerCode, user: platformToken.user })) this.#Database.Insert(false, 'idtoken', platformToken)
 
             // Mount context token
             const contextToken = {
               path: contextPath,
               user: valid.sub,
+              deploymentId: valid['https://purl.imsglobal.org/spec/lti/claim/deployment_id'],
+              targetLinkUri: valid['https://purl.imsglobal.org/spec/lti/claim/target_link_uri'],
               context: valid['https://purl.imsglobal.org/spec/lti/claim/context'],
               resource: valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'],
-              custom: valid['https://purl.imsglobal.org/spec/lti/claim/custom']
+              custom: valid['https://purl.imsglobal.org/spec/lti/claim/custom'],
+              launchPresentation: valid['https://purl.imsglobal.org/spec/lti/claim/launch_presentation'],
+              messageType: valid['https://purl.imsglobal.org/spec/lti/claim/message_type'],
+              version: valid['https://purl.imsglobal.org/spec/lti/claim/version'],
+              deepLinkingSettings: valid['https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings']
             }
 
             // Store contextToken in database
-            if (await this.#Database.Delete('contexttoken', { path: contextPath, user: valid.sub })) this.#Database.Insert(false, 'contexttoken', contextToken)
+            if (await this.#Database.Delete('contexttoken', { path: contextPath, user: contextToken.user })) this.#Database.Insert(false, 'contexttoken', contextToken)
 
             res.cookie(contextPath, platformToken.user, this.#cookieOptions)
 
             provMainDebug('Generating LTIK and redirecting to main endpoint')
             const newLtikObj = {
               issuer: issuerCode,
-              path: this.#appUrl
+              path: this.#appUrl,
+              activityId: activityId
             }
             // Signing context token
             const newLtik = jwt.sign(newLtikObj, this.#ENCRYPTIONKEY)
@@ -281,7 +304,7 @@ class Provider {
         let user = false
 
         const issuerCode = validLtik.issuer
-        const contextPath = _path.join(issuerCode, validLtik.path)
+        const contextPath = _path.join(issuerCode, validLtik.path, validLtik.activityId)
 
         // Matches path to cookie
         provMainDebug('Attempting to retrieve matching session cookie')
@@ -298,7 +321,7 @@ class Provider {
         if (user) {
           provAuthDebug('Session cookie found')
           // Gets correspondent id token from database
-          let idToken = await this.#Database.Get(false, 'idtoken', { issuer_code: issuerCode, user: user })
+          let idToken = await this.#Database.Get(false, 'idtoken', { issuerCode: issuerCode, user: user })
           if (!idToken) throw new Error('No id token found in database')
           idToken = idToken[0]
 
@@ -338,16 +361,14 @@ class Provider {
         provMainDebug('Receiving a login request from: ' + iss)
         const platform = await this.getPlatform(iss)
         if (platform) {
-          const cookieName = 'plat' + encodeURIComponent(Buffer.from(iss).toString('base64')) + this.#appUrl
           provMainDebug('Redirecting to platform authentication endpoint')
-          res.clearCookie(cookieName, this.#cookieOptions)
 
           // Create state parameter used to validade authentication response
-          const state = crypto.randomBytes(16).toString('base64')
+          const state = encodeURIComponent(crypto.randomBytes(16).toString('base64'))
 
           // Setting up validation cookies
-          res.cookie(cookieName + '-state', state, this.#cookieOptions)
-          res.cookie(cookieName + '-iss', iss, this.#cookieOptions)
+          res.cookie(state + '-state', state, this.#cookieOptions)
+          res.cookie(state + '-iss', iss, this.#cookieOptions)
 
           // Redirect to authentication endpoint
           res.redirect(url.format({
@@ -359,7 +380,7 @@ class Provider {
           return res.status(401).send('Unregistered platform.')
         }
       } catch (err) {
-        provAuthDebug(err.message)
+        provAuthDebug(err)
         if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
         return res.status(400).send('Bad Request.')
       }
@@ -378,6 +399,7 @@ class Provider {
 
     // Main app
     this.app.all(this.#appUrl, async (req, res, next) => {
+      if (res.locals.context.messageType === 'LtiDeepLinkingRequest') return this.#deepLinkingCallback(res.locals.token, req, res, next)
       return this.#connectCallback(res.locals.token, req, res, next)
     })
   }
@@ -443,7 +465,7 @@ class Provider {
      * @param {Boolean} [options.secure = false] - Secure property of the cookie.
      * @param {Function} [options.sessionTimeout] - Route function executed everytime the session expires. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}).
      * @param {Function} [options.invalidToken] - Route function executed everytime the system receives an invalid token or cookie. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}).
-     * @example .onConnect((conection, response)=>{response.send(connection)}, {secure: true})
+     * @example .onConnect((conection, request, response)=>{response.send(connection)}, {secure: true})
      * @returns {true}
      */
   onConnect (_connectCallback, options) {
@@ -455,6 +477,30 @@ class Provider {
 
     if (_connectCallback) {
       this.#connectCallback = _connectCallback
+      return true
+    }
+    throw new Error('Missing callback')
+  }
+
+  /**
+     * @description Sets the callback function called whenever theres a sucessfull deep linking request, exposing a Conection object containing the id_token decoded parameters.
+     * @param {Function} _deepLinkingCallback - Function that is going to be called everytime a platform sucessfully launches a deep linking request.
+     * @param {Object} [options] - Options configuring the usage of cookies to pass the Id Token data to the client.
+     * @param {Boolean} [options.secure = false] - Secure property of the cookie.
+     * @param {Function} [options.sessionTimeout] - Route function executed everytime the session expires. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}).
+     * @param {Function} [options.invalidToken] - Route function executed everytime the system receives an invalid token or cookie. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}).
+     * @example .onDeepLinking((conection, request, response)=>{response.send(connection)}, {secure: true})
+     * @returns {true}
+     */
+  onDeepLinking (_deepLinkingCallback, options) {
+    if (options) {
+      if (options.secure === true) this.#cookieOptions.secure = options.secure
+      if (options.sessionTimeout) this.#sessionTimedOut = options.sessionTimeout
+      if (options.invalidToken) this.#invalidToken = options.invalidToken
+    }
+
+    if (_deepLinkingCallback) {
+      this.#deepLinkingCallback = _deepLinkingCallback
       return true
     }
     throw new Error('Missing callback')
@@ -533,11 +579,12 @@ class Provider {
      */
   async registerPlatform (platform) {
     if (!platform || !platform.name || !platform.url || !platform.clientId || !platform.authenticationEndpoint || !platform.accesstokenEndpoint || !platform.authConfig) throw new Error('Error registering platform. Missing argument.')
+    let kid
     try {
       const _platform = await this.getPlatform(platform.url)
 
       if (!_platform) {
-        const kid = await Auth.generateProviderKeyPair(this.#ENCRYPTIONKEY, this.#Database)
+        kid = await Auth.generateProviderKeyPair(this.#ENCRYPTIONKEY, this.#Database)
         const plat = new Platform(platform.name, platform.url, platform.clientId, platform.authenticationEndpoint, platform.accesstokenEndpoint, kid, this.#ENCRYPTIONKEY, platform.authConfig, this.#logger, this.#Database)
 
         // Save platform to db
@@ -549,6 +596,9 @@ class Provider {
         return _platform
       }
     } catch (err) {
+      await this.#Database.Delete('publickey', { kid: kid })
+      await this.#Database.Delete('privatekey', { kid: kid })
+      await this.#Database.Delete('platform', { platformUrl: platform.url })
       provAuthDebug(err.message)
       if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
       return false
@@ -624,7 +674,10 @@ class Provider {
    */
   async redirect (res, path, options) {
     if (this.#whitelistedUrls.indexOf(path) !== -1) return res.redirect(path)
-    const code = res.locals.token.issuer_code
+    const code = res.locals.token.issuerCode
+    const courseId = res.locals.token.platformContext.context ? res.locals.token.platformContext.context.id : 'NF'
+    const resourseId = res.locals.token.platformContext.resource ? res.locals.token.platformContext.resource.id : 'NF'
+    const activityId = courseId + '_' + resourseId
     const pathParts = url.parse(path)
 
     // Create cookie name
@@ -635,11 +688,12 @@ class Provider {
       port: pathParts.port,
       auth: pathParts.auth
     })
-    const cookieName = _path.join(code, cookiePath)
+    const contextPath = _path.join(code, cookiePath, activityId)
 
     let token = {
       issuer: code,
-      path: cookiePath
+      path: cookiePath,
+      activityId: activityId
     }
     // Signing context token
     token = jwt.sign(token, this.#ENCRYPTIONKEY)
@@ -656,20 +710,28 @@ class Provider {
         provMainDebug('External request found for domain: .' + domain)
       }
 
-      res.cookie(cookieName, res.locals.token.user, cookieOptions)
+      res.cookie(contextPath, res.locals.token.user, cookieOptions)
+
+      const oldpath = res.locals.token.platformContext.path
 
       const newContextToken = {
         resource: res.locals.token.platformContext.resource,
         custom: res.locals.token.platformContext.custom,
         context: res.locals.token.platformContext.context,
-        path: cookieName,
-        user: res.locals.token.platformContext.user
+        path: contextPath,
+        user: res.locals.token.platformContext.user,
+        deploymentId: res.locals.token.platformContext.deploymentId,
+        targetLinkUri: res.locals.token.platformContext.targetLinkUri,
+        launchPresentation: res.locals.token.platformContext.launchPresentation,
+        messageType: res.locals.token.platformContext.messageType,
+        version: res.locals.token.platformContext.version,
+        deepLinkingSettings: res.locals.token.platformContext.deepLinkingSettings
       }
 
-      if (await this.#Database.Delete('contexttoken', { path: cookieName, user: res.locals.token.user })) this.#Database.Insert(false, 'contexttoken', newContextToken)
+      if (await this.#Database.Delete('contexttoken', { path: contextPath, user: res.locals.token.user })) this.#Database.Insert(false, 'contexttoken', newContextToken)
       if (options && options.ignoreRoot) {
-        this.#Database.Delete('contexttoken', { path: code + this.#appUrl, user: res.locals.token.user })
-        res.clearCookie(code + this.#appUrl, this.#cookieOptions)
+        this.#Database.Delete('contexttoken', { path: oldpath, user: res.locals.token.user })
+        res.clearCookie(oldpath, this.#cookieOptions)
       }
     }
 

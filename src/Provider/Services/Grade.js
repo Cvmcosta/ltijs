@@ -1,7 +1,7 @@
 /* eslint-disable require-atomic-updates */
 /* eslint-disable no-useless-escape */
 
-/* Provider Assignment and Grade Services */
+/* Provider Assignment and Grade Service */
 
 const got = require('got')
 const provGradeServiceDebug = require('debug')('provider:gradeService')

@@ -6,7 +6,7 @@
 
 
 
-> Turn your application into a fully integratable LTI 1.3 tool provider or consumer.
+> Turn your application into a fully integratable LTI 1.3 tool provider.
 
 
 [![travisci](https://img.shields.io/travis/cvmcosta/ltijs.svg)](https://travis-ci.org/Cvmcosta/ltijs)
@@ -21,12 +21,17 @@
 [![Donate](https://img.shields.io/badge/Donate-Buy%20me%20a%20coffe-blue)](https://www.buymeacoffee.com/UL5fBsi)
 
 
-> v2.5.0
+Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps!
+
+
+> v3.0.0
 > MAJOR CHANGE
-> - Simplified the login flow, removed mentions to origin and host header that were causing issues in some situations.
-> - Cookie names and LTIK fields are now created based on the iss parameter sent with the login request and idtoken, therefore are more precise in identifying the platform that originated the request.
-> - Added a new local variable accessed via res.locals.context that contains information specific to that launch, eg: Custom variables.
-> - MongoDB now uses useUnifiedTopology: true to deal with the warning about the deprecated discovery and monitoring engine.
+> - Added Deep Linking Service, exposed through [Provider.DeepLinking](https://cvmcosta.github.io/ltijs/#/deeplinking).
+> - Added a new callback, onDeepLinking that tells Ltijs what to display when receiving a deep linking request.
+> - Ltik token can now be passed through body parameters, Bearer token authorization header and query parameters.
+> - Fixed Database type issue, where some json fields were declared with a `type` key, that changed the type of the entire field.
+> - Added the `unique` parameter to the platformUrl field, that deals with the bug that occured when using ltijs in cluster mode with pm2, where platforms would registered more than one time.
+> - Added error handling to the registration method. Now it deletes the previously generated key pair kid.
 
 > - View entire [CHANGELOG](https://cvmcosta.github.io/ltijs/#/changelog)
 
@@ -34,22 +39,22 @@
 
 | Version | Moodle | Canvas |
 | ---- | - | - |
-| 2.5 | <center>✔️</center> | <center></center> |
+| 3.0 | <center>✔️</center> | <center>✔️</center> |
+| 2.5 | <center>✔️</center> | <center>✔️</center> |
 | 2.4 | <center>✔️</center> | <center>✔️</center> |
 | 2.3 | <center>✔️</center> | <center>✔️</center> |
 | 2.1 | <center>✔️</center> | <center>✔️</center> |
-| 2.0 | <center>✔️</center> | <center>✔️</center> |
 
 <sub>**Previous versions are no longer officially supported*</sub>
 
 ## Table of Contents
 
 - [Introduction](#introduction)
-- [Installation](#installation)
 - [Features](#features)
+- [Installation](#installation)
 - [Usage](#usage)
-- [Documentation](#documentation)
 - [Tutorial](#tutorial)
+- [Documentation](#documentation)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -59,11 +64,26 @@
 According to the [IMS Global Learning Consortium](https://www.imsglobal.org/), the Learning Tools Interoperability (LTI) protocol is an IMS standard for integration of rich learning applications within educational environments. <sup>[ref](https://www.imsglobal.org/spec/lti/v1p3/)</sup>
 
 
-This package implements a tool provider and consumer (currently in development) as an [Express](https://expressjs.com/) server, with preconfigured routes and methods that manage the [LTI 1.3](https://www.imsglobal.org/spec/lti/v1p3/) protocol for you. Making it fast and simple to create a working learning tool without having to worry about manually implementing any of the security and validation required to do so. 
+This framework implements a tool provider as an [Express](https://expressjs.com/) server, with preconfigured routes and methods that manage the [LTI 1.3](https://www.imsglobal.org/spec/lti/v1p3/) protocol for you. Making it fast and simple to create a working learning tool without having to worry about manually implementing any of the security and validation required to do so. 
 
 
 ---
 
+## Features
+
+| Feature | Implementation | Documentation |
+| --------- | - | - |
+| Provider | <center>✔️</center> | <center>✔️</center> |
+| [Platform Class](https://cvmcosta.github.io/ltijs/#/platform) | <center>✔️</center> | <center>✔️</center> |
+| Database plugins | <center>✔️</center> | <center>✔️</center> |
+| [Keyset endpoint support](https://cvmcosta.me/ltijs/#/provider?id=keyset-endpoint) | <center>✔️</center> | <center>✔️</center> |
+| [Deep Linking Service Class](https://cvmcosta.me/ltijs/#/deeplinking) | <center>✔️</center> | <center>✔️</center> |
+| [Grading Service Class](https://cvmcosta.me/ltijs/#/grading) | <center>✔️</center> | <center>✔️</center> |
+| Redis caching | <center></center> | <center></center> |
+| Names and Roles Service Class | <center></center> | <center></center> |
+
+
+---
 
 ## Installation
 
@@ -83,40 +103,18 @@ $ npm install ltijs
 ### Firestore
 - This package can also use Firestore to store and manage the server data, it does so through the plugin [ltijs-firestore](https://github.com/lucastercas/ltijs-firestore).
 
+***Obs: The officially supported database is MongoDB, the plugins are created by the community and are not mantained by me.***
 
 ---
 
-## Features
 
-| Feature | Implementation | Documentation |
-| --------- | - | - |
-| Provider | <center>✔️</center> | <center>✔️</center> |
-| [Platform Class](https://cvmcosta.github.io/ltijs/#/platform) | <center>✔️</center> | <center>✔️</center> |
-| Database plugins | <center>✔️</center> | <center>✔️</center> |
-| [Keyset endpoint support](https://cvmcosta.me/ltijs/#/provider?id=keyset-endpoint) | <center>✔️</center> | <center>✔️</center> |
-| Grade Service Class | <center>✔️</center> | <center></center> |
-| Firebase support | <center>✔️</center> | <center></center> |
-| MySql support | <center></center> | <center></center> |
-| Redis caching | <center></center> | <center></center> |
-| Names and Roles Service Class | <center></center> | <center></center> |
+## Tutorial
 
+You can find a quick tutorial on how to set ltijs up and use it to send grades to a Moodle platform [here](https://medium.com/@cvmcosta2/creating-a-lti-provider-with-ltijs-8b569d94825c).
 
+## Quick start
 
-
-This package implements LTI Provider and Consumer servers. See bellow for specific documentations.
-
-### [LTIjs Provider Documentation](https://cvmcosta.github.io/ltijs/#/provider) 
-   - [Platform class documentation](https://cvmcosta.github.io/ltijs/#/platform)
-
-### ~~LTIjs Consumer Documentation~~ (Coming soon)
-
----
-
-## Usage
-
-### Example of provider usage
-
-> Install LTIJS
+> Install Ltijs
 
 ```shell
 $ npm install ltijs
@@ -176,17 +174,22 @@ setup()
 ---
 
 ## Documentation
-You can find the project documentation [here](https://cvmcosta.github.io/ltijs).
 
-## Tutorial
+See bellow for the complete documentation:
 
-You can find a quick tutorial on how to set ltijs up and use it to send grades to a Moodle platform [here](https://medium.com/@cvmcosta2/creating-a-lti-provider-with-ltijs-8b569d94825c).
+### [Ltijs Documentation](https://cvmcosta.github.io/ltijs/#/provider)
+
+Additional documentations:
+   - [Platform class documentation](https://cvmcosta.github.io/ltijs/#/platform)
+   - [Deep Linking Service documentation](https://cvmcosta.github.io/ltijs/#/deeplinking)
+   - [Grading Service documentation](https://cvmcosta.github.io/ltijs/#/grading)
+
 
 ---
 
 ## Contributing
 
-Please ⭐️ the repo, it always helps! 
+Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps!
 
 If you find a bug or think that something is hard to understand feel free to open an issue or contact me on twitter [@cvmcosta](https://twitter.com/cvmcosta), pull requests are also welcome :)
 

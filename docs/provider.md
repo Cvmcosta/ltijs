@@ -21,7 +21,11 @@
 [![Donate](https://img.shields.io/badge/Donate-Buy%20me%20a%20coffe-blue)](https://www.buymeacoffee.com/UL5fBsi)
 
 
+Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps! 
+
+
 ## Features
+
 
 | Feature | Implementation | Documentation |
 | --------- | - | - |
@@ -29,12 +33,10 @@
 | [Platform Class](https://cvmcosta.github.io/ltijs/#/platform) | <center>✔️</center> | <center>✔️</center> |
 | Database plugins | <center>✔️</center> | <center>✔️</center> |
 | [Keyset endpoint support](#keyset-endpoint) | <center>✔️</center> | <center>✔️</center> |
-| Grade Service Class | <center>✔️</center> | <center></center> |
-| Firebase support | <center>✔️</center> | <center></center> |
-| MySql support | <center></center> | <center></center> |
+| [Deep Linking Service Class](https://cvmcosta.me/ltijs/#/deeplinking) | <center>✔️</center> | <center>✔️</center> |
+| [Grading Service Class](https://cvmcosta.me/ltijs/#/grading) | <center>✔️</center> | <center>✔️</center> |
 | Redis caching | <center></center> | <center></center> |
 | Names and Roles Service Class | <center></center> | <center></center> |
-
 
 
 
@@ -54,9 +56,8 @@
   - [The Platform object](#the-platform-object)
   - [The idToken object](#the-idtoken-object)
   - [Routing and Context](#routing-and-context)
-- [Provider Grading Services](#provider-grading-services)
-  - [Sending Grades to platform](#sending-grades-to-a-platform)
-  - [Retrieving Grades from a platform](#retrieving-grades-from-a-platform)
+- [Deep Linking with Ltijs](#deep-linking-with-ltijs)
+- [Sending and retrieving grades with Ltijs](#sending-grades-with-ltijs)
 - [Logging and Debugging](#logging-and-debugging)
 - [Contributing](#contributing)
 - [License](#license)
@@ -69,8 +70,9 @@ According to the [IMS Global Learning Consortium](https://www.imsglobal.org/), a
 This package implements a tool provider as an [Express](https://expressjs.com/) server, with preconfigured routes and methods that manage the [LTI 1.3](https://www.imsglobal.org/spec/lti/v1p3/) protocol for you. Making it fast and simple to create a working learning tool without having to worry about manually implementing any of the security and validation required to do so. 
 
 #### Other documentations
-- [Platform Class documentation](platform.md)
-- ~~Provider Grade Service documentation~~
+- [Platform class documentation](https://cvmcosta.me/ltijs/#/platform)
+- [Deep Linking Service class documentation](https://cvmcosta.me/ltijs/#/deeplinking)
+- [Grading Service class documentation](https://cvmcosta.github.io/ltijs/#/grading)
 
 
 ---
@@ -79,24 +81,27 @@ This package implements a tool provider as an [Express](https://expressjs.com/) 
 
 Example of provider usage
 
-> Install LTIJS
+> Install Ltijs
 
 ```shell
 $ npm install ltijs
 ```
 
-> Install mongoDB. LTIJS  uses mongodb to store and manage information
+> Install mongoDB. Ltijs  uses mongodb to store and manage information
 
  - [Installing mongoDB](https://docs.mongodb.com/manual/administration/install-community)
 
 > Alternatively you can use Postgresql database via the [ltijs-postgresql](https://www.npmjs.com/package/ltijs-postgresql) plugin
 
-- [Using PostgreSQL with LTIJS](https://www.npmjs.com/package/ltijs-postgresql)
+- [Using PostgreSQL with Ltijs](https://www.npmjs.com/package/ltijs-postgresql)
 
 
 > Alternatively you can use Firestore database via the [ltijs-firestore](https://github.com/lucastercas/ltijs-firestore) plugin
 
-- [Using Firestore with LTIJS](https://github.com/lucastercas/ltijs-firestore)
+- [Using Firestore with Ltijs](https://github.com/lucastercas/ltijs-firestore)
+
+***Obs: The officially supported database is MongoDB, the plugins are created by the community and are not mantained by me.***
+
 
 > Instantiate and use Provider class
 
@@ -148,19 +153,22 @@ setup()
 **Register a platform to work with your tool** 
 > **[Registering a new platform](#registering-a-new-platform)**
 
-> And checkout the **[Platform class documentation](platform.md)**
+> Checkout the **[Platform class documentation](https://cvmcosta.github.io/ltijs/#/platform)**
 
 
-**Routing with LTIjs is a bit diferent from regular Express routing so here's an useful tutorial:** 
+**Routing with Ltijs is a bit diferent from regular Express routing so here's an useful tutorial:** 
 
 
-> **[Understand routing and context with LTIjs](#routing-and-context)**
+> **[Understand routing and context with Ltijs](#routing-and-context)**
 
 
 **If your tool is going to function as a hub serving multiple resources:**
 
 > **[Serving multiple resources](#serving-multiple-resources)**
+> Also heckout the **[Deep Linking Service class documentation](https://cvmcosta.github.io/ltijs/#/deeplinking)**
 
+**If your tool is going to send grades to the platform:**
+> Checkout the **[Grading Service class documentation](https://cvmcosta.github.io/ltijs/#/grading)**
 
 ## Tutorial
 
@@ -172,7 +180,7 @@ You can find a quick tutorial on how to set ltijs up and use it to send grades t
 ## Documentation
 
 ### Provider
->The LTIjs Provider Class
+>The Ltijs Provider Class
 
 Exposes methods for easy manipualtion of the LTI 1.3 standard as a LTI Provider, an "app" object to manipulate the [Express](https://expressjs.com/) server and a [Mongoose.Connection](https://mongoosejs.com/docs/api/connection.html) "db" object.
 
@@ -189,9 +197,14 @@ Express server object.
 **Type**: ```Express```
 
 #### provider.Grade
-Instance of the [Grade Class](provider_grade.md), representing the Assignment and Grade service of the LTI 1.3 protocol.
+Instance of the [Grade Class](https://cvmcosta.github.io/ltijs/#/grading), implementing the Assignment and Grade service of the LTI 1.3 protocol.
 
 **Type**: ```Grade```
+
+#### provider.DeepLinking
+Instance of the [DeepLinking Class](https://cvmcosta.github.io/ltijs/#/deeplinking), implementing the Deep Linking service of the LTI 1.3 protocol.
+
+**Type**: ```DeepLinking```
 
 #### Provider.constructor(encryptionkey, database [, options]) 
 
@@ -221,7 +234,7 @@ Exposes methods for easy manipulation of the LTI 1.3 standard as a LTI Provider 
 | options.ssl.key | `String`  | SSL key. | *Optional* |
 | options.ssl.cert | `String`  | SSL certificate. | *Optional* |
 | options.staticPath | `String`  | The path for the static files your application might serve (Ex: _dirname+"/public") | *Optional* |
-| options.logger | `Boolean`  | If true, allows LTIJS to generate logging files for server requests and errors. | *Optional* |
+| options.logger | `Boolean`  | If true, allows Ltijs to generate logging files for server requests and errors. | *Optional* |
 
 
 
@@ -269,7 +282,7 @@ Sets the callback function called whenever theres a sucessfull connection, expos
 | ---- | ---- | ----------- | -------- |
 | _connectCallback | `Function`  | Function that is going to be called everytime a platform sucessfully connects to the provider. | &nbsp; |
 | options | `Object`  | Options configuring the usage of cookies to pass the Id Token data to the client. | *Optional* |
-| options.secure | `Boolean`  | = false] - Secure property of the cookie. | *Optional* |
+| options.secure | `Boolean`  | = false] - Secure flag of the cookie. Only allows cookies to be sent through https. | *Optional* |
 | options.sessionTimeout | `Function`  | Route/Function executed everytime the session expires. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}). | *Optional* |
 | options.invalidToken | `Function`  | Route/Function executed everytime the system receives an invalid token or cookie. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}). | *Optional* |
 
@@ -281,6 +294,34 @@ Sets the callback function called whenever theres a sucessfull connection, expos
 ```javascript
 .onConnect((conection, response)=>{response.send(connection)}, {secure: true})
 ```
+
+
+#### Provider.onDeepLinking(_connectCallback[, options]) 
+
+Sets the callback function called whenever theres a sucessfull deep linking request connection, exposing a Conection object containing the id_token decoded parameters. Through this callback you can display your Deep Linking view.
+
+
+
+
+##### Parameters
+
+| Name | Type | Description |  |
+| ---- | ---- | ----------- | -------- |
+| _deepLinkingCallback | `Function`  | Function that is going to be called everytime a platform sucessfully launches a deep linking request. | &nbsp; |
+| options | `Object`  | Options configuring the usage of cookies to pass the Id Token data to the client. | *Optional* |
+| options.secure | `Boolean`  | = false] - Secure flag of the cookie. Only allows cookies to be sent through https. | *Optional* |
+| options.sessionTimeout | `Function`  | Route/Function executed everytime the session expires. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}). | *Optional* |
+| options.invalidToken | `Function`  | Route/Function executed everytime the system receives an invalid token or cookie. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}). | *Optional* |
+
+
+
+
+##### Examples
+
+```javascript
+.onDeepLinking((conection, response)=>{response.send(connection)}, {secure: true})
+```
+
 
 
 
@@ -569,7 +610,7 @@ keysetUrl = '/keys'
 
 Express allows you to specify a path from where static files will be served.
 
-LTIjs can use this functionality by setting the staticPath parameter of the constructor's additional options. 
+Ltijs can use this functionality by setting the staticPath parameter of the constructor's additional options. 
 
 ```javascript
 //Configure provider
@@ -648,7 +689,7 @@ lti.app.get('/stuff', (req,res,next) => {
 
 ### Keyset Endpoint
 
-In order to make it easier to register your tool with any LMS, LTIJS gives you a public JWK keyset endpoint, where platforms such as Canvas can retrieve their correspondent JWK public key.
+In order to make it easier to register your tool with any LMS, Ltijs gives you a public JWK keyset endpoint, where platforms such as Canvas can retrieve their correspondent JWK public key.
 
 By default the publick keyset endpoint is `/keys` and it returns a keyset containig every public key registered within the tool.
 
@@ -798,7 +839,7 @@ You can also get direct access to the **platformContext** portion of the token, 
 
 Your tool can be used with an unlimited amount of platforms, that is the idea behind LTI, so it needs a way to track which platform and resource is currently being accessed and return the correct token information relevant to each context.
 
-In **LTIjs** this is done matching the **ltik** token (passed to the application via a query parameter) with it's corresponding session cookies stored in the user's browser.
+In **Ltijs** this is done matching the **ltik** token (passed to the application via a query parameter) with it's corresponding session cookies stored in the user's browser.
 
 - Example application endpoint:
 
@@ -808,16 +849,16 @@ The **ltik** parameter is a signed JWT that contains the platform id and context
 
 - Corresponding cookies
 
-**<center>platPLATFORM_ID</center>**
-**<center>platPLATFORM_ID/</center>**
+**<center>platCONTEXT_ID</center>**
+**<center>platCONTEXT_ID/</center>**
 
 
 
 
-> As you can see there is more than one cookie stored, that is because LTIjs also keeps track of multiple activities linked to the tool within a same platform, so the path specific cookie keeps track of activity specific information, like custom parameters, that might point to a specific resource.
+> As you can see there is more than one cookie stored, that is because Ltijs also keeps track of multiple activities linked to the tool within a same platform, so the path specific cookie keeps track of activity specific information, like custom parameters, that might point to a specific resource.
 
 
-The PLATFORM_ID is a url encoded base64 value that represents a platform url, this value is automatically generated, stored in the ltik JWT and passed to the application when the `redirect()` function is called:
+The CONTEXT_ID is a url encoded base64 value that represents a platform url combined with the activity id, this value is automatically generated, stored in the ltik JWT and passed to the application when the `redirect()` function is called:
 
 
 ```javascript
@@ -830,15 +871,15 @@ lti.onConnect((connection, request, response) => {
 
 The previous call generates the following cookies:
 
-**<center>platPLATFORM_ID</center>**
-**<center>platPLATFORM_ID/</center>**
+**<center>platCONTEXT_ID</center>**
+**<center>platCONTEXT_ID/</center>**
 
 
-> **But if i redirected to /main why is there no platPLATFORM_ID/main cookie set?**
+> **But if i redirected to /main why is there no platCONTEXT_ID/main cookie set?**
 
 #### Serving multiple resources
 
-That happens because the call `lti.redirect(response, '/main')`, doesn't specify that the `/main` path is a specific resource inside the provider, so a request to `/main` will work within the context of `platPLATFORM_ID/` as a subroute.
+That happens because the call `lti.redirect(response, '/main')`, doesn't specify that the `/main` path is a specific resource inside the provider, so a request to `/main` will work within the context of `platCONTEXT_ID/` as a subroute.
 
 - If you want to specify that the call to `/main` should work within the context of a new resource you just have to set the ```isNewResource``` property of the options parameter of `lti.rediret()` as `true`:
 
@@ -855,15 +896,15 @@ The previous call generates the following cookies:
 
 > Platform context info 
 
-**<center>platPLATFORM_ID</center>**
+**<center>platCONTEXT_ID</center>**
 
 > Most recent request context info
 
-**<center>platPLATFORM_ID/</center>**
+**<center>platCONTEXT_ID/</center>**
 
 > Route specific context info
 
-**<center>platPLATFORM_ID/main</center>**
+**<center>platCONTEXT_ID/main</center>**
 
 
 If you don't want to have a cookie representing the ```\``` route (if you are not using the ```\``` route for anything except redirecting, for example), you can set the ```ignoreRoot``` property of the options parameter of `lti.rediret()` as `true`: 
@@ -879,11 +920,11 @@ Then the cookie representing the ```\``` route wont be generated:
 
 > Platform context info 
 
-**<center>platPLATFORM_ID</center>**
+**<center>platCONTEXT_ID</center>**
 
 > Route specific context info
 
-**<center>platPLATFORM_ID/main</center>**
+**<center>platCONTEXT_ID/main</center>**
 
 
 
@@ -897,7 +938,7 @@ Everytime a application is launched it is **HIGHLY RECOMMENDED** to store in the
 
 #### Routes
 
-Routes in LTIJS can be created using the **lti.app object**, in the same way you would do in a regular Express server.
+Routes in Ltijs can be created using the **lti.app object**, in the same way you would do in a regular Express server.
 
 ```javascript
 lti.app.get('/getname', (req, res) => {
@@ -905,7 +946,7 @@ lti.app.get('/getname', (req, res) => {
 })
 ```
 
-But these routes can only be accessed via the `lti.redirect(res, route)` method, that receives a Express response object and the desired route. Or via the ltik query parameter, that can be used to make requests from the client.
+But these routes can only be accessed via the `lti.redirect(res, route)` method, that receives a Express response object and the desired route. Or via the ltik token, that can be passed through query and body parameters as well as Bearer authorization header, and is used to make requests from the client.
 
 ```javascript
 lti.app.get('/redirect', (req, res) => {
@@ -920,7 +961,9 @@ The `lti.redirect` method, automatically adds the **ltik** parameter to the requ
 
 #### Making requests from the client
 
-The client can call routes to get or send information to the provider by passing the query parameter `ltik` containing the given token as described above, failing to do so will return a **400 bad request status**.
+The client can call routes to get or send information to the provider by passing the `ltik` token via query parameters, body parameters or Bearer authorization headers as described above, failing to do so will return a **400 bad request status**.
+
+***OBS: YOU CAN ONLY PASS THE LTIK TOKEN THROUGH ONE OF THE POSSIBLE METHODS AT A TIME, SENDING MORE THAN ONE TOKEN RESULTS IN A 400 ERROR.***
 
 A request to `https://myprovider/gettoken?ltik=LTIKTOKEN` will be handled by `lti.app.get('/gettoken')` and will have access to the idtoken.
 
@@ -936,51 +979,18 @@ lti.whitelist('/main', '/home', { route: '/route', method: 'POST' }) // You can 
 
 Now calls to ```/main``` don't require the ltik token to be passed. The requests will be handled by `lti.app.get('/main')` and will not have access to an idToken.
 
+___
+
+
+### Deep Linking with Ltijs
+
+The Deep Linking Service class documentation can be accessed [here](https://cvmcosta.me/ltijs/#/deeplinking).
 
 ---
-### Provider Grading Services
 
-LTIjs implements the [LTI 1.3 Assignment and Grading Service Specification](https://www.imsglobal.org/spec/lti-ags/v2p0/) in the form of the [Grade Class](provider_grade.md).
+### Sending grades with Ltijs
 
-#### Sending grades to a platform
-
-LTIjs is able to send grades to a platform in the [application/vnd.ims.lis.v1.score+json](https://www.imsglobal.org/spec/lti-ags/v2p0/#score-publish-service) LTI standard:
-
-```javascript
-{
-  "scoreGiven" : 83,
-  "comment" : "This is exceptional work.",
-  "activityProgress" : "Completed",
-  "gradingProgress": "FullyGraded"
-}
-```
-
-> This excludes the fields *timestamp*, *userId* and *scoreMaximum* of the specification, because the *messagePlatform()* function fills them automatically using the idtoken passed
-
-
-Sending the grade: 
-
-```javascript
-let grade = {
-  scoreGiven: 50,
-  activityProgress: 'Completed',
-  gradingProgress: 'FullyGraded'
-}
-
-// Sends a grade to a platform's grade line
-lti.Grade.ScorePublish(res.locals.token, grade)
-```
-
-
-
-#### Retrieving grades from a platform
-
-LTIjs is able to retrieve grades from a platform:
-
-```javascript
-// Retrieves grade from a platform's grade line only for the current user
-let result  = await lti.Grade.Result(res.locals.token, { userId: true })
-```
+The Grading Service class documentation can be accessed [here](https://cvmcosta.me/ltijs/#/grading).
 
 
 ---
@@ -989,7 +999,7 @@ let result  = await lti.Grade.Result(res.locals.token, { userId: true })
 
 ### Logging
 
-**LTIjs** generates error and server logs if the logger parameter of the constructor's additional options is set to true.
+**Ltijs** generates error and server logs if the logger parameter of the constructor's additional options is set to true.
 
 ```javascript
 // Configure provider
@@ -1005,7 +1015,7 @@ Logs will be generated inside a `logs` folder in the root of your project.
 ### Debugging
 
 
-**LTIjs** uses [debug](https://www.npmjs.com/package/debug) to log various events in the console. Just append `DEBUG='provider:*'` before yout node or npm command and it should be working.
+**Ltijs** uses [debug](https://www.npmjs.com/package/debug) to log various events in the console. Just append `DEBUG='provider:*'` before yout node or npm command and it should be working.
 
 ```shell
 DEBUG='provider:*' npm start

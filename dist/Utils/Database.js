@@ -51,30 +51,14 @@ class Database {
 
     const idTokenSchema = new Schema({
       iss: String,
-      issuer_code: String,
+      issuerCode: String,
       user: String,
       roles: [String],
-      userInfo: {
-        given_name: String,
-        family_name: String,
-        name: String,
-        email: String
-      },
-      platformInfo: {
-        family_code: String,
-        version: String,
-        name: String,
-        description: String
-      },
-      endpoint: {
-        scope: [String],
-        lineitems: String,
-        lineitem: String
-      },
-      namesRoles: {
-        context_memberships_url: String,
-        service_versions: [String]
-      },
+      userInfo: JSON,
+      platformInfo: JSON,
+      lis: JSON,
+      endpoint: JSON,
+      namesRoles: JSON,
       createdAt: {
         type: Date,
         expires: 3600 * 24,
@@ -84,18 +68,15 @@ class Database {
     const contextTokenSchema = new Schema({
       path: String,
       user: String,
-      context: {
-        id: String,
-        label: String,
-        title: String,
-        type: Array
-      },
-      resource: {
-        title: String,
-        id: String
-      },
-      // Activity that originated login
+      deploymentId: String,
+      targetLinkUri: String,
+      context: JSON,
+      resource: JSON,
       custom: JSON,
+      launchPresentation: JSON,
+      messageType: String,
+      version: String,
+      deepLinkingSettings: JSON,
       createdAt: {
         type: Date,
         expires: 3600 * 24,
@@ -103,8 +84,11 @@ class Database {
       }
     });
     const platformSchema = new Schema({
+      platformUrl: {
+        type: String,
+        unique: true
+      },
       platformName: String,
-      platformUrl: String,
       clientId: String,
       authEndpoint: String,
       accesstokenEndpoint: String,

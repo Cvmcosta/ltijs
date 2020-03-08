@@ -10,7 +10,7 @@ var _classPrivateFieldSet2 = _interopRequireDefault(require("@babel/runtime/help
 
 /* eslint-disable no-useless-escape */
 
-/* Provider Assignment and Grade Services */
+/* Provider Assignment and Grade Service */
 const got = require('got');
 
 const provGradeServiceDebug = require('debug')('provider:gradeService');
