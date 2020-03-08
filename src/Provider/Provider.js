@@ -99,7 +99,7 @@ class Provider {
      * @param {String} [options.ssl.key] - SSL key.
      * @param {String} [options.ssl.cert] - SSL certificate.
      * @param {String} [options.staticPath] - The path for the static files your application might serve (Ex: _dirname+"/public")
-     * @param {Boolean} [options.logger = false] - If true, allows LTIJS to generate logging files for server requests and errors.
+     * @param {Boolean} [options.logger = false] - If true, allows Ltijs to generate logging files for server requests and errors.
      * @param {Boolean} [options.cors = true] - If false, disables cors.
      */
   constructor (encryptionkey, database, options) {
@@ -197,7 +197,7 @@ class Provider {
 
       try {
         // Retrieving LTIK
-        const ltik = req.query.ltik
+        const ltik = req.ltik
         // Retrieving cookies
         const cookies = req.signedCookies
         provMainDebug('Cookies received: ')
@@ -235,7 +235,6 @@ class Provider {
 
             const contextPath = _path.join(issuerCode, this.#appUrl, activityId)
 
-            console.log(valid)
             // Mount platform token
             const platformToken = {
               iss: valid.iss,
@@ -580,11 +579,12 @@ class Provider {
      */
   async registerPlatform (platform) {
     if (!platform || !platform.name || !platform.url || !platform.clientId || !platform.authenticationEndpoint || !platform.accesstokenEndpoint || !platform.authConfig) throw new Error('Error registering platform. Missing argument.')
+    let kid
     try {
       const _platform = await this.getPlatform(platform.url)
 
       if (!_platform) {
-        const kid = await Auth.generateProviderKeyPair(this.#ENCRYPTIONKEY, this.#Database)
+        kid = await Auth.generateProviderKeyPair(this.#ENCRYPTIONKEY, this.#Database)
         const plat = new Platform(platform.name, platform.url, platform.clientId, platform.authenticationEndpoint, platform.accesstokenEndpoint, kid, this.#ENCRYPTIONKEY, platform.authConfig, this.#logger, this.#Database)
 
         // Save platform to db
@@ -596,6 +596,9 @@ class Provider {
         return _platform
       }
     } catch (err) {
+      await this.#Database.Delete('publickey', { kid: kid })
+      await this.#Database.Delete('privatekey', { kid: kid })
+      await this.#Database.Delete('platform', { platformUrl: platform.url })
       provAuthDebug(err.message)
       if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
       return false
@@ -685,7 +688,7 @@ class Provider {
       port: pathParts.port,
       auth: pathParts.auth
     })
-    const cookieName = _path.join(code, cookiePath, activityId)
+    const contextPath = _path.join(code, cookiePath, activityId)
 
     let token = {
       issuer: code,
@@ -707,7 +710,7 @@ class Provider {
         provMainDebug('External request found for domain: .' + domain)
       }
 
-      res.cookie(cookieName, res.locals.token.user, cookieOptions)
+      res.cookie(contextPath, res.locals.token.user, cookieOptions)
 
       const oldpath = res.locals.token.platformContext.path
 
@@ -715,7 +718,7 @@ class Provider {
         resource: res.locals.token.platformContext.resource,
         custom: res.locals.token.platformContext.custom,
         context: res.locals.token.platformContext.context,
-        path: cookieName,
+        path: contextPath,
         user: res.locals.token.platformContext.user,
         deploymentId: res.locals.token.platformContext.deploymentId,
         targetLinkUri: res.locals.token.platformContext.targetLinkUri,
@@ -725,7 +728,7 @@ class Provider {
         deepLinkingSettings: res.locals.token.platformContext.deepLinkingSettings
       }
 
-      if (await this.#Database.Delete('contexttoken', { path: cookieName, user: res.locals.token.user })) this.#Database.Insert(false, 'contexttoken', newContextToken)
+      if (await this.#Database.Delete('contexttoken', { path: contextPath, user: res.locals.token.user })) this.#Database.Insert(false, 'contexttoken', newContextToken)
       if (options && options.ignoreRoot) {
         this.#Database.Delete('contexttoken', { path: oldpath, user: res.locals.token.user })
         res.clearCookie(oldpath, this.#cookieOptions)

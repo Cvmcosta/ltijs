@@ -6,6 +6,7 @@ const helmet = require('helmet')
 const cookieParser = require('cookie-parser')
 const cors = require('cors')
 const morgan = require('morgan')
+const bearerToken = require('express-bearer-token')
 
 class Server {
   constructor (https, ssl, ENCRYPTIONKEY, logger, corsOpt) {
@@ -23,7 +24,7 @@ class Server {
 
     // Setting up helmet
     this.app.use(helmet({
-      frameguard: false // Disabling frameguard so that LTIJS can send resources to iframes inside LMS's
+      frameguard: false // Disabling frameguard so that Ltijs can send resources to iframes inside LMS's
     }))
 
     // Controlling cors, having in mind that resources in another domain need to be explicitly allowed, and that ltijs controls origin blocking unregistered platforms
@@ -42,6 +43,13 @@ class Server {
     this.app.use(bodyParser.raw())
     this.app.use(bodyParser.text())
     this.app.use(cookieParser(ENCRYPTIONKEY))
+    this.app.use(bearerToken({
+      bodyKey: 'ltik',
+      queryKey: 'ltik',
+      headerKey: 'Bearer',
+      reqKey: 'ltik',
+      cookie: false
+    }))
   }
 
   listen (conf, message) {

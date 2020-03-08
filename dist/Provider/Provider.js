@@ -75,7 +75,7 @@ class Provider {
      * @param {String} [options.ssl.key] - SSL key.
      * @param {String} [options.ssl.cert] - SSL certificate.
      * @param {String} [options.staticPath] - The path for the static files your application might serve (Ex: _dirname+"/public")
-     * @param {Boolean} [options.logger = false] - If true, allows LTIJS to generate logging files for server requests and errors.
+     * @param {Boolean} [options.logger = false] - If true, allows Ltijs to generate logging files for server requests and errors.
      * @param {Boolean} [options.cors = true] - If false, disables cors.
      */
   constructor(encryptionkey, database, options) {
@@ -256,7 +256,7 @@ class Provider {
 
       try {
         // Retrieving LTIK
-        const ltik = req.query.ltik; // Retrieving cookies
+        const ltik = req.ltik; // Retrieving cookies
 
         const cookies = req.signedCookies;
         provMainDebug('Cookies received: ');
@@ -288,9 +288,8 @@ class Provider {
             const resourseId = valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'] ? valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'].id : 'NF';
             const activityId = courseId + '_' + resourseId;
 
-            const contextPath = _path.join(issuerCode, (0, _classPrivateFieldGet2.default)(this, _appUrl), activityId);
+            const contextPath = _path.join(issuerCode, (0, _classPrivateFieldGet2.default)(this, _appUrl), activityId); // Mount platform token
 
-            console.log(valid); // Mount platform token
 
             const platformToken = {
               iss: valid.iss,
@@ -664,12 +663,13 @@ class Provider {
 
   async registerPlatform(platform) {
     if (!platform || !platform.name || !platform.url || !platform.clientId || !platform.authenticationEndpoint || !platform.accesstokenEndpoint || !platform.authConfig) throw new Error('Error registering platform. Missing argument.');
+    let kid;
 
     try {
       const _platform = await this.getPlatform(platform.url);
 
       if (!_platform) {
-        const kid = await Auth.generateProviderKeyPair((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database));
+        kid = await Auth.generateProviderKeyPair((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database));
         const plat = new Platform(platform.name, platform.url, platform.clientId, platform.authenticationEndpoint, platform.accesstokenEndpoint, kid, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), platform.authConfig, (0, _classPrivateFieldGet2.default)(this, _logger), (0, _classPrivateFieldGet2.default)(this, _Database)); // Save platform to db
 
         provMainDebug('Registering new platform: ' + platform.url);
@@ -687,6 +687,15 @@ class Provider {
         return _platform;
       }
     } catch (err) {
+      await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('publickey', {
+        kid: kid
+      });
+      await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('privatekey', {
+        kid: kid
+      });
+      await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('platform', {
+        platformUrl: platform.url
+      });
       provAuthDebug(err.message);
       if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
         level: 'error',
@@ -797,7 +806,7 @@ class Provider {
       auth: pathParts.auth
     });
 
-    const cookieName = _path.join(code, cookiePath, activityId);
+    const contextPath = _path.join(code, cookiePath, activityId);
 
     let token = {
       issuer: code,
@@ -819,13 +828,13 @@ class Provider {
         provMainDebug('External request found for domain: .' + domain);
       }
 
-      res.cookie(cookieName, res.locals.token.user, cookieOptions);
+      res.cookie(contextPath, res.locals.token.user, cookieOptions);
       const oldpath = res.locals.token.platformContext.path;
       const newContextToken = {
         resource: res.locals.token.platformContext.resource,
         custom: res.locals.token.platformContext.custom,
         context: res.locals.token.platformContext.context,
-        path: cookieName,
+        path: contextPath,
         user: res.locals.token.platformContext.user,
         deploymentId: res.locals.token.platformContext.deploymentId,
         targetLinkUri: res.locals.token.platformContext.targetLinkUri,
@@ -835,7 +844,7 @@ class Provider {
         deepLinkingSettings: res.locals.token.platformContext.deepLinkingSettings
       };
       if (await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('contexttoken', {
-        path: cookieName,
+        path: contextPath,
         user: res.locals.token.user
       })) (0, _classPrivateFieldGet2.default)(this, _Database).Insert(false, 'contexttoken', newContextToken);
 

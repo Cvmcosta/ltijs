@@ -24,8 +24,8 @@
 ## Table of Contents
 
 - [Introduction](#introduction)
-- [Documentation](#documentation)
 - [Usage](#usage)
+- [Documentation](#documentation)
 - [License](#license)
 
 ---
@@ -37,6 +37,38 @@ The ```Platform``` class represents a [LTI Consumer](https://www.imsglobal.org/s
 
 ---
 
+
+
+## Usage
+
+### Registering platform
+
+The [LTI Provider](provider.md) method `registerPlatform()` returns a Promise that resolves the created `Platform` or `false` if some error occurs.
+
+```javascript
+await lti.registerPlatform({ 
+    url: 'https://platform.url',
+    name: 'Platform Name',
+    clientId: 'TOOLCLIENTID',
+    authenticationEndpoint: 'https://platform.url/auth',
+    accesstokenEndpoint: 'https://platform.url/token',
+    authConfig: { method: 'JWK_SET', key: 'https://platform.url/keyset' }
+})
+
+/*
+.
+.
+.
+*/
+
+let plat = await lti.getPlatform('http://platform/url') 
+
+let key = await plat.platformPublicKey()
+```
+
+
+
+---
 
 ## Documentation
 
@@ -271,36 +303,6 @@ Deletes a registered platform.
 
 ---
 
-## Usage
-
-### Registering platform
-
-The [LTI Provider](provider.md) method `registerPlatform()` returns a Promise that resolves the created `Platform` or `false` if some error occurs.
-
-```javascript
-await lti.registerPlatform({ 
-    url: 'https://platform.url',
-    name: 'Platform Name',
-    clientId: 'TOOLCLIENTID',
-    authenticationEndpoint: 'https://platform.url/auth',
-    accesstokenEndpoint: 'https://platform.url/token',
-    authConfig: { method: 'JWK_SET', key: 'https://platform.url/keyset' }
-})
-
-/*
-.
-.
-.
-*/
-
-let plat = await lti.getPlatform('http://platform/url') 
-
-let key = await plat.platformPublicKey()
-```
-
-
-
----
 
 ## License
 

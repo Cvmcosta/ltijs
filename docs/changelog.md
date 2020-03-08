@@ -8,6 +8,16 @@
 
 ### CHANGELOG
 
+#### V3.0.0
+> 2020-03-8
+> MAJOR CHANGE
+> - Added Deep Linking Service, exposed through [Provider.DeepLinking](https://cvmcosta.github.io/ltijs/#/deeplinking).
+> - Added a new callback, onDeepLinking that tells Ltijs what to display when receiving a deep linking request.
+> - Ltik token can now be passed through body parameters, Bearer token authorization header and query parameters.
+> - Fixed Database type issue, where some json fields were declared with a `type` key, that changed the type of the entire field.
+> - Added the `unique` parameter to the platformUrl field, that deals with the bug that occured when using ltijs in cluster mode with pm2, where platforms would registered more than one time.
+> - Added error handling to the registration method. Now it deletes the previously generated key pair kid.
+
 #### V2.5.3
 
 > 2020-02-28

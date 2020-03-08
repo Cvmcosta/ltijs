@@ -84,8 +84,11 @@ class Database {
       }
     });
     const platformSchema = new Schema({
+      platformUrl: {
+        type: String,
+        unique: true
+      },
       platformName: String,
-      platformUrl: String,
       clientId: String,
       authEndpoint: String,
       accesstokenEndpoint: String,

@@ -57,8 +57,11 @@ class Database {
       createdAt: { type: Date, expires: 3600 * 24, default: Date.now }
     })
     const platformSchema = new Schema({
+      platformUrl: {
+        type: String,
+        unique: true
+      },
       platformName: String,
-      platformUrl: String,
       clientId: String,
       authEndpoint: String,
       accesstokenEndpoint: String,
