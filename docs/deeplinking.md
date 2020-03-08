@@ -297,7 +297,7 @@ Creates a self submitting form containing the signed JWT message of the deep lin
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | idtoken | `Object`  | Id token. |
-| contentItems | `Object | Array<Object>`  | One or more contentItem Objects. |
+| contentItems | `Object` | Array<Object>`  | One or more contentItem Objects. |
 | options | `Object`  | Options object. |
 | options.message | `String`  | Message the platform may show to the end user upon return to the platform. |
 | options.errmessage | `String`  | Message the platform may show to the end user upon return to the platform if some error has occurred. |
@@ -327,7 +327,7 @@ Creates a signed JWT message of the deep linking request.
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | idtoken | `Object`  | Id token. |
-| contentItems | `Object | Array<Object>`  | One or more contentItem Objects. |
+| contentItems | `Object` | Array<Object>`  | One or more contentItem Objects. |
 | options | `Object`  | Options object. |
 | options.message | `String`  | Message the platform may show to the end user upon return to the platform. |
 | options.errmessage | `String`  | Message the platform may show to the end user upon return to the platform if some error has occurred. |
