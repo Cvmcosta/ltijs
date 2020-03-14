@@ -47,7 +47,7 @@ class Server {
       bodyKey: 'ltik',
       queryKey: 'ltik',
       headerKey: 'Bearer',
-      reqKey: 'ltik',
+      reqKey: 'token',
       cookie: false
     }))
   }

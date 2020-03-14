@@ -8,6 +8,11 @@
 
 ### CHANGELOG
 
+#### V3.0.3
+> 2020-03-14
+> MINOR CHANGE
+> - Switched the order of route validation so that, if failing to validate in a lti context, whitelisted routes can still work withot acess to a idtoken. This allows routes to be accessed both ways, and route handlers can just check wether or not an idtoken is present.
+
 #### V3.0.0
 > 2020-03-8
 > MAJOR CHANGE

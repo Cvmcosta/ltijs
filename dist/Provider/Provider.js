@@ -251,12 +251,12 @@ class Provider {
     const sessionValidator = async (req, res, next) => {
       provMainDebug('Receiving request at path: ' + req.path); // Ckeck if request is attempting to initiate oidc login flow or access reserved or whitelisted routes
 
-      if (req.path === (0, _classPrivateFieldGet2.default)(this, _loginUrl) || req.path === (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl) || req.path === (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl) || req.path === (0, _classPrivateFieldGet2.default)(this, _keysetUrl) || (0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(req.path) !== -1 || (0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(req.path + '-method-' + req.method.toUpperCase()) !== -1) return next();
+      if (req.path === (0, _classPrivateFieldGet2.default)(this, _loginUrl) || req.path === (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl) || req.path === (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl) || req.path === (0, _classPrivateFieldGet2.default)(this, _keysetUrl)) return next();
       provMainDebug('Path does not match reserved endpoints');
 
       try {
-        // Retrieving LTIK
-        const ltik = req.ltik; // Retrieving cookies
+        // Retrieving LTIK token
+        const ltik = req.token; // Retrieving cookies
 
         const cookies = req.signedCookies;
         provMainDebug('Cookies received: ');
@@ -347,13 +347,30 @@ class Provider {
             const newLtik = jwt.sign(newLtikObj, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
             return res.redirect(307, (0, _classPrivateFieldGet2.default)(this, _appUrl) + '?ltik=' + newLtik);
           } else {
+            if ((0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(req.path) !== -1 || (0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(req.path + '-method-' + req.method.toUpperCase()) !== -1) {
+              provMainDebug('Accessing as whitelisted URL');
+              return next();
+            }
+
             provMainDebug('No LTIK found');
             return res.redirect((0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl));
           }
         }
 
         provMainDebug('LTIK found');
-        const validLtik = jwt.verify(ltik, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
+        let validLtik;
+
+        try {
+          validLtik = jwt.verify(ltik, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
+        } catch (err) {
+          if ((0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(req.path) !== -1 || (0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(req.path + '-method-' + req.method.toUpperCase()) !== -1) {
+            provMainDebug('Accessing as whitelisted URL');
+            return next();
+          }
+
+          throw new Error(err.message);
+        }
+
         provMainDebug('LTIK successfully verified');
         let user = false;
         const issuerCode = validLtik.issuer;

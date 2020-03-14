@@ -191,13 +191,13 @@ class Provider {
     const sessionValidator = async (req, res, next) => {
       provMainDebug('Receiving request at path: ' + req.path)
       // Ckeck if request is attempting to initiate oidc login flow or access reserved or whitelisted routes
-      if (req.path === this.#loginUrl || req.path === this.#sessionTimeoutUrl || req.path === this.#invalidTokenUrl || req.path === this.#keysetUrl || this.#whitelistedUrls.indexOf(req.path) !== -1 || this.#whitelistedUrls.indexOf(req.path + '-method-' + req.method.toUpperCase()) !== -1) return next()
+      if (req.path === this.#loginUrl || req.path === this.#sessionTimeoutUrl || req.path === this.#invalidTokenUrl || req.path === this.#keysetUrl) return next()
 
       provMainDebug('Path does not match reserved endpoints')
 
       try {
-        // Retrieving LTIK
-        const ltik = req.ltik
+        // Retrieving LTIK token
+        const ltik = req.token
         // Retrieving cookies
         const cookies = req.signedCookies
         provMainDebug('Cookies received: ')
@@ -292,13 +292,26 @@ class Provider {
 
             return res.redirect(307, this.#appUrl + '?ltik=' + newLtik)
           } else {
+            if (this.#whitelistedUrls.indexOf(req.path) !== -1 || this.#whitelistedUrls.indexOf(req.path + '-method-' + req.method.toUpperCase()) !== -1) {
+              provMainDebug('Accessing as whitelisted URL')
+              return next()
+            }
             provMainDebug('No LTIK found')
             return res.redirect(this.#invalidTokenUrl)
           }
         }
 
         provMainDebug('LTIK found')
-        const validLtik = jwt.verify(ltik, this.#ENCRYPTIONKEY)
+        let validLtik
+        try {
+          validLtik = jwt.verify(ltik, this.#ENCRYPTIONKEY)
+        } catch (err) {
+          if (this.#whitelistedUrls.indexOf(req.path) !== -1 || this.#whitelistedUrls.indexOf(req.path + '-method-' + req.method.toUpperCase()) !== -1) {
+            provMainDebug('Accessing as whitelisted URL')
+            return next()
+          }
+          throw new Error(err.message)
+        }
         provMainDebug('LTIK successfully verified')
 
         let user = false
