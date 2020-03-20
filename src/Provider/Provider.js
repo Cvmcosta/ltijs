@@ -485,8 +485,10 @@ class Provider {
      */
   onConnect (_connectCallback, options) {
     if (options) {
-      if (options.sameSite) this.#cookieOptions.sameSite = options.sameSite
-      if (options.sameSite.toLowerCase() === 'none') this.#cookieOptions.secure = true
+      if (options.sameSite) {
+        this.#cookieOptions.sameSite = options.sameSite
+        if (options.sameSite.toLowerCase() === 'none') this.#cookieOptions.secure = true
+      }
       if (options.secure) this.#cookieOptions.secure = true
       if (options.sessionTimeout) this.#sessionTimedOut = options.sessionTimeout
       if (options.invalidToken) this.#invalidToken = options.invalidToken
@@ -512,8 +514,10 @@ class Provider {
      */
   onDeepLinking (_deepLinkingCallback, options) {
     if (options) {
-      if (options.sameSite) this.#cookieOptions.sameSite = options.sameSite
-      if (options.sameSite.toLowerCase() === 'none') this.#cookieOptions.secure = true
+      if (options.sameSite) {
+        this.#cookieOptions.sameSite = options.sameSite
+        if (options.sameSite.toLowerCase() === 'none') this.#cookieOptions.secure = true
+      }
       if (options.secure) this.#cookieOptions.secure = true
       if (options.sessionTimeout) this.#sessionTimedOut = options.sessionTimeout
       if (options.invalidToken) this.#invalidToken = options.invalidToken

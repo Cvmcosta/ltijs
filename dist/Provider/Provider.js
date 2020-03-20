@@ -564,8 +564,11 @@ class Provider {
 
   onConnect(_connectCallback, options) {
     if (options) {
-      if (options.sameSite) (0, _classPrivateFieldGet2.default)(this, _cookieOptions).sameSite = options.sameSite;
-      if (options.sameSite.toLowerCase() === 'none') (0, _classPrivateFieldGet2.default)(this, _cookieOptions).secure = true;
+      if (options.sameSite) {
+        (0, _classPrivateFieldGet2.default)(this, _cookieOptions).sameSite = options.sameSite;
+        if (options.sameSite.toLowerCase() === 'none') (0, _classPrivateFieldGet2.default)(this, _cookieOptions).secure = true;
+      }
+
       if (options.secure) (0, _classPrivateFieldGet2.default)(this, _cookieOptions).secure = true;
       if (options.sessionTimeout) (0, _classPrivateFieldSet2.default)(this, _sessionTimedOut, options.sessionTimeout);
       if (options.invalidToken) (0, _classPrivateFieldSet2.default)(this, _invalidToken, options.invalidToken);
@@ -593,8 +596,11 @@ class Provider {
 
   onDeepLinking(_deepLinkingCallback, options) {
     if (options) {
-      if (options.sameSite) (0, _classPrivateFieldGet2.default)(this, _cookieOptions).sameSite = options.sameSite;
-      if (options.sameSite.toLowerCase() === 'none') (0, _classPrivateFieldGet2.default)(this, _cookieOptions).secure = true;
+      if (options.sameSite) {
+        (0, _classPrivateFieldGet2.default)(this, _cookieOptions).sameSite = options.sameSite;
+        if (options.sameSite.toLowerCase() === 'none') (0, _classPrivateFieldGet2.default)(this, _cookieOptions).secure = true;
+      }
+
       if (options.secure) (0, _classPrivateFieldGet2.default)(this, _cookieOptions).secure = true;
       if (options.sessionTimeout) (0, _classPrivateFieldSet2.default)(this, _sessionTimedOut, options.sessionTimeout);
       if (options.invalidToken) (0, _classPrivateFieldSet2.default)(this, _invalidToken, options.invalidToken);
