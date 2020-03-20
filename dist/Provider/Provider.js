@@ -2,11 +2,15 @@
 
 var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefault");
 
-var _objectSpread2 = _interopRequireDefault(require("@babel/runtime/helpers/objectSpread"));
+var _defineProperty2 = _interopRequireDefault(require("@babel/runtime/helpers/defineProperty"));
 
 var _classPrivateFieldSet2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldSet"));
 
 var _classPrivateFieldGet2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldGet"));
+
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+
+function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { (0, _defineProperty2.default)(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
 /* eslint-disable require-atomic-updates */
 
@@ -70,13 +74,14 @@ class Provider {
      * @param {String} [options.sessionTimeoutUrl = '/sessionTimeout'] - Lti Provider session timeout url. If no option is set '/sessionTimeout' is used.
      * @param {String} [options.invalidTokenUrl = '/invalidToken'] - Lti Provider invalid token url. If no option is set '/invalidToken' is used.
      * @param {String} [options.keysetUrl = '/keys'] - Lti Provider public jwk keyset url. If no option is set '/keys' is used.
-     * @param {Boolean} [options.https = false] - Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https. If you set this option as true you can enable the secure flag in the cookies options of the onConnect method.
+     * @param {Boolean} [options.https = false] - Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https and are planning to configure ssl locally. If you set this option as true you can enable the secure flag in the cookies options of the onConnect method.
      * @param {Object} [options.ssl] - SSL certificate and key if https is enabled.
      * @param {String} [options.ssl.key] - SSL key.
      * @param {String} [options.ssl.cert] - SSL certificate.
      * @param {String} [options.staticPath] - The path for the static files your application might serve (Ex: _dirname+"/public")
      * @param {Boolean} [options.logger = false] - If true, allows Ltijs to generate logging files for server requests and errors.
      * @param {Boolean} [options.cors = true] - If false, disables cors.
+     * @param {Function} [options.serverAddon] - Allows the execution of a method inside of the server contructor. Can be used to register middlewares.
      */
   constructor(encryptionkey, database, options) {
     _loginUrl.set(this, {
@@ -124,8 +129,7 @@ class Provider {
       value: {
         secure: false,
         httpOnly: true,
-        signed: true,
-        sameSite: 'None'
+        signed: true
       }
     });
 
@@ -230,7 +234,7 @@ class Provider {
     }
 
     (0, _classPrivateFieldSet2.default)(this, _ENCRYPTIONKEY, encryptionkey);
-    (0, _classPrivateFieldSet2.default)(this, _server, new Server(options ? options.https : false, options ? options.ssl : false, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), loggerServer, options ? options.cors : true));
+    (0, _classPrivateFieldSet2.default)(this, _server, new Server(options ? options.https : false, options ? options.ssl : false, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), loggerServer, options ? options.cors : true, options ? options.serverAddon : false));
     /**
      * @description Express server object.
      */
@@ -310,9 +314,9 @@ class Provider {
               },
               lis: valid['https://purl.imsglobal.org/spec/lti/claim/lis'],
               endpoint: valid['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint'],
-              namesRoles: valid['https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice'] // Store idToken in database
+              namesRoles: valid['https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice']
+            }; // Store idToken in database
 
-            };
             if (await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('idtoken', {
               issuerCode: issuerCode,
               user: platformToken.user
@@ -329,9 +333,9 @@ class Provider {
               launchPresentation: valid['https://purl.imsglobal.org/spec/lti/claim/launch_presentation'],
               messageType: valid['https://purl.imsglobal.org/spec/lti/claim/message_type'],
               version: valid['https://purl.imsglobal.org/spec/lti/claim/version'],
-              deepLinkingSettings: valid['https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings'] // Store contextToken in database
+              deepLinkingSettings: valid['https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings']
+            }; // Store contextToken in database
 
-            };
             if (await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('contexttoken', {
               path: contextPath,
               user: contextToken.user
@@ -341,9 +345,9 @@ class Provider {
             const newLtikObj = {
               issuer: issuerCode,
               path: (0, _classPrivateFieldGet2.default)(this, _appUrl),
-              activityId: activityId // Signing context token
+              activityId: activityId
+            }; // Signing context token
 
-            };
             const newLtik = jwt.sign(newLtikObj, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
             return res.redirect(307, (0, _classPrivateFieldGet2.default)(this, _appUrl) + '?ltik=' + newLtik);
           } else {
@@ -353,6 +357,7 @@ class Provider {
             }
 
             provMainDebug('No LTIK found');
+            provMainDebug('Request body: ', req.body);
             return res.redirect((0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl));
           }
         }
@@ -414,7 +419,7 @@ class Provider {
           return next();
         } else {
           provMainDebug('No session cookie found');
-          provMainDebug(req.body);
+          provMainDebug('Request body: ', req.body);
           if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
             level: 'error',
             message: req.body
@@ -435,7 +440,7 @@ class Provider {
 
     this.app.use(sessionValidator);
     this.app.all((0, _classPrivateFieldGet2.default)(this, _loginUrl), async (req, res) => {
-      const params = (0, _objectSpread2.default)({}, req.query, req.body);
+      const params = _objectSpread({}, req.query, {}, req.body);
 
       try {
         const iss = params.iss;
@@ -549,6 +554,7 @@ class Provider {
      * @param {Function} _connectCallback - Function that is going to be called everytime a platform sucessfully connects to the provider.
      * @param {Object} [options] - Options configuring the usage of cookies to pass the Id Token data to the client.
      * @param {Boolean} [options.secure = false] - Secure property of the cookie.
+     * @param {String} [options.sameSite = 'Lax'] - sameSite property of the cookie.
      * @param {Function} [options.sessionTimeout] - Route function executed everytime the session expires. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}).
      * @param {Function} [options.invalidToken] - Route function executed everytime the system receives an invalid token or cookie. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}).
      * @example .onConnect((conection, request, response)=>{response.send(connection)}, {secure: true})
@@ -558,7 +564,9 @@ class Provider {
 
   onConnect(_connectCallback, options) {
     if (options) {
-      if (options.secure === true) (0, _classPrivateFieldGet2.default)(this, _cookieOptions).secure = options.secure;
+      if (options.sameSite) (0, _classPrivateFieldGet2.default)(this, _cookieOptions).sameSite = options.sameSite;
+      if (options.sameSite.toLowerCase() === 'none') (0, _classPrivateFieldGet2.default)(this, _cookieOptions).secure = true;
+      if (options.secure) (0, _classPrivateFieldGet2.default)(this, _cookieOptions).secure = true;
       if (options.sessionTimeout) (0, _classPrivateFieldSet2.default)(this, _sessionTimedOut, options.sessionTimeout);
       if (options.invalidToken) (0, _classPrivateFieldSet2.default)(this, _invalidToken, options.invalidToken);
     }
@@ -575,6 +583,7 @@ class Provider {
      * @param {Function} _deepLinkingCallback - Function that is going to be called everytime a platform sucessfully launches a deep linking request.
      * @param {Object} [options] - Options configuring the usage of cookies to pass the Id Token data to the client.
      * @param {Boolean} [options.secure = false] - Secure property of the cookie.
+     * @param {String} [options.sameSite = 'Lax'] - sameSite property of the cookie.
      * @param {Function} [options.sessionTimeout] - Route function executed everytime the session expires. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}).
      * @param {Function} [options.invalidToken] - Route function executed everytime the system receives an invalid token or cookie. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}).
      * @example .onDeepLinking((conection, request, response)=>{response.send(connection)}, {secure: true})
@@ -584,7 +593,9 @@ class Provider {
 
   onDeepLinking(_deepLinkingCallback, options) {
     if (options) {
-      if (options.secure === true) (0, _classPrivateFieldGet2.default)(this, _cookieOptions).secure = options.secure;
+      if (options.sameSite) (0, _classPrivateFieldGet2.default)(this, _cookieOptions).sameSite = options.sameSite;
+      if (options.sameSite.toLowerCase() === 'none') (0, _classPrivateFieldGet2.default)(this, _cookieOptions).secure = true;
+      if (options.secure) (0, _classPrivateFieldGet2.default)(this, _cookieOptions).secure = true;
       if (options.sessionTimeout) (0, _classPrivateFieldSet2.default)(this, _sessionTimedOut, options.sessionTimeout);
       if (options.invalidToken) (0, _classPrivateFieldSet2.default)(this, _invalidToken, options.invalidToken);
     }
@@ -813,24 +824,22 @@ class Provider {
     const courseId = res.locals.token.platformContext.context ? res.locals.token.platformContext.context.id : 'NF';
     const resourseId = res.locals.token.platformContext.resource ? res.locals.token.platformContext.resource.id : 'NF';
     const activityId = courseId + '_' + resourseId;
-    const pathParts = url.parse(path); // Create cookie name
+    const pathParts = url.parse(path);
+    const oldpath = res.locals.token.platformContext.path; // Create new cookie name if isNewResource is set
 
-    const cookiePath = url.format({
+    const cookiePath = options && options.isNewResource ? url.format({
       protocol: pathParts.protocol,
       hostname: pathParts.hostname,
       pathname: pathParts.pathname,
       port: pathParts.port,
       auth: pathParts.auth
-    });
-
-    const contextPath = _path.join(code, cookiePath, activityId);
-
+    }) : oldpath;
     let token = {
       issuer: code,
       path: cookiePath,
-      activityId: activityId // Signing context token
+      activityId: activityId
+    }; // Signing context token
 
-    };
     token = jwt.sign(token, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY)); // Checking the type of redirect
 
     const externalRequest = validUrl.isWebUri(path);
@@ -840,13 +849,18 @@ class Provider {
       const cookieOptions = JSON.parse(JSON.stringify((0, _classPrivateFieldGet2.default)(this, _cookieOptions)));
 
       if (externalRequest) {
+        cookieOptions.sameSite = 'None';
+        cookieOptions.secure = true;
         const domain = tldparser(externalRequest).domain;
         cookieOptions.domain = '.' + domain;
         provMainDebug('External request found for domain: .' + domain);
       }
 
+      const contextPath = _path.join(code, cookiePath, activityId);
+
+      const rootPath = _path.join(code, (0, _classPrivateFieldGet2.default)(this, _appUrl), activityId);
+
       res.cookie(contextPath, res.locals.token.user, cookieOptions);
-      const oldpath = res.locals.token.platformContext.path;
       const newContextToken = {
         resource: res.locals.token.platformContext.resource,
         custom: res.locals.token.platformContext.custom,
@@ -867,10 +881,10 @@ class Provider {
 
       if (options && options.ignoreRoot) {
         (0, _classPrivateFieldGet2.default)(this, _Database).Delete('contexttoken', {
-          path: oldpath,
+          path: rootPath,
           user: res.locals.token.user
         });
-        res.clearCookie(oldpath, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
+        res.clearCookie(rootPath, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
       }
     } // Formatting path with queries
 
@@ -888,7 +902,7 @@ class Provider {
       pathname: pathParts.pathname,
       port: pathParts.port,
       auth: pathParts.auth,
-      query: (0, _objectSpread2.default)({}, queries, {
+      query: _objectSpread({}, queries, {
         ltik: token
       })
     }); // Sets allow credentials header and redirects to path with queries

@@ -32,13 +32,11 @@ class Database {
 
     if (database.connection) {
       if (!database.connection.useNewUrlParser) database.connection.useNewUrlParser = true;
-      if (!database.connection.autoReconnect) database.connection.autoReconnect = true;
       if (!database.connection.keepAlive) database.connection.keepAlive = true;
       if (!database.connection.keepAliveInitialDelay) database.connection.keepAliveInitialDelay = 300000;
     } else {
       database.connection = {
         useNewUrlParser: true,
-        autoReconnect: true,
         keepAlive: true,
         keepAliveInitialDelay: 300000,
         connectTimeoutMS: 300000

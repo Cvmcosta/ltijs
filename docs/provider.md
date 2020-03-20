@@ -53,6 +53,8 @@ Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps
   - [The Provider object](#the-provider-object)
   - [Serving static files](#serving-static-files)
   - [Deploy and the onConnect() Callback](#deploy)
+  - [Keyset Endpoint](#keyset-endpoint)
+  - [Server addon support](#server-addon-support)
   - [The Platform object](#the-platform-object)
   - [The idToken object](#the-idtoken-object)
   - [Routing and Context](#routing-and-context)
@@ -229,13 +231,14 @@ Exposes methods for easy manipulation of the LTI 1.3 standard as a LTI Provider 
 | options.loginUrl | `String`  | = '/login'] - Lti Provider login url. If no option is set '/login' is used. | *Optional* |
 | options.sessionTimeoutUrl | `String`  | = '/sessionTimeout'] - Lti Provider session timeout url. If no option is set '/sessionTimeout' is used. | *Optional* |
 | options.invalidTokenUrl | `String`  | = '/invalidToken'] - Lti Provider invalid token url. If no option is set '/invalidToken' is used. | *Optional* |
-| options.https | `Boolean`  | = false]  Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https. ***If you set this option as true you can enable the secure flag in the cookies options of the onConnect method***. | *Optional* |
+| options.https | `Boolean`  | = false]  Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https and are planning to configure ssl locally. ***If you set this option as true you can enable the secure flag in the cookies options of the onConnect method***. | *Optional* |
 | options.ssl | `Object`  | SSL certificate and key if https is enabled. | *Optional* |
 | options.ssl.key | `String`  | SSL key. | *Optional* |
 | options.ssl.cert | `String`  | SSL certificate. | *Optional* |
 | options.staticPath | `String`  | The path for the static files your application might serve (Ex: _dirname+"/public") | *Optional* |
 | options.logger | `Boolean`  | If true, allows Ltijs to generate logging files for server requests and errors. | *Optional* |
-
+| options.cors | `Boolean`  | = true] If false, disable cors. | *Optional* |
+| options.serverAddon | `Function` |  Allows the execution of a method inside of the server contructor. Can be used to register middlewares. | *Optional* |
 
 
 #### async Provider.deploy(options) 
@@ -283,6 +286,7 @@ Sets the callback function called whenever theres a sucessfull connection, expos
 | _connectCallback | `Function`  | Function that is going to be called everytime a platform sucessfully connects to the provider. | &nbsp; |
 | options | `Object`  | Options configuring the usage of cookies to pass the Id Token data to the client. | *Optional* |
 | options.secure | `Boolean`  | = false] - Secure flag of the cookie. Only allows cookies to be sent through https. | *Optional* |
+| options.sameSite | `String`  | = 'lax'] - sameSite  flag of the cookie. Ex: ('None', 'Lax', 'Strict'). | *Optional* |
 | options.sessionTimeout | `Function`  | Route/Function executed everytime the session expires. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}). | *Optional* |
 | options.invalidToken | `Function`  | Route/Function executed everytime the system receives an invalid token or cookie. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}). | *Optional* |
 
@@ -310,6 +314,7 @@ Sets the callback function called whenever theres a sucessfull deep linking requ
 | _deepLinkingCallback | `Function`  | Function that is going to be called everytime a platform sucessfully launches a deep linking request. | &nbsp; |
 | options | `Object`  | Options configuring the usage of cookies to pass the Id Token data to the client. | *Optional* |
 | options.secure | `Boolean`  | = false] - Secure flag of the cookie. Only allows cookies to be sent through https. | *Optional* |
+| options.sameSite | `String`  | = 'lax'] - sameSite  flag of the cookie. Ex: ('None', 'Lax', 'Strict'). | *Optional* |
 | options.sessionTimeout | `Function`  | Route/Function executed everytime the session expires. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}). | *Optional* |
 | options.invalidToken | `Function`  | Route/Function executed everytime the system receives an invalid token or cookie. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}). | *Optional* |
 
@@ -554,7 +559,7 @@ const lti = new LTI('EXAMPLEKEY',
 The second parameter of the contructor, `database`, is an object with an `url` field, that should be the database url, and, ***if your database requires authentication***, a `connection` field, that must contain [MongoDB Driver's connection options](http://mongodb.github.io/node-mongodb-native/2.2/api/MongoClient.html#connect).
 
 
-The third parameter, `options`, allows you to configure a staticPath from where the express server serves static files, setup the usage of https, and setup the server logger, and customize the server main routes: 
+The third parameter, `options`, allows you to configure a staticPath from where the express server serves static files, setup a local https configuration, setup the server logger, and customize the server main routes: 
 
 
 ```javascript
@@ -668,12 +673,14 @@ lti.onConnect(
   (conection, request, response,  next) => {
     response.send('User connected!')
   }, {
-    secure: true, // Cookie is only passed through secure https requests
+    secure: true, // Cookie is only passed through secure https requests.
+    sameSite: 'Strict', // Specifies sameSite flag for the cookie.
     sessionTimeout: (req, res) => { res.send('Session timed out') }, 
     invalidToken: (req, res) => { res.send('Invalid token') } 
   }
 )
 ```
+***Obs: If sameSite is defined as 'None', the secure flag is automatically set to true, that is done because browsers do not accept cookies with sameSite set to 'None' that are not also set as secure.***
 
 
 #### The app property
@@ -706,6 +713,28 @@ const lti = new LTI('EXAMPLEKEY',
             {  keysetUrl: '/keyset' }) // Changed from '/keys' to '/keyset'
 ```
 
+### Server addon support
+
+Ltijs allows you to setup custom middlewares or change the initial server condfiguration directly anyway you want through the `serverAddon` option that receives a function with access to the Express `app` object:
+
+```javascript
+const middleware = (app) => {
+  app.use(async (req, res, next) => {
+    console.log('Middleware works!')
+    next()
+  })
+}
+
+//Configure provider
+const lti = new LTI('EXAMPLEKEY', 
+            { url: 'mongodb://localhost/database', 
+              connection:{ user:'user',
+                          pass: 'pass'} 
+            }, 
+            {  serverAddon: middleware }) // Passing addon function
+```
+
+The code within `middleware` will be executed at the end of the server constructor and before any route is registered.
 
 ---
 
@@ -935,6 +964,18 @@ And now calls to the `http://provider/main?ltik=LTIKTOKEN` url will get the info
 
 Everytime a application is launched it is **HIGHLY RECOMMENDED** to store in the session storage the **ltik** query parameter, so that you can later more easely retrieve in the client and pass it back to the provider when requesting or sending information.
 
+#### Serving external resources
+
+Ltijs can serve external resources through the `redirect()` function, doing so **automatically sets the cookie's secure flag to true and the sameSite flag to None, that means that external resources can only be served through https.**
+
+```javascript
+lti.app.get('/redirect', (req, res) => {
+  lti.redirect(res, 'https://example.com') // External resource
+})
+```
+
+Due to cookies limitations, external resources will only have access to the idtoken if they are in **the same domain (they can be in different subdomains).**
+
 
 #### Routes
 
@@ -963,7 +1004,7 @@ The `lti.redirect` method, automatically adds the **ltik** parameter to the requ
 
 The client can call routes to get or send information to the provider by passing the `ltik` token via query parameters, body parameters or Bearer authorization headers as described above, failing to do so will return a **400 bad request status**.
 
-***OBS: YOU CAN ONLY PASS THE LTIK TOKEN THROUGH ONE OF THE POSSIBLE METHODS AT A TIME, SENDING MORE THAN ONE TOKEN RESULTS IN A 400 ERROR.***
+***OBS: YOU CAN ONLY PASS THE LTIK TOKEN THROUGH ONE OF THE POSSIBLE METHODS AT A TIME, SENDING MORE THAN ONE TOKEN RESULTS IN A 400 ERROR DUE TO THE BEARER TOKEN SPECIFICATION.***
 
 A request to `https://myprovider/gettoken?ltik=LTIKTOKEN` will be handled by `lti.app.get('/gettoken')` and will have access to the idtoken.
 

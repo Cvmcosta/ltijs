@@ -23,14 +23,12 @@
 Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps! 
 
 
-> v3.0.0
+> v3.1.0
 > MAJOR CHANGE
-> - Added Deep Linking Service, exposed through [Provider.DeepLinking](https://cvmcosta.github.io/ltijs/#/deeplinking).
-> - Added a new callback, onDeepLinking that tells Ltijs what to display when receiving a deep linking request.
-> - Ltik token can now be passed through body parameters, Bearer token authorization header and query parameters.
-> - Fixed Database type issue, where some json fields were declared with a `type` key, that changed the type of the entire field.
-> - Added the `unique` parameter to the platformUrl field, that deals with the bug that occured when using ltijs in cluster mode with pm2, where platforms would registered more than one time.
-> - Added error handling to the registration method. Now it deletes the previously generated key pair kid.
+> - Added server addon support.
+> - Fixed bug where using redirect() without the isNewResource flag caused a mismatch between cookie name and ltik context path.
+> - Added sameSite cookie flag configuration option.
+> - Added automatic setting of cookie flags in determined situations.
 
 
 > - View entire [CHANGELOG](changelog.md)
@@ -39,11 +37,11 @@ Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps
 
 | Version | Moodle | Canvas |
 | ---- | - | - |
+| 3.1 | <center>✔️</center> | <center>✔️</center> |
 | 3.0 | <center>✔️</center> | <center>✔️</center> |
 | 2.5 | <center>✔️</center> | <center>✔️</center> |
 | 2.4 | <center>✔️</center> | <center>✔️</center> |
 | 2.3 | <center>✔️</center> | <center>✔️</center> |
-| 2.1 | <center>✔️</center> | <center>✔️</center> |
 
 <sub>**Previous versions are no longer officially supported*</sub>
 

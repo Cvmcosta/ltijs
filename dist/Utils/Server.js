@@ -18,7 +18,7 @@ const morgan = require('morgan');
 const bearerToken = require('express-bearer-token');
 
 class Server {
-  constructor(https, ssl, ENCRYPTIONKEY, logger, corsOpt) {
+  constructor(https, ssl, ENCRYPTIONKEY, logger, corsOpt, serverAddon) {
     this.app = express();
     this.server = false;
     this.ssl = false;
@@ -60,7 +60,9 @@ class Server {
       headerKey: 'Bearer',
       reqKey: 'token',
       cookie: false
-    }));
+    })); // Executing server addon
+
+    if (serverAddon) serverAddon(this.app);
   }
 
   listen(conf, message) {

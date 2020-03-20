@@ -48,8 +48,7 @@ class Provider {
   #cookieOptions = {
     secure: false,
     httpOnly: true,
-    signed: true,
-    sameSite: 'None'
+    signed: true
   }
 
   #Database
@@ -94,13 +93,14 @@ class Provider {
      * @param {String} [options.sessionTimeoutUrl = '/sessionTimeout'] - Lti Provider session timeout url. If no option is set '/sessionTimeout' is used.
      * @param {String} [options.invalidTokenUrl = '/invalidToken'] - Lti Provider invalid token url. If no option is set '/invalidToken' is used.
      * @param {String} [options.keysetUrl = '/keys'] - Lti Provider public jwk keyset url. If no option is set '/keys' is used.
-     * @param {Boolean} [options.https = false] - Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https. If you set this option as true you can enable the secure flag in the cookies options of the onConnect method.
+     * @param {Boolean} [options.https = false] - Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https and are planning to configure ssl locally. If you set this option as true you can enable the secure flag in the cookies options of the onConnect method.
      * @param {Object} [options.ssl] - SSL certificate and key if https is enabled.
      * @param {String} [options.ssl.key] - SSL key.
      * @param {String} [options.ssl.cert] - SSL certificate.
      * @param {String} [options.staticPath] - The path for the static files your application might serve (Ex: _dirname+"/public")
      * @param {Boolean} [options.logger = false] - If true, allows Ltijs to generate logging files for server requests and errors.
      * @param {Boolean} [options.cors = true] - If false, disables cors.
+     * @param {Function} [options.serverAddon] - Allows the execution of a method inside of the server contructor. Can be used to register middlewares.
      */
   constructor (encryptionkey, database, options) {
     if (options && options.https && (!options.ssl || !options.ssl.key || !options.ssl.cert)) throw new Error('No ssl Key  or Certificate found for local https configuration.')
@@ -168,7 +168,7 @@ class Provider {
 
     this.#ENCRYPTIONKEY = encryptionkey
 
-    this.#server = new Server(options ? options.https : false, options ? options.ssl : false, this.#ENCRYPTIONKEY, loggerServer, options ? options.cors : true)
+    this.#server = new Server(options ? options.https : false, options ? options.ssl : false, this.#ENCRYPTIONKEY, loggerServer, options ? options.cors : true, options ? options.serverAddon : false)
 
     /**
      * @description Express server object.
@@ -297,6 +297,7 @@ class Provider {
               return next()
             }
             provMainDebug('No LTIK found')
+            provMainDebug('Request body: ', req.body)
             return res.redirect(this.#invalidTokenUrl)
           }
         }
@@ -352,7 +353,7 @@ class Provider {
           return next()
         } else {
           provMainDebug('No session cookie found')
-          provMainDebug(req.body)
+          provMainDebug('Request body: ', req.body)
           if (this.#logger) this.#logger.log({ level: 'error', message: req.body })
           provMainDebug('Passing request to session timeout handler')
           return res.redirect(this.#sessionTimeoutUrl)
@@ -476,6 +477,7 @@ class Provider {
      * @param {Function} _connectCallback - Function that is going to be called everytime a platform sucessfully connects to the provider.
      * @param {Object} [options] - Options configuring the usage of cookies to pass the Id Token data to the client.
      * @param {Boolean} [options.secure = false] - Secure property of the cookie.
+     * @param {String} [options.sameSite = 'Lax'] - sameSite property of the cookie.
      * @param {Function} [options.sessionTimeout] - Route function executed everytime the session expires. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}).
      * @param {Function} [options.invalidToken] - Route function executed everytime the system receives an invalid token or cookie. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}).
      * @example .onConnect((conection, request, response)=>{response.send(connection)}, {secure: true})
@@ -483,7 +485,9 @@ class Provider {
      */
   onConnect (_connectCallback, options) {
     if (options) {
-      if (options.secure === true) this.#cookieOptions.secure = options.secure
+      if (options.sameSite) this.#cookieOptions.sameSite = options.sameSite
+      if (options.sameSite.toLowerCase() === 'none') this.#cookieOptions.secure = true
+      if (options.secure) this.#cookieOptions.secure = true
       if (options.sessionTimeout) this.#sessionTimedOut = options.sessionTimeout
       if (options.invalidToken) this.#invalidToken = options.invalidToken
     }
@@ -500,6 +504,7 @@ class Provider {
      * @param {Function} _deepLinkingCallback - Function that is going to be called everytime a platform sucessfully launches a deep linking request.
      * @param {Object} [options] - Options configuring the usage of cookies to pass the Id Token data to the client.
      * @param {Boolean} [options.secure = false] - Secure property of the cookie.
+     * @param {String} [options.sameSite = 'Lax'] - sameSite property of the cookie.
      * @param {Function} [options.sessionTimeout] - Route function executed everytime the session expires. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}).
      * @param {Function} [options.invalidToken] - Route function executed everytime the system receives an invalid token or cookie. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}).
      * @example .onDeepLinking((conection, request, response)=>{response.send(connection)}, {secure: true})
@@ -507,7 +512,9 @@ class Provider {
      */
   onDeepLinking (_deepLinkingCallback, options) {
     if (options) {
-      if (options.secure === true) this.#cookieOptions.secure = options.secure
+      if (options.sameSite) this.#cookieOptions.sameSite = options.sameSite
+      if (options.sameSite.toLowerCase() === 'none') this.#cookieOptions.secure = true
+      if (options.secure) this.#cookieOptions.secure = true
       if (options.sessionTimeout) this.#sessionTimedOut = options.sessionTimeout
       if (options.invalidToken) this.#invalidToken = options.invalidToken
     }
@@ -692,16 +699,16 @@ class Provider {
     const resourseId = res.locals.token.platformContext.resource ? res.locals.token.platformContext.resource.id : 'NF'
     const activityId = courseId + '_' + resourseId
     const pathParts = url.parse(path)
+    const oldpath = res.locals.token.platformContext.path
 
-    // Create cookie name
-    const cookiePath = url.format({
+    // Create new cookie name if isNewResource is set
+    const cookiePath = (options && options.isNewResource) ? url.format({
       protocol: pathParts.protocol,
       hostname: pathParts.hostname,
       pathname: pathParts.pathname,
       port: pathParts.port,
       auth: pathParts.auth
-    })
-    const contextPath = _path.join(code, cookiePath, activityId)
+    }) : oldpath
 
     let token = {
       issuer: code,
@@ -718,14 +725,16 @@ class Provider {
       provMainDebug('Setting up path cookie for this resource with path: ' + path)
       const cookieOptions = JSON.parse(JSON.stringify(this.#cookieOptions))
       if (externalRequest) {
+        cookieOptions.sameSite = 'None'
+        cookieOptions.secure = true
         const domain = tldparser(externalRequest).domain
         cookieOptions.domain = '.' + domain
         provMainDebug('External request found for domain: .' + domain)
       }
 
+      const contextPath = _path.join(code, cookiePath, activityId)
+      const rootPath = _path.join(code, this.#appUrl, activityId)
       res.cookie(contextPath, res.locals.token.user, cookieOptions)
-
-      const oldpath = res.locals.token.platformContext.path
 
       const newContextToken = {
         resource: res.locals.token.platformContext.resource,
@@ -743,8 +752,8 @@ class Provider {
 
       if (await this.#Database.Delete('contexttoken', { path: contextPath, user: res.locals.token.user })) this.#Database.Insert(false, 'contexttoken', newContextToken)
       if (options && options.ignoreRoot) {
-        this.#Database.Delete('contexttoken', { path: oldpath, user: res.locals.token.user })
-        res.clearCookie(oldpath, this.#cookieOptions)
+        this.#Database.Delete('contexttoken', { path: rootPath, user: res.locals.token.user })
+        res.clearCookie(rootPath, this.#cookieOptions)
       }
     }
 

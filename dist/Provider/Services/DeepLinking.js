@@ -110,9 +110,9 @@ class DeepLinking {
         nonce: crypto.randomBytes(16).toString('base64'),
         'https://purl.imsglobal.org/spec/lti/claim/deployment_id': idtoken.deploymentId,
         'https://purl.imsglobal.org/spec/lti/claim/message_type': 'LtiDeepLinkingResponse',
-        'https://purl.imsglobal.org/spec/lti/claim/version': '1.3.0' // Adding messaging options
+        'https://purl.imsglobal.org/spec/lti/claim/version': '1.3.0'
+      }; // Adding messaging options
 
-      };
       if (options.message) jwtBody['https://purl.imsglobal.org/spec/lti-dl/claim/msg'] = options.message;
       if (options.errmessage) jwtBody['https://purl.imsglobal.org/spec/lti-dl/claim/errormsg '] = options.errmessage;
       if (options.log) jwtBody['https://purl.imsglobal.org/spec/lti-dl/claim/log'] = options.log;

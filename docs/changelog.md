@@ -8,6 +8,14 @@
 
 ### CHANGELOG
 
+#### V3.1.0
+> 2020-03-19
+> MAJOR CHANGE
+> - Added server addon support.
+> - Fixed bug where using redirect() without the isNewResource flag caused a mismatch between cookie name and ltik context path.
+> - Added sameSite cookie flag configuration option.
+> - Added automatic setting of cookie flags in determined situations.
+
 #### V3.0.3
 > 2020-03-14
 > MINOR CHANGE
