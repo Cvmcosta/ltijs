@@ -493,6 +493,7 @@ class Provider {
      * @param {Object} [options] - Deployment options.
      * @param {Number} [options.port] - Deployment port. 3000 by default.
      * @param {Boolean} [options.silent] - If true, disables initial startup message.
+     * @param {Boolean} [options.serverless] - (Experimental) If true, Ltijs does not start listening. Ignores any given 'port' parameter.
      * @returns {Promise<true| false>}
      */
 
@@ -502,29 +503,38 @@ class Provider {
 
     try {
       await (0, _classPrivateFieldGet2.default)(this, _Database).setup();
+      const conf = {
+        port: 3000,
+        silent: false
+      };
+      if (options && options.port) conf.port = options.port;
+      if (options && options.silent) conf.silent = options.silent; // Starts server on given port
+
+      if (options && options.serverless) console.log('Ltijs started in experimental serverless mode!');else {
+        await (0, _classPrivateFieldGet2.default)(this, _server).listen(conf.port);
+        provMainDebug('Ltijs started listening on port: ', conf.port); // Startup message
+
+        const message = 'LTI Provider is listening on port ' + conf.port + '!\n\n LTI provider config: \n >App Url: ' + (0, _classPrivateFieldGet2.default)(this, _appUrl) + '\n >Initiate login URL: ' + (0, _classPrivateFieldGet2.default)(this, _loginUrl) + '\n >Keyset Url: ' + (0, _classPrivateFieldGet2.default)(this, _keysetUrl) + '\n >Session Timeout Url: ' + (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl) + '\n >Invalid Token Url: ' + (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl);
+
+        if (!conf.silent) {
+          console.log('  _   _______ _____       _  _____\n' + ' | | |__   __|_   _|     | |/ ____|\n' + ' | |    | |    | |       | | (___  \n' + ' | |    | |    | |   _   | |\\___ \\ \n' + ' | |____| |   _| |_ | |__| |____) |\n' + ' |______|_|  |_____(_)____/|_____/ \n\n', message);
+        }
+      } // Sets up gracefull shutdown
+
+      process.on('SIGINT', async () => {
+        await this.close(options);
+        process.exit();
+      });
+      return true;
     } catch (err) {
-      provMainDebug(err.message);
+      console.log('Error deploying server:', err.message);
       if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
         level: 'error',
         message: 'Message: ' + err.message + '\nStack: ' + err.stack
       });
-      return false;
-    }
-
-    const conf = {
-      port: 3000,
-      silent: false
-    };
-    if (options && options.port) conf.port = options.port;
-    if (options && options.silent) conf.silent = options.silent; // Starts server on given port
-
-    (0, _classPrivateFieldGet2.default)(this, _server).listen(conf, 'LTI Provider is listening on port ' + conf.port + '!\n\n LTI provider config: \n >Initiate login URL: ' + (0, _classPrivateFieldGet2.default)(this, _loginUrl) + '\n >App Url: ' + (0, _classPrivateFieldGet2.default)(this, _appUrl) + '\n >Session Timeout Url: ' + (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl) + '\n >Invalid Token Url: ' + (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl)); // Sets up gracefull shutdown
-
-    process.on('SIGINT', async () => {
       await this.close(options);
       process.exit();
-    });
-    return true;
+    }
   }
   /**
    * @description Closes connection to database and stops server.
@@ -534,11 +544,11 @@ class Provider {
 
   async close(options) {
     try {
-      if (!options || options.silent !== true) console.log('Closing server...');
+      if (!options || options.silent !== true) console.log('\nClosing server...');
       await (0, _classPrivateFieldGet2.default)(this, _server).close();
       if (!options || options.silent !== true) console.log('Closing connection to the database...');
       await (0, _classPrivateFieldGet2.default)(this, _Database).Close();
-      if (!options || options.silent !== true) console.log('All done');
+      if (!options || options.silent !== true) console.log('Shutdown complete.');
       return true;
     } catch (err) {
       provMainDebug(err.message);
@@ -855,11 +865,15 @@ class Provider {
       const cookieOptions = JSON.parse(JSON.stringify((0, _classPrivateFieldGet2.default)(this, _cookieOptions)));
 
       if (externalRequest) {
-        cookieOptions.sameSite = 'None';
-        cookieOptions.secure = true;
-        const domain = tldparser(externalRequest).domain;
-        cookieOptions.domain = '.' + domain;
-        provMainDebug('External request found for domain: .' + domain);
+        try {
+          const domain = tldparser(externalRequest).domain;
+          cookieOptions.sameSite = 'None';
+          cookieOptions.secure = true;
+          cookieOptions.domain = '.' + domain;
+          provMainDebug('External request found for domain: .' + domain);
+        } catch (_unused) {
+          provMainDebug('Could not retrieve tld for external redirect. Proceeding as regular request...');
+        }
       }
 
       const contextPath = _path.join(code, cookiePath, activityId);

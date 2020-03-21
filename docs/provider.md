@@ -1008,6 +1008,12 @@ The client can call routes to get or send information to the provider by passing
 
 A request to `https://myprovider/gettoken?ltik=LTIKTOKEN` will be handled by `lti.app.get('/gettoken')` and will have access to the idtoken.
 
+***Requests from resources in different domains need to set `mode: cors` and `credentials: include` flags to successfully send a request to the server, doing so tells the browser to pass the session cookies along:***
+
+```javascript
+request.post('https://mylti.com/api/post', { form: data, headers: { Authorization: 'Bearer LTIK' }, mode: 'cors', credentials: 'include' })
+```
+
 
 #### Whitelisting routes
 

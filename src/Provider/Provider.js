@@ -423,34 +423,54 @@ class Provider {
      * @param {Object} [options] - Deployment options.
      * @param {Number} [options.port] - Deployment port. 3000 by default.
      * @param {Boolean} [options.silent] - If true, disables initial startup message.
+     * @param {Boolean} [options.serverless] - (Experimental) If true, Ltijs does not start listening. Ignores any given 'port' parameter.
      * @returns {Promise<true| false>}
      */
   async deploy (options) {
     provMainDebug('Attempting to connect to database')
     try {
       await this.#Database.setup()
+
+      const conf = {
+        port: 3000,
+        silent: false
+      }
+
+      if (options && options.port) conf.port = options.port
+      if (options && options.silent) conf.silent = options.silent
+      // Starts server on given port
+
+      if (options && options.serverless) console.log('Ltijs started in experimental serverless mode!')
+      else {
+        await this.#server.listen(conf.port)
+        provMainDebug('Ltijs started listening on port: ', conf.port)
+
+        // Startup message
+        const message = 'LTI Provider is listening on port ' + conf.port + '!\n\n LTI provider config: \n >App Url: ' + this.#appUrl + '\n >Initiate login URL: ' + this.#loginUrl + '\n >Keyset Url: ' + this.#keysetUrl + '\n >Session Timeout Url: ' + this.#sessionTimeoutUrl + '\n >Invalid Token Url: ' + this.#invalidTokenUrl
+
+        if (!conf.silent) {
+          console.log('  _   _______ _____       _  _____\n' +
+                      ' | | |__   __|_   _|     | |/ ____|\n' +
+                      ' | |    | |    | |       | | (___  \n' +
+                      ' | |    | |    | |   _   | |\\___ \\ \n' +
+                      ' | |____| |   _| |_ | |__| |____) |\n' +
+                      ' |______|_|  |_____(_)____/|_____/ \n\n', message)
+        }
+      }
+
+      // Sets up gracefull shutdown
+      process.on('SIGINT', async () => {
+        await this.close(options)
+        process.exit()
+      })
+
+      return true
     } catch (err) {
-      provMainDebug(err.message)
+      console.log('Error deploying server:', err.message)
       if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
-      return false
-    }
-    const conf = {
-      port: 3000,
-      silent: false
-    }
-
-    if (options && options.port) conf.port = options.port
-    if (options && options.silent) conf.silent = options.silent
-    // Starts server on given port
-    this.#server.listen(conf, 'LTI Provider is listening on port ' + conf.port + '!\n\n LTI provider config: \n >Initiate login URL: ' + this.#loginUrl + '\n >App Url: ' + this.#appUrl + '\n >Session Timeout Url: ' + this.#sessionTimeoutUrl + '\n >Invalid Token Url: ' + this.#invalidTokenUrl)
-
-    // Sets up gracefull shutdown
-    process.on('SIGINT', async () => {
       await this.close(options)
       process.exit()
-    })
-
-    return true
+    }
   }
 
   /**
@@ -459,11 +479,11 @@ class Provider {
    */
   async close (options) {
     try {
-      if (!options || options.silent !== true) console.log('Closing server...')
+      if (!options || options.silent !== true) console.log('\nClosing server...')
       await this.#server.close()
       if (!options || options.silent !== true) console.log('Closing connection to the database...')
       await this.#Database.Close()
-      if (!options || options.silent !== true) console.log('All done')
+      if (!options || options.silent !== true) console.log('Shutdown complete.')
       return true
     } catch (err) {
       provMainDebug(err.message)
@@ -729,11 +749,15 @@ class Provider {
       provMainDebug('Setting up path cookie for this resource with path: ' + path)
       const cookieOptions = JSON.parse(JSON.stringify(this.#cookieOptions))
       if (externalRequest) {
-        cookieOptions.sameSite = 'None'
-        cookieOptions.secure = true
-        const domain = tldparser(externalRequest).domain
-        cookieOptions.domain = '.' + domain
-        provMainDebug('External request found for domain: .' + domain)
+        try {
+          const domain = tldparser(externalRequest).domain
+          cookieOptions.sameSite = 'None'
+          cookieOptions.secure = true
+          cookieOptions.domain = '.' + domain
+          provMainDebug('External request found for domain: .' + domain)
+        } catch {
+          provMainDebug('Could not retrieve tld for external redirect. Proceeding as regular request...')
+        }
       }
 
       const contextPath = _path.join(code, cookiePath, activityId)

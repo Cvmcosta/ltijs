@@ -8,6 +8,17 @@
 
 ### CHANGELOG
 
+#### V3.1.5
+> 2020-03-20
+> MINOR CHANGE
+> - Added experimental serverless option to deploy methof. Attempting to use Ltijs with AWS.
+> - Changed how Ltijs handles a server startup error, now it gracefully shutdowns and cloeses database connections.
+> - Cleaned up server startup code.
+> - Added log server startup debug message.
+> - Added keysetUrl to startup message.
+> - Fixed bug where Ltijs would break if it didnot find the tld in an external request. Now it just carries on as a regular request in that case.
+
+
 #### V3.1.0
 > 2020-03-19
 > MAJOR CHANGE
