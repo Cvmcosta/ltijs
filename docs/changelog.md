@@ -8,6 +8,15 @@
 
 ### CHANGELOG
 
+#### V3.5.0
+> 2020-04-01
+> MAJOR CHANGE
+> - Changed login validation process. Now uses the database instead of cookies, to avoid cors issues. THIS BREAKS DATABASE PLUGIN COMPATIBILITY.
+> - Moved Cookies options to the main constructor (kept onConnect options for retro compatibility).
+> - Fixed redirection bug where the wrong url would be formed if the target path contained a port but no paths.
+> - The Database is no longer a private parameter and can be accessed outside the main Lti object.
+
+
 #### V3.1.5
 > 2020-03-20
 > MINOR CHANGE
@@ -46,7 +55,7 @@
 
 > 2020-02-28
 > MINOR CHANGE
-> - Fixing error on redirect method. Now accets queries correctly.
+> - Fixing error on redirect method. Now accepts queries correctly.
 
 #### V2.5.2
 

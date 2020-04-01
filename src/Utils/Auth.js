@@ -56,7 +56,7 @@ class Auth {
      * @param {String} token - JWT token to be verified.
      * @param {Object} decoded - JWT decoded to give acess to payload.
      * @param {String} state - State validation parameter.
-     * @param {Object} validationParameters - Stored validation parameters retrieved from cookies.
+     * @param {Object} validationParameters - Stored validation parameters retrieved from database.
      * @param {Function} getPlatform - getPlatform function to get the platform that originated the token.
      * @param {String} ENCRYPTIONKEY - Encription key.
      * @returns {Promise}
@@ -65,15 +65,15 @@ class Auth {
     const kid = decoded.header.kid
     const alg = decoded.header.alg
 
-    provAuthDebug('Attempting to validate iss claim')
-    provAuthDebug('Request Iss claim: ' + validationParameters.iss)
-    provAuthDebug('Response Iss claim: ' + decoded.payload.iss)
-    if (!validationParameters.iss || (validationParameters.iss !== decoded.payload.iss)) throw new Error('IssClaimDoesNotMatch')
-
     provAuthDebug('Attempting to validate state')
     provAuthDebug('Request state: ' + validationParameters.state)
     provAuthDebug('Response state: ' + state)
     if (!validationParameters.state || (validationParameters.state !== state)) throw new Error('StateClaimDoesNotMatch')
+
+    provAuthDebug('Attempting to validate iss claim')
+    provAuthDebug('Request Iss claim: ' + validationParameters.iss)
+    provAuthDebug('Response Iss claim: ' + decoded.payload.iss)
+    if (!validationParameters.iss || (validationParameters.iss !== decoded.payload.iss)) throw new Error('IssClaimDoesNotMatch')
 
     provAuthDebug('Attempting to retrieve registered platform')
     const platform = await getPlatform(decoded.payload.iss, ENCRYPTIONKEY, logger, Database)

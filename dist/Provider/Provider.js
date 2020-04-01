@@ -82,6 +82,9 @@ class Provider {
      * @param {Boolean} [options.logger = false] - If true, allows Ltijs to generate logging files for server requests and errors.
      * @param {Boolean} [options.cors = true] - If false, disables cors.
      * @param {Function} [options.serverAddon] - Allows the execution of a method inside of the server contructor. Can be used to register middlewares.
+     * @param {Object} [options.cookies] - Cookie configuration. Allows you to configure, sameSite and secure parameters.
+     * @param {Boolean} [options.cookies.secure = false] - Cookie secure parameter. If true, only allows cookies to be passed over https.
+     * @param {String} [options.cookies.sameSite = 'Lax'] - Cookie sameSite parameter. If cookies are going to be set across domains, set this parameter to 'None'.
      */
   constructor(encryptionkey, database, options) {
     _loginUrl.set(this, {
@@ -170,7 +173,7 @@ class Provider {
       writable: true,
       value: async (req, res) => {
         try {
-          const keyset = await Keyset.build((0, _classPrivateFieldGet2.default)(this, _Database), (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger));
+          const keyset = await Keyset.build(this.Database, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger));
           return res.status(200).send(keyset);
         } catch (err) {
           provMainDebug(err.message);
@@ -187,12 +190,22 @@ class Provider {
     if (options && options.https && (!options.ssl || !options.ssl.key || !options.ssl.cert)) throw new Error('No ssl Key  or Certificate found for local https configuration.');
     if (!encryptionkey) throw new Error('Encryptionkey parameter missing in options.');
     if (!database) throw new Error('Missing database configurations.');
-    if (!database.plugin) (0, _classPrivateFieldSet2.default)(this, _Database, new Mongodb(database));else (0, _classPrivateFieldSet2.default)(this, _Database, database.plugin);
+    if (!database.plugin) this.Database = new Mongodb(database);else this.Database = database.plugin;
     if (options && options.appUrl) (0, _classPrivateFieldSet2.default)(this, _appUrl, options.appUrl);
     if (options && options.loginUrl) (0, _classPrivateFieldSet2.default)(this, _loginUrl, options.loginUrl);
     if (options && options.sessionTimeoutUrl) (0, _classPrivateFieldSet2.default)(this, _sessionTimeoutUrl, options.sessionTimeoutUrl);
     if (options && options.invalidTokenUrl) (0, _classPrivateFieldSet2.default)(this, _invalidTokenUrl, options.invalidTokenUrl);
-    if (options && options.keysetUrl) (0, _classPrivateFieldSet2.default)(this, _keysetUrl, options.keysetUrl); // Setting up logger
+    if (options && options.keysetUrl) (0, _classPrivateFieldSet2.default)(this, _keysetUrl, options.keysetUrl); // Cookie options
+
+    if (options && options.cookies) {
+      if (options.cookies.sameSite) {
+        (0, _classPrivateFieldGet2.default)(this, _cookieOptions).sameSite = options.cookies.sameSite;
+        if (options.cookies.sameSite.toLowerCase() === 'none') (0, _classPrivateFieldGet2.default)(this, _cookieOptions).secure = true;
+      }
+
+      if (options.cookies.secure === true) (0, _classPrivateFieldGet2.default)(this, _cookieOptions).secure = true;
+    } // Setting up logger
+
 
     let loggerServer = false;
 
@@ -244,12 +257,12 @@ class Provider {
      * @description Grading service.
      */
 
-    this.Grade = new GradeService(this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger), (0, _classPrivateFieldGet2.default)(this, _Database));
+    this.Grade = new GradeService(this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger), this.Database);
     /**
      * @description Deep Linking service.
      */
 
-    this.DeepLinking = new DeepLinkingService(this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger), (0, _classPrivateFieldGet2.default)(this, _Database));
+    this.DeepLinking = new DeepLinkingService(this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger), this.Database);
     if (options && options.staticPath) (0, _classPrivateFieldGet2.default)(this, _server).setStaticPath(options.staticPath); // Registers main athentication and routing middleware
 
     const sessionValidator = async (req, res, next) => {
@@ -274,20 +287,25 @@ class Provider {
             provMainDebug('Received idtoken for validation');
             const decoded = jwt.decode(idtoken, {
               complete: true
-            });
-            const iss = decoded.payload.iss;
+            }); // Rettrieves state
+
             const state = req.body.state; // Retrieving validation parameters from cookies
 
-            const validationCookies = {
-              state: cookies[state + '-state'],
-              iss: cookies[state + '-iss']
+            let validationInfo = await this.Database.Get(false, 'validation', {
+              state: state
+            });
+            validationInfo = validationInfo[0];
+            const validationParameters = {
+              state: validationInfo ? validationInfo.state : false,
+              iss: validationInfo ? validationInfo.iss : false
             };
-            const valid = await Auth.validateToken(idtoken, decoded, state, validationCookies, this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger), (0, _classPrivateFieldGet2.default)(this, _Database)); // Deleting validation cookies
+            const valid = await Auth.validateToken(idtoken, decoded, state, validationParameters, this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger), this.Database); // Deleting validation info
 
-            res.clearCookie(state + '-state', (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
-            res.clearCookie(state + '-iss', (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
+            await this.Database.Delete('validation', {
+              state: state
+            });
             provAuthDebug('Successfully validated token!');
-            const issuerCode = 'plat' + encodeURIComponent(Buffer.from(iss).toString('base64'));
+            const issuerCode = 'plat' + encodeURIComponent(Buffer.from(valid.iss).toString('base64'));
             const courseId = valid['https://purl.imsglobal.org/spec/lti/claim/context'] ? valid['https://purl.imsglobal.org/spec/lti/claim/context'].id : 'NF';
             const resourseId = valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'] ? valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'].id : 'NF';
             const activityId = courseId + '_' + resourseId;
@@ -317,10 +335,10 @@ class Provider {
               namesRoles: valid['https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice']
             }; // Store idToken in database
 
-            if (await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('idtoken', {
+            if (await this.Database.Delete('idtoken', {
               issuerCode: issuerCode,
               user: platformToken.user
-            })) (0, _classPrivateFieldGet2.default)(this, _Database).Insert(false, 'idtoken', platformToken); // Mount context token
+            })) this.Database.Insert(false, 'idtoken', platformToken); // Mount context token
 
             const contextToken = {
               path: contextPath,
@@ -336,10 +354,10 @@ class Provider {
               deepLinkingSettings: valid['https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings']
             }; // Store contextToken in database
 
-            if (await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('contexttoken', {
+            if (await this.Database.Delete('contexttoken', {
               path: contextPath,
               user: contextToken.user
-            })) (0, _classPrivateFieldGet2.default)(this, _Database).Insert(false, 'contexttoken', contextToken);
+            })) this.Database.Insert(false, 'contexttoken', contextToken);
             res.cookie(contextPath, platformToken.user, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
             provMainDebug('Generating LTIK and redirecting to main endpoint');
             const newLtikObj = {
@@ -398,14 +416,14 @@ class Provider {
         if (user) {
           provAuthDebug('Session cookie found'); // Gets correspondent id token from database
 
-          let idToken = await (0, _classPrivateFieldGet2.default)(this, _Database).Get(false, 'idtoken', {
+          let idToken = await this.Database.Get(false, 'idtoken', {
             issuerCode: issuerCode,
             user: user
           });
           if (!idToken) throw new Error('No id token found in database');
           idToken = idToken[0]; // Gets correspondent context token from database
 
-          let contextToken = await (0, _classPrivateFieldGet2.default)(this, _Database).Get(false, 'contexttoken', {
+          let contextToken = await this.Database.Get(false, 'contexttoken', {
             path: contextTokenName,
             user: user
           });
@@ -450,10 +468,12 @@ class Provider {
         if (platform) {
           provMainDebug('Redirecting to platform authentication endpoint'); // Create state parameter used to validade authentication response
 
-          const state = encodeURIComponent(crypto.randomBytes(16).toString('base64')); // Setting up validation cookies
+          const state = encodeURIComponent(crypto.randomBytes(16).toString('base64')); // Setting up validation info
 
-          res.cookie(state + '-state', state, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
-          res.cookie(state + '-iss', iss, (0, _classPrivateFieldGet2.default)(this, _cookieOptions)); // Redirect to authentication endpoint
+          await this.Database.Insert(false, 'validation', {
+            state: state,
+            iss: iss
+          }); // Redirect to authentication endpoint
 
           res.redirect(url.format({
             pathname: await platform.platformAuthEndpoint(),
@@ -502,7 +522,7 @@ class Provider {
     provMainDebug('Attempting to connect to database');
 
     try {
-      await (0, _classPrivateFieldGet2.default)(this, _Database).setup();
+      await this.Database.setup();
       const conf = {
         port: 3000,
         silent: false
@@ -547,7 +567,7 @@ class Provider {
       if (!options || options.silent !== true) console.log('\nClosing server...');
       await (0, _classPrivateFieldGet2.default)(this, _server).close();
       if (!options || options.silent !== true) console.log('Closing connection to the database...');
-      await (0, _classPrivateFieldGet2.default)(this, _Database).Close();
+      await this.Database.Close();
       if (!options || options.silent !== true) console.log('Shutdown complete.');
       return true;
     } catch (err) {
@@ -579,7 +599,7 @@ class Provider {
         if (options.sameSite.toLowerCase() === 'none') (0, _classPrivateFieldGet2.default)(this, _cookieOptions).secure = true;
       }
 
-      if (options.secure) (0, _classPrivateFieldGet2.default)(this, _cookieOptions).secure = true;
+      if (options.secure === true) (0, _classPrivateFieldGet2.default)(this, _cookieOptions).secure = true;
       if (options.sessionTimeout) (0, _classPrivateFieldSet2.default)(this, _sessionTimedOut, options.sessionTimeout);
       if (options.invalidToken) (0, _classPrivateFieldSet2.default)(this, _invalidToken, options.invalidToken);
     }
@@ -611,7 +631,7 @@ class Provider {
         if (options.sameSite.toLowerCase() === 'none') (0, _classPrivateFieldGet2.default)(this, _cookieOptions).secure = true;
       }
 
-      if (options.secure) (0, _classPrivateFieldGet2.default)(this, _cookieOptions).secure = true;
+      if (options.secure === true) (0, _classPrivateFieldGet2.default)(this, _cookieOptions).secure = true;
       if (options.sessionTimeout) (0, _classPrivateFieldSet2.default)(this, _sessionTimedOut, options.sessionTimeout);
       if (options.invalidToken) (0, _classPrivateFieldSet2.default)(this, _invalidToken, options.invalidToken);
     }
@@ -713,11 +733,11 @@ class Provider {
       const _platform = await this.getPlatform(platform.url);
 
       if (!_platform) {
-        kid = await Auth.generateProviderKeyPair((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database));
-        const plat = new Platform(platform.name, platform.url, platform.clientId, platform.authenticationEndpoint, platform.accesstokenEndpoint, kid, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), platform.authConfig, (0, _classPrivateFieldGet2.default)(this, _logger), (0, _classPrivateFieldGet2.default)(this, _Database)); // Save platform to db
+        kid = await Auth.generateProviderKeyPair((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), this.Database);
+        const plat = new Platform(platform.name, platform.url, platform.clientId, platform.authenticationEndpoint, platform.accesstokenEndpoint, kid, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), platform.authConfig, (0, _classPrivateFieldGet2.default)(this, _logger), this.Database); // Save platform to db
 
         provMainDebug('Registering new platform: ' + platform.url);
-        await (0, _classPrivateFieldGet2.default)(this, _Database).Insert(false, 'platform', {
+        await this.Database.Insert(false, 'platform', {
           platformName: platform.name,
           platformUrl: platform.url,
           clientId: platform.clientId,
@@ -731,13 +751,13 @@ class Provider {
         return _platform;
       }
     } catch (err) {
-      await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('publickey', {
+      await this.Database.Delete('publickey', {
         kid: kid
       });
-      await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('privatekey', {
+      await this.Database.Delete('privatekey', {
         kid: kid
       });
-      await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('platform', {
+      await this.Database.Delete('platform', {
         platformUrl: platform.url
       });
       provAuthDebug(err.message);
@@ -761,13 +781,13 @@ class Provider {
     try {
       const plat = Database !== undefined ? await Database.Get(false, 'platform', {
         platformUrl: url
-      }) : await (0, _classPrivateFieldGet2.default)(this, _Database).Get(false, 'platform', {
+      }) : await this.Database.Get(false, 'platform', {
         platformUrl: url
       });
       if (!plat) return false;
       const obj = plat[0];
       if (!obj) return false;
-      const result = new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, ENCRYPTIONKEY !== undefined ? ENCRYPTIONKEY : (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), obj.authConfig, logger !== undefined ? logger : (0, _classPrivateFieldGet2.default)(this, _logger), Database !== undefined ? Database : (0, _classPrivateFieldGet2.default)(this, _Database));
+      const result = new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, ENCRYPTIONKEY !== undefined ? ENCRYPTIONKEY : (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), obj.authConfig, logger !== undefined ? logger : (0, _classPrivateFieldGet2.default)(this, _logger), Database !== undefined ? Database : this.Database);
       return result;
     } catch (err) {
       provAuthDebug(err.message); // If logger is set (Function was called by the Auth or Grade service) and is set to true, or if the scope logger variable is true, print the log
@@ -805,10 +825,10 @@ class Provider {
     const returnArray = [];
 
     try {
-      const platforms = await (0, _classPrivateFieldGet2.default)(this, _Database).Get(false, 'platform');
+      const platforms = await this.Database.Get(false, 'platform');
 
       if (platforms) {
-        for (const obj of platforms) returnArray.push(new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), obj.authConfig, (0, _classPrivateFieldGet2.default)(this, _logger), (0, _classPrivateFieldGet2.default)(this, _Database)));
+        for (const obj of platforms) returnArray.push(new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), obj.authConfig, (0, _classPrivateFieldGet2.default)(this, _logger), this.Database));
 
         return returnArray;
       }
@@ -894,13 +914,13 @@ class Provider {
         version: res.locals.token.platformContext.version,
         deepLinkingSettings: res.locals.token.platformContext.deepLinkingSettings
       };
-      if (await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('contexttoken', {
+      if (await this.Database.Delete('contexttoken', {
         path: contextPath,
         user: res.locals.token.user
-      })) (0, _classPrivateFieldGet2.default)(this, _Database).Insert(false, 'contexttoken', newContextToken);
+      })) this.Database.Insert(false, 'contexttoken', newContextToken);
 
       if (options && options.ignoreRoot) {
-        (0, _classPrivateFieldGet2.default)(this, _Database).Delete('contexttoken', {
+        this.Database.Delete('contexttoken', {
           path: rootPath,
           user: res.locals.token.user
         });

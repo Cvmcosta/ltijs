@@ -24,12 +24,12 @@
 Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps!
 
 
-> v3.1.0
+> v3.5.0
 > MAJOR CHANGE
-> - Added server addon support.
-> - Fixed bug where using redirect() without the isNewResource flag caused a mismatch between cookie name and ltik context path.
-> - Added sameSite cookie flag configuration option.
-> - Added automatic setting of cookie flags in determined situations.
+> - Changed login validation process. Now uses the database instead of cookies, to avoid cors issues. THIS BREAKS DATABASE PLUGIN COMPATIBILITY.
+> - Moved Cookies options to the main constructor (kept onConnect options for retro compatibility).
+> - Fixed redirection bug where the wrong url would be formed if the target path contained a port but no paths.
+> - The Database is no longer a private parameter and can be accessed outside the main Lti object.
 
 > - View entire [CHANGELOG](https://cvmcosta.github.io/ltijs/#/changelog)
 
@@ -37,11 +37,13 @@ Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps
 
 | Version | Moodle | Canvas |
 | ---- | - | - |
+| 3.5 | <center>✔️</center> | <center></center> |
 | 3.1 | <center>✔️</center> | <center>✔️</center> |
 | 3.0 | <center>✔️</center> | <center>✔️</center> |
 | 2.5 | <center>✔️</center> | <center>✔️</center> |
 | 2.4 | <center>✔️</center> | <center>✔️</center> |
-| 2.3 | <center>✔️</center> | <center>✔️</center> |
+
+
 
 <sub>**Previous versions are no longer officially supported*</sub>
 
@@ -91,8 +93,10 @@ This framework implements a tool provider as an [Express](https://expressjs.com/
 $ npm install ltijs
 ```
 ### MongoDB
-- This package uses mongoDB to store and manage the server data, so you need to have it installed, see link bellow for further instructions.
+- This package natively uses mongoDB to store and manage the server data, so you need to have it installed, see link bellow for further instructions.
 [Installing mongoDB](https://docs.mongodb.com/manual/administration/install-community/)
+
+***WARNING: THE 3.0 (DEEP LINKING) UPDATE BROKE DATABASE PLUGIN COMPATIBILITY. THE FOLLOWING PLUGINS CURRENTLY ONLY WORK WITH EARLIER VERSIONS:***
 
 ### PostgreSQL
 - This package can also use PosgreSQL to store and manage the server data, it does so through the plugin [ltijs-postgresql](https://www.npmjs.com/package/ltijs-postgresql).

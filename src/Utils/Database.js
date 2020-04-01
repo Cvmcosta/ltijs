@@ -85,6 +85,14 @@ class Database {
       nonce: String,
       createdAt: { type: Date, expires: 10, default: Date.now }
     })
+    const validationSchema = new Schema({
+      state: {
+        type: String,
+        unique: true
+      },
+      iss: String,
+      createdAt: { type: Date, expires: 60, default: Date.now }
+    })
 
     try {
       mongoose.model('idtoken', idTokenSchema)
@@ -94,6 +102,7 @@ class Database {
       mongoose.model('publickey', keySchema)
       mongoose.model('accesstoken', accessTokenSchema)
       mongoose.model('nonce', nonceSchema)
+      mongoose.model('validation', validationSchema)
     } catch (err) {
       provDatabaseDebug('Model already registered. Continuing')
     }

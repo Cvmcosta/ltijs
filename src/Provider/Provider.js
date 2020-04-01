@@ -68,7 +68,7 @@ class Provider {
   // Assembles and sends keyset
   #keyset = async (req, res) => {
     try {
-      const keyset = await Keyset.build(this.#Database, this.#ENCRYPTIONKEY, this.#logger)
+      const keyset = await Keyset.build(this.Database, this.#ENCRYPTIONKEY, this.#logger)
       return res.status(200).send(keyset)
     } catch (err) {
       provMainDebug(err.message)
@@ -101,20 +101,32 @@ class Provider {
      * @param {Boolean} [options.logger = false] - If true, allows Ltijs to generate logging files for server requests and errors.
      * @param {Boolean} [options.cors = true] - If false, disables cors.
      * @param {Function} [options.serverAddon] - Allows the execution of a method inside of the server contructor. Can be used to register middlewares.
+     * @param {Object} [options.cookies] - Cookie configuration. Allows you to configure, sameSite and secure parameters.
+     * @param {Boolean} [options.cookies.secure = false] - Cookie secure parameter. If true, only allows cookies to be passed over https.
+     * @param {String} [options.cookies.sameSite = 'Lax'] - Cookie sameSite parameter. If cookies are going to be set across domains, set this parameter to 'None'.
      */
   constructor (encryptionkey, database, options) {
     if (options && options.https && (!options.ssl || !options.ssl.key || !options.ssl.cert)) throw new Error('No ssl Key  or Certificate found for local https configuration.')
     if (!encryptionkey) throw new Error('Encryptionkey parameter missing in options.')
     if (!database) throw new Error('Missing database configurations.')
 
-    if (!database.plugin) this.#Database = new Mongodb(database)
-    else this.#Database = database.plugin
+    if (!database.plugin) this.Database = new Mongodb(database)
+    else this.Database = database.plugin
 
     if (options && options.appUrl) this.#appUrl = options.appUrl
     if (options && options.loginUrl) this.#loginUrl = options.loginUrl
     if (options && options.sessionTimeoutUrl) this.#sessionTimeoutUrl = options.sessionTimeoutUrl
     if (options && options.invalidTokenUrl) this.#invalidTokenUrl = options.invalidTokenUrl
     if (options && options.keysetUrl) this.#keysetUrl = options.keysetUrl
+
+    // Cookie options
+    if (options && options.cookies) {
+      if (options.cookies.sameSite) {
+        this.#cookieOptions.sameSite = options.cookies.sameSite
+        if (options.cookies.sameSite.toLowerCase() === 'none') this.#cookieOptions.secure = true
+      }
+      if (options.cookies.secure === true) this.#cookieOptions.secure = true
+    }
 
     // Setting up logger
     let loggerServer = false
@@ -178,12 +190,12 @@ class Provider {
     /**
      * @description Grading service.
      */
-    this.Grade = new GradeService(this.getPlatform, this.#ENCRYPTIONKEY, this.#logger, this.#Database)
+    this.Grade = new GradeService(this.getPlatform, this.#ENCRYPTIONKEY, this.#logger, this.Database)
 
     /**
      * @description Deep Linking service.
      */
-    this.DeepLinking = new DeepLinkingService(this.getPlatform, this.#ENCRYPTIONKEY, this.#logger, this.#Database)
+    this.DeepLinking = new DeepLinkingService(this.getPlatform, this.#ENCRYPTIONKEY, this.#logger, this.Database)
 
     if (options && options.staticPath) this.#server.setStaticPath(options.staticPath)
 
@@ -210,24 +222,25 @@ class Provider {
             provMainDebug('Received idtoken for validation')
             const decoded = jwt.decode(idtoken, { complete: true })
 
-            const iss = decoded.payload.iss
+            // Rettrieves state
             const state = req.body.state
 
             // Retrieving validation parameters from cookies
-            const validationCookies = {
-              state: cookies[state + '-state'],
-              iss: cookies[state + '-iss']
+            let validationInfo = await this.Database.Get(false, 'validation', { state: state })
+            validationInfo = validationInfo[0]
+            const validationParameters = {
+              state: validationInfo ? validationInfo.state : false,
+              iss: validationInfo ? validationInfo.iss : false
             }
 
-            const valid = await Auth.validateToken(idtoken, decoded, state, validationCookies, this.getPlatform, this.#ENCRYPTIONKEY, this.#logger, this.#Database)
+            const valid = await Auth.validateToken(idtoken, decoded, state, validationParameters, this.getPlatform, this.#ENCRYPTIONKEY, this.#logger, this.Database)
 
-            // Deleting validation cookies
-            res.clearCookie(state + '-state', this.#cookieOptions)
-            res.clearCookie(state + '-iss', this.#cookieOptions)
+            // Deleting validation info
+            await this.Database.Delete('validation', { state: state })
 
             provAuthDebug('Successfully validated token!')
 
-            const issuerCode = 'plat' + encodeURIComponent(Buffer.from(iss).toString('base64'))
+            const issuerCode = 'plat' + encodeURIComponent(Buffer.from(valid.iss).toString('base64'))
 
             const courseId = valid['https://purl.imsglobal.org/spec/lti/claim/context'] ? valid['https://purl.imsglobal.org/spec/lti/claim/context'].id : 'NF'
             const resourseId = valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'] ? valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'].id : 'NF'
@@ -259,7 +272,7 @@ class Provider {
             }
 
             // Store idToken in database
-            if (await this.#Database.Delete('idtoken', { issuerCode: issuerCode, user: platformToken.user })) this.#Database.Insert(false, 'idtoken', platformToken)
+            if (await this.Database.Delete('idtoken', { issuerCode: issuerCode, user: platformToken.user })) this.Database.Insert(false, 'idtoken', platformToken)
 
             // Mount context token
             const contextToken = {
@@ -277,7 +290,7 @@ class Provider {
             }
 
             // Store contextToken in database
-            if (await this.#Database.Delete('contexttoken', { path: contextPath, user: contextToken.user })) this.#Database.Insert(false, 'contexttoken', contextToken)
+            if (await this.Database.Delete('contexttoken', { path: contextPath, user: contextToken.user })) this.Database.Insert(false, 'contexttoken', contextToken)
 
             res.cookie(contextPath, platformToken.user, this.#cookieOptions)
 
@@ -335,12 +348,12 @@ class Provider {
         if (user) {
           provAuthDebug('Session cookie found')
           // Gets correspondent id token from database
-          let idToken = await this.#Database.Get(false, 'idtoken', { issuerCode: issuerCode, user: user })
+          let idToken = await this.Database.Get(false, 'idtoken', { issuerCode: issuerCode, user: user })
           if (!idToken) throw new Error('No id token found in database')
           idToken = idToken[0]
 
           // Gets correspondent context token from database
-          let contextToken = await this.#Database.Get(false, 'contexttoken', { path: contextTokenName, user: user })
+          let contextToken = await this.Database.Get(false, 'contexttoken', { path: contextTokenName, user: user })
           if (!contextToken) throw new Error('No context token found in database')
           contextToken = contextToken[0]
           idToken.platformContext = contextToken
@@ -380,9 +393,8 @@ class Provider {
           // Create state parameter used to validade authentication response
           const state = encodeURIComponent(crypto.randomBytes(16).toString('base64'))
 
-          // Setting up validation cookies
-          res.cookie(state + '-state', state, this.#cookieOptions)
-          res.cookie(state + '-iss', iss, this.#cookieOptions)
+          // Setting up validation info
+          await this.Database.Insert(false, 'validation', { state: state, iss: iss })
 
           // Redirect to authentication endpoint
           res.redirect(url.format({
@@ -429,7 +441,7 @@ class Provider {
   async deploy (options) {
     provMainDebug('Attempting to connect to database')
     try {
-      await this.#Database.setup()
+      await this.Database.setup()
 
       const conf = {
         port: 3000,
@@ -482,7 +494,7 @@ class Provider {
       if (!options || options.silent !== true) console.log('\nClosing server...')
       await this.#server.close()
       if (!options || options.silent !== true) console.log('Closing connection to the database...')
-      await this.#Database.Close()
+      await this.Database.Close()
       if (!options || options.silent !== true) console.log('Shutdown complete.')
       return true
     } catch (err) {
@@ -509,7 +521,7 @@ class Provider {
         this.#cookieOptions.sameSite = options.sameSite
         if (options.sameSite.toLowerCase() === 'none') this.#cookieOptions.secure = true
       }
-      if (options.secure) this.#cookieOptions.secure = true
+      if (options.secure === true) this.#cookieOptions.secure = true
       if (options.sessionTimeout) this.#sessionTimedOut = options.sessionTimeout
       if (options.invalidToken) this.#invalidToken = options.invalidToken
     }
@@ -538,7 +550,7 @@ class Provider {
         this.#cookieOptions.sameSite = options.sameSite
         if (options.sameSite.toLowerCase() === 'none') this.#cookieOptions.secure = true
       }
-      if (options.secure) this.#cookieOptions.secure = true
+      if (options.secure === true) this.#cookieOptions.secure = true
       if (options.sessionTimeout) this.#sessionTimedOut = options.sessionTimeout
       if (options.invalidToken) this.#invalidToken = options.invalidToken
     }
@@ -628,21 +640,21 @@ class Provider {
       const _platform = await this.getPlatform(platform.url)
 
       if (!_platform) {
-        kid = await Auth.generateProviderKeyPair(this.#ENCRYPTIONKEY, this.#Database)
-        const plat = new Platform(platform.name, platform.url, platform.clientId, platform.authenticationEndpoint, platform.accesstokenEndpoint, kid, this.#ENCRYPTIONKEY, platform.authConfig, this.#logger, this.#Database)
+        kid = await Auth.generateProviderKeyPair(this.#ENCRYPTIONKEY, this.Database)
+        const plat = new Platform(platform.name, platform.url, platform.clientId, platform.authenticationEndpoint, platform.accesstokenEndpoint, kid, this.#ENCRYPTIONKEY, platform.authConfig, this.#logger, this.Database)
 
         // Save platform to db
         provMainDebug('Registering new platform: ' + platform.url)
-        await this.#Database.Insert(false, 'platform', { platformName: platform.name, platformUrl: platform.url, clientId: platform.clientId, authEndpoint: platform.authenticationEndpoint, accesstokenEndpoint: platform.accesstokenEndpoint, kid: kid, authConfig: platform.authConfig })
+        await this.Database.Insert(false, 'platform', { platformName: platform.name, platformUrl: platform.url, clientId: platform.clientId, authEndpoint: platform.authenticationEndpoint, accesstokenEndpoint: platform.accesstokenEndpoint, kid: kid, authConfig: platform.authConfig })
 
         return plat
       } else {
         return _platform
       }
     } catch (err) {
-      await this.#Database.Delete('publickey', { kid: kid })
-      await this.#Database.Delete('privatekey', { kid: kid })
-      await this.#Database.Delete('platform', { platformUrl: platform.url })
+      await this.Database.Delete('publickey', { kid: kid })
+      await this.Database.Delete('privatekey', { kid: kid })
+      await this.Database.Delete('platform', { platformUrl: platform.url })
       provAuthDebug(err.message)
       if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
       return false
@@ -657,13 +669,13 @@ class Provider {
   async getPlatform (url, ENCRYPTIONKEY, logger, Database) {
     if (!url) throw new Error('No url provided')
     try {
-      const plat = Database !== undefined ? await Database.Get(false, 'platform', { platformUrl: url }) : await this.#Database.Get(false, 'platform', { platformUrl: url })
+      const plat = Database !== undefined ? await Database.Get(false, 'platform', { platformUrl: url }) : await this.Database.Get(false, 'platform', { platformUrl: url })
 
       if (!plat) return false
       const obj = plat[0]
 
       if (!obj) return false
-      const result = new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, ENCRYPTIONKEY !== undefined ? ENCRYPTIONKEY : this.#ENCRYPTIONKEY, obj.authConfig, logger !== undefined ? logger : this.#logger, Database !== undefined ? Database : this.#Database)
+      const result = new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, ENCRYPTIONKEY !== undefined ? ENCRYPTIONKEY : this.#ENCRYPTIONKEY, obj.authConfig, logger !== undefined ? logger : this.#logger, Database !== undefined ? Database : this.Database)
 
       return result
     } catch (err) {
@@ -693,10 +705,10 @@ class Provider {
   async getAllPlatforms () {
     const returnArray = []
     try {
-      const platforms = await this.#Database.Get(false, 'platform')
+      const platforms = await this.Database.Get(false, 'platform')
 
       if (platforms) {
-        for (const obj of platforms) returnArray.push(new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, this.#ENCRYPTIONKEY, obj.authConfig, this.#logger, this.#Database))
+        for (const obj of platforms) returnArray.push(new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, this.#ENCRYPTIONKEY, obj.authConfig, this.#logger, this.Database))
         return returnArray
       }
       return []
@@ -778,9 +790,9 @@ class Provider {
         deepLinkingSettings: res.locals.token.platformContext.deepLinkingSettings
       }
 
-      if (await this.#Database.Delete('contexttoken', { path: contextPath, user: res.locals.token.user })) this.#Database.Insert(false, 'contexttoken', newContextToken)
+      if (await this.Database.Delete('contexttoken', { path: contextPath, user: res.locals.token.user })) this.Database.Insert(false, 'contexttoken', newContextToken)
       if (options && options.ignoreRoot) {
-        this.#Database.Delete('contexttoken', { path: rootPath, user: res.locals.token.user })
+        this.Database.Delete('contexttoken', { path: rootPath, user: res.locals.token.user })
         res.clearCookie(rootPath, this.#cookieOptions)
       }
     }

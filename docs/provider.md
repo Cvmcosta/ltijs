@@ -93,6 +93,9 @@ $ npm install ltijs
 
  - [Installing mongoDB](https://docs.mongodb.com/manual/administration/install-community)
 
+ ***WARNING: THE 3.0 (DEEP LINKING) UPDATE BROKE DATABASE PLUGIN COMPATIBILITY. THE FOLLOWING PLUGINS CURRENTLY ONLY WORK WITH EARLIER VERSIONS:***
+
+
 > Alternatively you can use Postgresql database via the [ltijs-postgresql](https://www.npmjs.com/package/ltijs-postgresql) plugin
 
 - [Using PostgreSQL with Ltijs](https://www.npmjs.com/package/ltijs-postgresql)
@@ -231,7 +234,7 @@ Exposes methods for easy manipulation of the LTI 1.3 standard as a LTI Provider 
 | options.loginUrl | `String`  | = '/login'] - Lti Provider login url. If no option is set '/login' is used. | *Optional* |
 | options.sessionTimeoutUrl | `String`  | = '/sessionTimeout'] - Lti Provider session timeout url. If no option is set '/sessionTimeout' is used. | *Optional* |
 | options.invalidTokenUrl | `String`  | = '/invalidToken'] - Lti Provider invalid token url. If no option is set '/invalidToken' is used. | *Optional* |
-| options.https | `Boolean`  | = false]  Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https and are planning to configure ssl locally. ***If you set this option as true you can enable the secure flag in the cookies options of the onConnect method***. | *Optional* |
+| options.https | `Boolean`  | = false]  Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https and are planning to configure ssl locally. ***If you set this option as true you can enable the secure flag in the cookies options***. | *Optional* |
 | options.ssl | `Object`  | SSL certificate and key if https is enabled. | *Optional* |
 | options.ssl.key | `String`  | SSL key. | *Optional* |
 | options.ssl.cert | `String`  | SSL certificate. | *Optional* |
@@ -239,7 +242,9 @@ Exposes methods for easy manipulation of the LTI 1.3 standard as a LTI Provider 
 | options.logger | `Boolean`  | If true, allows Ltijs to generate logging files for server requests and errors. | *Optional* |
 | options.cors | `Boolean`  | = true] If false, disable cors. | *Optional* |
 | options.serverAddon | `Function` |  Allows the execution of a method inside of the server contructor. Can be used to register middlewares. | *Optional* |
-
+| options.cookies | `Object` | Cookie configuration. Allows you to configure, sameSite and secure parameters. | *Optional* |
+| options.cookies.secure | `Boolean` | Cookie secure parameter. If true, only allows cookies to be passed over https. | *Optional* |
+| options.cookies.sameSite | `String` | Cookie sameSite parameter. If cookies are going to be set across domains, set this parameter to 'None'. | *Optional* |
 
 #### async Provider.deploy(options) 
 
@@ -285,8 +290,6 @@ Sets the callback function called whenever theres a sucessfull connection, expos
 | ---- | ---- | ----------- | -------- |
 | _connectCallback | `Function`  | Function that is going to be called everytime a platform sucessfully connects to the provider. | &nbsp; |
 | options | `Object`  | Options configuring the usage of cookies to pass the Id Token data to the client. | *Optional* |
-| options.secure | `Boolean`  | = false] - Secure flag of the cookie. Only allows cookies to be sent through https. | *Optional* |
-| options.sameSite | `String`  | = 'lax'] - sameSite  flag of the cookie. Ex: ('None', 'Lax', 'Strict'). | *Optional* |
 | options.sessionTimeout | `Function`  | Route/Function executed everytime the session expires. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}). | *Optional* |
 | options.invalidToken | `Function`  | Route/Function executed everytime the system receives an invalid token or cookie. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}). | *Optional* |
 
@@ -296,7 +299,7 @@ Sets the callback function called whenever theres a sucessfull connection, expos
 ##### Examples
 
 ```javascript
-.onConnect((conection, response)=>{response.send(connection)}, {secure: true})
+.onConnect((conection, response)=>{response.send(connection)})
 ```
 
 
@@ -313,8 +316,6 @@ Sets the callback function called whenever theres a sucessfull deep linking requ
 | ---- | ---- | ----------- | -------- |
 | _deepLinkingCallback | `Function`  | Function that is going to be called everytime a platform sucessfully launches a deep linking request. | &nbsp; |
 | options | `Object`  | Options configuring the usage of cookies to pass the Id Token data to the client. | *Optional* |
-| options.secure | `Boolean`  | = false] - Secure flag of the cookie. Only allows cookies to be sent through https. | *Optional* |
-| options.sameSite | `String`  | = 'lax'] - sameSite  flag of the cookie. Ex: ('None', 'Lax', 'Strict'). | *Optional* |
 | options.sessionTimeout | `Function`  | Route/Function executed everytime the session expires. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}). | *Optional* |
 | options.invalidToken | `Function`  | Route/Function executed everytime the system receives an invalid token or cookie. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}). | *Optional* |
 
@@ -324,7 +325,7 @@ Sets the callback function called whenever theres a sucessfull deep linking requ
 ##### Examples
 
 ```javascript
-.onDeepLinking((conection, response)=>{response.send(connection)}, {secure: true})
+.onDeepLinking((conection, response)=>{response.send(connection)})
 ```
 
 
@@ -559,7 +560,7 @@ const lti = new LTI('EXAMPLEKEY',
 The second parameter of the contructor, `database`, is an object with an `url` field, that should be the database url, and, ***if your database requires authentication***, a `connection` field, that must contain [MongoDB Driver's connection options](http://mongodb.github.io/node-mongodb-native/2.2/api/MongoClient.html#connect).
 
 
-The third parameter, `options`, allows you to configure a staticPath from where the express server serves static files, setup a local https configuration, setup the server logger, and customize the server main routes: 
+The third parameter, `options`, allows you to configure a staticPath from where the express server serves static files, setup a local https configuration, setup the server logger, customize the server main routes, and configure cookie parameters: 
 
 
 ```javascript
@@ -574,9 +575,15 @@ const lti = new LTI('EXAMPLEKEY',
               ssl: { key: privateKey, 
                      cert: certificate 
                    },
+              cookies: {
+                secure: true, // Cookies will only be passed through https.
+                sameSite: 'None' // Cookies can be set across domains.
+              }
             })
 
 ```
+
+***Obs: If sameSite is defined as 'None', the secure flag is automatically set to true, that is done because browsers do not accept cookies with sameSite set to 'None' that are not also set as secure.***
 
 
 ### The Provider object
@@ -666,22 +673,18 @@ lti.onConnect(
 
 ##### Options
 
-The method also allows you to configure a few things regarding to how the idtoken cookie is handled, and specify sessionTimeOut and invalidToken route functions to handle these cases.
+The method also allows you to specify sessionTimeOut and invalidToken route functions to handle these cases.
 
 ```javascript
 lti.onConnect(
   (conection, request, response,  next) => {
     response.send('User connected!')
   }, {
-    secure: true, // Cookie is only passed through secure https requests.
-    sameSite: 'Strict', // Specifies sameSite flag for the cookie.
     sessionTimeout: (req, res) => { res.send('Session timed out') }, 
     invalidToken: (req, res) => { res.send('Invalid token') } 
   }
 )
 ```
-***Obs: If sameSite is defined as 'None', the secure flag is automatically set to true, that is done because browsers do not accept cookies with sameSite set to 'None' that are not also set as secure.***
-
 
 #### The app property
 

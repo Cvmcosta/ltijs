@@ -198,9 +198,11 @@ describe('Testing Provider', function () {
         { kty: 'RSA', e: 'AQAB', kid: '123456', n: 'VrJSr-xli8NfuAdk_Wem5BARmmW4BpJvXBx3MbFY_0grH9Cd7OxBwVYSwI4P4yhL27upa1_FCRwLi3raOPSJOkHEDvFwtyYZMvdYcpDYTv6JRVqbgEyZtHa-vjL1wBqqW75yPDRoyZdnA8MWrfyRUOak53ZVWHRKgBnP53oXm7M' }
       ]
     })
+    const state = encodeURIComponent(crypto.randomBytes(16).toString('base64'))
+    await lti.Database.Insert(false, 'validation', { state: state, iss: 'http://localhost/moodle' })
 
     const url = await lti.appUrl()
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: 'YN9CBVcmutRB2QJy60zjwQ%3D%3D' }).set('Cookie', ['YN9CBVcmutRB2QJy60zjwQ%3D%3D-state=s%3AYN9CBVcmutRB2QJy60zjwQ%253D%253D.fcxb11oRje6DrK%2FEbf3v%2BxUgvlujA1%2B15sm9AHp%2BBSw; Path=/; HttpOnly; SameSite=None', 'YN9CBVcmutRB2QJy60zjwQ%3D%3D-iss=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly; SameSite=None', 'plataHR0cDovL2xvY2FsaG9zdC9tb29kbGU%3D/3_5=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
+    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: state }).set('Cookie', ['plataHR0cDovL2xvY2FsaG9zdC9tb29kbGU%3D/3_5=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
       expect(res).to.have.status(200)
     })
   })
@@ -296,8 +298,11 @@ describe('Testing Provider', function () {
       ]
     })
 
+    const state = encodeURIComponent(crypto.randomBytes(16).toString('base64'))
+    await lti.Database.Insert(false, 'validation', { state: state, iss: 'http://localhost/moodle' })
+
     const url = await lti.appUrl()
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: 'YN9CBVcmutRB2QJy60zjwQ%3D%3D' }).set('Cookie', ['YN9CBVcmutRB2QJy60zjwQ%3D%3D-state=s%3AYN9CBVcmutRB2QJy60zjwQ%253D%253D.fcxb11oRje6DrK%2FEbf3v%2BxUgvlujA1%2B15sm9AHp%2BBSw; Path=/; HttpOnly; SameSite=None', 'YN9CBVcmutRB2QJy60zjwQ%3D%3D-iss=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly; SameSite=None', 'plataHR0cDovL2xvY2FsaG9zdC9tb29kbGU%3D/3_5=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).set('host', 'http://localhost').then(res => {
+    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: state }).set('Cookie', ['plataHR0cDovL2xvY2FsaG9zdC9tb29kbGU%3D/3_5=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).set('host', 'http://localhost').then(res => {
       expect(res).to.redirectTo(/\/finalRoute/)
     })
   })
