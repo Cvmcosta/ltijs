@@ -790,6 +790,12 @@ class Provider {
     const queries = {}
     for (const [key, value] of params) { queries[key] = value }
 
+    // Fixing fast-url-parser bug where port gets assigned to pathname if there's no path
+    const portMatch = pathParts.pathname.match(/:[0-9]*/)
+    if (portMatch) {
+      pathParts.port = portMatch[0].split(':')[1]
+      pathParts.pathname = pathParts.pathname.split(portMatch[0]).join('')
+    }
     const formattedPath = url.format({
       protocol: pathParts.protocol,
       hostname: pathParts.hostname,
