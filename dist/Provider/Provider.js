@@ -136,11 +136,6 @@ class Provider {
       }
     });
 
-    _Database.set(this, {
-      writable: true,
-      value: void 0
-    });
-
     _connectCallback2.set(this, {
       writable: true,
       value: (connection, req, res, next) => {
@@ -190,6 +185,11 @@ class Provider {
     if (options && options.https && (!options.ssl || !options.ssl.key || !options.ssl.cert)) throw new Error('No ssl Key  or Certificate found for local https configuration.');
     if (!encryptionkey) throw new Error('Encryptionkey parameter missing in options.');
     if (!database) throw new Error('Missing database configurations.');
+    /**
+     * @description Database object.
+     */
+
+    this.Database = null;
     if (!database.plugin) this.Database = new Mongodb(database);else this.Database = database.plugin;
     if (options && options.appUrl) (0, _classPrivateFieldSet2.default)(this, _appUrl, options.appUrl);
     if (options && options.loginUrl) (0, _classPrivateFieldSet2.default)(this, _loginUrl, options.loginUrl);
@@ -978,8 +978,6 @@ var _ENCRYPTIONKEY = new WeakMap();
 var _logger = new WeakMap();
 
 var _cookieOptions = new WeakMap();
-
-var _Database = new WeakMap();
 
 var _connectCallback2 = new WeakMap();
 

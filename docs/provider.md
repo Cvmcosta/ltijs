@@ -190,16 +190,17 @@ You can find a quick tutorial on how to set ltijs up and use it to send grades t
 Exposes methods for easy manipualtion of the LTI 1.3 standard as a LTI Provider, an "app" object to manipulate the [Express](https://expressjs.com/) server and a [Mongoose.Connection](https://mongoosejs.com/docs/api/connection.html) "db" object.
 
 
-#### provider.db
-Database connection object.
-
-**Type**: ```Mongoose.Connection```  
-
-
 #### provider.app
 Express server object.
 
 **Type**: ```Express```
+
+
+#### provider.Database
+Database object. Allows you to perform the database operations in the same way the internal code does.
+
+**Type**: ```Database```  
+
 
 #### provider.Grade
 Instance of the [Grade Class](https://cvmcosta.github.io/ltijs/#/grading), implementing the Assignment and Grade service of the LTI 1.3 protocol.

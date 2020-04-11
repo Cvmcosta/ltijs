@@ -51,8 +51,6 @@ class Provider {
     signed: true
   }
 
-  #Database
-
   #connectCallback = (connection, req, res, next) => { return res.send('It works!') }
 
   #deepLinkingCallback = (connection, req, res, next) => { return res.send('Deep Linking works!') }
@@ -110,6 +108,10 @@ class Provider {
     if (!encryptionkey) throw new Error('Encryptionkey parameter missing in options.')
     if (!database) throw new Error('Missing database configurations.')
 
+    /**
+     * @description Database object.
+     */
+    this.Database = null
     if (!database.plugin) this.Database = new Mongodb(database)
     else this.Database = database.plugin
 
