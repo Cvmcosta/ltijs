@@ -303,7 +303,7 @@ class Provider {
             // Signing context token
             const newLtik = jwt.sign(newLtikObj, this.#ENCRYPTIONKEY)
 
-            return res.redirect(307, this.#appUrl + '?ltik=' + newLtik)
+            return res.redirect(307, req.baseUrl + this.#appUrl + '?ltik=' + newLtik)
           } else {
             if (this.#whitelistedUrls.indexOf(req.path) !== -1 || this.#whitelistedUrls.indexOf(req.path + '-method-' + req.method.toUpperCase()) !== -1) {
               provMainDebug('Accessing as whitelisted URL')
@@ -311,7 +311,7 @@ class Provider {
             }
             provMainDebug('No LTIK found')
             provMainDebug('Request body: ', req.body)
-            return res.redirect(this.#invalidTokenUrl)
+            return res.redirect(req.baseUrl + this.#invalidTokenUrl)
           }
         }
 
@@ -369,13 +369,13 @@ class Provider {
           provMainDebug('Request body: ', req.body)
           if (this.#logger) this.#logger.log({ level: 'error', message: req.body })
           provMainDebug('Passing request to session timeout handler')
-          return res.redirect(this.#sessionTimeoutUrl)
+          return res.redirect(req.baseUrl + this.#sessionTimeoutUrl)
         }
       } catch (err) {
         provAuthDebug(err.message)
         if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
         provMainDebug('Passing request to invalid token handler')
-        return res.redirect(this.#invalidTokenUrl)
+        return res.redirect(req.baseUrl + this.#invalidTokenUrl)
       }
     }
 
