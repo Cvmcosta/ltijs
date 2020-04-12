@@ -653,6 +653,18 @@ The default values for these configurations are respectively `3000 and false`.
 
 If set to `true`, the `silent` option supressess the default console logs that occurs during the startup and graceful shutdown routines.
 
+Deploying the application as part of another express application.
+
+```javascript
+const app = express()
+const lti = new LTI('EXAMPLEKEY', { url: 'mongodb://localhost/database' })
+
+// start LTI provider in serverless mode (experimental flag)
+await lti.deploy({serverless: true})
+
+// mount LTI express app into preexisting express app
+app.use('/lti', lti.app)
+```
 
 #### The onConnect() method
 

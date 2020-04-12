@@ -367,7 +367,7 @@ class Provider {
             }; // Signing context token
 
             const newLtik = jwt.sign(newLtikObj, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
-            return res.redirect(307, (0, _classPrivateFieldGet2.default)(this, _appUrl) + '?ltik=' + newLtik);
+            return res.redirect(307, req.baseUrl + (0, _classPrivateFieldGet2.default)(this, _appUrl) + '?ltik=' + newLtik);
           } else {
             if ((0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(req.path) !== -1 || (0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(req.path + '-method-' + req.method.toUpperCase()) !== -1) {
               provMainDebug('Accessing as whitelisted URL');
@@ -376,7 +376,7 @@ class Provider {
 
             provMainDebug('No LTIK found');
             provMainDebug('Request body: ', req.body);
-            return res.redirect((0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl));
+            return res.redirect(req.baseUrl + (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl));
           }
         }
 
@@ -443,7 +443,7 @@ class Provider {
             message: req.body
           });
           provMainDebug('Passing request to session timeout handler');
-          return res.redirect((0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl));
+          return res.redirect(req.baseUrl + (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl));
         }
       } catch (err) {
         provAuthDebug(err.message);
@@ -452,7 +452,7 @@ class Provider {
           message: 'Message: ' + err.message + '\nStack: ' + err.stack
         });
         provMainDebug('Passing request to invalid token handler');
-        return res.redirect((0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl));
+        return res.redirect(req.baseUrl + (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl));
       }
     };
 
