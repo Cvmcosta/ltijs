@@ -258,7 +258,8 @@ Starts listening to a given port for LTI requests and opens connection to the co
 | ---- | ---- | ----------- | -------- |
 | options | `Object`  | Deployment options | *Optional* |
 | options.port | `Number`  | The port the Provider should listen to. If no value is set, listens to port 3000 | *Optional* |
-| options.silent | `Boolean`  | If true supresses the initial console logs and the graceful shutdown console logs | *Optional* |
+| options.silent | `Boolean`  | If true, supresses the initial console logs and the graceful shutdown console logs | *Optional* |
+| options.serverless | `Boolean`  | If true, Ltijs does not start an Express server instance. This allows usage as a middleware and with services like AWS. Ignores 'port' parameter. | *Optional* |
 
 ##### Returns
 
@@ -653,16 +654,18 @@ The default values for these configurations are respectively `3000 and false`.
 
 If set to `true`, the `silent` option supressess the default console logs that occurs during the startup and graceful shutdown routines.
 
-Deploying the application as part of another express application.
+##### Deploying the application as part of another server
+
+You can use Ltijs as a middleware by calling the deploy method with the serverless flag set to true. *Theoretically this also allows you to use Ltijs with AWS or other similar services.*
 
 ```javascript
 const app = express()
 const lti = new LTI('EXAMPLEKEY', { url: 'mongodb://localhost/database' })
 
-// start LTI provider in serverless mode (experimental flag)
+// Start LTI provider in serverless mode
 await lti.deploy({serverless: true})
 
-// mount LTI express app into preexisting express app
+// Mount Ltijs express app into preexisting express app with /lti prefix
 app.use('/lti', lti.app)
 ```
 

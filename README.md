@@ -23,6 +23,10 @@
 
 Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps!
 
+> v3.6.0
+> - Added serveless mode, allows Ltijs to be used as a middleware.
+> - Serverless mode theoretically also allows Ltijs to be used with AWS. *This has not been tested yet.*
+> - Special thanks to [Fadeenk](https://github.com/fadeenk) for his work on adding support for route prefixes.
 
 > v3.5.0
 > MAJOR CHANGE
@@ -37,12 +41,11 @@ Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps
 
 | Version | Moodle | Canvas |
 | ---- | - | - |
-| 3.5 | <center>✔️</center> | <center></center> |
+| 3.6 | <center>✔️</center> | <center></center> |
+| 3.5 | <center>✔️</center> | <center>✔️</center> |
 | 3.1 | <center>✔️</center> | <center>✔️</center> |
 | 3.0 | <center>✔️</center> | <center>✔️</center> |
 | 2.5 | <center>✔️</center> | <center>✔️</center> |
-| 2.4 | <center>✔️</center> | <center>✔️</center> |
-
 
 
 <sub>**Previous versions are no longer officially supported*</sub>

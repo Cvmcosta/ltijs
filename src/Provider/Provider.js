@@ -203,7 +203,7 @@ class Provider {
 
     // Registers main athentication and routing middleware
     const sessionValidator = async (req, res, next) => {
-      provMainDebug('Receiving request at path: ' + req.path)
+      provMainDebug('Receiving request at path: ' + _path.join(req.baseUrl, req.path))
       // Ckeck if request is attempting to initiate oidc login flow or access reserved or whitelisted routes
       if (req.path === this.#loginUrl || req.path === this.#sessionTimeoutUrl || req.path === this.#invalidTokenUrl || req.path === this.#keysetUrl) return next()
 
@@ -305,7 +305,7 @@ class Provider {
             // Signing context token
             const newLtik = jwt.sign(newLtikObj, this.#ENCRYPTIONKEY)
 
-            return res.redirect(307, req.baseUrl + this.#appUrl + '?ltik=' + newLtik)
+            return res.redirect(307, _path.join(req.baseUrl, this.#appUrl) + '?ltik=' + newLtik)
           } else {
             if (this.#whitelistedUrls.indexOf(req.path) !== -1 || this.#whitelistedUrls.indexOf(req.path + '-method-' + req.method.toUpperCase()) !== -1) {
               provMainDebug('Accessing as whitelisted URL')
@@ -313,7 +313,7 @@ class Provider {
             }
             provMainDebug('No LTIK found')
             provMainDebug('Request body: ', req.body)
-            return res.redirect(req.baseUrl + this.#invalidTokenUrl)
+            return res.redirect(_path.join(req.baseUrl, this.#invalidTokenUrl))
           }
         }
 
@@ -371,13 +371,13 @@ class Provider {
           provMainDebug('Request body: ', req.body)
           if (this.#logger) this.#logger.log({ level: 'error', message: req.body })
           provMainDebug('Passing request to session timeout handler')
-          return res.redirect(req.baseUrl + this.#sessionTimeoutUrl)
+          return res.redirect(_path.join(req.baseUrl, this.#sessionTimeoutUrl))
         }
       } catch (err) {
         provAuthDebug(err.message)
         if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
         provMainDebug('Passing request to invalid token handler')
-        return res.redirect(req.baseUrl + this.#invalidTokenUrl)
+        return res.redirect(_path.join(req.baseUrl, this.#invalidTokenUrl))
       }
     }
 
@@ -437,7 +437,7 @@ class Provider {
      * @param {Object} [options] - Deployment options.
      * @param {Number} [options.port] - Deployment port. 3000 by default.
      * @param {Boolean} [options.silent] - If true, disables initial startup message.
-     * @param {Boolean} [options.serverless] - (Experimental) If true, Ltijs does not start listening. Ignores any given 'port' parameter.
+     * @param {Boolean} [options.serverless] - If true, Ltijs does not start an Express server instance. This allows usage as a middleware and with services like AWS. Ignores 'port' parameter.
      * @returns {Promise<true| false>}
      */
   async deploy (options) {

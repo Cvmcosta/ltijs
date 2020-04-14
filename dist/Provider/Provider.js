@@ -266,7 +266,7 @@ class Provider {
     if (options && options.staticPath) (0, _classPrivateFieldGet2.default)(this, _server).setStaticPath(options.staticPath); // Registers main athentication and routing middleware
 
     const sessionValidator = async (req, res, next) => {
-      provMainDebug('Receiving request at path: ' + req.path); // Ckeck if request is attempting to initiate oidc login flow or access reserved or whitelisted routes
+      provMainDebug('Receiving request at path: ' + _path.join(req.baseUrl, req.path)); // Ckeck if request is attempting to initiate oidc login flow or access reserved or whitelisted routes
 
       if (req.path === (0, _classPrivateFieldGet2.default)(this, _loginUrl) || req.path === (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl) || req.path === (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl) || req.path === (0, _classPrivateFieldGet2.default)(this, _keysetUrl)) return next();
       provMainDebug('Path does not match reserved endpoints');
@@ -367,7 +367,7 @@ class Provider {
             }; // Signing context token
 
             const newLtik = jwt.sign(newLtikObj, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
-            return res.redirect(307, req.baseUrl + (0, _classPrivateFieldGet2.default)(this, _appUrl) + '?ltik=' + newLtik);
+            return res.redirect(307, _path.join(req.baseUrl, (0, _classPrivateFieldGet2.default)(this, _appUrl)) + '?ltik=' + newLtik);
           } else {
             if ((0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(req.path) !== -1 || (0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(req.path + '-method-' + req.method.toUpperCase()) !== -1) {
               provMainDebug('Accessing as whitelisted URL');
@@ -376,7 +376,7 @@ class Provider {
 
             provMainDebug('No LTIK found');
             provMainDebug('Request body: ', req.body);
-            return res.redirect(req.baseUrl + (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl));
+            return res.redirect(_path.join(req.baseUrl, (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl)));
           }
         }
 
@@ -443,7 +443,7 @@ class Provider {
             message: req.body
           });
           provMainDebug('Passing request to session timeout handler');
-          return res.redirect(req.baseUrl + (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl));
+          return res.redirect(_path.join(req.baseUrl, (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl)));
         }
       } catch (err) {
         provAuthDebug(err.message);
@@ -452,7 +452,7 @@ class Provider {
           message: 'Message: ' + err.message + '\nStack: ' + err.stack
         });
         provMainDebug('Passing request to invalid token handler');
-        return res.redirect(req.baseUrl + (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl));
+        return res.redirect(_path.join(req.baseUrl, (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl)));
       }
     };
 
@@ -513,7 +513,7 @@ class Provider {
      * @param {Object} [options] - Deployment options.
      * @param {Number} [options.port] - Deployment port. 3000 by default.
      * @param {Boolean} [options.silent] - If true, disables initial startup message.
-     * @param {Boolean} [options.serverless] - (Experimental) If true, Ltijs does not start listening. Ignores any given 'port' parameter.
+     * @param {Boolean} [options.serverless] - If true, Ltijs does not start an Express server instance. This allows usage as a middleware and with services like AWS. Ignores 'port' parameter.
      * @returns {Promise<true| false>}
      */
 
