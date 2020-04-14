@@ -8,6 +8,12 @@
 
 ### CHANGELOG
 
+#### V3.6.0
+> 2020-04-13
+> - Added serveless mode, allows Ltijs to be used as a middleware.
+> - Serverless mode theoretically also allows Ltijs to be used with AWS. *This has not been tested yet.*
+> - Special thanks to [Fadeenk](https://github.com/fadeenk) for his work on adding support for route prefixes.
+
 #### V3.5.0
 > 2020-04-01
 > MAJOR CHANGE
