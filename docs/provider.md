@@ -775,7 +775,18 @@ let plat = await lti.registerPlatform({
     authConfig: { method: 'JWK_SET', key: 'https://platform.url/keyset' }
 })
 ```
-This function returns a [Platform](platform.md) object
+This function returns a [Platform](platform.md) object.
+
+**If the platform is already registered and you pass different values for the parameters, the configuration of the registered platform will be updated:**
+
+```javascript
+let plat = await lti.registerPlatform({ 
+    url: 'https://platform.url',
+    name: 'Platform Name 2', // Changing the name of already registered platform
+    authenticationEndpoint: 'https://platform.url/auth2' // Changing the authEndpoint of already registered platform
+})
+```
+
 
 ##### The authConfig property
 

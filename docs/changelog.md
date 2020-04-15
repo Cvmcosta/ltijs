@@ -8,6 +8,12 @@
 
 ### CHANGELOG
 
+#### V3.6.2
+> 2020-04-15
+> MINOR CHANGE
+> - Fixed bug where path.join would not work correctly on windows and path prefixing was broken.
+> - Now platform configuration can be updated by calling the register function with the changed values. (And the same platform URL).
+
 #### V3.6.0
 > 2020-04-13
 > - Added serveless mode, allows Ltijs to be used as a middleware.

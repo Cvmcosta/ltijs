@@ -203,7 +203,7 @@ class Provider {
 
     // Registers main athentication and routing middleware
     const sessionValidator = async (req, res, next) => {
-      provMainDebug('Receiving request at path: ' + _path.join(req.baseUrl, req.path))
+      provMainDebug('Receiving request at path: ' + req.baseUrl + req.path)
       // Ckeck if request is attempting to initiate oidc login flow or access reserved or whitelisted routes
       if (req.path === this.#loginUrl || req.path === this.#sessionTimeoutUrl || req.path === this.#invalidTokenUrl || req.path === this.#keysetUrl) return next()
 
@@ -305,7 +305,7 @@ class Provider {
             // Signing context token
             const newLtik = jwt.sign(newLtikObj, this.#ENCRYPTIONKEY)
 
-            return res.redirect(307, _path.join(req.baseUrl, this.#appUrl) + '?ltik=' + newLtik)
+            return res.redirect(307, req.baseUrl + this.#appUrl + '?ltik=' + newLtik)
           } else {
             if (this.#whitelistedUrls.indexOf(req.path) !== -1 || this.#whitelistedUrls.indexOf(req.path + '-method-' + req.method.toUpperCase()) !== -1) {
               provMainDebug('Accessing as whitelisted URL')
@@ -313,7 +313,7 @@ class Provider {
             }
             provMainDebug('No LTIK found')
             provMainDebug('Request body: ', req.body)
-            return res.redirect(_path.join(req.baseUrl, this.#invalidTokenUrl))
+            return res.redirect(req.baseUrl + this.#invalidTokenUrl)
           }
         }
 
@@ -371,13 +371,13 @@ class Provider {
           provMainDebug('Request body: ', req.body)
           if (this.#logger) this.#logger.log({ level: 'error', message: req.body })
           provMainDebug('Passing request to session timeout handler')
-          return res.redirect(_path.join(req.baseUrl, this.#sessionTimeoutUrl))
+          return res.redirect(req.baseUrl + this.#sessionTimeoutUrl)
         }
       } catch (err) {
         provAuthDebug(err.message)
         if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
         provMainDebug('Passing request to invalid token handler')
-        return res.redirect(_path.join(req.baseUrl, this.#invalidTokenUrl))
+        return res.redirect(req.baseUrl + this.#invalidTokenUrl)
       }
     }
 
@@ -636,12 +636,13 @@ class Provider {
      * @returns {Promise<Platform|false>}
      */
   async registerPlatform (platform) {
-    if (!platform || !platform.name || !platform.url || !platform.clientId || !platform.authenticationEndpoint || !platform.accesstokenEndpoint || !platform.authConfig) throw new Error('Error registering platform. Missing argument.')
+    if (!platform || !platform.url) throw new Error('Error. Missing platform Url.')
     let kid
     try {
       const _platform = await this.getPlatform(platform.url)
 
       if (!_platform) {
+        if (!platform.name || !platform.clientId || !platform.authenticationEndpoint || !platform.accesstokenEndpoint || !platform.authConfig) throw new Error('Error registering platform. Missing arguments.')
         kid = await Auth.generateProviderKeyPair(this.#ENCRYPTIONKEY, this.Database)
         const plat = new Platform(platform.name, platform.url, platform.clientId, platform.authenticationEndpoint, platform.accesstokenEndpoint, kid, this.#ENCRYPTIONKEY, platform.authConfig, this.#logger, this.Database)
 
@@ -651,13 +652,15 @@ class Provider {
 
         return plat
       } else {
+        provMainDebug('Platform already registered.')
+        await this.Database.Modify(false, 'platform', { platformUrl: platform.url }, { platformName: platform.name || await _platform.platformName(), clientId: platform.clientId || await _platform.platformClientId(), authEndpoint: platform.authenticationEndpoint || await _platform.platformAuthEndpoint(), accesstokenEndpoint: platform.accesstokenEndpoint || await _platform.platformAccessTokenEndpoint(), authConfig: platform.authConfig || await _platform.platformAuthConfig() })
         return _platform
       }
     } catch (err) {
       await this.Database.Delete('publickey', { kid: kid })
       await this.Database.Delete('privatekey', { kid: kid })
       await this.Database.Delete('platform', { platformUrl: platform.url })
-      provAuthDebug(err.message)
+      provMainDebug(err.message)
       if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
       return false
     }

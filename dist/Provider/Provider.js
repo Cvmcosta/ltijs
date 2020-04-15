@@ -266,7 +266,7 @@ class Provider {
     if (options && options.staticPath) (0, _classPrivateFieldGet2.default)(this, _server).setStaticPath(options.staticPath); // Registers main athentication and routing middleware
 
     const sessionValidator = async (req, res, next) => {
-      provMainDebug('Receiving request at path: ' + _path.join(req.baseUrl, req.path)); // Ckeck if request is attempting to initiate oidc login flow or access reserved or whitelisted routes
+      provMainDebug('Receiving request at path: ' + req.baseUrl + req.path); // Ckeck if request is attempting to initiate oidc login flow or access reserved or whitelisted routes
 
       if (req.path === (0, _classPrivateFieldGet2.default)(this, _loginUrl) || req.path === (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl) || req.path === (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl) || req.path === (0, _classPrivateFieldGet2.default)(this, _keysetUrl)) return next();
       provMainDebug('Path does not match reserved endpoints');
@@ -367,7 +367,7 @@ class Provider {
             }; // Signing context token
 
             const newLtik = jwt.sign(newLtikObj, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
-            return res.redirect(307, _path.join(req.baseUrl, (0, _classPrivateFieldGet2.default)(this, _appUrl)) + '?ltik=' + newLtik);
+            return res.redirect(307, req.baseUrl + (0, _classPrivateFieldGet2.default)(this, _appUrl) + '?ltik=' + newLtik);
           } else {
             if ((0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(req.path) !== -1 || (0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(req.path + '-method-' + req.method.toUpperCase()) !== -1) {
               provMainDebug('Accessing as whitelisted URL');
@@ -376,7 +376,7 @@ class Provider {
 
             provMainDebug('No LTIK found');
             provMainDebug('Request body: ', req.body);
-            return res.redirect(_path.join(req.baseUrl, (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl)));
+            return res.redirect(req.baseUrl + (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl));
           }
         }
 
@@ -443,7 +443,7 @@ class Provider {
             message: req.body
           });
           provMainDebug('Passing request to session timeout handler');
-          return res.redirect(_path.join(req.baseUrl, (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl)));
+          return res.redirect(req.baseUrl + (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl));
         }
       } catch (err) {
         provAuthDebug(err.message);
@@ -452,7 +452,7 @@ class Provider {
           message: 'Message: ' + err.message + '\nStack: ' + err.stack
         });
         provMainDebug('Passing request to invalid token handler');
-        return res.redirect(_path.join(req.baseUrl, (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl)));
+        return res.redirect(req.baseUrl + (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl));
       }
     };
 
@@ -726,13 +726,14 @@ class Provider {
 
 
   async registerPlatform(platform) {
-    if (!platform || !platform.name || !platform.url || !platform.clientId || !platform.authenticationEndpoint || !platform.accesstokenEndpoint || !platform.authConfig) throw new Error('Error registering platform. Missing argument.');
+    if (!platform || !platform.url) throw new Error('Error. Missing platform Url.');
     let kid;
 
     try {
       const _platform = await this.getPlatform(platform.url);
 
       if (!_platform) {
+        if (!platform.name || !platform.clientId || !platform.authenticationEndpoint || !platform.accesstokenEndpoint || !platform.authConfig) throw new Error('Error registering platform. Missing arguments.');
         kid = await Auth.generateProviderKeyPair((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), this.Database);
         const plat = new Platform(platform.name, platform.url, platform.clientId, platform.authenticationEndpoint, platform.accesstokenEndpoint, kid, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), platform.authConfig, (0, _classPrivateFieldGet2.default)(this, _logger), this.Database); // Save platform to db
 
@@ -748,6 +749,16 @@ class Provider {
         });
         return plat;
       } else {
+        provMainDebug('Platform already registered.');
+        await this.Database.Modify(false, 'platform', {
+          platformUrl: platform.url
+        }, {
+          platformName: platform.name || (await _platform.platformName()),
+          clientId: platform.clientId || (await _platform.platformClientId()),
+          authEndpoint: platform.authenticationEndpoint || (await _platform.platformAuthEndpoint()),
+          accesstokenEndpoint: platform.accesstokenEndpoint || (await _platform.platformAccessTokenEndpoint()),
+          authConfig: platform.authConfig || (await _platform.platformAuthConfig())
+        });
         return _platform;
       }
     } catch (err) {
@@ -760,7 +771,7 @@ class Provider {
       await this.Database.Delete('platform', {
         platformUrl: platform.url
       });
-      provAuthDebug(err.message);
+      provMainDebug(err.message);
       if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
         level: 'error',
         message: 'Message: ' + err.message + '\nStack: ' + err.stack
