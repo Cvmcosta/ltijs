@@ -8,6 +8,11 @@
 
 ### CHANGELOG
 
+#### V3.6.3
+> 2020-05-04
+> MINOR CHANGE
+> - Added await keyword to Database insertions to avoid requests asking for data that has not been persisted yet.
+
 #### V3.6.2
 > 2020-04-15
 > MINOR CHANGE
