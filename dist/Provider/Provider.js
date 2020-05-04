@@ -338,7 +338,7 @@ class Provider {
             if (await this.Database.Delete('idtoken', {
               issuerCode: issuerCode,
               user: platformToken.user
-            })) this.Database.Insert(false, 'idtoken', platformToken); // Mount context token
+            })) await this.Database.Insert(false, 'idtoken', platformToken); // Mount context token
 
             const contextToken = {
               path: contextPath,
@@ -357,7 +357,7 @@ class Provider {
             if (await this.Database.Delete('contexttoken', {
               path: contextPath,
               user: contextToken.user
-            })) this.Database.Insert(false, 'contexttoken', contextToken);
+            })) await this.Database.Insert(false, 'contexttoken', contextToken);
             res.cookie(contextPath, platformToken.user, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
             provMainDebug('Generating LTIK and redirecting to main endpoint');
             const newLtikObj = {
@@ -928,7 +928,7 @@ class Provider {
       if (await this.Database.Delete('contexttoken', {
         path: contextPath,
         user: res.locals.token.user
-      })) this.Database.Insert(false, 'contexttoken', newContextToken);
+      })) await this.Database.Insert(false, 'contexttoken', newContextToken);
 
       if (options && options.ignoreRoot) {
         this.Database.Delete('contexttoken', {

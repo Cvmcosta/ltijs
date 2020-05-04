@@ -274,7 +274,7 @@ class Provider {
             }
 
             // Store idToken in database
-            if (await this.Database.Delete('idtoken', { issuerCode: issuerCode, user: platformToken.user })) this.Database.Insert(false, 'idtoken', platformToken)
+            if (await this.Database.Delete('idtoken', { issuerCode: issuerCode, user: platformToken.user })) await this.Database.Insert(false, 'idtoken', platformToken)
 
             // Mount context token
             const contextToken = {
@@ -292,7 +292,7 @@ class Provider {
             }
 
             // Store contextToken in database
-            if (await this.Database.Delete('contexttoken', { path: contextPath, user: contextToken.user })) this.Database.Insert(false, 'contexttoken', contextToken)
+            if (await this.Database.Delete('contexttoken', { path: contextPath, user: contextToken.user })) await this.Database.Insert(false, 'contexttoken', contextToken)
 
             res.cookie(contextPath, platformToken.user, this.#cookieOptions)
 
@@ -795,7 +795,7 @@ class Provider {
         deepLinkingSettings: res.locals.token.platformContext.deepLinkingSettings
       }
 
-      if (await this.Database.Delete('contexttoken', { path: contextPath, user: res.locals.token.user })) this.Database.Insert(false, 'contexttoken', newContextToken)
+      if (await this.Database.Delete('contexttoken', { path: contextPath, user: res.locals.token.user })) await this.Database.Insert(false, 'contexttoken', newContextToken)
       if (options && options.ignoreRoot) {
         this.Database.Delete('contexttoken', { path: rootPath, user: res.locals.token.user })
         res.clearCookie(rootPath, this.#cookieOptions)
