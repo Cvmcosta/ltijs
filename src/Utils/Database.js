@@ -77,6 +77,7 @@ class Database {
     })
     const accessTokenSchema = new Schema({
       platformUrl: String,
+      scopes: String,
       iv: String,
       data: String,
       createdAt: { type: Date, expires: 3600, default: Date.now }
@@ -193,7 +194,7 @@ class Database {
     if (ENCRYPTIONKEY) {
       const encrypted = await this.Encrypt(JSON.stringify(item), ENCRYPTIONKEY)
       newDocData = {
-        [Object.keys(index)[0]]: Object.values(index)[0],
+        ...index,
         iv: encrypted.iv,
         data: encrypted.data
       }

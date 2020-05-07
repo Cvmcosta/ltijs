@@ -53,7 +53,7 @@ class Grade {
    */
 
 
-  async GetLineItems(idtoken, filters) {
+  async getLineItems(idtoken, filters) {
     if (!idtoken) {
       provGradeServiceDebug('IdToken object missing.');
       return false;
@@ -70,22 +70,21 @@ class Grade {
     provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']');
 
     try {
-      const tokenRes = await platform.platformAccessToken();
+      const tokenRes = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem https://purl.imsglobal.org/spec/lti-ags/scope/score https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly');
       provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']');
       const lineitemsEndpoint = idtoken.endpoint.lineitems;
-      let query = '';
+      let queryParams = [];
 
       if (filters) {
-        const queryParams = [];
         if (filters.resourceLinkId) queryParams.push(['resource_link_id', idtoken.platformContext.resource.id]);
         if (filters.limit) queryParams.push(['limit', filters.limit]);
         if (filters.tag) queryParams.push(['tag', filters.tag]);
         if (filters.resourceId) queryParams.push(['resource_id', filters.resourceId]);
-        query = new URLSearchParams(queryParams);
       }
 
+      queryParams = new URLSearchParams(queryParams);
       let lineitemRes = await got.get(lineitemsEndpoint, {
-        query: query,
+        searchParams: queryParams,
         headers: {
           Authorization: tokenRes.token_type + ' ' + tokenRes.access_token
         }
@@ -112,7 +111,7 @@ class Grade {
    */
 
 
-  async CreateLineItem(idtoken, lineItem, options) {
+  async createLineItem(idtoken, lineItem, options) {
     // Validating lineItem
     if (!idtoken) {
       provGradeServiceDebug('IdToken object missing.');
@@ -141,7 +140,7 @@ class Grade {
     provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']');
 
     try {
-      const tokenRes = await platform.platformAccessToken();
+      const tokenRes = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem https://purl.imsglobal.org/spec/lti-ags/scope/score https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly');
       provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']');
       const lineitemsEndpoint = idtoken.endpoint.lineitems;
       await got.post(lineitemsEndpoint, {
@@ -173,7 +172,7 @@ class Grade {
    */
 
 
-  async DeleteLineItems(idtoken, filters) {
+  async deleteLineItems(idtoken, filters) {
     if (!idtoken) {
       provGradeServiceDebug('IdToken object missing.');
       return false;
@@ -190,22 +189,21 @@ class Grade {
     provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']');
 
     try {
-      const tokenRes = await platform.platformAccessToken();
+      const tokenRes = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem https://purl.imsglobal.org/spec/lti-ags/scope/score https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly');
       provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']');
       const lineitemsEndpoint = idtoken.endpoint.lineitems;
-      let query = '';
+      let queryParams = [];
 
       if (filters) {
-        const queryParams = [];
         if (filters.resourceLinkId) queryParams.push(['resource_link_id', idtoken.platformContext.resource.id]);
         if (filters.limit) queryParams.push(['limit', filters.limit]);
         if (filters.tag) queryParams.push(['tag', filters.tag]);
         if (filters.resourceId) queryParams.push(['resource_id', filters.resourceId]);
-        query = new URLSearchParams(queryParams);
       }
 
+      queryParams = new URLSearchParams(queryParams);
       let lineitemRes = await got.get(lineitemsEndpoint, {
-        query: query,
+        searchParams: queryParams,
         headers: {
           Authorization: tokenRes.token_type + ' ' + tokenRes.access_token
         }
@@ -255,7 +253,7 @@ class Grade {
      */
 
 
-  async ScorePublish(idtoken, score, filters) {
+  async scorePublish(idtoken, score, filters) {
     if (!idtoken) {
       provGradeServiceDebug('IdToken object missing.');
       return false;
@@ -277,7 +275,7 @@ class Grade {
     provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']');
 
     try {
-      const tokenRes = await platform.platformAccessToken();
+      const tokenRes = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem https://purl.imsglobal.org/spec/lti-ags/scope/score https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly');
       provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']');
       if (filters) filters.resourceLinkId = true;else {
         filters = {
@@ -285,19 +283,18 @@ class Grade {
         };
       }
       const lineitemsEndpoint = idtoken.endpoint.lineitems;
-      let query = '';
+      let queryParams = [];
 
       if (filters) {
-        const queryParams = [];
         if (filters.resourceLinkId) queryParams.push(['resource_link_id', idtoken.platformContext.resource.id]);
         if (filters.limit) queryParams.push(['limit', filters.limit]);
         if (filters.tag) queryParams.push(['tag', filters.tag]);
         if (filters.resourceId) queryParams.push(['resource_id', filters.resourceId]);
-        query = new URLSearchParams(queryParams);
       }
 
+      queryParams = new URLSearchParams(queryParams);
       let lineitemRes = await got.get(lineitemsEndpoint, {
-        query: query,
+        searchParams: queryParams,
         headers: {
           Authorization: tokenRes.token_type + ' ' + tokenRes.access_token
         }
@@ -361,7 +358,7 @@ class Grade {
    */
 
 
-  async Result(idtoken, filters) {
+  async result(idtoken, filters) {
     if (!idtoken) {
       provGradeServiceDebug('IdToken object missing.');
       return false;
@@ -378,7 +375,7 @@ class Grade {
     provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']');
 
     try {
-      const tokenRes = await platform.platformAccessToken();
+      const tokenRes = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem https://purl.imsglobal.org/spec/lti-ags/scope/score https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly');
       provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']');
       if (filters) filters.resourceLinkId = true;else {
         filters = {
@@ -386,18 +383,17 @@ class Grade {
         };
       }
       const lineitemsEndpoint = idtoken.endpoint.lineitems;
-      let query = '';
+      let queryParams = [];
 
       if (filters) {
-        const queryParams = [];
         if (filters.resourceLinkId) queryParams.push(['resource_link_id', idtoken.platformContext.resource.id]);
         if (filters.tag) queryParams.push(['tag', filters.tag]);
         if (filters.resourceId) queryParams.push(['resource_id', filters.resourceId]);
-        query = new URLSearchParams(queryParams);
       }
 
+      queryParams = new URLSearchParams(queryParams);
       let lineitemRes = await got.get(lineitemsEndpoint, {
-        query: query,
+        searchParams: queryParams,
         headers: {
           Authorization: tokenRes.token_type + ' ' + tokenRes.access_token
         }
@@ -427,7 +423,7 @@ class Grade {
           }
 
           let finalRes = await got.get(resultsUrl, {
-            query: query,
+            searchParams: query,
             headers: {
               Authorization: tokenRes.token_type + ' ' + tokenRes.access_token
             }
@@ -459,6 +455,87 @@ class Grade {
       });
       return false;
     }
+  } // Deprecated methods, these methos will be removed in version 5.0
+
+  /**
+   * @description Gets lineitems from a given platform. This method is deprecated, use getLineItems() instead.
+   * @deprecated
+   * @param {Object} idtoken - Idtoken for the user
+   * @param {Object} [filters] - Filter options
+   * @param {Boolean} [filters.resourceLinkId = false] - Filters based on the resourceLinkId
+   * @param {String} [filters.resourceId = false] - Filters based on the resourceId
+   * @param {String} [filters.tag = false] - Filters based on the tag
+   * @param {Number} [filters.limit = false] - Sets a maximum number of lineitems to be returned
+   */
+
+
+  async GetLineItems(idtoken, filters) {
+    console.log('Deprecation warning: GetLineItems() is now deprecated, use getLineItems() instead. GetLineItems() will be removed in the 5.0 release.');
+    return this.getLineItems(idtoken, filters);
+  }
+  /**
+   * @description Creates a new lineItem for the given context. This method is deprecated, use createLineItem() instead.
+   * @deprecated
+   * @param {Object} idtoken - Idtoken for the user
+   * @param {Object} lineItem - LineItem Object, following the application/vnd.ims.lis.v2.lineitem+json specification
+   * @param {Object} [options] - Aditional configuration for the lineItem
+   * @param {Boolean} [options.resourceLinkId = false] - If set to true, binds the created lineItem to the resource that originated the request
+   * @param {String} [options.resourceId = false] - Binds the created lineItem to a specific tool resource
+   * @param {String} [options.tag = false] - Binds the created LineItem to a specific tag
+   */
+
+
+  async CreateLineItem(idtoken, lineItem, options) {
+    console.log('Deprecation warning: CreateLineItem() is now deprecated, use createLineItem() instead. CreateLineItem() will be removed in the 5.0 release.');
+    return this.createLineItem(idtoken, lineItem, options);
+  }
+  /**
+   * @description Deletes lineitems from a given platform. This method is deprecated, use createLineItem() instead.
+   * @deprecated
+   * @param {Object} idtoken - Idtoken for the user
+   * @param {Object} [filters] - Filter options
+   * @param {Boolean} [filters.resourceLinkId = false] - Filters based on the resourceLinkId
+   * @param {String} [filters.resourceId = false] - Filters based on the resourceId
+   * @param {String} [filters.tag = false] - Filters based on the tag
+   * @param {Number} [filters.limit = false] - Sets a maximum number of lineitems to be returned
+   */
+
+
+  async DeleteLineItems(idtoken, filters) {
+    console.log('Deprecation warning: DeleteLineItems() is now deprecated, use deleteLineItems() instead. DeleteLineItems() will be removed in the 5.0 release.');
+    return this.deleteLineItems(idtoken, filters);
+  }
+  /**
+   * @description Publishes a score or grade to a platform. Represents the Score Publish service described in the lti 1.3 specification. This method is deprecated, use scorePublish() instead.
+   * @deprecated
+   * @param {Object} idtoken - Idtoken for the user
+   * @param {Object} score - Score/Grade following the Lti Standard application/vnd.ims.lis.v1.score+json
+   * @param {Object} [filters] - Filters for LineItems in case there is more than one
+   * @param {String} [filters.resourceId = false] - Filters based on the resourceId
+   * @param {String} [filters.tag = false] - Filters based on the tag
+   * @param {Number} [filters.limit = false] - Sets a maximum number of lineitems to be reached
+   */
+
+
+  async ScorePublish(idtoken, score, filters) {
+    console.log('Deprecation warning: ScorePublish() is now deprecated, use scorePublish() instead. ScorePublish() will be removed in the 5.0 release.');
+    return this.scorePublish(idtoken, score, filters);
+  }
+  /**
+   * @description Retrieves a certain lineitem's results. Represents the Result service described in the lti 1.3 specification. This method is deprecated, use scorePublish() instead.
+   * @deprecated
+   * @param {Object} idtoken - Idtoken for the user
+   * @param {Object} [filters] - Filter options
+   * @param {Boolean} [filters.userId = false] - Filters based on the userId
+   * @param {String} [filters.resourceId = false] - Filters based on the resourceId
+   * @param {String} [filters.tag = false] - Filters based on the tag
+   * @param {Number} [filters.limit = false] - Sets a maximum number of results per lineitem to be returned
+   */
+
+
+  async Result(idtoken, filters) {
+    console.log('Deprecation warning: Result() is now deprecated, use result() instead. Result() will be removed in the 5.0 release.');
+    return this.result(idtoken, filters);
   }
 
 }

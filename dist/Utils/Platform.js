@@ -309,30 +309,24 @@ class Platform {
   }
   /**
      * @description Gets the platform access token or attempts to generate a new one.
+     * @param {String} scopes - String of scopes.
      */
 
 
-  async platformAccessToken() {
+  async platformAccessToken(scopes) {
     const token = await (0, _classPrivateFieldGet2.default)(this, _Database).Get((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), 'accesstoken', {
-      platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl)
+      platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl),
+      scopes: scopes
     });
 
-    if (!token) {
-      provPlatformDebug('Access_token for ' + (0, _classPrivateFieldGet2.default)(this, _platformUrl) + ' not found');
+    if (!token || (Date.now() - token[0].createdAt) / 1000 > token[0].expires_in) {
+      provPlatformDebug('Valid access_token for ' + (0, _classPrivateFieldGet2.default)(this, _platformUrl) + ' not found');
       provPlatformDebug('Attempting to generate new access_token for ' + (0, _classPrivateFieldGet2.default)(this, _platformUrl));
-      const res = await Auth.getAccessToken(this, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), (0, _classPrivateFieldGet2.default)(this, _Database));
+      provPlatformDebug('With scopes: ' + scopes);
+      const res = await Auth.getAccessToken(scopes, this, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), (0, _classPrivateFieldGet2.default)(this, _Database));
       return res;
     } else {
       provPlatformDebug('Access_token found');
-
-      if ((Date.now() - token[0].createdAt) / 1000 > token[0].expires_in) {
-        provPlatformDebug('Token expired');
-        provPlatformDebug('Access_token for ' + (0, _classPrivateFieldGet2.default)(this, _platformUrl) + ' not found');
-        provPlatformDebug('Attempting to generate new access_token for ' + (0, _classPrivateFieldGet2.default)(this, _platformUrl));
-        const res = await Auth.getAccessToken(this, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), (0, _classPrivateFieldGet2.default)(this, _Database));
-        return res;
-      }
-
       return token[0].token;
     }
   }

@@ -205,26 +205,20 @@ class Platform {
 
   /**
      * @description Gets the platform access token or attempts to generate a new one.
+     * @param {String} scopes - String of scopes.
      */
-  async platformAccessToken () {
-    const token = await this.#Database.Get(this.#ENCRYPTIONKEY, 'accesstoken', { platformUrl: this.#platformUrl })
+  async platformAccessToken (scopes) {
+    const token = await this.#Database.Get(this.#ENCRYPTIONKEY, 'accesstoken', { platformUrl: this.#platformUrl, scopes: scopes })
 
-    if (!token) {
-      provPlatformDebug('Access_token for ' + this.#platformUrl + ' not found')
+    if (!token || (Date.now() - token[0].createdAt) / 1000 > token[0].expires_in) {
+      provPlatformDebug('Valid access_token for ' + this.#platformUrl + ' not found')
       provPlatformDebug('Attempting to generate new access_token for ' + this.#platformUrl)
+      provPlatformDebug('With scopes: ' + scopes)
 
-      const res = await Auth.getAccessToken(this, this.#ENCRYPTIONKEY, this.#Database)
+      const res = await Auth.getAccessToken(scopes, this, this.#ENCRYPTIONKEY, this.#Database)
       return res
     } else {
       provPlatformDebug('Access_token found')
-      if ((Date.now() - token[0].createdAt) / 1000 > token[0].expires_in) {
-        provPlatformDebug('Token expired')
-        provPlatformDebug('Access_token for ' + this.#platformUrl + ' not found')
-        provPlatformDebug('Attempting to generate new access_token for ' + this.#platformUrl)
-
-        const res = await Auth.getAccessToken(this, this.#ENCRYPTIONKEY, this.#Database)
-        return res
-      }
       return token[0].token
     }
   }

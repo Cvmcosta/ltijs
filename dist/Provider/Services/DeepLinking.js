@@ -42,7 +42,7 @@ class DeepLinking {
   }
   /**
    * @description Creates an auto submitting form containing the DeepLinking Message.
-   * @param {Object} idtoken - Idtoken for the user
+   * @param {Object} idtoken - Idtoken for the user.
    * @param {Array} contentItems - Array of contentItems to be linked.
    * @param {Object} options - Object containing extra options that mus be sent along the content items.
    * @param {String} options.message - Message the platform may show to the end user upon return to the platform.
@@ -61,7 +61,7 @@ class DeepLinking {
   }
   /**
    * @description Creates a DeepLinking signed message.
-   * @param {Object} idtoken - Idtoken for the user
+   * @param {Object} idtoken - Idtoken for the user.
    * @param {Array} contentItems - Array of contentItems to be linked.
    * @param {Object} options - Object containing extra options that mus be sent along the content items.
    * @param {String} options.message - Message the platform may show to the end user upon return to the platform.

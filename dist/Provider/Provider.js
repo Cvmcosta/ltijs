@@ -33,6 +33,8 @@ const GradeService = require('./Services/Grade');
 
 const DeepLinkingService = require('./Services/DeepLinking');
 
+const NamesAndRolesService = require('./Services/NamesAndRoles');
+
 const url = require('fast-url-parser');
 
 const _path = require('path');
@@ -263,6 +265,11 @@ class Provider {
      */
 
     this.DeepLinking = new DeepLinkingService(this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger), this.Database);
+    /**
+     * @description Names and Roles service.
+     */
+
+    this.NamesAndRoles = new NamesAndRolesService(this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger), this.Database);
     if (options && options.staticPath) (0, _classPrivateFieldGet2.default)(this, _server).setStaticPath(options.staticPath); // Registers main athentication and routing middleware
 
     const sessionValidator = async (req, res, next) => {
