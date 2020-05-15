@@ -368,7 +368,7 @@ describe('Testing Provider', function () {
       scope: 'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem https://purl.imsglobal.org/spec/lti-ags/scope/score https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly'
     })
 
-    nock('http://localhost/moodle').get('/lineitems/url').reply(200, [{
+    nock('http://localhost/moodle').get('/lineitems/url?resource_link_id=1g3k4dlk49fk').reply(200, [{
       id: 'https://lms.example.com/context/2923/lineitems/1',
       scoreMaximum: 60,
       label: 'Chapter 5 Test',
@@ -381,7 +381,7 @@ describe('Testing Provider', function () {
 
     nock('https://lms.example.com').post('/context/2923/lineitems/1/scores').reply(200)
 
-    return expect(lti.Grade.ScorePublish(token, message)).to.eventually.become(true)
+    return expect(lti.Grade.scorePublish(token, message)).to.eventually.become(true)
   })
 
   it('Provider.Grade.Result expected to return object', async () => {
@@ -438,7 +438,7 @@ describe('Testing Provider', function () {
       scope: 'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem https://purl.imsglobal.org/spec/lti-ags/scope/score https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly'
     })
 
-    nock('http://localhost/moodle').get('/lineitems/url').reply(200, [{
+    nock('http://localhost/moodle').get('/lineitems/url?resource_link_id=1g3k4dlk49fk').reply(200, [{
       id: 'https://lms.example.com/context/2923/lineitems/1',
       scoreMaximum: 60,
       label: 'Chapter 5 Test',
@@ -458,7 +458,7 @@ describe('Testing Provider', function () {
       comment: 'This is exceptional work.'
     }])
 
-    return expect(lti.Grade.Result(token)).to.eventually.deep.include.members([{
+    return expect(lti.Grade.result(token)).to.eventually.deep.include.members([{
       id: 'https://lms.example.com/context/2923/lineitems/1/results/5323497',
       lineItem: 'Chapter 5 Test',
       scoreOf: 'https://lms.example.com/context/2923/lineitems/1',
@@ -523,7 +523,7 @@ describe('Testing Provider', function () {
       scope: 'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem https://purl.imsglobal.org/spec/lti-ags/scope/score https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly'
     })
 
-    nock('http://localhost/moodle').get('/lineitems/url').reply(200, [{
+    nock('http://localhost/moodle').get('/lineitems/url?resource_link_id=1g3k4dlk49fk').reply(200, [{
       id: 'https://lms.example.com/context/2923/lineitems/1',
       scoreMaximum: 60,
       label: 'Chapter 5 Test',
@@ -534,7 +534,7 @@ describe('Testing Provider', function () {
       endDateTime: '2018-04-06T22:05:03Z'
     }])
 
-    return expect(lti.Grade.GetLineItems(token, { resourceLinkId: '1g3k4dlk49fk' })).to.eventually.deep.include.members([{
+    return expect(lti.Grade.getLineItems(token, { resourceLinkId: '1g3k4dlk49fk' })).to.eventually.deep.include.members([{
       id: 'https://lms.example.com/context/2923/lineitems/1',
       scoreMaximum: 60,
       label: 'Chapter 5 Test',
@@ -602,7 +602,7 @@ describe('Testing Provider', function () {
 
     nock('http://localhost/moodle').post('/lineitems/url').reply(201)
 
-    return expect(lti.Grade.CreateLineItem(token, {
+    return expect(lti.Grade.createLineItem(token, {
       scoreMaximum: 60,
       label: 'Chapter 5 Test',
       resourceId: 'quiz-231',
@@ -679,7 +679,134 @@ describe('Testing Provider', function () {
 
     nock('https://lms.example.com').delete('/context/2923/lineitems/1').reply(204)
 
-    return expect(lti.Grade.DeleteLineItems(token)).to.eventually.become(true)
+    return expect(lti.Grade.deleteLineItems(token)).to.eventually.become(true)
+  })
+
+  it('Provider.NamesAndRoles.getMembers expected to return memberslist', async () => {
+    const token = {
+      iss: 'http://localhost/moodle',
+      issuer_code: 'platformCode',
+      user: '2', // User id
+      roles: [
+        'http://purl.imsglobal.org/vocab/lis/v2/institution/person#Administrator',
+        'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor',
+        'http://purl.imsglobal.org/vocab/lis/v2/system/person#Administrator'
+      ],
+      userInfo: {
+        given_name: 'User Given Name',
+        family_name: 'Use Family Name',
+        name: 'User Full Name',
+        email: 'user@email.com'
+      },
+      platformInfo: {
+        family_code: 'platform_type', // ex: Moodle
+        version: 'versionNumber',
+        name: 'LTI',
+        description: 'LTI tool'
+      },
+      endpoint: {
+        scope: [ // List of scopes
+          'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem',
+          'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly',
+          'https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly',
+          'https://purl.imsglobal.org/spec/lti-ags/scope/score'
+        ],
+        lineitems: 'http://localhost/moodle/lineitems/url',
+        lineitem: ''
+      },
+      namesRoles: {
+        context_memberships_url: 'http://localhost/moodle/context/membership/url',
+        service_versions: ['1.0', '2.0']
+      },
+      platformContext: { // Context of connection
+        context: { id: '2', label: 'course label', title: 'course title', type: [Array] },
+        resource: { title: 'Activity name', id: '1g3k4dlk49fk' }, // Activity that originated login
+        custom: { // Custom parameter sent by the platform
+          resource: '123456', // Id for a requested resource
+          system_setting_url: 'http://localhost/moodle/customs/system/setting',
+          context_setting_url: 'http://localhost/moodle/customs/context/setting',
+          link_setting_url: 'http://localhost/moodle/customs/link/setting'
+        }
+      }
+    }
+    nock('http://localhost/moodle').post('/AccessTokenUrl').reply(200, {
+      access_token: 'f3399be7242f95890887236756efa196',
+      token_type: 'Bearer',
+      expires_in: 3600,
+      scope: 'https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly'
+    })
+
+    nock('http://localhost/moodle').get('/context/membership/url').reply(200, {
+      id: 'http://localhost/moodle/mod/lti/services.php/CourseSection/2/bindings/1/memberships',
+      context: {
+        id: '2',
+        label: 'course',
+        title: 'Course'
+      },
+      members: [
+        {
+          status: 'Active',
+          roles: [
+            'Instructor',
+            'http://purl.imsglobal.org/vocab/lis/v2/person#Administrator'
+          ],
+          user_id: '2',
+          lis_person_sourcedid: '',
+          name: 'Admin User',
+          given_name: 'Admin',
+          family_name: 'User',
+          email: 'local@moodle.com'
+        },
+        {
+          status: 'Active',
+          roles: [
+            'Learner'
+          ],
+          user_id: '3',
+          lis_person_sourcedid: '',
+          name: 'test user',
+          given_name: 'test',
+          family_name: 'user',
+          email: 'test@local.com'
+        }
+      ]
+    })
+
+    return expect(lti.NamesAndRoles.getMembers(token)).to.eventually.become({
+      id: 'http://localhost/moodle/mod/lti/services.php/CourseSection/2/bindings/1/memberships',
+      context: {
+        id: '2',
+        label: 'course',
+        title: 'Course'
+      },
+      members: [
+        {
+          status: 'Active',
+          roles: [
+            'Instructor',
+            'http://purl.imsglobal.org/vocab/lis/v2/person#Administrator'
+          ],
+          user_id: '2',
+          lis_person_sourcedid: '',
+          name: 'Admin User',
+          given_name: 'Admin',
+          family_name: 'User',
+          email: 'local@moodle.com'
+        },
+        {
+          status: 'Active',
+          roles: [
+            'Learner'
+          ],
+          user_id: '3',
+          lis_person_sourcedid: '',
+          name: 'test user',
+          given_name: 'test',
+          family_name: 'user',
+          email: 'test@local.com'
+        }
+      ]
+    })
   })
 
   it('Provider.keyset expected to return a keyset', async () => {

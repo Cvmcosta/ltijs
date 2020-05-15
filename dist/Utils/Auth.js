@@ -234,11 +234,12 @@ class Auth {
   }
   /**
      * @description Gets a new access token from the platform.
+     * @param {String} scopes - Request scopes
      * @param {Platform} platform - Platform object of the platform you want to access.
      */
 
 
-  static async getAccessToken(platform, ENCRYPTIONKEY, Database) {
+  static async getAccessToken(scopes, platform, ENCRYPTIONKEY, Database) {
     const confjwt = {
       iss: await platform.platformClientId(),
       sub: await platform.platformClientId(),
@@ -255,7 +256,7 @@ class Auth {
       grant_type: 'client_credentials',
       client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
       client_assertion: token,
-      scope: 'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem https://purl.imsglobal.org/spec/lti-ags/scope/score https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly'
+      scope: scopes
     };
     provAuthDebug('Awaiting return from the platform');
     const res = await got.post((await platform.platformAccessTokenEndpoint()), {
@@ -266,7 +267,8 @@ class Auth {
     await Database.Insert(ENCRYPTIONKEY, 'accesstoken', {
       token: access
     }, {
-      platformUrl: await platform.platformUrl()
+      platformUrl: await platform.platformUrl(),
+      scopes: scopes
     });
     return access;
   }

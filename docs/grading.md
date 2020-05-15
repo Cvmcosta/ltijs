@@ -38,7 +38,7 @@ Ltijs implements the [LTI 1.3 Assignment and Grading Service Specification](http
 ___
 
 
-## Usage
+## Basic Usage
 
 
 ##### Sending grades to a platform
@@ -67,7 +67,7 @@ let grade = {
 }
 
 // Sends a grade to a platform's grade line
-lti.Grade.ScorePublish(res.locals.token, grade)
+lti.Grade.scorePublish(res.locals.token, grade)
 ```
 
 
@@ -78,7 +78,7 @@ Ltijs is able to retrieve grades from a platform:
 
 ```javascript
 // Retrieves grade from a platform's grade line only for the current user
-let result  = await lti.Grade.Result(res.locals.token, { userId: true })
+let result  = await lti.Grade.result(res.locals.token, { userId: true })
 ```
 
 

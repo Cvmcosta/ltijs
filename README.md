@@ -23,17 +23,19 @@
 
 Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps!
 
+> v4.0.0
+> MAJOR CHANGE
+> - Implemented Names and Roles Service.
+> - Improved Database insertion method.
+> - Separated generated access tokens based on their scope.
+> - Improved Access token generation method with the ability to specify the scope.
+> - Changed Grade Service methods names to improve code consistency, old method names are deprecated and will keep working until the 5.0 release.
+> - Started process of certifying Ltijs with the IMS's LTI Advantage Conformance Certificate.
+
 > v3.6.0
 > - Added serveless mode, allows Ltijs to be used as a middleware.
 > - Serverless mode theoretically also allows Ltijs to be used with AWS. *This has not been tested yet.*
 > - Special thanks to [Fadeenk](https://github.com/fadeenk) for his work on adding support for route prefixes.
-
-> v3.5.0
-> MAJOR CHANGE
-> - Changed login validation process. Now uses the database instead of cookies, to avoid cors issues. THIS BREAKS DATABASE PLUGIN COMPATIBILITY.
-> - Moved Cookies options to the main constructor (kept onConnect options for retro compatibility).
-> - Fixed redirection bug where the wrong url would be formed if the target path contained a port but no paths.
-> - The Database is no longer a private parameter and can be accessed outside the main Lti object.
 
 > - View entire [CHANGELOG](https://cvmcosta.github.io/ltijs/#/changelog)
 
@@ -41,11 +43,11 @@ Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps
 
 | Version | Moodle | Canvas |
 | ---- | - | - |
-| 3.6 | <center>✔️</center> | <center></center> |
+| 4.0 | <center>✔️</center> | <center></center> |
+| 3.6 | <center>✔️</center> | <center>✔️</center> |
 | 3.5 | <center>✔️</center> | <center>✔️</center> |
 | 3.1 | <center>✔️</center> | <center>✔️</center> |
 | 3.0 | <center>✔️</center> | <center>✔️</center> |
-| 2.5 | <center>✔️</center> | <center>✔️</center> |
 
 
 <sub>**Previous versions are no longer officially supported*</sub>
@@ -76,14 +78,15 @@ This framework implements a tool provider as an [Express](https://expressjs.com/
 
 | Feature | Implementation | Documentation |
 | --------- | - | - |
-| Provider | <center>✔️</center> | <center>✔️</center> |
+| LTI Provider | <center>✔️</center> | <center>✔️</center> |
 | [Platform Class](https://cvmcosta.github.io/ltijs/#/platform) | <center>✔️</center> | <center>✔️</center> |
 | Database plugins | <center>✔️</center> | <center>✔️</center> |
 | [Keyset endpoint support](https://cvmcosta.me/ltijs/#/provider?id=keyset-endpoint) | <center>✔️</center> | <center>✔️</center> |
 | [Deep Linking Service Class](https://cvmcosta.me/ltijs/#/deeplinking) | <center>✔️</center> | <center>✔️</center> |
 | [Grading Service Class](https://cvmcosta.me/ltijs/#/grading) | <center>✔️</center> | <center>✔️</center> |
+| [Names and Roles Service Class](https://cvmcosta.me/ltijs/#/namesandroles) | <center>✔️</center> | <center>✔️</center> |
+| Detailed Database Error Logging | <center></center> | <center></center> |
 | Redis caching | <center></center> | <center></center> |
-| Names and Roles Service Class | <center></center> | <center></center> |
 
 
 ---
@@ -188,7 +191,7 @@ Additional documentations:
    - [Platform class documentation](https://cvmcosta.github.io/ltijs/#/platform)
    - [Deep Linking Service documentation](https://cvmcosta.github.io/ltijs/#/deeplinking)
    - [Grading Service documentation](https://cvmcosta.github.io/ltijs/#/grading)
-
+   - [Names and Roles Provisioning Service documentation](https://cvmcosta.github.io/ltijs/#/namesandroles)
 
 ---
 

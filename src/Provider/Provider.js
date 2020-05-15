@@ -12,6 +12,7 @@ const Keyset = require('../Utils/Keyset')
 
 const GradeService = require('./Services/Grade')
 const DeepLinkingService = require('./Services/DeepLinking')
+const NamesAndRolesService = require('./Services/NamesAndRoles')
 
 const url = require('fast-url-parser')
 const _path = require('path')
@@ -198,6 +199,11 @@ class Provider {
      * @description Deep Linking service.
      */
     this.DeepLinking = new DeepLinkingService(this.getPlatform, this.#ENCRYPTIONKEY, this.#logger, this.Database)
+
+    /**
+     * @description Names and Roles service.
+     */
+    this.NamesAndRoles = new NamesAndRolesService(this.getPlatform, this.#ENCRYPTIONKEY, this.#logger, this.Database)
 
     if (options && options.staticPath) this.#server.setStaticPath(options.staticPath)
 
