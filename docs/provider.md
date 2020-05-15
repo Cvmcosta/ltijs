@@ -29,14 +29,15 @@ Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps
 
 | Feature | Implementation | Documentation |
 | --------- | - | - |
-| Provider | <center>✔️</center> | <center>✔️</center> |
+| LTI Provider | <center>✔️</center> | <center>✔️</center> |
 | [Platform Class](https://cvmcosta.github.io/ltijs/#/platform) | <center>✔️</center> | <center>✔️</center> |
 | Database plugins | <center>✔️</center> | <center>✔️</center> |
 | [Keyset endpoint support](#keyset-endpoint) | <center>✔️</center> | <center>✔️</center> |
 | [Deep Linking Service Class](https://cvmcosta.me/ltijs/#/deeplinking) | <center>✔️</center> | <center>✔️</center> |
 | [Grading Service Class](https://cvmcosta.me/ltijs/#/grading) | <center>✔️</center> | <center>✔️</center> |
+| [Names and Roles Service Class](https://cvmcosta.me/ltijs/#/namesandroles) | <center>✔️</center> | <center>✔️</center> |
+| Detailed Database Error Logging | <center></center> | <center></center> |
 | Redis caching | <center></center> | <center></center> |
-| Names and Roles Service Class | <center></center> | <center></center> |
 
 
 
@@ -60,6 +61,7 @@ Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps
   - [Routing and Context](#routing-and-context)
 - [Deep Linking with Ltijs](#deep-linking-with-ltijs)
 - [Sending and retrieving grades with Ltijs](#sending-grades-with-ltijs)
+- [Using the Names and Roles service with Ltijs](#the-names-and-roles-provisioning-service)
 - [Logging and Debugging](#logging-and-debugging)
 - [Contributing](#contributing)
 - [License](#license)
@@ -211,6 +213,11 @@ Instance of the [Grade Class](https://cvmcosta.github.io/ltijs/#/grading), imple
 Instance of the [DeepLinking Class](https://cvmcosta.github.io/ltijs/#/deeplinking), implementing the Deep Linking service of the LTI 1.3 protocol.
 
 **Type**: ```DeepLinking```
+
+#### provider.NamesAndRoles
+Instance of the [NamesAndRoles Class](https://cvmcosta.github.io/ltijs/#/namesandroles), implementing the Names and Roles Provisioning service of the LTI 1.3 protocol.
+
+**Type**: ```NamesAndRoles```
 
 #### Provider.constructor(encryptionkey, database [, options]) 
 
@@ -1068,6 +1075,13 @@ The Deep Linking Service class documentation can be accessed [here](https://cvmc
 ### Sending grades with Ltijs
 
 The Grading Service class documentation can be accessed [here](https://cvmcosta.me/ltijs/#/grading).
+
+
+---
+
+### The Names and Roles Provisioning Service
+
+The Names and Roles Provisioning Service class documentation can be accessed [here](https://cvmcosta.me/ltijs/#/namesandroles).
 
 
 ---

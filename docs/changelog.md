@@ -8,10 +8,15 @@
 
 ### CHANGELOG
 
-#### V3.6.3
-> 2020-05-04
-> MINOR CHANGE
-> - Added await keyword to Database insertions to avoid requests asking for data that has not been persisted yet.
+#### V4.0.0
+> 2020-05-15
+> MAJOR CHANGE
+> - Implemented Names and Roles Service.
+> - Improved Database insertion method.
+> - Separated generated access tokens based on their scope.
+> - Improved Access token generation method with the ability to specify the scope.
+> - Changed Grade Service methods names to improve code consistency, old method names are deprecated and will keep working until the 5.0 release.
+> - Started process of certifying Ltijs with the IMS's LTI Advantage Conformance Certificate.
 
 #### V3.6.2
 > 2020-04-15

@@ -32,7 +32,7 @@
 
 
 ## Introduction
-Ltijs implements the [LTI 1.3 Deep Linking Service Specification](https://www.imsglobal.org/spec/lti-dl/v2p0/) in the form of the **Deep Linking Class**.
+Ltijs implements the [LTI 1.3 Deep Linking Service Specification](https://www.imsglobal.org/spec/lti-dl/v2p0/) in the form of the **DeepLinking Class**.
 
 Deep Linking consists of using a LTI launch to select specific resources within a tool to be displayed to the user.
 

@@ -270,19 +270,24 @@ Sets/Gets the platform access token endpoint used to authenticate messages to th
 
 
 
-#### async Platform.platformAccessToken() 
+#### async Platform.platformAccessToken(scopes) 
 
 Gets the platform access token or attempts to generate a new one.
 
 
 
+##### Parameters
+
+| Name | Type | Description |  |
+| ---- | ---- | ----------- | -------- |
+| scopes | `String`  | String of scopes. | *Required* |
 
 
 
 ##### Returns
 
 
-- Promise that resolves the `platform access token endpoint` if it succeeds and `false` if it fails.
+- Promise that resolves the `platform access token endpoint` for the given scopes if it succeeds and `false` if it fails.
 
 
 

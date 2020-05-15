@@ -45,6 +45,7 @@ class NamesAndRoles {
    * @param {String} [options.role] - Specific role to be returned.
    * @param {Number} [options.limit] - Specifies maximum number of members per page.
    * @param {Number} [options.pages] - Specifies maximum number of pages returned.
+   * @param {String} [options.url] - Specifies the initial members endpoint, usually retrieved from a previous incomplete request.
    */
 
 
@@ -83,10 +84,15 @@ class NamesAndRoles {
       query = new URLSearchParams(query);
       const membershipsEndpoint = idtoken.namesRoles.context_memberships_url;
       let result;
-      let next;
+      let next = options && options.url ? options.url : false;
       let curPage = 1;
 
       do {
+        if (options && options.pages && curPage > options.pages) {
+          if (next) result.next = next;
+          break;
+        }
+
         let response;
         provNamesAndRolesServiceDebug('Member pages found: ', curPage);
         if (!next) response = await got.get(membershipsEndpoint, {
@@ -109,7 +115,6 @@ class NamesAndRoles {
 
         if (headers.link && headers.link.search(/rel=.*next/)) next = headers.link.split(';rel=next')[0];else next = false;
         curPage++;
-        if (options && options.pages && curPage > options.pages) break;
       } while (next);
 
       provNamesAndRolesServiceDebug('Memberships retrieved');
