@@ -36,7 +36,7 @@ Ltijs implements the [LTI 1.3 Names and Roles Provisioning Service](https://www.
 
 The Names And Roles Provisioning Service can be used by a tool to access a list of platform's users (referred to as members) and their roles within the context of a course, program or other grouping.
 
-This class provides a single method for retrieving this information, and offers the specified filters and functionalities.
+This class provides a single method for retrieving membership information, and offers the specified filters and functionalities.
 
 ---
 
