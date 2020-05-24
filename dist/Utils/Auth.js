@@ -2,7 +2,7 @@
 
 const crypto = require('crypto');
 
-const jwk = require('pem-jwk');
+const Jwk = require('pem-jwk');
 
 const got = require('got');
 
@@ -100,8 +100,10 @@ class Auth {
           const res = await got.get(keysEndpoint);
           const keyset = JSON.parse(res.body).keys;
           if (!keyset) throw new Error('NoKeySetFound');
-          const key = jwk.jwk2pem(find(keyset, ['kid', kid]));
-          if (!key) throw new Error('NoKeyFound');
+          const jwk = find(keyset, ['kid', kid]);
+          if (!jwk) throw new Error('NoKeyFound');
+          provAuthDebug('Converting JWK key to PEM key');
+          const key = Jwk.jwk2pem(jwk);
           const verified = await this.verifyToken(token, key, alg, platform, Database);
           return verified;
         }
@@ -110,7 +112,7 @@ class Auth {
         {
           provAuthDebug('Retrieving key from jwk_key');
           if (!authConfig.key) throw new Error('NoKeyFound');
-          const key = jwk.jwk2pem(authConfig.key);
+          const key = Jwk.jwk2pem(authConfig.key);
           const verified = await this.verifyToken(token, key, alg, platform, Database);
           return verified;
         }
