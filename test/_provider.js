@@ -198,7 +198,7 @@ describe('Testing Provider', function () {
         { kty: 'RSA', e: 'AQAB', kid: '123456', n: 'VrJSr-xli8NfuAdk_Wem5BARmmW4BpJvXBx3MbFY_0grH9Cd7OxBwVYSwI4P4yhL27upa1_FCRwLi3raOPSJOkHEDvFwtyYZMvdYcpDYTv6JRVqbgEyZtHa-vjL1wBqqW75yPDRoyZdnA8MWrfyRUOak53ZVWHRKgBnP53oXm7M' }
       ]
     })
-    const state = encodeURIComponent(crypto.randomBytes(16).toString('base64'))
+    const state = encodeURIComponent(crypto.randomBytes(16).toString('hex'))
     await lti.Database.Insert(false, 'validation', { state: state, iss: 'http://localhost/moodle' })
 
     const url = await lti.appUrl()
@@ -298,7 +298,7 @@ describe('Testing Provider', function () {
       ]
     })
 
-    const state = encodeURIComponent(crypto.randomBytes(16).toString('base64'))
+    const state = encodeURIComponent(crypto.randomBytes(16).toString('hex'))
     await lti.Database.Insert(false, 'validation', { state: state, iss: 'http://localhost/moodle' })
 
     const url = await lti.appUrl()

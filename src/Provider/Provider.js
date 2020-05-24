@@ -399,7 +399,7 @@ class Provider {
           provMainDebug('Redirecting to platform authentication endpoint')
 
           // Create state parameter used to validade authentication response
-          const state = encodeURIComponent(crypto.randomBytes(16).toString('base64'))
+          const state = encodeURIComponent(crypto.randomBytes(16).toString('hex'))
 
           // Setting up validation info
           await this.Database.Insert(false, 'validation', { state: state, iss: iss })
