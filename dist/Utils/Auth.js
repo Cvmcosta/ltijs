@@ -147,7 +147,8 @@ class Auth {
     const verified = jwt.verify(token, key, {
       algorithms: [alg]
     });
-    await this.oidcValidationSteps(verified, platform, alg, Database);
+    await this.oidcValidation(verified, platform, alg, Database);
+    await this.claimValidation(verified);
     return verified;
   }
   /**
@@ -158,7 +159,7 @@ class Auth {
      */
 
 
-  static async oidcValidationSteps(token, platform, alg, Database) {
+  static async oidcValidation(token, platform, alg, Database) {
     provAuthDebug('Token signature verified');
     provAuthDebug('Initiating OIDC aditional validation steps');
     const aud = this.validateAud(token, platform);
@@ -209,6 +210,7 @@ class Auth {
   static async validateIat(token) {
     provAuthDebug('Checking iat claim to prevent old tokens from being passed.');
     provAuthDebug('Iat claim: ' + token.iat);
+    provAuthDebug('Exp claim: ' + token.exp);
     const curTime = Date.now() / 1000;
     provAuthDebug('Current_time: ' + curTime);
     const timePassed = curTime - token.iat;
@@ -233,6 +235,28 @@ class Auth {
       nonce: token.nonce
     });
     return true;
+  }
+  /**
+   * @description Validates de token based on the LTI 1.3 core claims specifications.
+   * @param {Object} token - Id token you wish to validate.
+   */
+
+
+  static async claimValidation(token) {
+    provAuthDebug('Initiating LTI 1.3 core claims validation');
+    provAuthDebug('Checking Message type claim');
+    if (token['https://purl.imsglobal.org/spec/lti/claim/message_type'] !== 'LtiResourceLinkRequest' && token['https://purl.imsglobal.org/spec/lti/claim/message_type'] !== 'LtiDeepLinkingRequest') throw new Error('NoMessageTypeClaim');
+    provAuthDebug('Checking LTI Version claim');
+    if (!token['https://purl.imsglobal.org/spec/lti/claim/version']) throw new Error('NoLTIVersionClaim');
+    if (token['https://purl.imsglobal.org/spec/lti/claim/version'] !== '1.3.0') throw new Error('WrongLTIVersionClaim');
+    provAuthDebug('Checking Deployment Id claim');
+    if (!token['https://purl.imsglobal.org/spec/lti/claim/deployment_id']) throw new Error('NoDeploymentIdClaim');
+    provAuthDebug('Checking Target Link Uri claim');
+    if (!token['https://purl.imsglobal.org/spec/lti/claim/target_link_uri']) throw new Error('NoTargetLinkUriClaim');
+    provAuthDebug('Checking Resource Link Id claim');
+    if (!token['https://purl.imsglobal.org/spec/lti/claim/resource_link'] || !token['https://purl.imsglobal.org/spec/lti/claim/resource_link'].id) throw new Error('NoResourceLinkIdClaim');
+    provAuthDebug('Checking Sub claim');
+    if (!token.sub) throw new Error('NoSubClaim');
   }
   /**
      * @description Gets a new access token from the platform.
