@@ -257,6 +257,8 @@ class Auth {
     if (!token['https://purl.imsglobal.org/spec/lti/claim/resource_link'] || !token['https://purl.imsglobal.org/spec/lti/claim/resource_link'].id) throw new Error('NoResourceLinkIdClaim');
     provAuthDebug('Checking Sub claim');
     if (!token.sub) throw new Error('NoSubClaim');
+    provAuthDebug('Checking Roles claim');
+    if (!token['https://purl.imsglobal.org/spec/lti/claim/roles']) throw new Error('NoRolesClaim');
   }
   /**
      * @description Gets a new access token from the platform.

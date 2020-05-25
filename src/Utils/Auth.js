@@ -240,6 +240,9 @@ class Auth {
 
     provAuthDebug('Checking Sub claim')
     if (!token.sub) throw new Error('NoSubClaim')
+
+    provAuthDebug('Checking Roles claim')
+    if (!token['https://purl.imsglobal.org/spec/lti/claim/roles']) throw new Error('NoRolesClaim')
   }
 
   /**

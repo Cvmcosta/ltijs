@@ -229,6 +229,7 @@ class Provider {
             // No ltik found but request contains an idtoken
             provMainDebug('Received idtoken for validation')
             const decoded = jwt.decode(idtoken, { complete: true })
+            if (!decoded) throw new Error('Invalid JWT received')
 
             // Rettrieves state
             const state = req.body.state
@@ -268,12 +269,7 @@ class Provider {
                 name: valid.name,
                 email: valid.email
               },
-              platformInfo: {
-                family_code: valid['https://purl.imsglobal.org/spec/lti/claim/tool_platform'].family_code,
-                version: valid['https://purl.imsglobal.org/spec/lti/claim/tool_platform'].version,
-                name: valid['https://purl.imsglobal.org/spec/lti/claim/tool_platform'].name,
-                description: valid['https://purl.imsglobal.org/spec/lti/claim/tool_platform'].description
-              },
+              platformInfo: valid['https://purl.imsglobal.org/spec/lti/claim/tool_platform'],
               lis: valid['https://purl.imsglobal.org/spec/lti/claim/lis'],
               endpoint: valid['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint'],
               namesRoles: valid['https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice']
@@ -400,6 +396,7 @@ class Provider {
 
           // Create state parameter used to validade authentication response
           const state = encodeURIComponent(crypto.randomBytes(16).toString('hex'))
+          provMainDebug('Generated state: ', state)
 
           // Setting up validation info
           await this.Database.Insert(false, 'validation', { state: state, iss: iss })
