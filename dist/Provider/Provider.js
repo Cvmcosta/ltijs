@@ -471,7 +471,7 @@ class Provider {
         if (platform) {
           provMainDebug('Redirecting to platform authentication endpoint'); // Create state parameter used to validade authentication response
 
-          const state = encodeURIComponent(crypto.randomBytes(16).toString('hex'));
+          const state = encodeURIComponent(crypto.randomBytes(8).toString('hex'));
           provMainDebug('Generated state: ', state); // Setting up validation info
 
           await this.Database.Insert(false, 'validation', {
@@ -479,9 +479,11 @@ class Provider {
             iss: iss
           }); // Redirect to authentication endpoint
 
+          const query = await Request.ltiAdvantageLogin(params, platform, state);
+          provMainDebug('Login request: ', query);
           res.redirect(url.format({
             pathname: await platform.platformAuthEndpoint(),
-            query: await Request.ltiAdvantageLogin(params, platform, state)
+            query: query
           }));
         } else {
           provMainDebug('Unregistered platform attempting connection: ' + iss);
