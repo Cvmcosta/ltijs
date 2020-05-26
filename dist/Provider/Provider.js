@@ -289,7 +289,7 @@ class Provider {
         if (!ltik) {
           const idtoken = req.body.id_token;
 
-          if (req.path === (0, _classPrivateFieldGet2.default)(this, _appUrl) && idtoken) {
+          if (idtoken) {
             // No ltik found but request contains an idtoken
             provMainDebug('Received idtoken for validation');
             const decoded = jwt.decode(idtoken, {
@@ -318,7 +318,7 @@ class Provider {
             const resourseId = valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'] ? valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'].id : 'NF';
             const activityId = courseId + '_' + resourseId;
 
-            const contextPath = _path.join(issuerCode, (0, _classPrivateFieldGet2.default)(this, _appUrl), activityId); // Mount platform token
+            const contextPath = _path.join(issuerCode, req.path, activityId); // Mount platform token
 
 
             const platformToken = {
@@ -362,15 +362,18 @@ class Provider {
               user: contextToken.user
             })) await this.Database.Insert(false, 'contexttoken', contextToken);
             res.cookie(contextPath, platformToken.user, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
-            provMainDebug('Generating LTIK and redirecting to main endpoint');
+            provMainDebug('Generating LTIK and redirecting to endpoint');
             const newLtikObj = {
               issuer: issuerCode,
-              path: (0, _classPrivateFieldGet2.default)(this, _appUrl),
+              path: req.path,
               activityId: activityId
             }; // Signing context token
 
             const newLtik = jwt.sign(newLtikObj, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
-            return res.redirect(307, req.baseUrl + (0, _classPrivateFieldGet2.default)(this, _appUrl) + '?ltik=' + newLtik);
+            const query = new URLSearchParams(req.query);
+            query.append('ltik', newLtik);
+            const urlSearchParams = query.toString();
+            return res.redirect(req.baseUrl + req.path + '?' + urlSearchParams);
           } else {
             if ((0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(req.path) !== -1 || (0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(req.path + '-method-' + req.method.toUpperCase()) !== -1) {
               provMainDebug('Accessing as whitelisted URL');

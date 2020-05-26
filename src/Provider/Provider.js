@@ -225,7 +225,7 @@ class Provider {
 
         if (!ltik) {
           const idtoken = req.body.id_token
-          if (req.path === this.#appUrl && idtoken) {
+          if (idtoken) {
             // No ltik found but request contains an idtoken
             provMainDebug('Received idtoken for validation')
             const decoded = jwt.decode(idtoken, { complete: true })
@@ -255,7 +255,7 @@ class Provider {
             const resourseId = valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'] ? valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'].id : 'NF'
             const activityId = courseId + '_' + resourseId
 
-            const contextPath = _path.join(issuerCode, this.#appUrl, activityId)
+            const contextPath = _path.join(issuerCode, req.path, activityId)
 
             // Mount platform token
             const platformToken = {
@@ -298,16 +298,20 @@ class Provider {
 
             res.cookie(contextPath, platformToken.user, this.#cookieOptions)
 
-            provMainDebug('Generating LTIK and redirecting to main endpoint')
+            provMainDebug('Generating LTIK and redirecting to endpoint')
             const newLtikObj = {
               issuer: issuerCode,
-              path: this.#appUrl,
+              path: req.path,
               activityId: activityId
             }
             // Signing context token
             const newLtik = jwt.sign(newLtikObj, this.#ENCRYPTIONKEY)
 
-            return res.redirect(307, req.baseUrl + this.#appUrl + '?ltik=' + newLtik)
+            const query = new URLSearchParams(req.query)
+            query.append('ltik', newLtik)
+            const urlSearchParams = query.toString()
+
+            return res.redirect(req.baseUrl + req.path + '?' + urlSearchParams)
           } else {
             if (this.#whitelistedUrls.indexOf(req.path) !== -1 || this.#whitelistedUrls.indexOf(req.path + '-method-' + req.method.toUpperCase()) !== -1) {
               provMainDebug('Accessing as whitelisted URL')
