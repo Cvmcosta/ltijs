@@ -31,7 +31,6 @@ class Database {
     // Creating database schemas
     const idTokenSchema = new Schema({
       iss: String,
-      issuerCode: String,
       user: String,
       roles: [String],
       userInfo: JSON,
@@ -42,8 +41,9 @@ class Database {
       createdAt: { type: Date, expires: 3600 * 24, default: Date.now }
     })
     const contextTokenSchema = new Schema({
-      path: String,
+      contextId: String,
       user: String,
+      path: String,
       deploymentId: String,
       targetLinkUri: String,
       context: JSON,

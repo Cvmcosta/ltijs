@@ -15,12 +15,8 @@ const DeepLinkingService = require('./Services/DeepLinking')
 const NamesAndRolesService = require('./Services/NamesAndRoles')
 
 const url = require('fast-url-parser')
-const _path = require('path')
 const jwt = require('jsonwebtoken')
 const winston = require('winston')
-const validUrl = require('valid-url')
-const crypto = require('crypto')
-const tldparser = require('tld-extract')
 
 const provAuthDebug = require('debug')('provider:auth')
 const provMainDebug = require('debug')('provider:main')
@@ -228,39 +224,33 @@ class Provider {
           if (idtoken) {
             // No ltik found but request contains an idtoken
             provMainDebug('Received idtoken for validation')
-            const decoded = jwt.decode(idtoken, { complete: true })
-            if (!decoded) throw new Error('Invalid JWT received')
 
-            // Rettrieves state
+            // Retrieves state
             const state = req.body.state
 
             // Retrieving validation parameters from cookies
-            let validationInfo = await this.Database.Get(false, 'validation', { state: state })
-            validationInfo = validationInfo[0]
+            provAuthDebug('Response state: ' + state)
+            const validationCookie = cookies['state' + state]
             const validationParameters = {
-              state: validationInfo ? validationInfo.state : false,
-              iss: validationInfo ? validationInfo.iss : false
+              iss: validationCookie
             }
 
-            const valid = await Auth.validateToken(idtoken, decoded, state, validationParameters, this.getPlatform, this.#ENCRYPTIONKEY, this.#logger, this.Database)
+            const valid = await Auth.validateToken(idtoken, validationParameters, this.getPlatform, this.#ENCRYPTIONKEY, this.#logger, this.Database)
 
             // Deleting validation info
             await this.Database.Delete('validation', { state: state })
 
             provAuthDebug('Successfully validated token!')
 
-            const issuerCode = 'plat' + encodeURIComponent(Buffer.from(valid.iss).toString('base64'))
-
             const courseId = valid['https://purl.imsglobal.org/spec/lti/claim/context'] ? valid['https://purl.imsglobal.org/spec/lti/claim/context'].id : 'NF'
-            const resourseId = valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'] ? valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'].id : 'NF'
-            const activityId = courseId + '_' + resourseId
+            const resourceId = valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'] ? valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'].id : 'NF'
 
-            const contextPath = _path.join(issuerCode, req.path, activityId)
+            const contextId = encodeURIComponent(valid.iss + courseId + '_' + resourceId) // Add deployment id for multi tenant support
+            const platformCode = encodeURIComponent('lti' + Buffer.from(valid.iss).toString('base64')) // Add deployment id for multi tenant support
 
             // Mount platform token
             const platformToken = {
               iss: valid.iss,
-              issuerCode: issuerCode,
               user: valid.sub,
               roles: valid['https://purl.imsglobal.org/spec/lti/claim/roles'],
               userInfo: {
@@ -276,11 +266,12 @@ class Provider {
             }
 
             // Store idToken in database
-            if (await this.Database.Delete('idtoken', { issuerCode: issuerCode, user: platformToken.user })) await this.Database.Insert(false, 'idtoken', platformToken)
+            if (await this.Database.Delete('idtoken', { iss: valid.iss, user: valid.sub })) await this.Database.Insert(false, 'idtoken', platformToken) // Add deployment id for multi tenant support
 
             // Mount context token
             const contextToken = {
-              path: contextPath,
+              contextId: contextId,
+              path: req.path,
               user: valid.sub,
               deploymentId: valid['https://purl.imsglobal.org/spec/lti/claim/deployment_id'],
               targetLinkUri: valid['https://purl.imsglobal.org/spec/lti/claim/target_link_uri'],
@@ -294,15 +285,19 @@ class Provider {
             }
 
             // Store contextToken in database
-            if (await this.Database.Delete('contexttoken', { path: contextPath, user: contextToken.user })) await this.Database.Insert(false, 'contexttoken', contextToken)
+            if (await this.Database.Delete('contexttoken', { contextId: contextId, user: valid.sub })) await this.Database.Insert(false, 'contexttoken', contextToken)
 
-            res.cookie(contextPath, platformToken.user, this.#cookieOptions)
+            // Deletes state cookie, and creates platform session cookie
+            res.clearCookie('state' + state, this.#cookieOptions)
+            res.cookie(platformCode, valid.sub, this.#cookieOptions)
 
             provMainDebug('Generating LTIK and redirecting to endpoint')
             const newLtikObj = {
-              issuer: issuerCode,
-              path: req.path,
-              activityId: activityId
+              platformUrl: valid.iss, // Add deployment id for multi tenant support
+              platformCode: platformCode,
+              contextId: contextId,
+              user: valid.sub,
+              s: state // Added state to make unique ltiks
             }
             // Signing context token
             const newLtik = jwt.sign(newLtikObj, this.#ENCRYPTIONKEY)
@@ -336,32 +331,26 @@ class Provider {
         }
         provMainDebug('LTIK successfully verified')
 
-        let user = false
+        const platformUrl = validLtik.platformUrl
+        const platformCode = validLtik.platformCode
+        const contextId = validLtik.contextId
+        let user = validLtik.user
 
-        const issuerCode = validLtik.issuer
-        const contextPath = _path.join(issuerCode, validLtik.path, validLtik.activityId)
-
-        // Matches path to cookie
         provMainDebug('Attempting to retrieve matching session cookie')
-        let contextTokenName
-        for (const key of Object.keys(cookies).sort((a, b) => b.length - a.length)) {
-          if (contextPath.indexOf(key) !== -1) {
-            user = cookies[key]
-            contextTokenName = key
-            break
-          }
+        const cookieUser = cookies[platformCode]
+        if (!cookieUser || user.toString() !== cookies[platformCode].toString()) {
+          user = false
         }
 
-        // Check if user already has session cookie stored in its browser
         if (user) {
           provAuthDebug('Session cookie found')
-          // Gets correspondent id token from database
-          let idToken = await this.Database.Get(false, 'idtoken', { issuerCode: issuerCode, user: user })
+          // Gets corresponding id token from database
+          let idToken = await this.Database.Get(false, 'idtoken', { iss: platformUrl, user: user }) // Add deployment id for multi tenant support
           if (!idToken) throw new Error('No id token found in database')
           idToken = idToken[0]
 
           // Gets correspondent context token from database
-          let contextToken = await this.Database.Get(false, 'contexttoken', { path: contextTokenName, user: user })
+          let contextToken = await this.Database.Get(false, 'contexttoken', { contextId: contextId, user: user })
           if (!contextToken) throw new Error('No context token found in database')
           contextToken = contextToken[0]
           idToken.platformContext = contextToken
@@ -369,6 +358,7 @@ class Provider {
           // Creating local variables
           res.locals.context = contextToken
           res.locals.token = idToken
+          res.locals.ltik = ltik
 
           provMainDebug('Passing request to next handler')
           return next()
@@ -394,16 +384,16 @@ class Provider {
       try {
         const iss = params.iss
         provMainDebug('Receiving a login request from: ' + iss)
-        const platform = await this.getPlatform(iss)
+        const platform = await this.getPlatform(iss) // Add deployment id for multi tenant support
         if (platform) {
           provMainDebug('Redirecting to platform authentication endpoint')
 
           // Create state parameter used to validade authentication response
-          const state = encodeURIComponent(crypto.randomBytes(8).toString('hex'))
+          const state = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
           provMainDebug('Generated state: ', state)
 
           // Setting up validation info
-          await this.Database.Insert(false, 'validation', { state: state, iss: iss })
+          res.cookie('state' + state, iss, this.#cookieOptions) // Add deployment id for multi tenant support
 
           // Redirect to authentication endpoint
           const query = await Request.ltiAdvantageLogin(params, platform, state)
@@ -734,81 +724,23 @@ class Provider {
   }
 
   /**
-   * @description Redirect to a new location and sets it's cookie if the location represents a separate resource
-   * @param {Object} res - Express response object
-   * @param {String} path - Redirect path
-   * @param {Object} [options] - Redirection options
-   * @param {Boolean} [options.isNewResource = false] - If true creates new resource and its cookie
-   * @param {Boolean} [options.ignoreRoot = false] - If true deletes de main path (/) database tokenb on redirect, this saves storage space and is recommended if you are using your main root only to redirect
-   * @example lti.generatePathCookie(response, '/path', { isNewResource: true })
+   * @description Redirect to a new location and sets path variable if the location represents a separate resource.
+   * @param {Object} res - Express response object.
+   * @param {String} path - Redirect path.
+   * @param {Object} [options] - Redirection options.
+   * @param {Boolean} [options.isNewResource = false] - If changes the path variable on the context token.
+   * @example lti.redirect(response, '/path', { isNewResource: true })
    */
   async redirect (res, path, options) {
-    if (this.#whitelistedUrls.indexOf(path) !== -1) return res.redirect(path)
-    const code = res.locals.token.issuerCode
-    const courseId = res.locals.token.platformContext.context ? res.locals.token.platformContext.context.id : 'NF'
-    const resourseId = res.locals.token.platformContext.resource ? res.locals.token.platformContext.resource.id : 'NF'
-    const activityId = courseId + '_' + resourseId
+    if (!res.locals.token) return res.redirect(path) // If no token is present, just redirects
+    provMainDebug('Redirecting to: ', path)
+    const token = res.locals.token
     const pathParts = url.parse(path)
-    const oldpath = res.locals.token.platformContext.path
 
-    // Create new cookie name if isNewResource is set
-    const cookiePath = (options && options.isNewResource) ? url.format({
-      protocol: pathParts.protocol,
-      hostname: pathParts.hostname,
-      pathname: pathParts.pathname,
-      port: pathParts.port,
-      auth: pathParts.auth
-    }) : oldpath
-
-    let token = {
-      issuer: code,
-      path: cookiePath,
-      activityId: activityId
-    }
-    // Signing context token
-    token = jwt.sign(token, this.#ENCRYPTIONKEY)
-
-    // Checking the type of redirect
-    const externalRequest = validUrl.isWebUri(path)
-
-    if ((options && options.isNewResource) || externalRequest) {
-      provMainDebug('Setting up path cookie for this resource with path: ' + path)
-      const cookieOptions = JSON.parse(JSON.stringify(this.#cookieOptions))
-      if (externalRequest) {
-        try {
-          const domain = tldparser(externalRequest).domain
-          cookieOptions.sameSite = 'None'
-          cookieOptions.secure = true
-          cookieOptions.domain = '.' + domain
-          provMainDebug('External request found for domain: .' + domain)
-        } catch {
-          provMainDebug('Could not retrieve tld for external redirect. Proceeding as regular request...')
-        }
-      }
-
-      const contextPath = _path.join(code, cookiePath, activityId)
-      const rootPath = _path.join(code, this.#appUrl, activityId)
-      res.cookie(contextPath, res.locals.token.user, cookieOptions)
-
-      const newContextToken = {
-        resource: res.locals.token.platformContext.resource,
-        custom: res.locals.token.platformContext.custom,
-        context: res.locals.token.platformContext.context,
-        path: contextPath,
-        user: res.locals.token.platformContext.user,
-        deploymentId: res.locals.token.platformContext.deploymentId,
-        targetLinkUri: res.locals.token.platformContext.targetLinkUri,
-        launchPresentation: res.locals.token.platformContext.launchPresentation,
-        messageType: res.locals.token.platformContext.messageType,
-        version: res.locals.token.platformContext.version,
-        deepLinkingSettings: res.locals.token.platformContext.deepLinkingSettings
-      }
-
-      if (await this.Database.Delete('contexttoken', { path: contextPath, user: res.locals.token.user })) await this.Database.Insert(false, 'contexttoken', newContextToken)
-      if (options && options.ignoreRoot) {
-        this.Database.Delete('contexttoken', { path: rootPath, user: res.locals.token.user })
-        res.clearCookie(rootPath, this.#cookieOptions)
-      }
+    // Updates path variable if this is a new resource
+    if ((options && options.isNewResource)) {
+      provMainDebug('Changing context token path to: ' + path)
+      await this.Database.Modify(false, 'contexttoken', { contextId: token.platformContext.contextId, user: res.locals.token.user }, { path: path })
     }
 
     // Formatting path with queries
@@ -830,12 +762,11 @@ class Provider {
       auth: pathParts.auth,
       query: {
         ...queries,
-        ltik: token
+        ltik: res.locals.ltik
       }
     })
 
-    // Sets allow credentials header and redirects to path with queries
-    res.header('Access-Control-Allow-Credentials', 'true')
+    // Redirects to path with queries
     return res.redirect(formattedPath)
   }
 }

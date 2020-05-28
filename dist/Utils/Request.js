@@ -19,7 +19,7 @@ class Request {
       client_id: request.client_id || (await platform.platformClientId()),
       redirect_uri: request.target_link_uri,
       login_hint: request.login_hint,
-      nonce: crypto.randomBytes(16).toString('base64'),
+      nonce: crypto.randomBytes(20).toString('base64'),
       prompt: 'none',
       state: state
     };

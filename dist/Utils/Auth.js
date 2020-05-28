@@ -66,8 +66,6 @@ class Auth {
   /**
      * @description Resolves a promisse if the token is valid following LTI 1.3 standards.
      * @param {String} token - JWT token to be verified.
-     * @param {Object} decoded - JWT decoded to give acess to payload.
-     * @param {String} state - State validation parameter.
      * @param {Object} validationParameters - Stored validation parameters retrieved from database.
      * @param {Function} getPlatform - getPlatform function to get the platform that originated the token.
      * @param {String} ENCRYPTIONKEY - Encription key.
@@ -75,13 +73,13 @@ class Auth {
      */
 
 
-  static async validateToken(token, decoded, state, validationParameters, getPlatform, ENCRYPTIONKEY, logger, Database) {
+  static async validateToken(token, validationParameters, getPlatform, ENCRYPTIONKEY, logger, Database) {
+    const decoded = jwt.decode(token, {
+      complete: true
+    });
+    if (!decoded) throw new Error('Invalid JWT received');
     const kid = decoded.header.kid;
     const alg = decoded.header.alg;
-    provAuthDebug('Attempting to validate state');
-    provAuthDebug('Request state: ' + validationParameters.state);
-    provAuthDebug('Response state: ' + state);
-    if (!validationParameters.state || validationParameters.state !== state) throw new Error('StateClaimDoesNotMatch');
     provAuthDebug('Attempting to validate iss claim');
     provAuthDebug('Request Iss claim: ' + validationParameters.iss);
     provAuthDebug('Response Iss claim: ' + decoded.payload.iss);

@@ -55,7 +55,6 @@ class Database {
 
     const idTokenSchema = new Schema({
       iss: String,
-      issuerCode: String,
       user: String,
       roles: [String],
       userInfo: JSON,
@@ -70,8 +69,9 @@ class Database {
       }
     });
     const contextTokenSchema = new Schema({
-      path: String,
+      contextId: String,
       user: String,
+      path: String,
       deploymentId: String,
       targetLinkUri: String,
       context: JSON,
