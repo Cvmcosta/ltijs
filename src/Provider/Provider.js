@@ -42,6 +42,8 @@ class Provider {
 
   #logger = false
 
+  #devMode = false
+
   #cookieOptions = {
     secure: false,
     httpOnly: true,
@@ -99,6 +101,7 @@ class Provider {
      * @param {Object} [options.cookies] - Cookie configuration. Allows you to configure, sameSite and secure parameters.
      * @param {Boolean} [options.cookies.secure = false] - Cookie secure parameter. If true, only allows cookies to be passed over https.
      * @param {String} [options.cookies.sameSite = 'Lax'] - Cookie sameSite parameter. If cookies are going to be set across domains, set this parameter to 'None'.
+     * @param {Boolean} [options.devMode = false] - If true, does not require state and session cookies to be present (If present, they are still validated). This allows ltijs to work on development environments where cookies cannot be set. THIS SHOULD NOT BE USED IN A PRODUCTION ENVIRONMENT.
      */
   constructor (encryptionkey, database, options) {
     if (options && options.https && (!options.ssl || !options.ssl.key || !options.ssl.cert)) throw new Error('No ssl Key  or Certificate found for local https configuration.')
@@ -117,6 +120,7 @@ class Provider {
     if (options && options.sessionTimeoutUrl) this.#sessionTimeoutUrl = options.sessionTimeoutUrl
     if (options && options.invalidTokenUrl) this.#invalidTokenUrl = options.invalidTokenUrl
     if (options && options.keysetUrl) this.#keysetUrl = options.keysetUrl
+    if (options && options.devMode === true) this.#devMode = true
 
     // Cookie options
     if (options && options.cookies) {
@@ -231,14 +235,15 @@ class Provider {
             // Retrieving validation parameters from cookies
             provAuthDebug('Response state: ' + state)
             const validationCookie = cookies['state' + state]
+
             const validationParameters = {
               iss: validationCookie
             }
 
-            const valid = await Auth.validateToken(idtoken, validationParameters, this.getPlatform, this.#ENCRYPTIONKEY, this.#logger, this.Database)
+            const valid = await Auth.validateToken(idtoken, this.#devMode, validationParameters, this.getPlatform, this.#ENCRYPTIONKEY, this.#logger, this.Database)
 
-            // Deleting validation info
-            await this.Database.Delete('validation', { state: state })
+            // Deletes state validation cookie
+            res.clearCookie('state' + state, this.#cookieOptions)
 
             provAuthDebug('Successfully validated token!')
 
@@ -287,8 +292,7 @@ class Provider {
             // Store contextToken in database
             if (await this.Database.Delete('contexttoken', { contextId: contextId, user: valid.sub })) await this.Database.Insert(false, 'contexttoken', contextToken)
 
-            // Deletes state cookie, and creates platform session cookie
-            res.clearCookie('state' + state, this.#cookieOptions)
+            // Creates platform session cookie
             res.cookie(platformCode, valid.sub, this.#cookieOptions)
 
             provMainDebug('Generating LTIK and redirecting to endpoint')
@@ -338,12 +342,13 @@ class Provider {
 
         provMainDebug('Attempting to retrieve matching session cookie')
         const cookieUser = cookies[platformCode]
-        if (!cookieUser || user.toString() !== cookies[platformCode].toString()) {
-          user = false
-        }
+        if (!cookieUser) {
+          if (!this.#devMode) user = false
+          else { provMainDebug('Dev Mode enabled: Missing session cookies will be ignored') }
+        } else if (user.toString() !== cookieUser.toString()) user = false
 
         if (user) {
-          provAuthDebug('Session cookie found')
+          provAuthDebug('Valid session found')
           // Gets corresponding id token from database
           let idToken = await this.Database.Get(false, 'idtoken', { iss: platformUrl, user: user }) // Add deployment id for multi tenant support
           if (!idToken) throw new Error('No id token found in database')
@@ -393,11 +398,14 @@ class Provider {
           provMainDebug('Generated state: ', state)
 
           // Setting up validation info
-          res.cookie('state' + state, iss, this.#cookieOptions) // Add deployment id for multi tenant support
+          const cookieOptions = JSON.parse(JSON.stringify(this.#cookieOptions))
+          cookieOptions.maxAge = 60 * 10 * 1000 // Adding max age to state cookie = 10min
+          res.cookie('state' + state, iss, cookieOptions) // Add deployment id for multi tenant support
 
           // Redirect to authentication endpoint
           const query = await Request.ltiAdvantageLogin(params, platform, state)
-          provMainDebug('Login request: ', query)
+          provMainDebug('Login request: ')
+          provMainDebug(query)
           res.redirect(url.format({
             pathname: await platform.platformAuthEndpoint(),
             query: query
@@ -453,7 +461,7 @@ class Provider {
       if (options && options.silent) conf.silent = options.silent
       // Starts server on given port
 
-      if (options && options.serverless) console.log('Ltijs started in experimental serverless mode!')
+      if (options && options.serverless) console.log('Ltijs started in serverless mode...')
       else {
         await this.#server.listen(conf.port)
         provMainDebug('Ltijs started listening on port: ', conf.port)
@@ -470,6 +478,7 @@ class Provider {
                       ' |______|_|  |_____(_)____/|_____/ \n\n', message)
         }
       }
+      if (this.#devMode) console.log('\nStarting in Dev Mode, state validation and session cookies will not be required. THIS SHOULD NOT BE USED IN A PRODUCTION ENVIRONMENT!')
 
       // Sets up gracefull shutdown
       process.on('SIGINT', async () => {

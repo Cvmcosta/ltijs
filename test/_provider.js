@@ -25,7 +25,7 @@ describe('Testing Provider', function () {
     const fn = () => {
       lti = new LTI('LTIKEY',
         { url: 'mongodb://127.0.0.1/testdatabase' },
-        { appUrl: '/', loginUrl: '/login', staticPath: path.join(__dirname, '/views/') })
+        { appUrl: '/', loginUrl: '/login', staticPath: path.join(__dirname, '/views/'), devMode: true })
       return lti
     }
     expect(fn).to.not.throw(Error)
@@ -199,7 +199,6 @@ describe('Testing Provider', function () {
       ]
     })
     const state = encodeURIComponent(crypto.randomBytes(16).toString('hex'))
-    await lti.Database.Insert(false, 'validation', { state: state, iss: 'http://localhost/moodle' })
 
     const url = await lti.appUrl()
     return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: state }).set('Cookie', ['plataHR0cDovL2xvY2FsaG9zdC9tb29kbGU%3D/3_5=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
@@ -299,7 +298,6 @@ describe('Testing Provider', function () {
     })
 
     const state = encodeURIComponent(crypto.randomBytes(16).toString('hex'))
-    await lti.Database.Insert(false, 'validation', { state: state, iss: 'http://localhost/moodle' })
 
     const url = await lti.appUrl()
     return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: state }).set('Cookie', ['plataHR0cDovL2xvY2FsaG9zdC9tb29kbGU%3D/3_5=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).set('host', 'http://localhost').then(res => {

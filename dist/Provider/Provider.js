@@ -79,6 +79,7 @@ class Provider {
      * @param {Object} [options.cookies] - Cookie configuration. Allows you to configure, sameSite and secure parameters.
      * @param {Boolean} [options.cookies.secure = false] - Cookie secure parameter. If true, only allows cookies to be passed over https.
      * @param {String} [options.cookies.sameSite = 'Lax'] - Cookie sameSite parameter. If cookies are going to be set across domains, set this parameter to 'None'.
+     * @param {Boolean} [options.devMode = false] - If true, does not require state and session cookies to be present (If present, they are still validated). This allows ltijs to work on development environments where cookies cannot be set. THIS SHOULD NOT BE USED IN A PRODUCTION ENVIRONMENT.
      */
   constructor(encryptionkey, database, options) {
     _loginUrl.set(this, {
@@ -117,6 +118,11 @@ class Provider {
     });
 
     _logger.set(this, {
+      writable: true,
+      value: false
+    });
+
+    _devMode.set(this, {
       writable: true,
       value: false
     });
@@ -189,7 +195,8 @@ class Provider {
     if (options && options.loginUrl) (0, _classPrivateFieldSet2.default)(this, _loginUrl, options.loginUrl);
     if (options && options.sessionTimeoutUrl) (0, _classPrivateFieldSet2.default)(this, _sessionTimeoutUrl, options.sessionTimeoutUrl);
     if (options && options.invalidTokenUrl) (0, _classPrivateFieldSet2.default)(this, _invalidTokenUrl, options.invalidTokenUrl);
-    if (options && options.keysetUrl) (0, _classPrivateFieldSet2.default)(this, _keysetUrl, options.keysetUrl); // Cookie options
+    if (options && options.keysetUrl) (0, _classPrivateFieldSet2.default)(this, _keysetUrl, options.keysetUrl);
+    if (options && options.devMode === true) (0, _classPrivateFieldSet2.default)(this, _devMode, true); // Cookie options
 
     if (options && options.cookies) {
       if (options.cookies.sameSite) {
@@ -292,11 +299,9 @@ class Provider {
             const validationParameters = {
               iss: validationCookie
             };
-            const valid = await Auth.validateToken(idtoken, validationParameters, this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger), this.Database); // Deleting validation info
+            const valid = await Auth.validateToken(idtoken, (0, _classPrivateFieldGet2.default)(this, _devMode), validationParameters, this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger), this.Database); // Deletes state validation cookie
 
-            await this.Database.Delete('validation', {
-              state: state
-            });
+            res.clearCookie('state' + state, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
             provAuthDebug('Successfully validated token!');
             const courseId = valid['https://purl.imsglobal.org/spec/lti/claim/context'] ? valid['https://purl.imsglobal.org/spec/lti/claim/context'].id : 'NF';
             const resourceId = valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'] ? valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'].id : 'NF';
@@ -345,9 +350,8 @@ class Provider {
             if (await this.Database.Delete('contexttoken', {
               contextId: contextId,
               user: valid.sub
-            })) await this.Database.Insert(false, 'contexttoken', contextToken); // Deletes state cookie, and creates platform session cookie
+            })) await this.Database.Insert(false, 'contexttoken', contextToken); // Creates platform session cookie
 
-            res.clearCookie('state' + state, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
             res.cookie(platformCode, valid.sub, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
             provMainDebug('Generating LTIK and redirecting to endpoint');
             const newLtikObj = {
@@ -399,12 +403,14 @@ class Provider {
         provMainDebug('Attempting to retrieve matching session cookie');
         const cookieUser = cookies[platformCode];
 
-        if (!cookieUser || user.toString() !== cookies[platformCode].toString()) {
-          user = false;
-        }
+        if (!cookieUser) {
+          if (!(0, _classPrivateFieldGet2.default)(this, _devMode)) user = false;else {
+            provMainDebug('Dev Mode enabled: Missing session cookies will be ignored');
+          }
+        } else if (user.toString() !== cookieUser.toString()) user = false;
 
         if (user) {
-          provAuthDebug('Session cookie found'); // Gets corresponding id token from database
+          provAuthDebug('Valid session found'); // Gets corresponding id token from database
 
           let idToken = await this.Database.Get(false, 'idtoken', {
             iss: platformUrl,
@@ -463,11 +469,15 @@ class Provider {
           const state = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``);
           provMainDebug('Generated state: ', state); // Setting up validation info
 
-          res.cookie('state' + state, iss, (0, _classPrivateFieldGet2.default)(this, _cookieOptions)); // Add deployment id for multi tenant support
+          const cookieOptions = JSON.parse(JSON.stringify((0, _classPrivateFieldGet2.default)(this, _cookieOptions)));
+          cookieOptions.maxAge = 60 * 10 * 1000; // Adding max age to state cookie = 10min
+
+          res.cookie('state' + state, iss, cookieOptions); // Add deployment id for multi tenant support
           // Redirect to authentication endpoint
 
           const query = await Request.ltiAdvantageLogin(params, platform, state);
-          provMainDebug('Login request: ', query);
+          provMainDebug('Login request: ');
+          provMainDebug(query);
           res.redirect(url.format({
             pathname: await platform.platformAuthEndpoint(),
             query: query
@@ -523,7 +533,7 @@ class Provider {
       if (options && options.port) conf.port = options.port;
       if (options && options.silent) conf.silent = options.silent; // Starts server on given port
 
-      if (options && options.serverless) console.log('Ltijs started in experimental serverless mode!');else {
+      if (options && options.serverless) console.log('Ltijs started in serverless mode...');else {
         await (0, _classPrivateFieldGet2.default)(this, _server).listen(conf.port);
         provMainDebug('Ltijs started listening on port: ', conf.port); // Startup message
 
@@ -532,7 +542,8 @@ class Provider {
         if (!conf.silent) {
           console.log('  _   _______ _____       _  _____\n' + ' | | |__   __|_   _|     | |/ ____|\n' + ' | |    | |    | |       | | (___  \n' + ' | |    | |    | |   _   | |\\___ \\ \n' + ' | |____| |   _| |_ | |__| |____) |\n' + ' |______|_|  |_____(_)____/|_____/ \n\n', message);
         }
-      } // Sets up gracefull shutdown
+      }
+      if ((0, _classPrivateFieldGet2.default)(this, _devMode)) console.log('\nStarting in Dev Mode, state validation and session cookies will not be required. THIS SHOULD NOT BE USED IN A PRODUCTION ENVIRONMENT!'); // Sets up gracefull shutdown
 
       process.on('SIGINT', async () => {
         await this.close(options);
@@ -921,6 +932,8 @@ var _whitelistedUrls = new WeakMap();
 var _ENCRYPTIONKEY = new WeakMap();
 
 var _logger = new WeakMap();
+
+var _devMode = new WeakMap();
 
 var _cookieOptions = new WeakMap();
 
