@@ -321,6 +321,7 @@ class Provider {
                 email: valid.email
               },
               platformInfo: valid['https://purl.imsglobal.org/spec/lti/claim/tool_platform'],
+              deploymentId: valid['https://purl.imsglobal.org/spec/lti/claim/deployment_id'],
               lis: valid['https://purl.imsglobal.org/spec/lti/claim/lis'],
               endpoint: valid['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint'],
               namesRoles: valid['https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice']
@@ -336,7 +337,6 @@ class Provider {
               contextId: contextId,
               path: req.path,
               user: valid.sub,
-              deploymentId: valid['https://purl.imsglobal.org/spec/lti/claim/deployment_id'],
               targetLinkUri: valid['https://purl.imsglobal.org/spec/lti/claim/target_link_uri'],
               context: valid['https://purl.imsglobal.org/spec/lti/claim/context'],
               resource: valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'],
