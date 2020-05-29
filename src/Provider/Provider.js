@@ -50,15 +50,15 @@ class Provider {
     signed: true
   }
 
-  #connectCallback = (connection, req, res, next) => { return res.send('It works!') }
+  #connectCallback = async (connection, req, res, next) => { return next() }
 
-  #deepLinkingCallback = (connection, req, res, next) => { return res.send('Deep Linking works!') }
+  #deepLinkingCallback = async (connection, req, res, next) => { return next() }
 
-  #sessionTimedOut = (req, res) => {
+  #sessionTimeoutCallback = async (req, res) => {
     return res.status(401).send('Token invalid or expired. Please reinitiate login.')
   }
 
-  #invalidToken = (req, res) => {
+  #invalidTokenCallback = async (req, res) => {
     return res.status(401).send('Invalid token. Please reinitiate login.')
   }
 
@@ -423,10 +423,10 @@ class Provider {
 
     // Session timeout, invalid token and keyset urls
     this.app.all(this.#sessionTimeoutUrl, async (req, res, next) => {
-      this.#sessionTimedOut(req, res, next)
+      this.#sessionTimeoutCallback(req, res, next)
     })
     this.app.all(this.#invalidTokenUrl, async (req, res, next) => {
-      this.#invalidToken(req, res, next)
+      this.#invalidTokenCallback(req, res, next)
     })
     this.app.get(this.#keysetUrl, async (req, res, next) => {
       this.#keyset(req, res, next)
@@ -515,61 +515,73 @@ class Provider {
   }
 
   /**
-     * @description Sets the callback function called whenever theres a sucessfull connection, exposing a Conection object containing the id_token decoded parameters.
-     * @param {Function} _connectCallback - Function that is going to be called everytime a platform sucessfully connects to the provider.
-     * @param {Object} [options] - Options configuring the usage of cookies to pass the Id Token data to the client.
-     * @param {Boolean} [options.secure = false] - Secure property of the cookie.
-     * @param {String} [options.sameSite = 'Lax'] - sameSite property of the cookie.
-     * @param {Function} [options.sessionTimeout] - Route function executed everytime the session expires. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}).
-     * @param {Function} [options.invalidToken] - Route function executed everytime the system receives an invalid token or cookie. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}).
-     * @example .onConnect((conection, request, response)=>{response.send(connection)}, {secure: true})
+     * @description Sets the callback function called whenever there's a sucessfull lti 1.3 launch, exposing a "token" object containing the idtoken information.
+     * @param {Function} _connectCallback - Callback function called everytime a platform sucessfully launches to the provider.
+     * @example .onConnect((token, request, response)=>{response.send('OK')})
      * @returns {true}
      */
   onConnect (_connectCallback, options) {
     if (options) {
+      if (options.sameSite || options.secure) console.log('Deprecation Warning: The optional parameters of the onConnect() method are now deprecated and will be removed in the 6.0 release. Cookie parameters can be found in the main Ltijs constructor options: ... { cookies: { secure: true, sameSite: \'None\' }.')
+
+      if (options.sessionTimeout || options.invalidToken) console.log('Deprecation Warning: The optional parameters of the onConnect() method are now deprecated and will be removed in the 6.0 release. Invalid token and Session Timeout routes can now be set with the onSessionTimeout() and onInvalidToken() methods.')
+
       if (options.sameSite) {
         this.#cookieOptions.sameSite = options.sameSite
         if (options.sameSite.toLowerCase() === 'none') this.#cookieOptions.secure = true
       }
       if (options.secure === true) this.#cookieOptions.secure = true
-      if (options.sessionTimeout) this.#sessionTimedOut = options.sessionTimeout
-      if (options.invalidToken) this.#invalidToken = options.invalidToken
+      if (options.sessionTimeout) this.#sessionTimeoutCallback = options.sessionTimeout
+      if (options.invalidToken) this.#invalidTokenCallback = options.invalidToken
     }
 
     if (_connectCallback) {
       this.#connectCallback = _connectCallback
       return true
     }
-    throw new Error('Missing callback')
+    throw new Error('MissingCallback')
   }
 
   /**
-     * @description Sets the callback function called whenever theres a sucessfull deep linking request, exposing a Conection object containing the id_token decoded parameters.
-     * @param {Function} _deepLinkingCallback - Function that is going to be called everytime a platform sucessfully launches a deep linking request.
-     * @param {Object} [options] - Options configuring the usage of cookies to pass the Id Token data to the client.
-     * @param {Boolean} [options.secure = false] - Secure property of the cookie.
-     * @param {String} [options.sameSite = 'Lax'] - sameSite property of the cookie.
-     * @param {Function} [options.sessionTimeout] - Route function executed everytime the session expires. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}).
-     * @param {Function} [options.invalidToken] - Route function executed everytime the system receives an invalid token or cookie. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}).
-     * @example .onDeepLinking((conection, request, response)=>{response.send(connection)}, {secure: true})
-     * @returns {true}
-     */
-  onDeepLinking (_deepLinkingCallback, options) {
-    if (options) {
-      if (options.sameSite) {
-        this.#cookieOptions.sameSite = options.sameSite
-        if (options.sameSite.toLowerCase() === 'none') this.#cookieOptions.secure = true
-      }
-      if (options.secure === true) this.#cookieOptions.secure = true
-      if (options.sessionTimeout) this.#sessionTimedOut = options.sessionTimeout
-      if (options.invalidToken) this.#invalidToken = options.invalidToken
-    }
-
+   * @description Sets the callback function called whenever there's a sucessfull deep linking launch, exposing a "token" object containing the idtoken information.
+   * @param {Function} _deepLinkingCallback - Callback function called everytime a platform sucessfully launches a deep linking request.
+   * @example .onDeepLinking((token, request, response)=>{response.send('OK')})
+   * @returns {true}
+   */
+  onDeepLinking (_deepLinkingCallback) {
     if (_deepLinkingCallback) {
       this.#deepLinkingCallback = _deepLinkingCallback
       return true
     }
-    throw new Error('Missing callback')
+    throw new Error('MissingCallback')
+  }
+
+  /**
+   * @description Sets the callback function called when no valid session is found during a request validation.
+   * @param {Function} _sessionTimeoutCallback - Callback method.
+   * @example .onSessionTimeout((request, response)=>{response.send('Session timeout')})
+   * @returns {true}
+   */
+  onSessionTimeout (_sessionTimeoutCallback) {
+    if (_sessionTimeoutCallback) {
+      this.#sessionTimeoutCallback = _sessionTimeoutCallback
+      return true
+    }
+    throw new Error('MissingCallback')
+  }
+
+  /**
+   * @description Sets the callback function called when the token received fails to be validated.
+   * @param {Function} _invalidTokenCallback - Callback method.
+   * @example .onInvalidToken((request, response)=>{response.send('Invalid token')})
+   * @returns {true}
+   */
+  onInvalidToken (_invalidTokenCallback) {
+    if (_invalidTokenCallback) {
+      this.#invalidTokenCallback = _invalidTokenCallback
+      return true
+    }
+    throw new Error('MissingCallback')
   }
 
   /**
@@ -581,7 +593,7 @@ class Provider {
   }
 
   /**
-   * @description Gets the main application Url that will receive the final decoded Idtoken.
+   * @description Gets the main application Url that will receive the final decoded Idtoken at the end of a successful launch.
    * @returns {String}
    */
   appUrl () {
