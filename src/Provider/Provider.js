@@ -7,7 +7,7 @@ const Server = require('../Utils/Server')
 const Request = require('../Utils/Request')
 const Platform = require('../Utils/Platform')
 const Auth = require('../Utils/Auth')
-const Mongodb = require('../Utils/Database')
+const DB = require('../Utils/Database')
 const Keyset = require('../Utils/Keyset')
 
 const GradeService = require('./Services/Grade')
@@ -103,7 +103,7 @@ class Provider {
      * @param {String} [options.cookies.sameSite = 'Lax'] - Cookie sameSite parameter. If cookies are going to be set across domains, set this parameter to 'None'.
      * @param {Boolean} [options.devMode = false] - If true, does not require state and session cookies to be present (If present, they are still validated). This allows ltijs to work on development environments where cookies cannot be set. THIS SHOULD NOT BE USED IN A PRODUCTION ENVIRONMENT.
      */
-  constructor (encryptionkey, database, options) {
+  setup (encryptionkey, database, options) {
     if (options && options.https && (!options.ssl || !options.ssl.key || !options.ssl.cert)) throw new Error('No ssl Key  or Certificate found for local https configuration.')
     if (!encryptionkey) throw new Error('Encryptionkey parameter missing in options.')
     if (!database) throw new Error('Missing database configurations.')
@@ -112,8 +112,8 @@ class Provider {
      * @description Database object.
      */
     this.Database = null
-    if (!database.plugin) this.Database = new Mongodb(database)
-    else this.Database = database.plugin
+    if (!database.plugin) this.Database = DB(database)
+    else throw new Error('Database plugins are not yet supported with version 5.0 due to datbae structural changes.')
 
     if (options && options.appUrl) this.#appUrl = options.appUrl
     if (options && options.loginUrl) this.#loginUrl = options.loginUrl
@@ -792,4 +792,4 @@ class Provider {
   }
 }
 
-module.exports = Provider
+module.exports = new Provider()

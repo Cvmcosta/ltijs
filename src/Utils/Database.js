@@ -268,4 +268,9 @@ class Database {
   }
 }
 
-module.exports = Database
+module.exports = (options, plugin) => { // Add plugin funcionality back
+  if (!Database.instance) {
+    Database.instance = new Database(options)
+  }
+  return Database.instance
+}
