@@ -76,7 +76,7 @@ class Provider {
   #server
 
   /**
-     * @description Exposes methods for easy manipualtion of the LTI 1.3 standard as a LTI Provider and a "server" object to manipulate the Express instance.
+     * @description Provider configuration method.
      * @param {String} encryptionkey - Secret used to sign cookies and encrypt other info.
      * @param {Object} database - The Database configurations to open and manage connection, uses MongoDB Driver.
      * @param {String} [database.url] - Database Url (Ex: mongodb://localhost/applicationdb).
