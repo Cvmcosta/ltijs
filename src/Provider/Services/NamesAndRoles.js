@@ -56,11 +56,12 @@ class NamesAndRoles {
       }
       if (options && options.pages) provNamesAndRolesServiceDebug('Maximum number of pages retrieved: ' + options.pages)
 
-      query = new URLSearchParams(query)
+      if (query.length > 0) query = new URLSearchParams(query)
+      else query = false
 
-      const membershipsEndpoint = idtoken.namesRoles.context_memberships_url
+      let next = idtoken.namesRoles.context_memberships_url
+      if (options && options.url) next = options.url
       let result
-      let next = (options && options.url) ? options.url : false
       let curPage = 1
 
       do {
@@ -71,7 +72,7 @@ class NamesAndRoles {
         let response
         provNamesAndRolesServiceDebug('Member pages found: ', curPage)
 
-        if (!next) response = await got.get(membershipsEndpoint, { searchParams: query, headers: { Authorization: tokenRes.token_type + ' ' + tokenRes.access_token, Accept: 'application/vnd.ims.lti-nrps.v2.membershipcontainer+json' } })
+        if (query && curPage === 1) response = await got.get(next, { searchParams: query, headers: { Authorization: tokenRes.token_type + ' ' + tokenRes.access_token, Accept: 'application/vnd.ims.lti-nrps.v2.membershipcontainer+json' } })
         else response = await got.get(next, { headers: { Authorization: tokenRes.token_type + ' ' + tokenRes.access_token, Accept: 'application/vnd.ims.lti-nrps.v2.membershipcontainer+json' } })
 
         const headers = response.headers
