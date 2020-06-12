@@ -49,7 +49,7 @@ class Grade {
         accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly')
         provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']')
       }
-      
+
       const lineitemsEndpoint = idtoken.endpoint.lineitems
 
       let queryParams = []
@@ -61,7 +61,7 @@ class Grade {
       }
       queryParams = new URLSearchParams(queryParams)
 
-      const lineItems = await got.get(lineitemsEndpoint, { searchParams: queryParams, headers: { Authorization: accessToken.token_type + ' ' + accessToken.access_token,  Accept: 'application/vnd.ims.lis.v2.lineitemcontainer+json' } }).json()
+      const lineItems = await got.get(lineitemsEndpoint, { searchParams: queryParams, headers: { Authorization: accessToken.token_type + ' ' + accessToken.access_token, Accept: 'application/vnd.ims.lis.v2.lineitemcontainer+json' } }).json()
       return lineItems
     } catch (err) {
       provGradeServiceDebug(err.message)
@@ -94,7 +94,7 @@ class Grade {
           provGradeServiceDebug('Platform not found, returning false')
           return false
         }
-    
+
         provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']')
 
         accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem')
@@ -120,10 +120,10 @@ class Grade {
    * @description Deletes lineitems from a given platform
    * @param {Object} idtoken - Idtoken for the user
    * @param {Object} [options] - Options object
-   * @param {Boolean} [options.resourceLinkId = false] - Filters based on the resourceLinkId
+   * @param {Boolean} [options.resourceLinkId = false] - If true, filters lineitem based on the resourceLinkId of the resource that originated the request. Defaults to false
    * @param {String} [options.resourceId = false] - Filters based on the resourceId
    * @param {String} [options.tag = false] - Filters based on the tag
-   * @param {Number} [options.limit = false] - Sets a maximum number of lineitems to be returned
+   * @param {Number} [options.limit = false] - Sets a maximum number of lineitems to be deleted
    */
   async deleteLineItems (idtoken, options) {
     if (!idtoken) { provGradeServiceDebug('IdToken object missing.'); return false }
@@ -141,7 +141,7 @@ class Grade {
       provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']')
       const accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem')
       provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']')
-      
+
       const lineItems = await this.getLineItems(idtoken, options, accessToken)
 
       let success = true
@@ -200,8 +200,7 @@ class Grade {
       if (options) {
         if (options.resourceLinkId === false) options.resourceLinkId = false
         else options.resourceLinkId = true
-      }
-      else options = { resourceLinkId: true }
+      } else options = { resourceLinkId: true }
 
       const lineItems = await this.getLineItems(idtoken, options, accessToken)
 
@@ -224,7 +223,7 @@ class Grade {
           }
 
           provGradeServiceDebug('Sending score to: ' + scoreUrl)
-          
+
           if (options && options.userId) score.userId = options.userId
           else score.userId = idtoken.user
 
@@ -287,11 +286,10 @@ class Grade {
           limit = options.limit
           options.limit = false
         }
-      }
-      else options = { resourceLinkId: true }
+      } else options = { resourceLinkId: true }
 
       const lineItems = await this.getLineItems(idtoken, options, accessToken)
-  
+
       let queryParams = []
       if (options) {
         if (options.userId) queryParams.push(['user_id', options.userId])
@@ -316,7 +314,7 @@ class Grade {
           }
 
           provGradeServiceDebug('Requesting results from: ' + resultsUrl)
-          const results = await got.get(resultsUrl, { headers: { Authorization: accessToken.token_type + ' ' + accessToken.access_token,  Accept: 'application/vnd.ims.lis.v2.resultcontainer+json' } }).json()
+          const results = await got.get(resultsUrl, { headers: { Authorization: accessToken.token_type + ' ' + accessToken.access_token, Accept: 'application/vnd.ims.lis.v2.resultcontainer+json' } }).json()
 
           resultsArray.push({
             lineItem: lineitem.id,

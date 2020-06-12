@@ -9,21 +9,16 @@ const nock = require('nock')
 const jwt = require('jsonwebtoken')
 const crypto = require('crypto')
 
-const LTI = require('../dist/Provider/Provider')
+const lti = require('../dist/Provider/Provider')
 const Platform = require('../dist/Utils/Platform')
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
-
-/**
- * @type {LTI}
- */
-let lti
 
 describe('Testing Provider', function () {
   this.timeout(10000)
   it('Provider.contructor expected to not throw Error', () => {
     const fn = () => {
-      lti = new LTI('LTIKEY',
+      lti.setup('LTIKEY',
         { url: 'mongodb://127.0.0.1/testdatabase' },
         { appUrl: '/', loginUrl: '/login', staticPath: path.join(__dirname, '/views/'), devMode: true })
       return lti

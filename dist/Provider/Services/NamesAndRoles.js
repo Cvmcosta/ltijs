@@ -81,10 +81,10 @@ class NamesAndRoles {
       }
 
       if (options && options.pages) provNamesAndRolesServiceDebug('Maximum number of pages retrieved: ' + options.pages);
-      query = new URLSearchParams(query);
-      const membershipsEndpoint = idtoken.namesRoles.context_memberships_url;
+      if (query.length > 0) query = new URLSearchParams(query);else query = false;
+      let next = idtoken.namesRoles.context_memberships_url;
+      if (options && options.url) next = options.url;
       let result;
-      let next = options && options.url ? options.url : false;
       let curPage = 1;
 
       do {
@@ -95,7 +95,7 @@ class NamesAndRoles {
 
         let response;
         provNamesAndRolesServiceDebug('Member pages found: ', curPage);
-        if (!next) response = await got.get(membershipsEndpoint, {
+        if (query && curPage === 1) response = await got.get(next, {
           searchParams: query,
           headers: {
             Authorization: tokenRes.token_type + ' ' + tokenRes.access_token,

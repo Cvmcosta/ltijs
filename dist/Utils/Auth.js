@@ -102,8 +102,8 @@ class Auth {
           provAuthDebug('Retrieving key from jwk_set');
           if (!kid) throw new Error('NoKidFoundInToken');
           const keysEndpoint = authConfig.key;
-          const res = await got.get(keysEndpoint);
-          const keyset = JSON.parse(res.body).keys;
+          const res = await got.get(keysEndpoint).json();
+          const keyset = res.keys;
           if (!keyset) throw new Error('NoKeySetFound');
           const jwk = find(keyset, ['kid', kid]);
           if (!jwk) throw new Error('NoKeyFound');
@@ -296,11 +296,10 @@ class Auth {
       scope: scopes
     };
     provAuthDebug('Awaiting return from the platform');
-    const res = await got.post((await platform.platformAccessTokenEndpoint()), {
+    const access = await got.post((await platform.platformAccessTokenEndpoint()), {
       form: message
-    });
+    }).json();
     provAuthDebug('Successfully generated new access_token');
-    const access = JSON.parse(res.body);
     await Database.Insert(ENCRYPTIONKEY, 'accesstoken', {
       token: access
     }, {

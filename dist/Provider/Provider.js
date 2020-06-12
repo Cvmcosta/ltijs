@@ -25,7 +25,7 @@ const Platform = require('../Utils/Platform');
 
 const Auth = require('../Utils/Auth');
 
-const Mongodb = require('../Utils/Database');
+const DB = require('../Utils/Database');
 
 const Keyset = require('../Utils/Keyset');
 
@@ -50,38 +50,7 @@ const provMainDebug = require('debug')('provider:main');
 
 
 class Provider {
-  // Pre-initiated variables
-  // Assembles and sends keyset
-
-  /**
-     * @description Exposes methods for easy manipualtion of the LTI 1.3 standard as a LTI Provider and a "server" object to manipulate the Express instance.
-     * @param {String} encryptionkey - Secret used to sign cookies and encrypt other info.
-     * @param {Object} database - The Database configurations to open and manage connection, uses MongoDB Driver.
-     * @param {String} [database.url] - Database Url (Ex: mongodb://localhost/applicationdb).
-     * @param {Object} [database.plugin] - If set, must be the Database object of the desired database plugin.
-     * @param {Object} [database.connection] - Database connection options (Ex: user, pass)
-     * @param {String} [database.connection.user] - Database user for authentication if needed.
-     * @param {String} [database.conenction.pass] - Database pass for authentication if needed.
-     * @param {Object} [options] - Lti Provider additional options,.
-     * @param {String} [options.appUrl = '/'] - Lti Provider main url. If no option is set '/' is used.
-     * @param {String} [options.loginUrl = '/login'] - Lti Provider login url. If no option is set '/login' is used.
-     * @param {String} [options.sessionTimeoutUrl = '/sessionTimeout'] - Lti Provider session timeout url. If no option is set '/sessionTimeout' is used.
-     * @param {String} [options.invalidTokenUrl = '/invalidToken'] - Lti Provider invalid token url. If no option is set '/invalidToken' is used.
-     * @param {String} [options.keysetUrl = '/keys'] - Lti Provider public jwk keyset url. If no option is set '/keys' is used.
-     * @param {Boolean} [options.https = false] - Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https and are planning to configure ssl locally. If you set this option as true you can enable the secure flag in the cookies options of the onConnect method.
-     * @param {Object} [options.ssl] - SSL certificate and key if https is enabled.
-     * @param {String} [options.ssl.key] - SSL key.
-     * @param {String} [options.ssl.cert] - SSL certificate.
-     * @param {String} [options.staticPath] - The path for the static files your application might serve (Ex: _dirname+"/public")
-     * @param {Boolean} [options.logger = false] - If true, allows Ltijs to generate logging files for server requests and errors.
-     * @param {Boolean} [options.cors = true] - If false, disables cors.
-     * @param {Function} [options.serverAddon] - Allows the execution of a method inside of the server contructor. Can be used to register middlewares.
-     * @param {Object} [options.cookies] - Cookie configuration. Allows you to configure, sameSite and secure parameters.
-     * @param {Boolean} [options.cookies.secure = false] - Cookie secure parameter. If true, only allows cookies to be passed over https.
-     * @param {String} [options.cookies.sameSite = 'Lax'] - Cookie sameSite parameter. If cookies are going to be set across domains, set this parameter to 'None'.
-     * @param {Boolean} [options.devMode = false] - If true, does not require state and session cookies to be present (If present, they are still validated). This allows ltijs to work on development environments where cookies cannot be set. THIS SHOULD NOT BE USED IN A PRODUCTION ENVIRONMENT.
-     */
-  constructor(encryptionkey, database, options) {
+  constructor() {
     _loginUrl.set(this, {
       writable: true,
       value: '/login'
@@ -181,7 +150,37 @@ class Provider {
       writable: true,
       value: void 0
     });
+  }
 
+  /**
+     * @description Provider configuration method.
+     * @param {String} encryptionkey - Secret used to sign cookies and encrypt other info.
+     * @param {Object} database - The Database configurations to open and manage connection, uses MongoDB Driver.
+     * @param {String} [database.url] - Database Url (Ex: mongodb://localhost/applicationdb).
+     * @param {Object} [database.plugin] - If set, must be the Database object of the desired database plugin.
+     * @param {Object} [database.connection] - Database connection options (Ex: user, pass)
+     * @param {String} [database.connection.user] - Database user for authentication if needed.
+     * @param {String} [database.conenction.pass] - Database pass for authentication if needed.
+     * @param {Object} [options] - Lti Provider additional options,.
+     * @param {String} [options.appUrl = '/'] - Lti Provider main url. If no option is set '/' is used.
+     * @param {String} [options.loginUrl = '/login'] - Lti Provider login url. If no option is set '/login' is used.
+     * @param {String} [options.sessionTimeoutUrl = '/sessionTimeout'] - Lti Provider session timeout url. If no option is set '/sessionTimeout' is used.
+     * @param {String} [options.invalidTokenUrl = '/invalidToken'] - Lti Provider invalid token url. If no option is set '/invalidToken' is used.
+     * @param {String} [options.keysetUrl = '/keys'] - Lti Provider public jwk keyset url. If no option is set '/keys' is used.
+     * @param {Boolean} [options.https = false] - Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https and are planning to configure ssl locally. If you set this option as true you can enable the secure flag in the cookies options of the onConnect method.
+     * @param {Object} [options.ssl] - SSL certificate and key if https is enabled.
+     * @param {String} [options.ssl.key] - SSL key.
+     * @param {String} [options.ssl.cert] - SSL certificate.
+     * @param {String} [options.staticPath] - The path for the static files your application might serve (Ex: _dirname+"/public")
+     * @param {Boolean} [options.logger = false] - If true, allows Ltijs to generate logging files for server requests and errors.
+     * @param {Boolean} [options.cors = true] - If false, disables cors.
+     * @param {Function} [options.serverAddon] - Allows the execution of a method inside of the server contructor. Can be used to register middlewares.
+     * @param {Object} [options.cookies] - Cookie configuration. Allows you to configure, sameSite and secure parameters.
+     * @param {Boolean} [options.cookies.secure = false] - Cookie secure parameter. If true, only allows cookies to be passed over https.
+     * @param {String} [options.cookies.sameSite = 'Lax'] - Cookie sameSite parameter. If cookies are going to be set across domains, set this parameter to 'None'.
+     * @param {Boolean} [options.devMode = false] - If true, does not require state and session cookies to be present (If present, they are still validated). This allows ltijs to work on development environments where cookies cannot be set. THIS SHOULD NOT BE USED IN A PRODUCTION ENVIRONMENT.
+     */
+  setup(encryptionkey, database, options) {
     if (options && options.https && (!options.ssl || !options.ssl.key || !options.ssl.cert)) throw new Error('No ssl Key  or Certificate found for local https configuration.');
     if (!encryptionkey) throw new Error('Encryptionkey parameter missing in options.');
     if (!database) throw new Error('Missing database configurations.');
@@ -190,7 +189,7 @@ class Provider {
      */
 
     this.Database = null;
-    if (!database.plugin) this.Database = new Mongodb(database);else this.Database = database.plugin;
+    if (!database.plugin) this.Database = DB(database);else throw new Error('Database plugins are not yet supported with version 5.0 due to datbae structural changes.');
     if (options && options.appUrl) (0, _classPrivateFieldSet2.default)(this, _appUrl, options.appUrl);
     if (options && options.loginUrl) (0, _classPrivateFieldSet2.default)(this, _loginUrl, options.loginUrl);
     if (options && options.sessionTimeoutUrl) (0, _classPrivateFieldSet2.default)(this, _sessionTimeoutUrl, options.sessionTimeoutUrl);
@@ -963,4 +962,4 @@ var _keyset = new WeakMap();
 
 var _server = new WeakMap();
 
-module.exports = Provider;
+module.exports = new Provider();
