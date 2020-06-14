@@ -46,10 +46,12 @@ class Grade {
    * @description Gets lineitems from a given platform
    * @param {Object} idtoken - Idtoken for the user
    * @param {Object} [options] - Options object
-   * @param {Boolean} [options.resourceLinkId = false] - Filters based on the resourceLinkId
-   * @param {String} [options.resourceId = false] - Filters based on the resourceId
-   * @param {String} [options.tag = false] - Filters based on the tag
-   * @param {Number} [options.limit = false] - Sets a maximum number of lineitems to be returned
+   * @param {Boolean} [options.resourceLinkId = false] - Filters line items based on the resourceLinkId of the resource that originated the request
+   * @param {String} [options.resourceId = false] - Filters line items based on the resourceId
+   * @param {String} [options.tag = false] - Filters line items based on the tag
+   * @param {Number} [options.limit = false] - Sets a maximum number of line items to be returned
+   * @param {String} [options.id = false] - Filters line items based on the id
+   * @param {String} [options.label = false] - Filters line items based on the label
    */
 
 
@@ -86,13 +88,20 @@ class Grade {
       }
 
       queryParams = new URLSearchParams(queryParams);
-      const lineItems = await got.get(lineitemsEndpoint, {
+      let lineItems = await got.get(lineitemsEndpoint, {
         searchParams: queryParams,
         headers: {
           Authorization: accessToken.token_type + ' ' + accessToken.access_token,
           Accept: 'application/vnd.ims.lis.v2.lineitemcontainer+json'
         }
-      }).json();
+      }).json(); // Applying special filters
+
+      if (options && options.id) lineItems = lineItems.filter(lineitem => {
+        return lineitem.id === options.id;
+      });
+      if (options && options.label) lineItems = lineItems.filter(lineitem => {
+        return lineitem.label === options.label;
+      });
       return lineItems;
     } catch (err) {
       provGradeServiceDebug(err.message);
@@ -166,10 +175,12 @@ class Grade {
    * @description Deletes lineitems from a given platform
    * @param {Object} idtoken - Idtoken for the user
    * @param {Object} [options] - Options object
-   * @param {Boolean} [options.resourceLinkId = false] - If true, filters lineitem based on the resourceLinkId of the resource that originated the request. Defaults to false
-   * @param {String} [options.resourceId = false] - Filters based on the resourceId
-   * @param {String} [options.tag = false] - Filters based on the tag
-   * @param {Number} [options.limit = false] - Sets a maximum number of lineitems to be deleted
+   * @param {Boolean} [options.resourceLinkId = false] - Filters line items based on the resourceLinkId of the resource that originated the request
+   * @param {String} [options.resourceId = false] - Filters line items based on the resourceId
+   * @param {String} [options.tag = false] - Filters line items based on the tag
+   * @param {Number} [options.limit = false] - Sets a maximum number of line items to be deleted
+   * @param {String} [options.id = false] - Filters line items based on the id
+   * @param {String} [options.label = false] - Filters line items based on the label
    */
 
 
@@ -233,10 +244,12 @@ class Grade {
      * @param {Object} [options] - Options object
      * @param {Object} [options.autoCreate] - Line item that will be created automatically if it does not exist
      * @param {String} [options.userId = false] - Send score to a specific user. If no userId is provided, the score is sent to the user that initiated the request
-     * @param {Boolean} [options.resourceLinkId = true] - If true, filters lineitem based on the resourceLinkId of the resource that originated the request. Defaults to true
-     * @param {String} [options.resourceId = false] - Filters based on the resourceId
-     * @param {String} [options.tag = false] - Filters based on the tag
-     * @param {Number} [options.limit = false] - Sets a maximum number of lineitems to be reached
+     * @param {Boolean} [options.resourceLinkId = true] - Filters line items based on the resourceLinkId of the resource that originated the request. Defaults to true
+     * @param {String} [options.resourceId = false] - Filters line items based on the resourceId
+     * @param {String} [options.tag = false] - Filters line items based on the tag
+     * @param {Number} [options.limit = false] - Sets a maximum number of line items to be reached
+     * @param {String} [options.id = false] - Filters line items based on the id
+     * @param {String} [options.label = false] - Filters line items based on the label
      */
 
 
@@ -274,11 +287,13 @@ class Grade {
       const lineItems = await this.getLineItems(idtoken, options, accessToken);
       let success = true; // Improve error handling
 
-      if (lineItems.length === 0 && options && options.autoCreate) {
-        provGradeServiceDebug('No line item found, creating new lite item automatically');
-        lineItems.push(await this.createLineItem(idtoken, options.autoCreate, {
-          resourceLinkId: options.resourceLinkId
-        }, accessToken));
+      if (lineItems.length === 0) {
+        if (options && options.autoCreate) {
+          provGradeServiceDebug('No line item found, creating new lite item automatically');
+          lineItems.push(await this.createLineItem(idtoken, options.autoCreate, {
+            resourceLinkId: options.resourceLinkId
+          }, accessToken));
+        } else provGradeServiceDebug('No available line item found');
       }
 
       for (const lineitem of lineItems) {
@@ -331,10 +346,12 @@ class Grade {
    * @param {Object} idtoken - Idtoken for the user
    * @param {Object} [options] - Options object
    * @param {String} [options.userId = false] - Filters based on the userId
-   * @param {Boolean} [options.resourceLinkId = true] - If true, filters lineitem based on the resourceLinkId of the resource that originated the request. Defaults to true
-   * @param {String} [options.resourceId = false] - Filters based on the resourceId
-   * @param {String} [options.tag = false] - Filters based on the tag
-   * @param {Number} [options.limit = false] - Sets a maximum number of results per lineitem to be returned
+   * @param {Boolean} [options.resourceLinkId = true] - Filters line items based on the resourceLinkId of the resource that originated the request. Defaults to true
+   * @param {String} [options.resourceId = false] - Filters line items based on the resourceId
+   * @param {String} [options.tag = false] - Filters line items based on the tag
+   * @param {Number} [options.limit = false] - Sets a maximum number of results to be returned per line item
+   * @param {String} [options.id = false] - Filters line items based on the id
+   * @param {String} [options.label = false] - Filters line items based on the label
    */
 
 
