@@ -1,7 +1,7 @@
 "use strict";
 
 /* Handle jwk keyset generation */
-const jose = require('node-jose');
+const Jwk = require('rasha');
 
 const provKeysetDebug = require('debug')('provider:keyset');
 
@@ -12,23 +12,21 @@ class Keyset {
   static async build(Database, ENCRYPTIONKEY, logger) {
     try {
       const keys = await Database.Get(ENCRYPTIONKEY, 'publickey');
-      const keystore = jose.JWK.createKeyStore();
-      const kids = [];
+      const keyset = {
+        keys: []
+      };
 
       for (const key of keys) {
-        await keystore.add(key.key, 'pem');
-        kids.push(key.kid);
+        const jwk = await Jwk.import({
+          pem: key.key
+        });
+        jwk.kid = key.kid;
+        jwk.alg = 'RS256';
+        jwk.use = 'sig';
+        keyset.keys.push(jwk);
       }
 
-      const jwks = keystore.toJSON(false);
-
-      for (const i in jwks.keys) {
-        jwks.keys[i].kid = kids[i];
-        jwks.keys[i].alg = 'RS256';
-        jwks.keys[i].use = 'sig';
-      }
-
-      return jwks;
+      return keyset;
     } catch (err) {
       provKeysetDebug(err.message);
       if (logger) logger.log({

@@ -198,7 +198,7 @@ class Database {
     if (ENCRYPTIONKEY) {
       for (const i in result) {
         const temp = result[i];
-        result[i] = JSON.parse((await this.Decrypt(result[i].data, result[i].iv, ENCRYPTIONKEY)));
+        result[i] = JSON.parse(await this.Decrypt(result[i].data, result[i].iv, ENCRYPTIONKEY));
 
         if (temp.createdAt) {
           const createdAt = Date.parse(temp.createdAt);
@@ -226,7 +226,7 @@ class Database {
 
     if (ENCRYPTIONKEY) {
       const encrypted = await this.Encrypt(JSON.stringify(item), ENCRYPTIONKEY);
-      newDocData = _objectSpread({}, index, {
+      newDocData = _objectSpread(_objectSpread({}, index), {}, {
         iv: encrypted.iv,
         data: encrypted.data
       });
@@ -254,7 +254,7 @@ class Database {
       let result = await Model.findOne(query);
 
       if (result) {
-        result = JSON.parse((await this.Decrypt(result.data, result.iv, ENCRYPTIONKEY)));
+        result = JSON.parse(await this.Decrypt(result.data, result.iv, ENCRYPTIONKEY));
         result[Object.keys(modification)[0]] = Object.values(modification)[0];
         newMod = await this.Encrypt(JSON.stringify(result), ENCRYPTIONKEY);
       }

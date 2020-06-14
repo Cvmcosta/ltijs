@@ -455,7 +455,7 @@ class Provider {
 
     this.app.use(sessionValidator);
     this.app.all((0, _classPrivateFieldGet2.default)(this, _loginUrl), async (req, res) => {
-      const params = _objectSpread({}, req.query, {}, req.body);
+      const params = _objectSpread(_objectSpread({}, req.query), req.body);
 
       try {
         const iss = params.iss;
@@ -920,7 +920,7 @@ class Provider {
       pathname: pathParts.pathname,
       port: pathParts.port,
       auth: pathParts.auth,
-      query: _objectSpread({}, queries, {
+      query: _objectSpread(_objectSpread({}, queries), {}, {
         ltik: res.locals.ltik
       })
     }); // Redirects to path with queries

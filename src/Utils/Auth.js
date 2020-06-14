@@ -1,7 +1,6 @@
 const crypto = require('crypto')
-const Jwk = require('pem-jwk')
+const Jwk = require('rasha')
 const got = require('got')
-const find = require('lodash.find')
 const jwt = require('jsonwebtoken')
 const provAuthDebug = require('debug')('provider:auth')
 // const cons_authdebug = require('debug')('consumer:auth')
@@ -90,11 +89,12 @@ class Auth {
         const res = await got.get(keysEndpoint).json()
         const keyset = res.keys
         if (!keyset) throw new Error('NoKeySetFound')
-        const jwk = find(keyset, ['kid', kid])
+        const jwk = keyset.find(key => {
+          return key.kid === kid
+        })
         if (!jwk) throw new Error('NoKeyFound')
         provAuthDebug('Converting JWK key to PEM key')
-        const key = Jwk.jwk2pem(jwk)
-
+        const key = await Jwk.export({ jwk: jwk })
         const verified = await this.verifyToken(token, key, alg, platform, Database)
         return (verified)
       }

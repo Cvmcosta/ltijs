@@ -166,10 +166,10 @@ class Grade {
    * @description Deletes lineitems from a given platform
    * @param {Object} idtoken - Idtoken for the user
    * @param {Object} [options] - Options object
-   * @param {Boolean} [options.resourceLinkId = false] - Filters based on the resourceLinkId
+   * @param {Boolean} [options.resourceLinkId = false] - If true, filters lineitem based on the resourceLinkId of the resource that originated the request. Defaults to false
    * @param {String} [options.resourceId = false] - Filters based on the resourceId
    * @param {String} [options.tag = false] - Filters based on the tag
-   * @param {Number} [options.limit = false] - Sets a maximum number of lineitems to be returned
+   * @param {Number} [options.limit = false] - Sets a maximum number of lineitems to be deleted
    */
 
 
@@ -276,9 +276,9 @@ class Grade {
 
       if (lineItems.length === 0 && options && options.autoCreate) {
         provGradeServiceDebug('No line item found, creating new lite item automatically');
-        lineItems.push((await this.createLineItem(idtoken, options.autoCreate, {
+        lineItems.push(await this.createLineItem(idtoken, options.autoCreate, {
           resourceLinkId: options.resourceLinkId
-        }, accessToken)));
+        }, accessToken));
       }
 
       for (const lineitem of lineItems) {

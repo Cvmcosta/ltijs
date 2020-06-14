@@ -137,7 +137,7 @@ class DeepLinking {
       provDeepLinkingDebug('Content items to be sent: ');
       provDeepLinkingDebug(selectedContentItems);
       jwtBody['https://purl.imsglobal.org/spec/lti-dl/claim/content_items'] = selectedContentItems;
-      const message = jwt.sign(jwtBody, (await platform.platformPrivateKey()), {
+      const message = jwt.sign(jwtBody, await platform.platformPrivateKey(), {
         algorithm: 'RS256',
         keyid: await platform.platformKid()
       });

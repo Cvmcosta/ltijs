@@ -2,11 +2,9 @@
 
 const crypto = require('crypto');
 
-const Jwk = require('pem-jwk');
+const Jwk = require('rasha');
 
 const got = require('got');
-
-const find = require('lodash.find');
 
 const jwt = require('jsonwebtoken');
 
@@ -105,10 +103,14 @@ class Auth {
           const res = await got.get(keysEndpoint).json();
           const keyset = res.keys;
           if (!keyset) throw new Error('NoKeySetFound');
-          const jwk = find(keyset, ['kid', kid]);
+          const jwk = keyset.find(key => {
+            return key.kid === kid;
+          });
           if (!jwk) throw new Error('NoKeyFound');
           provAuthDebug('Converting JWK key to PEM key');
-          const key = Jwk.jwk2pem(jwk);
+          const key = await Jwk.export({
+            jwk: jwk
+          });
           const verified = await this.verifyToken(token, key, alg, platform, Database);
           return verified;
         }
@@ -186,7 +188,7 @@ class Auth {
     provAuthDebug("Validating if aud (Audience) claim matches the value of the tool's clientId given by the platform");
     provAuthDebug('Aud claim: ' + token.aud);
     provAuthDebug("Tool's clientId: " + (await platform.platformClientId()));
-    if (!token.aud.includes((await platform.platformClientId()))) throw new Error('AudDoesNotMatchClientId');
+    if (!token.aud.includes(await platform.platformClientId())) throw new Error('AudDoesNotMatchClientId');
 
     if (Array.isArray(token.aud)) {
       provAuthDebug('More than one aud listed, searching for azp claim');
@@ -285,7 +287,7 @@ class Auth {
       exp: Date.now() / 1000 + 60,
       jti: crypto.randomBytes(16).toString('base64')
     };
-    const token = jwt.sign(confjwt, (await platform.platformPrivateKey()), {
+    const token = jwt.sign(confjwt, await platform.platformPrivateKey(), {
       algorithm: 'RS256',
       keyid: await platform.platformKid()
     });
@@ -296,7 +298,7 @@ class Auth {
       scope: scopes
     };
     provAuthDebug('Awaiting return from the platform');
-    const access = await got.post((await platform.platformAccessTokenEndpoint()), {
+    const access = await got.post(await platform.platformAccessTokenEndpoint(), {
       form: message
     }).json();
     provAuthDebug('Successfully generated new access_token');
