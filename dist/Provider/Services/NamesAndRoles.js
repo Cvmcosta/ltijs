@@ -50,83 +50,74 @@ class NamesAndRoles {
 
 
   async getMembers(idtoken, options) {
-    try {
-      if (!idtoken) {
-        provNamesAndRolesServiceDebug('IdToken object missing.');
-        return false;
-      }
-
-      provNamesAndRolesServiceDebug('Attempting to retrieve memberships');
-      provNamesAndRolesServiceDebug('Target platform: ' + idtoken.iss);
-      const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger), (0, _classPrivateFieldGet2.default)(this, _Database));
-
-      if (!platform) {
-        provNamesAndRolesServiceDebug('Platform not found, returning false');
-        return false;
-      }
-
-      provNamesAndRolesServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']');
-      const tokenRes = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly');
-      provNamesAndRolesServiceDebug('Access_token retrieved for [' + idtoken.iss + ']');
-      let query = [];
-
-      if (options && options.role) {
-        provNamesAndRolesServiceDebug('Adding role parameter with value: ' + options.role);
-        query.push(['role', options.role]);
-      }
-
-      if (options && options.limit) {
-        provNamesAndRolesServiceDebug('Adding limit parameter with value: ' + options.limit);
-        query.push(['limit', options.limit]);
-      }
-
-      if (options && options.pages) provNamesAndRolesServiceDebug('Maximum number of pages retrieved: ' + options.pages);
-      if (query.length > 0) query = new URLSearchParams(query);else query = false;
-      let next = idtoken.namesRoles.context_memberships_url;
-      if (options && options.url) next = options.url;
-      let result;
-      let curPage = 1;
-
-      do {
-        if (options && options.pages && curPage > options.pages) {
-          if (next) result.next = next;
-          break;
-        }
-
-        let response;
-        provNamesAndRolesServiceDebug('Member pages found: ', curPage);
-        if (query && curPage === 1) response = await got.get(next, {
-          searchParams: query,
-          headers: {
-            Authorization: tokenRes.token_type + ' ' + tokenRes.access_token,
-            Accept: 'application/vnd.ims.lti-nrps.v2.membershipcontainer+json'
-          }
-        });else response = await got.get(next, {
-          headers: {
-            Authorization: tokenRes.token_type + ' ' + tokenRes.access_token,
-            Accept: 'application/vnd.ims.lti-nrps.v2.membershipcontainer+json'
-          }
-        });
-        const headers = response.headers;
-        const body = JSON.parse(response.body);
-        if (!result) result = JSON.parse(JSON.stringify(body));else {
-          result.members = [...result.members, ...body.members];
-        } // Trying to find "rel=next" header, indicating additional pages
-
-        if (headers.link && headers.link.search(/rel=.*next/)) next = headers.link.split(';rel=next')[0];else next = false;
-        curPage++;
-      } while (next);
-
-      provNamesAndRolesServiceDebug('Memberships retrieved');
-      return result;
-    } catch (err) {
-      provNamesAndRolesServiceDebug(err.message);
-      if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
-        level: 'error',
-        message: 'Message: ' + err.message + '\nStack: ' + err.stack
-      });
-      return false;
+    if (!idtoken) {
+      provNamesAndRolesServiceDebug('IdToken object missing.');
+      throw new Error('MISSING_ID_TOKEN');
     }
+
+    provNamesAndRolesServiceDebug('Attempting to retrieve memberships');
+    provNamesAndRolesServiceDebug('Target platform: ' + idtoken.iss);
+    const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger), (0, _classPrivateFieldGet2.default)(this, _Database));
+
+    if (!platform) {
+      provNamesAndRolesServiceDebug('Platform not found');
+      throw new Error('PLATFORM_NOT_FOUND');
+    }
+
+    provNamesAndRolesServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']');
+    const tokenRes = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly');
+    provNamesAndRolesServiceDebug('Access_token retrieved for [' + idtoken.iss + ']');
+    let query = [];
+
+    if (options && options.role) {
+      provNamesAndRolesServiceDebug('Adding role parameter with value: ' + options.role);
+      query.push(['role', options.role]);
+    }
+
+    if (options && options.limit) {
+      provNamesAndRolesServiceDebug('Adding limit parameter with value: ' + options.limit);
+      query.push(['limit', options.limit]);
+    }
+
+    if (options && options.pages) provNamesAndRolesServiceDebug('Maximum number of pages retrieved: ' + options.pages);
+    if (query.length > 0) query = new URLSearchParams(query);else query = false;
+    let next = idtoken.namesRoles.context_memberships_url;
+    if (options && options.url) next = options.url;
+    let result;
+    let curPage = 1;
+
+    do {
+      if (options && options.pages && curPage > options.pages) {
+        if (next) result.next = next;
+        break;
+      }
+
+      let response;
+      provNamesAndRolesServiceDebug('Member pages found: ', curPage);
+      if (query && curPage === 1) response = await got.get(next, {
+        searchParams: query,
+        headers: {
+          Authorization: tokenRes.token_type + ' ' + tokenRes.access_token,
+          Accept: 'application/vnd.ims.lti-nrps.v2.membershipcontainer+json'
+        }
+      });else response = await got.get(next, {
+        headers: {
+          Authorization: tokenRes.token_type + ' ' + tokenRes.access_token,
+          Accept: 'application/vnd.ims.lti-nrps.v2.membershipcontainer+json'
+        }
+      });
+      const headers = response.headers;
+      const body = JSON.parse(response.body);
+      if (!result) result = JSON.parse(JSON.stringify(body));else {
+        result.members = [...result.members, ...body.members];
+      } // Trying to find "rel=next" header, indicating additional pages
+
+      if (headers.link && headers.link.search(/rel=.*next/)) next = headers.link.split(';rel=next')[0];else next = false;
+      curPage++;
+    } while (next);
+
+    provNamesAndRolesServiceDebug('Memberships retrieved');
+    return result;
   }
 
 }
