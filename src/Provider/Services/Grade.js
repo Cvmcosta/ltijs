@@ -34,47 +34,41 @@ class Grade {
    * @param {String} [options.label = false] - Filters line items based on the label
    */
   async getLineItems (idtoken, options, accessToken) {
-    if (!idtoken) { provGradeServiceDebug('IdToken object missing.'); return false }
+    if (!idtoken) { provGradeServiceDebug('IdToken object missing.'); throw new Error('MISSING_ID_TOKEN') }
     provGradeServiceDebug('Target platform: ' + idtoken.iss)
 
-    try {
-      if (!accessToken) {
-        const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#logger, this.#Database) // Remove and use DB instead
+    if (!accessToken) {
+      const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#logger, this.#Database) // Remove and use DB instead
 
-        if (!platform) {
-          provGradeServiceDebug('Platform not found, returning false')
-          return false
-        }
-
-        provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']')
-
-        accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly')
-        provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']')
+      if (!platform) {
+        provGradeServiceDebug('Platform not found')
+        throw new Error('PLATFORM_NOT_FOUND')
       }
 
-      const lineitemsEndpoint = idtoken.endpoint.lineitems
+      provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']')
 
-      let queryParams = []
-      if (options) {
-        if (options.resourceLinkId) queryParams.push(['resource_link_id', idtoken.platformContext.resource.id])
-        if (options.limit) queryParams.push(['limit', options.limit])
-        if (options.tag) queryParams.push(['tag', options.tag])
-        if (options.resourceId) queryParams.push(['resource_id', options.resourceId])
-      }
-      queryParams = new URLSearchParams(queryParams)
-
-      let lineItems = await got.get(lineitemsEndpoint, { searchParams: queryParams, headers: { Authorization: accessToken.token_type + ' ' + accessToken.access_token, Accept: 'application/vnd.ims.lis.v2.lineitemcontainer+json' } }).json()
-
-      // Applying special filters
-      if (options && options.id) lineItems = lineItems.filter(lineitem => { return lineitem.id === options.id })
-      if (options && options.label) lineItems = lineItems.filter(lineitem => { return lineitem.label === options.label })
-
-      return lineItems
-    } catch (err) {
-      provGradeServiceDebug(err.message)
-      if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
-      return false
+      accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly')
+      provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']')
     }
+
+    const lineitemsEndpoint = idtoken.endpoint.lineitems
+
+    let queryParams = []
+    if (options) {
+      if (options.resourceLinkId) queryParams.push(['resource_link_id', idtoken.platformContext.resource.id])
+      if (options.limit) queryParams.push(['limit', options.limit])
+      if (options.tag) queryParams.push(['tag', options.tag])
+      if (options.resourceId) queryParams.push(['resource_id', options.resourceId])
+    }
+    queryParams = new URLSearchParams(queryParams)
+
+    let lineItems = await got.get(lineitemsEndpoint, { searchParams: queryParams, headers: { Authorization: accessToken.token_type + ' ' + accessToken.access_token, Accept: 'application/vnd.ims.lis.v2.lineitemcontainer+json' } }).json()
+
+    // Applying special filters
+    if (options && options.id) lineItems = lineItems.filter(lineitem => { return lineitem.id === options.id })
+    if (options && options.label) lineItems = lineItems.filter(lineitem => { return lineitem.label === options.label })
+
+    return lineItems
   }
 
   /**
@@ -86,41 +80,35 @@ class Grade {
    */
   async createLineItem (idtoken, lineItem, options, accessToken) {
     // Validating lineItem
-    if (!idtoken) { provGradeServiceDebug('IdToken object missing.'); return false }
-    if (!lineItem) { provGradeServiceDebug('Line item object missing.'); return false }
+    if (!idtoken) { provGradeServiceDebug('IdToken object missing.'); throw new Error('MISSING_ID_TOKEN') }
+    if (!lineItem) { provGradeServiceDebug('Line item object missing.'); throw new Error('MISSING_LINE_ITEM') }
 
     if (options && options.resourceLinkId) lineItem.resourceLinkId = idtoken.platformContext.resource.id
 
     provGradeServiceDebug('Target platform: ' + idtoken.iss)
 
-    try {
-      if (!accessToken) {
-        const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#logger, this.#Database)
+    if (!accessToken) {
+      const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#logger, this.#Database)
 
-        if (!platform) {
-          provGradeServiceDebug('Platform not found, returning false')
-          return false
-        }
-
-        provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']')
-
-        accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem')
-        provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']')
+      if (!platform) {
+        provGradeServiceDebug('Platform not found')
+        throw new Error('PLATFORM_NOT_FOUND')
       }
-      const lineitemsEndpoint = idtoken.endpoint.lineitems
 
-      provGradeServiceDebug('Creating Line item: ')
-      provGradeServiceDebug(lineItem)
+      provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']')
 
-      const newLineItem = await got.post(lineitemsEndpoint, { headers: { Authorization: accessToken.token_type + ' ' + accessToken.access_token, 'Content-Type': 'application/vnd.ims.lis.v2.lineitem+json' }, json: lineItem }).json()
-
-      provGradeServiceDebug('Line item successfully created')
-      return newLineItem
-    } catch (err) {
-      provGradeServiceDebug(err.message)
-      if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
-      return false
+      accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem')
+      provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']')
     }
+    const lineitemsEndpoint = idtoken.endpoint.lineitems
+
+    provGradeServiceDebug('Creating Line item: ')
+    provGradeServiceDebug(lineItem)
+
+    const newLineItem = await got.post(lineitemsEndpoint, { headers: { Authorization: accessToken.token_type + ' ' + accessToken.access_token, 'Content-Type': 'application/vnd.ims.lis.v2.lineitem+json' }, json: lineItem }).json()
+
+    provGradeServiceDebug('Line item successfully created')
+    return newLineItem
   }
 
   /**
@@ -135,45 +123,40 @@ class Grade {
    * @param {String} [options.label = false] - Filters line items based on the label
    */
   async deleteLineItems (idtoken, options) {
-    if (!idtoken) { provGradeServiceDebug('IdToken object missing.'); return false }
+    if (!idtoken) { provGradeServiceDebug('IdToken object missing.'); throw new Error('MISSING_ID_TOKEN') }
 
     provGradeServiceDebug('Target platform: ' + idtoken.iss)
 
-    try {
-      const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#logger, this.#Database)
+    const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#logger, this.#Database)
 
-      if (!platform) {
-        provGradeServiceDebug('Platform not found, returning false')
-        return false
-      }
-
-      provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']')
-      const accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem')
-      provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']')
-
-      const lineItems = await this.getLineItems(idtoken, options, accessToken)
-
-      let success = true
-      for (const lineitem of lineItems) {
-        try {
-          const lineitemUrl = lineitem.id
-
-          provGradeServiceDebug('Deleting: ' + lineitemUrl)
-          await got.delete(lineitemUrl, { headers: { Authorization: accessToken.token_type + ' ' + accessToken.access_token } })
-          provGradeServiceDebug('LineItem sucessfully deleted')
-        } catch (err) {
-          provGradeServiceDebug(err.message)
-          if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
-          success = false
-          continue
-        }
-      }
-      return success
-    } catch (err) {
-      provGradeServiceDebug(err.message)
-      if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
-      return false
+    if (!platform) {
+      provGradeServiceDebug('Platform not found')
+      throw new Error('PLATFORM_NOT_FOUND')
     }
+
+    provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']')
+    const accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem')
+    provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']')
+
+    const lineItems = await this.getLineItems(idtoken, options, accessToken)
+
+    const result = { success: [], failure: [] }
+    for (const lineitem of lineItems) {
+      try {
+        const lineitemUrl = lineitem.id
+
+        provGradeServiceDebug('Deleting: ' + lineitemUrl)
+        await got.delete(lineitemUrl, { headers: { Authorization: accessToken.token_type + ' ' + accessToken.access_token } })
+        provGradeServiceDebug('LineItem sucessfully deleted')
+        result.success.push({ lineitem: lineitemUrl })
+      } catch (err) {
+        provGradeServiceDebug(err)
+        if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
+        result.failure.push({ lineitem: lineitem.id, error: err.message })
+        continue
+      }
+    }
+    return result
   }
 
   /**
@@ -191,75 +174,69 @@ class Grade {
      * @param {String} [options.label = false] - Filters line items based on the label
      */
   async scorePublish (idtoken, score, options) {
-    if (!idtoken) { provGradeServiceDebug('IdToken object missing.'); return false }
-    if (!score) { provGradeServiceDebug('Score object missing.'); return false }
+    if (!idtoken) { provGradeServiceDebug('IdToken object missing.'); throw new Error('MISSING_ID_TOKEN') }
+    if (!score) { provGradeServiceDebug('Score object missing.'); throw new Error('MISSING_SCORE') }
     provGradeServiceDebug('Target platform: ' + idtoken.iss)
 
-    try {
-      const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#logger, this.#Database)
+    const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#logger, this.#Database)
 
-      if (!platform) {
-        provGradeServiceDebug('Platform not found, returning false')
-        return false
-      }
-
-      provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']')
-
-      const accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem https://purl.imsglobal.org/spec/lti-ags/scope/score')
-      provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']')
-
-      if (options) {
-        if (options.resourceLinkId === false) options.resourceLinkId = false
-        else options.resourceLinkId = true
-      } else options = { resourceLinkId: true }
-
-      const lineItems = await this.getLineItems(idtoken, options, accessToken)
-
-      let success = true // Improve error handling
-
-      if (lineItems.length === 0) {
-        if (options && options.autoCreate) {
-          provGradeServiceDebug('No line item found, creating new lite item automatically')
-          lineItems.push(await this.createLineItem(idtoken, options.autoCreate, { resourceLinkId: options.resourceLinkId }, accessToken))
-        } else provGradeServiceDebug('No available line item found')
-      }
-
-      for (const lineitem of lineItems) {
-        try {
-          const lineitemUrl = lineitem.id
-          let scoreUrl = lineitemUrl + '/scores'
-
-          if (lineitemUrl.indexOf('?') !== -1) {
-            const query = lineitemUrl.split('\?')[1]
-            const url = lineitemUrl.split('\?')[0]
-            scoreUrl = url + '/scores?' + query
-          }
-
-          provGradeServiceDebug('Sending score to: ' + scoreUrl)
-
-          if (options && options.userId) score.userId = options.userId
-          else score.userId = idtoken.user
-
-          score.timestamp = new Date(Date.now()).toISOString()
-          score.scoreMaximum = lineitem.scoreMaximum
-          provGradeServiceDebug(score)
-
-          await got.post(scoreUrl, { headers: { Authorization: accessToken.token_type + ' ' + accessToken.access_token, 'Content-Type': 'application/vnd.ims.lis.v1.score+json' }, json: score })
-
-          provGradeServiceDebug('Score successfully sent')
-        } catch (err) {
-          provGradeServiceDebug(err.message)
-          if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
-          success = false
-          continue
-        }
-      }
-      return success
-    } catch (err) {
-      provGradeServiceDebug(err.message)
-      if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
-      return false
+    if (!platform) {
+      provGradeServiceDebug('Platform not found')
+      throw new Error('PLATFORM_NOT_FOUND')
     }
+
+    provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']')
+
+    const accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem https://purl.imsglobal.org/spec/lti-ags/scope/score')
+    provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']')
+
+    if (options) {
+      if (options.resourceLinkId === false) options.resourceLinkId = false
+      else options.resourceLinkId = true
+    } else options = { resourceLinkId: true }
+
+    const lineItems = await this.getLineItems(idtoken, options, accessToken)
+
+    const result = { success: [], failure: [] }
+
+    if (lineItems.length === 0) {
+      if (options && options.autoCreate) {
+        provGradeServiceDebug('No line item found, creating new lite item automatically')
+        lineItems.push(await this.createLineItem(idtoken, options.autoCreate, { resourceLinkId: options.resourceLinkId }, accessToken))
+      } else provGradeServiceDebug('No available line item found')
+    }
+
+    for (const lineitem of lineItems) {
+      try {
+        const lineitemUrl = lineitem.id
+        let scoreUrl = lineitemUrl + '/scores'
+
+        if (lineitemUrl.indexOf('?') !== -1) {
+          const query = lineitemUrl.split('\?')[1]
+          const url = lineitemUrl.split('\?')[0]
+          scoreUrl = url + '/scores?' + query
+        }
+
+        provGradeServiceDebug('Sending score to: ' + scoreUrl)
+
+        if (options && options.userId) score.userId = options.userId
+        else score.userId = idtoken.user
+
+        score.timestamp = new Date(Date.now()).toISOString()
+        score.scoreMaximum = lineitem.scoreMaximum
+        provGradeServiceDebug(score)
+
+        await got.post(scoreUrl, { headers: { Authorization: accessToken.token_type + ' ' + accessToken.access_token, 'Content-Type': 'application/vnd.ims.lis.v1.score+json' }, json: score })
+        provGradeServiceDebug('Score successfully sent')
+        result.success.push({ lineitem: lineitemUrl })
+      } catch (err) {
+        provGradeServiceDebug(err)
+        if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
+        result.failure.push({ lineitem: lineitem.id, error: err.message })
+        continue
+      }
+    }
+    return result
   }
 
   /**
@@ -275,78 +252,72 @@ class Grade {
    * @param {String} [options.label = false] - Filters line items based on the label
    */
   async result (idtoken, options) {
-    if (!idtoken) { provGradeServiceDebug('IdToken object missing.'); return false }
+    if (!idtoken) { provGradeServiceDebug('IdToken object missing.'); throw new Error('MISSING_ID_TOKEN') }
 
     provGradeServiceDebug('Target platform: ' + idtoken.iss)
 
-    try {
-      const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#logger, this.#Database)
+    const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#logger, this.#Database)
 
-      if (!platform) {
-        provGradeServiceDebug('Platform not found, returning false')
-        return false
-      }
-
-      provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']')
-      const accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly')
-      provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']')
-
-      let limit = false
-
-      if (options) {
-        if (options.resourceLinkId === false) options.resourceLinkId = false
-        else options.resourceLinkId = true
-
-        if (options.limit) {
-          limit = options.limit
-          options.limit = false
-        }
-      } else options = { resourceLinkId: true }
-
-      const lineItems = await this.getLineItems(idtoken, options, accessToken)
-
-      let queryParams = []
-      if (options) {
-        if (options.userId) queryParams.push(['user_id', options.userId])
-        if (limit) queryParams.push(['limit', limit])
-      }
-      queryParams = new URLSearchParams(queryParams)
-      queryParams = queryParams.toString()
-
-      const resultsArray = []
-
-      for (const lineitem of lineItems) {
-        try {
-          const lineitemUrl = lineitem.id
-          let resultsUrl = lineitemUrl + '/results'
-
-          if (lineitemUrl.indexOf('?') !== -1) {
-            const query = lineitemUrl.split('\?')[1]
-            const url = lineitemUrl.split('\?')[0]
-            resultsUrl = url + '/results?' + query + '&' + queryParams
-          } else {
-            resultsUrl = resultsUrl + '?' + queryParams
-          }
-
-          provGradeServiceDebug('Requesting results from: ' + resultsUrl)
-          const results = await got.get(resultsUrl, { headers: { Authorization: accessToken.token_type + ' ' + accessToken.access_token, Accept: 'application/vnd.ims.lis.v2.resultcontainer+json' } }).json()
-
-          resultsArray.push({
-            lineItem: lineitem.id,
-            results: results
-          })
-        } catch (err) {
-          provGradeServiceDebug(err.message)
-          if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
-          continue
-        }
-      }
-      return resultsArray
-    } catch (err) {
-      provGradeServiceDebug(err.message)
-      if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
-      return false
+    if (!platform) {
+      provGradeServiceDebug('Platform not found')
+      throw new Error('PLATFORM_NOT_FOUND')
     }
+
+    provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']')
+    const accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly')
+    provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']')
+
+    let limit = false
+
+    if (options) {
+      if (options.resourceLinkId === false) options.resourceLinkId = false
+      else options.resourceLinkId = true
+
+      if (options.limit) {
+        limit = options.limit
+        options.limit = false
+      }
+    } else options = { resourceLinkId: true }
+
+    const lineItems = await this.getLineItems(idtoken, options, accessToken)
+
+    let queryParams = []
+    if (options) {
+      if (options.userId) queryParams.push(['user_id', options.userId])
+      if (limit) queryParams.push(['limit', limit])
+    }
+    queryParams = new URLSearchParams(queryParams)
+    queryParams = queryParams.toString()
+
+    const resultsArray = []
+
+    for (const lineitem of lineItems) {
+      try {
+        const lineitemUrl = lineitem.id
+        let resultsUrl = lineitemUrl + '/results'
+
+        if (lineitemUrl.indexOf('?') !== -1) {
+          const query = lineitemUrl.split('\?')[1]
+          const url = lineitemUrl.split('\?')[0]
+          resultsUrl = url + '/results?' + query + '&' + queryParams
+        } else {
+          resultsUrl = resultsUrl + '?' + queryParams
+        }
+
+        provGradeServiceDebug('Requesting results from: ' + resultsUrl)
+        const results = await got.get(resultsUrl, { headers: { Authorization: accessToken.token_type + ' ' + accessToken.access_token, Accept: 'application/vnd.ims.lis.v2.resultcontainer+json' } }).json()
+
+        resultsArray.push({
+          lineItem: lineitem.id,
+          results: results
+        })
+      } catch (err) {
+        provGradeServiceDebug(err.message)
+        if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
+        continue
+      }
+    }
+    return resultsArray
   }
 
   // Deprecated methods, these methods will be removed in version 6.0
