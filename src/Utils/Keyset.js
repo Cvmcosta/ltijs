@@ -8,7 +8,7 @@ class Keyset {
      */
   static async build (Database, ENCRYPTIONKEY, logger) {
     try {
-      const keys = await Database.Get(ENCRYPTIONKEY, 'publickey')
+      const keys = await Database.Get(ENCRYPTIONKEY, 'publickey') || []
       const keyset = { keys: [] }
       for (const key of keys) {
         const jwk = await Jwk.import({ pem: key.key })
