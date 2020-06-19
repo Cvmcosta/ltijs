@@ -5,7 +5,7 @@
   "main": "index.js",
   "engineStrict": true,
   "engines": {
-    "node": ">=8.6.0"
+    "node": ">=10.19.0"
   },
   "scripts": {
     "test": "mocha",
