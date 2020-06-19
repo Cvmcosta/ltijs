@@ -43,9 +43,7 @@
     "helmet": "^3.23.0",
     "jsonwebtoken": "^8.5.1",
     "mongoose": "^5.9.18",
-    "morgan": "^1.10.0",
-    "rasha": "^1.2.5",
-    "winston": "^3.2.1"
+    "rasha": "^1.2.5"
   },
   "devDependencies": {
     "@babel/cli": "^7.10.1",

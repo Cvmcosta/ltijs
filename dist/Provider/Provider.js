@@ -39,8 +39,6 @@ const url = require('fast-url-parser');
 
 const jwt = require('jsonwebtoken');
 
-const winston = require('winston');
-
 const provAuthDebug = require('debug')('provider:auth');
 
 const provMainDebug = require('debug')('provider:main');
@@ -84,11 +82,6 @@ class Provider {
     _ENCRYPTIONKEY.set(this, {
       writable: true,
       value: void 0
-    });
-
-    _logger.set(this, {
-      writable: true,
-      value: false
     });
 
     _devMode.set(this, {
@@ -137,7 +130,7 @@ class Provider {
       writable: true,
       value: async (req, res) => {
         try {
-          const keyset = await Keyset.build(this.Database, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger));
+          const keyset = await Keyset.build(this.Database, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
           return res.status(200).send(keyset);
         } catch (err) {
           provMainDebug(err.message);
@@ -172,7 +165,6 @@ class Provider {
      * @param {String} [options.ssl.key] - SSL key.
      * @param {String} [options.ssl.cert] - SSL certificate.
      * @param {String} [options.staticPath] - The path for the static files your application might serve (Ex: _dirname+"/public")
-     * @param {Boolean} [options.logger = false] - If true, allows Ltijs to generate logging files for server requests and errors.
      * @param {Boolean} [options.cors = true] - If false, disables cors.
      * @param {Function} [options.serverAddon] - Allows the execution of a method inside of the server contructor. Can be used to register middlewares.
      * @param {Object} [options.cookies] - Cookie configuration. Allows you to configure, sameSite and secure parameters.
@@ -204,50 +196,10 @@ class Provider {
       }
 
       if (options.cookies.secure === true) (0, _classPrivateFieldGet2.default)(this, _cookieOptions).secure = true;
-    } // Setting up logger
-
-
-    let loggerServer = false;
-
-    if (options && options.logger) {
-      (0, _classPrivateFieldSet2.default)(this, _logger, winston.createLogger({
-        format: winston.format.combine(winston.format.timestamp(), winston.format.json(), winston.format.prettyPrint()),
-        transports: [new winston.transports.File({
-          filename: 'logs/ltijs_error.log',
-          level: 'error',
-          handleExceptions: true,
-          maxsize: 250000,
-          // 500kb (with two files)
-          maxFiles: 1,
-          colorize: false,
-          tailable: true
-        })],
-        exitOnError: false
-      })); // Server logger
-
-      loggerServer = winston.createLogger({
-        format: winston.format.combine(winston.format.timestamp(), winston.format.prettyPrint()),
-        transports: [new winston.transports.File({
-          filename: 'logs/ltijs_server.log',
-          handleExceptions: true,
-          json: true,
-          maxsize: 250000,
-          // 500kb (with two files)
-          maxFiles: 1,
-          colorize: false,
-          tailable: true
-        })],
-        exitOnError: false
-      });
-      loggerServer.stream = {
-        write: function (message) {
-          loggerServer.info(message);
-        }
-      };
     }
 
     (0, _classPrivateFieldSet2.default)(this, _ENCRYPTIONKEY, encryptionkey);
-    (0, _classPrivateFieldSet2.default)(this, _server, new Server(options ? options.https : false, options ? options.ssl : false, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), loggerServer, options ? options.cors : true, options ? options.serverAddon : false));
+    (0, _classPrivateFieldSet2.default)(this, _server, new Server(options ? options.https : false, options ? options.ssl : false, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), options ? options.cors : true, options ? options.serverAddon : false));
     /**
      * @description Express server object.
      */
@@ -257,17 +209,17 @@ class Provider {
      * @description Grading service.
      */
 
-    this.Grade = new GradeService(this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger), this.Database);
+    this.Grade = new GradeService(this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), this.Database);
     /**
      * @description Deep Linking service.
      */
 
-    this.DeepLinking = new DeepLinkingService(this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger), this.Database);
+    this.DeepLinking = new DeepLinkingService(this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), this.Database);
     /**
      * @description Names and Roles service.
      */
 
-    this.NamesAndRoles = new NamesAndRolesService(this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger), this.Database);
+    this.NamesAndRoles = new NamesAndRolesService(this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), this.Database);
     if (options && options.staticPath) (0, _classPrivateFieldGet2.default)(this, _server).setStaticPath(options.staticPath); // Registers main athentication and routing middleware
 
     const sessionValidator = async (req, res, next) => {
@@ -298,7 +250,7 @@ class Provider {
             const validationParameters = {
               iss: validationCookie
             };
-            const valid = await Auth.validateToken(idtoken, (0, _classPrivateFieldGet2.default)(this, _devMode), validationParameters, this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger), this.Database); // Deletes state validation cookie
+            const valid = await Auth.validateToken(idtoken, (0, _classPrivateFieldGet2.default)(this, _devMode), validationParameters, this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), this.Database); // Deletes state validation cookie
 
             res.clearCookie('state' + state, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
             provAuthDebug('Successfully validated token!');
@@ -435,19 +387,12 @@ class Provider {
         } else {
           provMainDebug('No session cookie found');
           provMainDebug('Request body: ', req.body);
-          if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
-            level: 'error',
-            message: req.body
-          });
           provMainDebug('Passing request to session timeout handler');
           return res.redirect(req.baseUrl + (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl));
         }
       } catch (err) {
-        provAuthDebug(err.message);
-        if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
-          level: 'error',
-          message: 'Message: ' + err.message + '\nStack: ' + err.stack
-        });
+        provAuthDebug('Error: ');
+        provAuthDebug(err);
         provMainDebug('Passing request to invalid token handler');
         return res.redirect(req.baseUrl + (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl));
       }
@@ -486,11 +431,8 @@ class Provider {
           return res.status(401).send('Unregistered platform.');
         }
       } catch (err) {
+        provAuthDebug('Error: ');
         provAuthDebug(err);
-        if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
-          level: 'error',
-          message: 'Message: ' + err.message + '\nStack: ' + err.stack
-        });
         return res.status(400).send('Bad Request.');
       }
     }); // Session timeout, invalid token and keyset urls
@@ -550,11 +492,7 @@ class Provider {
       });
       return true;
     } catch (err) {
-      console.log('Error deploying server:', err.message);
-      if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
-        level: 'error',
-        message: 'Message: ' + err.message + '\nStack: ' + err.stack
-      });
+      console.log('Error during deployment: ', err);
       await this.close(options);
       process.exit();
     }
@@ -566,21 +504,12 @@ class Provider {
 
 
   async close(options) {
-    try {
-      if (!options || options.silent !== true) console.log('\nClosing server...');
-      await (0, _classPrivateFieldGet2.default)(this, _server).close();
-      if (!options || options.silent !== true) console.log('Closing connection to the database...');
-      await this.Database.Close();
-      if (!options || options.silent !== true) console.log('Shutdown complete.');
-      return true;
-    } catch (err) {
-      provMainDebug(err.message);
-      if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
-        level: 'error',
-        message: 'Message: ' + err.message + '\nStack: ' + err.stack
-      });
-      return false;
-    }
+    if (!options || options.silent !== true) console.log('\nClosing server...');
+    await (0, _classPrivateFieldGet2.default)(this, _server).close();
+    if (!options || options.silent !== true) console.log('Closing connection to the database...');
+    await this.Database.Close();
+    if (!options || options.silent !== true) console.log('Shutdown complete.');
+    return true;
   }
   /**
      * @description Sets the callback function called whenever there's a sucessfull lti 1.3 launch, exposing a "token" object containing the idtoken information.
@@ -752,7 +681,7 @@ class Provider {
       if (!_platform) {
         if (!platform.name || !platform.clientId || !platform.authenticationEndpoint || !platform.accesstokenEndpoint || !platform.authConfig) throw new Error('Error registering platform. Missing arguments.');
         kid = await Auth.generateProviderKeyPair((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), this.Database);
-        const plat = new Platform(platform.name, platform.url, platform.clientId, platform.authenticationEndpoint, platform.accesstokenEndpoint, kid, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), platform.authConfig, (0, _classPrivateFieldGet2.default)(this, _logger), this.Database); // Save platform to db
+        const plat = new Platform(platform.name, platform.url, platform.clientId, platform.authenticationEndpoint, platform.accesstokenEndpoint, kid, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), platform.authConfig, this.Database); // Save platform to db
 
         provMainDebug('Registering new platform: ' + platform.url);
         await this.Database.Insert(false, 'platform', {
@@ -789,11 +718,7 @@ class Provider {
         platformUrl: platform.url
       });
       provMainDebug(err.message);
-      if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
-        level: 'error',
-        message: 'Message: ' + err.message + '\nStack: ' + err.stack
-      });
-      return false;
+      throw new Error(err);
     }
   }
   /**
@@ -803,32 +728,18 @@ class Provider {
      */
 
 
-  async getPlatform(url, ENCRYPTIONKEY, logger, Database) {
+  async getPlatform(url, ENCRYPTIONKEY, Database) {
     if (!url) throw new Error('No url provided');
-
-    try {
-      const plat = Database !== undefined ? await Database.Get(false, 'platform', {
-        platformUrl: url
-      }) : await this.Database.Get(false, 'platform', {
-        platformUrl: url
-      });
-      if (!plat) return false;
-      const obj = plat[0];
-      if (!obj) return false;
-      const result = new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, ENCRYPTIONKEY !== undefined ? ENCRYPTIONKEY : (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), obj.authConfig, logger !== undefined ? logger : (0, _classPrivateFieldGet2.default)(this, _logger), Database !== undefined ? Database : this.Database);
-      return result;
-    } catch (err) {
-      provAuthDebug(err.message); // If logger is set (Function was called by the Auth or Grade service) and is set to true, or if the scope logger variable is true, print the log
-
-      if (logger !== undefined && logger || (0, _classPrivateFieldGet2.default)(this, _logger)) logger !== undefined ? logger.log({
-        level: 'error',
-        message: 'Message: ' + err.message + '\nStack: ' + err.stack
-      }) : (0, _classPrivateFieldGet2.default)(this, _logger).log({
-        level: 'error',
-        message: 'Message: ' + err.message + '\nStack: ' + err.stack
-      });
-      return false;
-    }
+    const plat = Database !== undefined ? await Database.Get(false, 'platform', {
+      platformUrl: url
+    }) : await this.Database.Get(false, 'platform', {
+      platformUrl: url
+    });
+    if (!plat) return false;
+    const obj = plat[0];
+    if (!obj) return false;
+    const result = new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, ENCRYPTIONKEY !== undefined ? ENCRYPTIONKEY : (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), obj.authConfig, Database !== undefined ? Database : this.Database);
+    return result;
   }
   /**
      * @description Deletes a platform.
@@ -851,25 +762,15 @@ class Provider {
 
   async getAllPlatforms() {
     const returnArray = [];
+    const platforms = await this.Database.Get(false, 'platform');
 
-    try {
-      const platforms = await this.Database.Get(false, 'platform');
+    if (platforms) {
+      for (const obj of platforms) returnArray.push(new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), obj.authConfig, this.Database));
 
-      if (platforms) {
-        for (const obj of platforms) returnArray.push(new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), obj.authConfig, (0, _classPrivateFieldGet2.default)(this, _logger), this.Database));
-
-        return returnArray;
-      }
-
-      return [];
-    } catch (err) {
-      provAuthDebug(err.message);
-      if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
-        level: 'error',
-        message: 'Message: ' + err.message + '\nStack: ' + err.stack
-      });
-      return false;
+      return returnArray;
     }
+
+    return [];
   }
   /**
    * @description Redirect to a new location and sets path variable if the location represents a separate resource.
@@ -943,8 +844,6 @@ var _keysetUrl = new WeakMap();
 var _whitelistedUrls = new WeakMap();
 
 var _ENCRYPTIONKEY = new WeakMap();
-
-var _logger = new WeakMap();
 
 var _devMode = new WeakMap();
 

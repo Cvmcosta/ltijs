@@ -14,7 +14,7 @@ const crypto = require('crypto');
 const provDeepLinkingDebug = require('debug')('provider:deepLinkingService');
 
 class DeepLinking {
-  constructor(getPlatform, ENCRYPTIONKEY, logger, Database) {
+  constructor(getPlatform, ENCRYPTIONKEY, Database) {
     _getPlatform.set(this, {
       writable: true,
       value: null
@@ -25,11 +25,6 @@ class DeepLinking {
       value: ''
     });
 
-    _logger.set(this, {
-      writable: true,
-      value: void 0
-    });
-
     _Database.set(this, {
       writable: true,
       value: void 0
@@ -37,7 +32,6 @@ class DeepLinking {
 
     (0, _classPrivateFieldSet2.default)(this, _getPlatform, getPlatform);
     (0, _classPrivateFieldSet2.default)(this, _ENCRYPTIONKEY, ENCRYPTIONKEY);
-    (0, _classPrivateFieldSet2.default)(this, _logger, logger);
     (0, _classPrivateFieldSet2.default)(this, _Database, Database);
   }
   /**
@@ -91,7 +85,7 @@ class DeepLinking {
 
     if (!Array.isArray(contentItems)) contentItems = [contentItems]; // Gets platform
 
-    const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger), (0, _classPrivateFieldGet2.default)(this, _Database));
+    const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database));
 
     if (!platform) {
       provDeepLinkingDebug('Platform not found');
@@ -147,8 +141,6 @@ class DeepLinking {
 var _getPlatform = new WeakMap();
 
 var _ENCRYPTIONKEY = new WeakMap();
-
-var _logger = new WeakMap();
 
 var _Database = new WeakMap();
 

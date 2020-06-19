@@ -59,7 +59,7 @@ class Auth {
      * @param {String} ENCRYPTIONKEY - Encription key.
      * @returns {Promise}
      */
-  static async validateToken (token, devMode, validationParameters, getPlatform, ENCRYPTIONKEY, logger, Database) {
+  static async validateToken (token, devMode, validationParameters, getPlatform, ENCRYPTIONKEY, Database) {
     const decoded = jwt.decode(token, { complete: true })
     if (!decoded) throw new Error('Invalid JWT received')
 
@@ -75,7 +75,7 @@ class Auth {
     } else if (validationParameters.iss !== decoded.payload.iss) throw new Error('IssClaimDoesNotMatch')
 
     provAuthDebug('Attempting to retrieve registered platform')
-    const platform = await getPlatform(decoded.payload.iss, ENCRYPTIONKEY, logger, Database)
+    const platform = await getPlatform(decoded.payload.iss, ENCRYPTIONKEY, Database)
     if (!platform) throw new Error('NoPlatformRegistered')
 
     const authConfig = await platform.platformAuthConfig()

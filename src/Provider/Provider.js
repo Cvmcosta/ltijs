@@ -16,7 +16,6 @@ const NamesAndRolesService = require('./Services/NamesAndRoles')
 
 const url = require('fast-url-parser')
 const jwt = require('jsonwebtoken')
-const winston = require('winston')
 
 const provAuthDebug = require('debug')('provider:auth')
 const provMainDebug = require('debug')('provider:main')
@@ -39,8 +38,6 @@ class Provider {
   #whitelistedUrls = []
 
   #ENCRYPTIONKEY
-
-  #logger = false
 
   #devMode = false
 
@@ -65,7 +62,7 @@ class Provider {
   // Assembles and sends keyset
   #keyset = async (req, res) => {
     try {
-      const keyset = await Keyset.build(this.Database, this.#ENCRYPTIONKEY, this.#logger)
+      const keyset = await Keyset.build(this.Database, this.#ENCRYPTIONKEY)
       return res.status(200).send(keyset)
     } catch (err) {
       provMainDebug(err.message)
@@ -95,7 +92,6 @@ class Provider {
      * @param {String} [options.ssl.key] - SSL key.
      * @param {String} [options.ssl.cert] - SSL certificate.
      * @param {String} [options.staticPath] - The path for the static files your application might serve (Ex: _dirname+"/public")
-     * @param {Boolean} [options.logger = false] - If true, allows Ltijs to generate logging files for server requests and errors.
      * @param {Boolean} [options.cors = true] - If false, disables cors.
      * @param {Function} [options.serverAddon] - Allows the execution of a method inside of the server contructor. Can be used to register middlewares.
      * @param {Object} [options.cookies] - Cookie configuration. Allows you to configure, sameSite and secure parameters.
@@ -131,59 +127,9 @@ class Provider {
       if (options.cookies.secure === true) this.#cookieOptions.secure = true
     }
 
-    // Setting up logger
-    let loggerServer = false
-    if (options && options.logger) {
-      this.#logger = winston.createLogger({
-        format: winston.format.combine(
-          winston.format.timestamp(),
-          winston.format.json(),
-          winston.format.prettyPrint()
-        ),
-        transports: [
-          new winston.transports.File({
-            filename: 'logs/ltijs_error.log',
-            level: 'error',
-            handleExceptions: true,
-            maxsize: 250000, // 500kb (with two files)
-            maxFiles: 1,
-            colorize: false,
-            tailable: true
-          })
-        ],
-        exitOnError: false
-      })
-
-      // Server logger
-      loggerServer = winston.createLogger({
-        format: winston.format.combine(
-          winston.format.timestamp(),
-          winston.format.prettyPrint()
-        ),
-        transports: [
-          new winston.transports.File({
-            filename: 'logs/ltijs_server.log',
-            handleExceptions: true,
-            json: true,
-            maxsize: 250000, // 500kb (with two files)
-            maxFiles: 1,
-            colorize: false,
-            tailable: true
-          })
-        ],
-        exitOnError: false
-      })
-
-      loggerServer.stream = {
-        write: function (message) {
-          loggerServer.info(message)
-        }
-      }
-    }
-
     this.#ENCRYPTIONKEY = encryptionkey
 
-    this.#server = new Server(options ? options.https : false, options ? options.ssl : false, this.#ENCRYPTIONKEY, loggerServer, options ? options.cors : true, options ? options.serverAddon : false)
+    this.#server = new Server(options ? options.https : false, options ? options.ssl : false, this.#ENCRYPTIONKEY, options ? options.cors : true, options ? options.serverAddon : false)
 
     /**
      * @description Express server object.
@@ -193,17 +139,17 @@ class Provider {
     /**
      * @description Grading service.
      */
-    this.Grade = new GradeService(this.getPlatform, this.#ENCRYPTIONKEY, this.#logger, this.Database)
+    this.Grade = new GradeService(this.getPlatform, this.#ENCRYPTIONKEY, this.Database)
 
     /**
      * @description Deep Linking service.
      */
-    this.DeepLinking = new DeepLinkingService(this.getPlatform, this.#ENCRYPTIONKEY, this.#logger, this.Database)
+    this.DeepLinking = new DeepLinkingService(this.getPlatform, this.#ENCRYPTIONKEY, this.Database)
 
     /**
      * @description Names and Roles service.
      */
-    this.NamesAndRoles = new NamesAndRolesService(this.getPlatform, this.#ENCRYPTIONKEY, this.#logger, this.Database)
+    this.NamesAndRoles = new NamesAndRolesService(this.getPlatform, this.#ENCRYPTIONKEY, this.Database)
 
     if (options && options.staticPath) this.#server.setStaticPath(options.staticPath)
 
@@ -240,7 +186,7 @@ class Provider {
               iss: validationCookie
             }
 
-            const valid = await Auth.validateToken(idtoken, this.#devMode, validationParameters, this.getPlatform, this.#ENCRYPTIONKEY, this.#logger, this.Database)
+            const valid = await Auth.validateToken(idtoken, this.#devMode, validationParameters, this.getPlatform, this.#ENCRYPTIONKEY, this.Database)
 
             // Deletes state validation cookie
             res.clearCookie('state' + state, this.#cookieOptions)
@@ -370,13 +316,12 @@ class Provider {
         } else {
           provMainDebug('No session cookie found')
           provMainDebug('Request body: ', req.body)
-          if (this.#logger) this.#logger.log({ level: 'error', message: req.body })
           provMainDebug('Passing request to session timeout handler')
           return res.redirect(req.baseUrl + this.#sessionTimeoutUrl)
         }
       } catch (err) {
-        provAuthDebug(err.message)
-        if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
+        provAuthDebug('Error: ')
+        provAuthDebug(err)
         provMainDebug('Passing request to invalid token handler')
         return res.redirect(req.baseUrl + this.#invalidTokenUrl)
       }
@@ -415,8 +360,8 @@ class Provider {
           return res.status(401).send('Unregistered platform.')
         }
       } catch (err) {
+        provAuthDebug('Error: ')
         provAuthDebug(err)
-        if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
         return res.status(400).send('Bad Request.')
       }
     })
@@ -488,8 +433,7 @@ class Provider {
 
       return true
     } catch (err) {
-      console.log('Error deploying server:', err.message)
-      if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
+      console.log('Error during deployment: ', err)
       await this.close(options)
       process.exit()
     }
@@ -500,18 +444,12 @@ class Provider {
    * @returns {Promise<true | false>}
    */
   async close (options) {
-    try {
-      if (!options || options.silent !== true) console.log('\nClosing server...')
-      await this.#server.close()
-      if (!options || options.silent !== true) console.log('Closing connection to the database...')
-      await this.Database.Close()
-      if (!options || options.silent !== true) console.log('Shutdown complete.')
-      return true
-    } catch (err) {
-      provMainDebug(err.message)
-      if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
-      return false
-    }
+    if (!options || options.silent !== true) console.log('\nClosing server...')
+    await this.#server.close()
+    if (!options || options.silent !== true) console.log('Closing connection to the database...')
+    await this.Database.Close()
+    if (!options || options.silent !== true) console.log('Shutdown complete.')
+    return true
   }
 
   /**
@@ -664,7 +602,7 @@ class Provider {
       if (!_platform) {
         if (!platform.name || !platform.clientId || !platform.authenticationEndpoint || !platform.accesstokenEndpoint || !platform.authConfig) throw new Error('Error registering platform. Missing arguments.')
         kid = await Auth.generateProviderKeyPair(this.#ENCRYPTIONKEY, this.Database)
-        const plat = new Platform(platform.name, platform.url, platform.clientId, platform.authenticationEndpoint, platform.accesstokenEndpoint, kid, this.#ENCRYPTIONKEY, platform.authConfig, this.#logger, this.Database)
+        const plat = new Platform(platform.name, platform.url, platform.clientId, platform.authenticationEndpoint, platform.accesstokenEndpoint, kid, this.#ENCRYPTIONKEY, platform.authConfig, this.Database)
 
         // Save platform to db
         provMainDebug('Registering new platform: ' + platform.url)
@@ -681,8 +619,7 @@ class Provider {
       await this.Database.Delete('privatekey', { kid: kid })
       await this.Database.Delete('platform', { platformUrl: platform.url })
       provMainDebug(err.message)
-      if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
-      return false
+      throw new Error(err)
     }
   }
 
@@ -691,24 +628,18 @@ class Provider {
      * @param {String} url - Platform url.
      * @returns {Promise<Platform | false>}
      */
-  async getPlatform (url, ENCRYPTIONKEY, logger, Database) {
+  async getPlatform (url, ENCRYPTIONKEY, Database) {
     if (!url) throw new Error('No url provided')
-    try {
-      const plat = Database !== undefined ? await Database.Get(false, 'platform', { platformUrl: url }) : await this.Database.Get(false, 'platform', { platformUrl: url })
 
-      if (!plat) return false
-      const obj = plat[0]
+    const plat = Database !== undefined ? await Database.Get(false, 'platform', { platformUrl: url }) : await this.Database.Get(false, 'platform', { platformUrl: url })
 
-      if (!obj) return false
-      const result = new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, ENCRYPTIONKEY !== undefined ? ENCRYPTIONKEY : this.#ENCRYPTIONKEY, obj.authConfig, logger !== undefined ? logger : this.#logger, Database !== undefined ? Database : this.Database)
+    if (!plat) return false
+    const obj = plat[0]
 
-      return result
-    } catch (err) {
-      provAuthDebug(err.message)
-      // If logger is set (Function was called by the Auth or Grade service) and is set to true, or if the scope logger variable is true, print the log
-      if ((logger !== undefined && logger) || this.#logger) logger !== undefined ? logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack }) : this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
-      return false
-    }
+    if (!obj) return false
+    const result = new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, ENCRYPTIONKEY !== undefined ? ENCRYPTIONKEY : this.#ENCRYPTIONKEY, obj.authConfig, Database !== undefined ? Database : this.Database)
+
+    return result
   }
 
   /**
@@ -729,19 +660,13 @@ class Provider {
      */
   async getAllPlatforms () {
     const returnArray = []
-    try {
-      const platforms = await this.Database.Get(false, 'platform')
+    const platforms = await this.Database.Get(false, 'platform')
 
-      if (platforms) {
-        for (const obj of platforms) returnArray.push(new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, this.#ENCRYPTIONKEY, obj.authConfig, this.#logger, this.Database))
-        return returnArray
-      }
-      return []
-    } catch (err) {
-      provAuthDebug(err.message)
-      if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
-      return false
+    if (platforms) {
+      for (const obj of platforms) returnArray.push(new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, this.#ENCRYPTIONKEY, obj.authConfig, this.Database))
+      return returnArray
     }
+    return []
   }
 
   /**

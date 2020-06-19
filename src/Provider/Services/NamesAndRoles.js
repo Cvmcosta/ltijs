@@ -8,14 +8,11 @@ class NamesAndRoles {
 
   #ENCRYPTIONKEY = ''
 
-  #logger
-
   #Database
 
-  constructor (getPlatform, ENCRYPTIONKEY, logger, Database) {
+  constructor (getPlatform, ENCRYPTIONKEY, Database) {
     this.#getPlatform = getPlatform
     this.#ENCRYPTIONKEY = ENCRYPTIONKEY
-    this.#logger = logger
     this.#Database = Database
   }
 
@@ -33,7 +30,7 @@ class NamesAndRoles {
     provNamesAndRolesServiceDebug('Attempting to retrieve memberships')
     provNamesAndRolesServiceDebug('Target platform: ' + idtoken.iss)
 
-    const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#logger, this.#Database)
+    const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#Database)
 
     if (!platform) {
       provNamesAndRolesServiceDebug('Platform not found')

@@ -9,14 +9,11 @@ class DeepLinking {
 
   #ENCRYPTIONKEY = ''
 
-  #logger
-
   #Database
 
-  constructor (getPlatform, ENCRYPTIONKEY, logger, Database) {
+  constructor (getPlatform, ENCRYPTIONKEY, Database) {
     this.#getPlatform = getPlatform
     this.#ENCRYPTIONKEY = ENCRYPTIONKEY
-    this.#logger = logger
     this.#Database = Database
   }
 
@@ -63,7 +60,7 @@ class DeepLinking {
     if (!Array.isArray(contentItems)) contentItems = [contentItems]
 
     // Gets platform
-    const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#logger, this.#Database)
+    const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#Database)
     if (!platform) {
       provDeepLinkingDebug('Platform not found')
       throw new Error('PLATFORM_NOT_FOUND')

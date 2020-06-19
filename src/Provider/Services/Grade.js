@@ -11,14 +11,11 @@ class Grade {
 
   #ENCRYPTIONKEY = ''
 
-  #logger
-
   #Database
 
-  constructor (getPlatform, ENCRYPTIONKEY, logger, Database) {
+  constructor (getPlatform, ENCRYPTIONKEY, Database) {
     this.#getPlatform = getPlatform
     this.#ENCRYPTIONKEY = ENCRYPTIONKEY
-    this.#logger = logger
     this.#Database = Database
   }
 
@@ -38,7 +35,7 @@ class Grade {
     provGradeServiceDebug('Target platform: ' + idtoken.iss)
 
     if (!accessToken) {
-      const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#logger, this.#Database) // Remove and use DB instead
+      const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#Database) // Remove and use DB instead
 
       if (!platform) {
         provGradeServiceDebug('Platform not found')
@@ -88,7 +85,7 @@ class Grade {
     provGradeServiceDebug('Target platform: ' + idtoken.iss)
 
     if (!accessToken) {
-      const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#logger, this.#Database)
+      const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#Database)
 
       if (!platform) {
         provGradeServiceDebug('Platform not found')
@@ -127,7 +124,7 @@ class Grade {
 
     provGradeServiceDebug('Target platform: ' + idtoken.iss)
 
-    const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#logger, this.#Database)
+    const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#Database)
 
     if (!platform) {
       provGradeServiceDebug('Platform not found')
@@ -151,7 +148,6 @@ class Grade {
         result.success.push({ lineitem: lineitemUrl })
       } catch (err) {
         provGradeServiceDebug(err)
-        if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
         result.failure.push({ lineitem: lineitem.id, error: err.message })
         continue
       }
@@ -178,7 +174,7 @@ class Grade {
     if (!score) { provGradeServiceDebug('Score object missing.'); throw new Error('MISSING_SCORE') }
     provGradeServiceDebug('Target platform: ' + idtoken.iss)
 
-    const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#logger, this.#Database)
+    const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#Database)
 
     if (!platform) {
       provGradeServiceDebug('Platform not found')
@@ -231,7 +227,6 @@ class Grade {
         result.success.push({ lineitem: lineitemUrl })
       } catch (err) {
         provGradeServiceDebug(err)
-        if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
         result.failure.push({ lineitem: lineitem.id, error: err.message })
         continue
       }
@@ -256,7 +251,7 @@ class Grade {
 
     provGradeServiceDebug('Target platform: ' + idtoken.iss)
 
-    const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#logger, this.#Database)
+    const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#Database)
 
     if (!platform) {
       provGradeServiceDebug('Platform not found')
@@ -313,7 +308,6 @@ class Grade {
         })
       } catch (err) {
         provGradeServiceDebug(err.message)
-        if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
         continue
       }
     }

@@ -23,8 +23,6 @@ class Platform {
 
   #kid
 
-  #logger
-
   #Database
 
   /**
@@ -37,7 +35,7 @@ class Platform {
      * @param {string} _ENCRYPTIONKEY - Encryption key used
      * @param {Object} _authConfig - Authentication configurations for the platform.
      */
-  constructor (name, platformUrl, clientId, authenticationEndpoint, accesstokenEndpoint, kid, _ENCRYPTIONKEY, _authConfig, logger, Database) {
+  constructor (name, platformUrl, clientId, authenticationEndpoint, accesstokenEndpoint, kid, _ENCRYPTIONKEY, _authConfig, Database) {
     this.#authConfig = _authConfig
     this.#ENCRYPTIONKEY = _ENCRYPTIONKEY
 
@@ -47,7 +45,6 @@ class Platform {
     this.#authEndpoint = authenticationEndpoint
     this.#accesstokenEndpoint = accesstokenEndpoint
     this.#kid = kid
-    this.#logger = logger
     this.#Database = Database
   }
 
@@ -57,13 +54,7 @@ class Platform {
      */
   async platformName (name) {
     if (!name) return this.#platformName
-    try {
-      await this.#Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { platformName: name })
-    } catch (err) {
-      provPlatformDebug(err.message)
-      if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
-      return false
-    }
+    await this.#Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { platformName: name })
     this.#platformName = name
     return this
   }
@@ -74,13 +65,7 @@ class Platform {
      */
   async platformUrl (url) {
     if (!url) return this.#platformUrl
-    try {
-      await this.#Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { platformUrl: url })
-    } catch (err) {
-      provPlatformDebug(err.message)
-      if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
-      return false
-    }
+    await this.#Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { platformUrl: url })
     this.#platformUrl = url
     return this
   }
@@ -91,13 +76,7 @@ class Platform {
      */
   async platformClientId (clientId) {
     if (!clientId) return this.#clientId
-    try {
-      await this.#Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { clientId: clientId })
-    } catch (err) {
-      provPlatformDebug(err.message)
-      if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
-      return false
-    }
+    await this.#Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { clientId: clientId })
     this.#clientId = clientId
     return this
   }
@@ -114,14 +93,8 @@ class Platform {
      *
      */
   async platformPublicKey () {
-    try {
-      const key = await this.#Database.Get(this.#ENCRYPTIONKEY, 'publickey', { kid: this.#kid })
-      return key[0].key
-    } catch (err) {
-      provPlatformDebug(err.message)
-      if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
-      return false
-    }
+    const key = await this.#Database.Get(this.#ENCRYPTIONKEY, 'publickey', { kid: this.#kid })
+    return key[0].key
   }
 
   /**
@@ -129,14 +102,8 @@ class Platform {
      *
      */
   async platformPrivateKey () {
-    try {
-      const key = await this.#Database.Get(this.#ENCRYPTIONKEY, 'privatekey', { kid: this.#kid })
-      return key[0].key
-    } catch (err) {
-      provPlatformDebug(err.message)
-      if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
-      return false
-    }
+    const key = await this.#Database.Get(this.#ENCRYPTIONKEY, 'privatekey', { kid: this.#kid })
+    return key[0].key
   }
 
   /**
@@ -156,14 +123,7 @@ class Platform {
       key: key
     }
 
-    try {
-      await this.#Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { authConfig: authConfig })
-    } catch (err) {
-      provPlatformDebug(err.message)
-      if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
-      return false
-    }
-
+    await this.#Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { authConfig: authConfig })
     this.#authConfig = authConfig
     return this
   }
@@ -174,14 +134,7 @@ class Platform {
      */
   async platformAuthEndpoint (authEndpoint) {
     if (!authEndpoint) return this.#authEndpoint
-
-    try {
-      await this.#Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { authEndpoint: authEndpoint })
-    } catch (err) {
-      provPlatformDebug(err.message)
-      if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
-      return false
-    }
+    await this.#Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { authEndpoint: authEndpoint })
     this.#authEndpoint = authEndpoint
     return this
   }
@@ -192,13 +145,7 @@ class Platform {
      */
   async platformAccessTokenEndpoint (accesstokenEndpoint) {
     if (!accesstokenEndpoint) return this.#accesstokenEndpoint
-    try {
-      await this.#Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { accesstokenEndpoint: accesstokenEndpoint })
-    } catch (err) {
-      provPlatformDebug(err.message)
-      if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
-      return false
-    }
+    await this.#Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { accesstokenEndpoint: accesstokenEndpoint })
     this.#accesstokenEndpoint = accesstokenEndpoint
     return this
   }
@@ -227,13 +174,7 @@ class Platform {
    * @description Deletes a registered platform.
    */
   async remove () {
-    try {
-      return Promise.all([this.#Database.Delete('platform', { platformUrl: this.#platformUrl }), this.#Database.Delete('publickey', { kid: this.#kid }), this.#Database.Delete('privatekey', { kid: this.#kid })])
-    } catch (err) {
-      provPlatformDebug(err.message)
-      if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
-      return false
-    }
+    return Promise.all([this.#Database.Delete('platform', { platformUrl: this.#platformUrl }), this.#Database.Delete('publickey', { kid: this.#kid }), this.#Database.Delete('privatekey', { kid: this.#kid })])
   }
 }
 

@@ -12,7 +12,7 @@ const got = require('got');
 const provNamesAndRolesServiceDebug = require('debug')('provider:namesAndRolesService');
 
 class NamesAndRoles {
-  constructor(getPlatform, ENCRYPTIONKEY, logger, Database) {
+  constructor(getPlatform, ENCRYPTIONKEY, Database) {
     _getPlatform.set(this, {
       writable: true,
       value: null
@@ -23,11 +23,6 @@ class NamesAndRoles {
       value: ''
     });
 
-    _logger.set(this, {
-      writable: true,
-      value: void 0
-    });
-
     _Database.set(this, {
       writable: true,
       value: void 0
@@ -35,7 +30,6 @@ class NamesAndRoles {
 
     (0, _classPrivateFieldSet2.default)(this, _getPlatform, getPlatform);
     (0, _classPrivateFieldSet2.default)(this, _ENCRYPTIONKEY, ENCRYPTIONKEY);
-    (0, _classPrivateFieldSet2.default)(this, _logger, logger);
     (0, _classPrivateFieldSet2.default)(this, _Database, Database);
   }
   /**
@@ -57,7 +51,7 @@ class NamesAndRoles {
 
     provNamesAndRolesServiceDebug('Attempting to retrieve memberships');
     provNamesAndRolesServiceDebug('Target platform: ' + idtoken.iss);
-    const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger), (0, _classPrivateFieldGet2.default)(this, _Database));
+    const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database));
 
     if (!platform) {
       provNamesAndRolesServiceDebug('Platform not found');
@@ -125,8 +119,6 @@ class NamesAndRoles {
 var _getPlatform = new WeakMap();
 
 var _ENCRYPTIONKEY = new WeakMap();
-
-var _logger = new WeakMap();
 
 var _Database = new WeakMap();
 

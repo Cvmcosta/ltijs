@@ -16,7 +16,7 @@ const got = require('got');
 const provGradeServiceDebug = require('debug')('provider:gradeService');
 
 class Grade {
-  constructor(getPlatform, ENCRYPTIONKEY, logger, Database) {
+  constructor(getPlatform, ENCRYPTIONKEY, Database) {
     _getPlatform.set(this, {
       writable: true,
       value: null
@@ -27,11 +27,6 @@ class Grade {
       value: ''
     });
 
-    _logger.set(this, {
-      writable: true,
-      value: void 0
-    });
-
     _Database.set(this, {
       writable: true,
       value: void 0
@@ -39,7 +34,6 @@ class Grade {
 
     (0, _classPrivateFieldSet2.default)(this, _getPlatform, getPlatform);
     (0, _classPrivateFieldSet2.default)(this, _ENCRYPTIONKEY, ENCRYPTIONKEY);
-    (0, _classPrivateFieldSet2.default)(this, _logger, logger);
     (0, _classPrivateFieldSet2.default)(this, _Database, Database);
   }
   /**
@@ -64,7 +58,7 @@ class Grade {
     provGradeServiceDebug('Target platform: ' + idtoken.iss);
 
     if (!accessToken) {
-      const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger), (0, _classPrivateFieldGet2.default)(this, _Database)); // Remove and use DB instead
+      const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database)); // Remove and use DB instead
 
       if (!platform) {
         provGradeServiceDebug('Platform not found');
@@ -128,7 +122,7 @@ class Grade {
     provGradeServiceDebug('Target platform: ' + idtoken.iss);
 
     if (!accessToken) {
-      const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger), (0, _classPrivateFieldGet2.default)(this, _Database));
+      const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database));
 
       if (!platform) {
         provGradeServiceDebug('Platform not found');
@@ -173,7 +167,7 @@ class Grade {
     }
 
     provGradeServiceDebug('Target platform: ' + idtoken.iss);
-    const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger), (0, _classPrivateFieldGet2.default)(this, _Database));
+    const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database));
 
     if (!platform) {
       provGradeServiceDebug('Platform not found');
@@ -204,10 +198,6 @@ class Grade {
         });
       } catch (err) {
         provGradeServiceDebug(err);
-        if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
-          level: 'error',
-          message: 'Message: ' + err.message + '\nStack: ' + err.stack
-        });
         result.failure.push({
           lineitem: lineitem.id,
           error: err.message
@@ -246,7 +236,7 @@ class Grade {
     }
 
     provGradeServiceDebug('Target platform: ' + idtoken.iss);
-    const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger), (0, _classPrivateFieldGet2.default)(this, _Database));
+    const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database));
 
     if (!platform) {
       provGradeServiceDebug('Platform not found');
@@ -307,10 +297,6 @@ class Grade {
         });
       } catch (err) {
         provGradeServiceDebug(err);
-        if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
-          level: 'error',
-          message: 'Message: ' + err.message + '\nStack: ' + err.stack
-        });
         result.failure.push({
           lineitem: lineitem.id,
           error: err.message
@@ -342,7 +328,7 @@ class Grade {
     }
 
     provGradeServiceDebug('Target platform: ' + idtoken.iss);
-    const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger), (0, _classPrivateFieldGet2.default)(this, _Database));
+    const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database));
 
     if (!platform) {
       provGradeServiceDebug('Platform not found');
@@ -403,10 +389,6 @@ class Grade {
         });
       } catch (err) {
         provGradeServiceDebug(err.message);
-        if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
-          level: 'error',
-          message: 'Message: ' + err.message + '\nStack: ' + err.stack
-        });
         continue;
       }
     }
@@ -470,8 +452,6 @@ class Grade {
 var _getPlatform = new WeakMap();
 
 var _ENCRYPTIONKEY = new WeakMap();
-
-var _logger = new WeakMap();
 
 var _Database = new WeakMap();
 
