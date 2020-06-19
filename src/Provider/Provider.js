@@ -65,8 +65,8 @@ class Provider {
       const keyset = await Keyset.build(this.Database, this.#ENCRYPTIONKEY)
       return res.status(200).send(keyset)
     } catch (err) {
-      provMainDebug(err.message)
-      return res.status(500).send(err.message)
+      provMainDebug(err)
+      res.sendStatus(500)
     }
   }
 
@@ -320,7 +320,6 @@ class Provider {
           return res.redirect(req.baseUrl + this.#sessionTimeoutUrl)
         }
       } catch (err) {
-        provAuthDebug('Error: ')
         provAuthDebug(err)
         provMainDebug('Passing request to invalid token handler')
         return res.redirect(req.baseUrl + this.#invalidTokenUrl)
@@ -360,9 +359,8 @@ class Provider {
           return res.status(401).send('Unregistered platform.')
         }
       } catch (err) {
-        provAuthDebug('Error: ')
         provAuthDebug(err)
-        return res.status(400).send('Bad Request.')
+        res.sendStatus(400)
       }
     })
 
