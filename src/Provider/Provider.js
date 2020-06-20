@@ -672,7 +672,7 @@ class Provider {
    * @param {Object} res - Express response object.
    * @param {String} path - Redirect path.
    * @param {Object} [options] - Redirection options.
-   * @param {Boolean} [options.isNewResource = false] - If changes the path variable on the context token.
+   * @param {Boolean} [options.isNewResource = false] - If true, changes the path variable on the context token.
    * @example lti.redirect(response, '/path', { isNewResource: true })
    */
   async redirect (res, path, options) {

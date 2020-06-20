@@ -133,8 +133,8 @@ class Provider {
           const keyset = await Keyset.build(this.Database, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
           return res.status(200).send(keyset);
         } catch (err) {
-          provMainDebug(err.message);
-          return res.status(500).send(err.message);
+          provMainDebug(err);
+          res.sendStatus(500);
         }
       }
     });
@@ -391,7 +391,6 @@ class Provider {
           return res.redirect(req.baseUrl + (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl));
         }
       } catch (err) {
-        provAuthDebug('Error: ');
         provAuthDebug(err);
         provMainDebug('Passing request to invalid token handler');
         return res.redirect(req.baseUrl + (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl));
@@ -431,9 +430,8 @@ class Provider {
           return res.status(401).send('Unregistered platform.');
         }
       } catch (err) {
-        provAuthDebug('Error: ');
         provAuthDebug(err);
-        return res.status(400).send('Bad Request.');
+        res.sendStatus(400);
       }
     }); // Session timeout, invalid token and keyset urls
 
@@ -777,7 +775,7 @@ class Provider {
    * @param {Object} res - Express response object.
    * @param {String} path - Redirect path.
    * @param {Object} [options] - Redirection options.
-   * @param {Boolean} [options.isNewResource = false] - If changes the path variable on the context token.
+   * @param {Boolean} [options.isNewResource = false] - If true, changes the path variable on the context token.
    * @example lti.redirect(response, '/path', { isNewResource: true })
    */
 
