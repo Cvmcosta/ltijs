@@ -1,7 +1,7 @@
 {
   "name": "ltijs",
   "version": "4.0.7",
-  "description": "Turn your application into a fully integratable LTI 1.3 tool.",
+  "description": "Turn your web application into a fully LTI 1.3 compliant Learning Tool.",
   "main": "index.js",
   "engineStrict": true,
   "engines": {

@@ -6,7 +6,7 @@
 
 
 
-> Turn your application into a fully integratable LTI 1.3 tool provider.
+> Turn your web application into into a fully LTI 1.3 compliant Learning Tool.
 
 
 [![travisci](https://img.shields.io/travis/cvmcosta/ltijs.svg)](https://travis-ci.org/Cvmcosta/ltijs)

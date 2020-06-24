@@ -89,6 +89,11 @@ class Provider {
       value: false
     });
 
+    _tokenMaxAge.set(this, {
+      writable: true,
+      value: 10
+    });
+
     _cookieOptions.set(this, {
       writable: true,
       value: {
@@ -171,6 +176,7 @@ class Provider {
      * @param {Boolean} [options.cookies.secure = false] - Cookie secure parameter. If true, only allows cookies to be passed over https.
      * @param {String} [options.cookies.sameSite = 'Lax'] - Cookie sameSite parameter. If cookies are going to be set across domains, set this parameter to 'None'.
      * @param {Boolean} [options.devMode = false] - If true, does not require state and session cookies to be present (If present, they are still validated). This allows ltijs to work on development environments where cookies cannot be set. THIS SHOULD NOT BE USED IN A PRODUCTION ENVIRONMENT.
+     * @param {Number} [options.tokenMaxAge = 10] - Sets the idToken max age allowed in seconds. Defaults to 10 seconds. If false, disables max age validation.
      */
   setup(encryptionkey, database, options) {
     if (options && options.https && (!options.ssl || !options.ssl.key || !options.ssl.cert)) throw new Error('No ssl Key  or Certificate found for local https configuration.');
@@ -187,7 +193,8 @@ class Provider {
     if (options && options.sessionTimeoutUrl) (0, _classPrivateFieldSet2.default)(this, _sessionTimeoutUrl, options.sessionTimeoutUrl);
     if (options && options.invalidTokenUrl) (0, _classPrivateFieldSet2.default)(this, _invalidTokenUrl, options.invalidTokenUrl);
     if (options && options.keysetUrl) (0, _classPrivateFieldSet2.default)(this, _keysetUrl, options.keysetUrl);
-    if (options && options.devMode === true) (0, _classPrivateFieldSet2.default)(this, _devMode, true); // Cookie options
+    if (options && options.devMode === true) (0, _classPrivateFieldSet2.default)(this, _devMode, true);
+    if (options && options.tokenMaxAge !== undefined) (0, _classPrivateFieldSet2.default)(this, _tokenMaxAge, options.tokenMaxAge); // Cookie options
 
     if (options && options.cookies) {
       if (options.cookies.sameSite) {
@@ -248,7 +255,8 @@ class Provider {
             provAuthDebug('Response state: ' + state);
             const validationCookie = cookies['state' + state];
             const validationParameters = {
-              iss: validationCookie
+              iss: validationCookie,
+              maxAge: (0, _classPrivateFieldGet2.default)(this, _tokenMaxAge)
             };
             const valid = await Auth.validateToken(idtoken, (0, _classPrivateFieldGet2.default)(this, _devMode), validationParameters, this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), this.Database); // Deletes state validation cookie
 
@@ -844,6 +852,8 @@ var _whitelistedUrls = new WeakMap();
 var _ENCRYPTIONKEY = new WeakMap();
 
 var _devMode = new WeakMap();
+
+var _tokenMaxAge = new WeakMap();
 
 var _cookieOptions = new WeakMap();
 

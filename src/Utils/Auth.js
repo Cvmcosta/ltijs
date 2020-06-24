@@ -64,7 +64,7 @@ class Auth {
     if (!decoded) throw new Error('Invalid JWT received')
 
     const kid = decoded.header.kid
-    const alg = decoded.header.alg
+    validationParameters.alg = decoded.header.alg
 
     provAuthDebug('Attempting to validate iss claim')
     provAuthDebug('Request Iss claim: ' + validationParameters.iss)
@@ -95,7 +95,7 @@ class Auth {
         if (!jwk) throw new Error('NoKeyFound')
         provAuthDebug('Converting JWK key to PEM key')
         const key = await Jwk.export({ jwk: jwk })
-        const verified = await this.verifyToken(token, key, alg, platform, Database)
+        const verified = await this.verifyToken(token, key, validationParameters, platform, Database)
         return (verified)
       }
       case 'JWK_KEY': {
@@ -104,7 +104,7 @@ class Auth {
 
         const key = Jwk.jwk2pem(authConfig.key)
 
-        const verified = await this.verifyToken(token, key, alg, platform, Database)
+        const verified = await this.verifyToken(token, key, validationParameters, platform, Database)
         return (verified)
       }
       case 'RSA_KEY': {
@@ -112,7 +112,7 @@ class Auth {
         const key = authConfig.key
         if (!key) throw new Error('NoKeyFound')
 
-        const verified = await this.verifyToken(token, key, alg, platform, Database)
+        const verified = await this.verifyToken(token, key, validationParameters, platform, Database)
         return (verified)
       }
       default: {
@@ -126,14 +126,13 @@ class Auth {
      * @description Verifies a token.
      * @param {Object} token - Token to be verified.
      * @param {String} key - Key to verify the token.
-     * @param {String} alg - Algorithm used.
+     * @param {Object} validationParameters - Validation Parameters.
      * @param {Platform} platform - Issuer platform.
      */
-  static async verifyToken (token, key, alg, platform, Database) {
+  static async verifyToken (token, key, validationParameters, platform, Database) {
     provAuthDebug('Attempting to verify JWT with the given key')
-
-    const verified = jwt.verify(token, key, { algorithms: [alg] })
-    await this.oidcValidation(verified, platform, alg, Database)
+    const verified = jwt.verify(token, key, { algorithms: [validationParameters.alg] })
+    await this.oidcValidation(verified, platform, validationParameters, Database)
     await this.claimValidation(verified)
 
     return verified
@@ -143,18 +142,18 @@ class Auth {
      * @description Validates de token based on the OIDC specifications.
      * @param {Object} token - Id token you wish to validate.
      * @param {Platform} platform - Platform object.
-     * @param {String} alg - Algorithm used.
+     * @param {Object} validationParameters - Validation parameters.
      */
-  static async oidcValidation (token, platform, alg, Database) {
+  static async oidcValidation (token, platform, validationParameters, Database) {
     provAuthDebug('Token signature verified')
     provAuthDebug('Initiating OIDC aditional validation steps')
 
     const aud = this.validateAud(token, platform)
-    const _alg = this.validateAlg(alg)
-    const iat = this.validateIat(token)
+    const alg = this.validateAlg(validationParameters.alg)
+    const maxAge = this.validateMaxAge(token, validationParameters.maxAge)
     const nonce = this.validateNonce(token, Database)
 
-    return Promise.all([aud, _alg, iat, nonce])
+    return Promise.all([aud, alg, maxAge, nonce])
   }
 
   /**
@@ -185,10 +184,13 @@ class Auth {
   }
 
   /**
-     * @description Validates Iat.
+     * @description Validates token max age.
      * @param {Object} token - Id token you wish to validate.
+     * @param {Number} maxAge - Max age allowed for the token.
      */
-  static async validateIat (token) {
+  static async validateMaxAge (token, maxAge) {
+    provAuthDebug('Max age parameter: ', maxAge)
+    if (!maxAge) return true
     provAuthDebug('Checking iat claim to prevent old tokens from being passed.')
     provAuthDebug('Iat claim: ' + token.iat)
     provAuthDebug('Exp claim: ' + token.exp)
@@ -196,7 +198,7 @@ class Auth {
     provAuthDebug('Current_time: ' + curTime)
     const timePassed = curTime - token.iat
     provAuthDebug('Time passed: ' + timePassed)
-    if (timePassed > 10) throw new Error('TokenTooOld')
+    if (timePassed > maxAge) throw new Error('TokenTooOld')
     return true
   }
 

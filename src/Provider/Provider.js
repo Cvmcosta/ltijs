@@ -41,6 +41,8 @@ class Provider {
 
   #devMode = false
 
+  #tokenMaxAge = 10
+
   #cookieOptions = {
     secure: false,
     httpOnly: true,
@@ -98,6 +100,7 @@ class Provider {
      * @param {Boolean} [options.cookies.secure = false] - Cookie secure parameter. If true, only allows cookies to be passed over https.
      * @param {String} [options.cookies.sameSite = 'Lax'] - Cookie sameSite parameter. If cookies are going to be set across domains, set this parameter to 'None'.
      * @param {Boolean} [options.devMode = false] - If true, does not require state and session cookies to be present (If present, they are still validated). This allows ltijs to work on development environments where cookies cannot be set. THIS SHOULD NOT BE USED IN A PRODUCTION ENVIRONMENT.
+     * @param {Number} [options.tokenMaxAge = 10] - Sets the idToken max age allowed in seconds. Defaults to 10 seconds. If false, disables max age validation.
      */
   setup (encryptionkey, database, options) {
     if (options && options.https && (!options.ssl || !options.ssl.key || !options.ssl.cert)) throw new Error('No ssl Key  or Certificate found for local https configuration.')
@@ -117,6 +120,7 @@ class Provider {
     if (options && options.invalidTokenUrl) this.#invalidTokenUrl = options.invalidTokenUrl
     if (options && options.keysetUrl) this.#keysetUrl = options.keysetUrl
     if (options && options.devMode === true) this.#devMode = true
+    if (options && options.tokenMaxAge !== undefined) this.#tokenMaxAge = options.tokenMaxAge
 
     // Cookie options
     if (options && options.cookies) {
@@ -183,7 +187,8 @@ class Provider {
             const validationCookie = cookies['state' + state]
 
             const validationParameters = {
-              iss: validationCookie
+              iss: validationCookie,
+              maxAge: this.#tokenMaxAge
             }
 
             const valid = await Auth.validateToken(idtoken, this.#devMode, validationParameters, this.getPlatform, this.#ENCRYPTIONKEY, this.Database)
