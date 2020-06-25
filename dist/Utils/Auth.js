@@ -303,10 +303,14 @@ class Auth {
       form: message
     }).json();
     provAuthDebug('Successfully generated new access_token');
-    await Database.Insert(ENCRYPTIONKEY, 'accesstoken', {
+    const platformUrl = await platform.platformUrl();
+    await Database.Replace(ENCRYPTIONKEY, 'accesstoken', {
+      platformUrl: platformUrl,
+      scopes: scopes
+    }, {
       token: access
     }, {
-      platformUrl: await platform.platformUrl(),
+      platformUrl: platformUrl,
       scopes: scopes
     });
     return access;

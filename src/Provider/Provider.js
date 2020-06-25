@@ -223,7 +223,7 @@ class Provider {
             }
 
             // Store idToken in database
-            if (await this.Database.Delete('idtoken', { iss: valid.iss, user: valid.sub })) await this.Database.Insert(false, 'idtoken', platformToken) // Add deployment id for multi tenant support
+            await this.Database.Replace(false, 'idtoken', { iss: valid.iss, user: valid.sub }, platformToken) // Add deployment id for multi tenant support
 
             // Mount context token
             const contextToken = {
@@ -241,7 +241,7 @@ class Provider {
             }
 
             // Store contextToken in database
-            if (await this.Database.Delete('contexttoken', { contextId: contextId, user: valid.sub })) await this.Database.Insert(false, 'contexttoken', contextToken)
+            await this.Database.Replace(false, 'contexttoken', { contextId: contextId, user: valid.sub }, contextToken)
 
             // Creates platform session cookie
             res.cookie(platformCode, valid.sub, this.#cookieOptions)

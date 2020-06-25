@@ -277,7 +277,8 @@ class Auth {
     const access = await got.post(await platform.platformAccessTokenEndpoint(), { form: message }).json()
     provAuthDebug('Successfully generated new access_token')
 
-    await Database.Insert(ENCRYPTIONKEY, 'accesstoken', { token: access }, { platformUrl: await platform.platformUrl(), scopes: scopes })
+    const platformUrl = await platform.platformUrl()
+    await Database.Replace(ENCRYPTIONKEY, 'accesstoken', { platformUrl: platformUrl, scopes: scopes }, { token: access }, { platformUrl: platformUrl, scopes: scopes })
 
     return access
   }

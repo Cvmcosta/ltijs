@@ -286,10 +286,10 @@ class Provider {
               namesRoles: valid['https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice']
             }; // Store idToken in database
 
-            if (await this.Database.Delete('idtoken', {
+            await this.Database.Replace(false, 'idtoken', {
               iss: valid.iss,
               user: valid.sub
-            })) await this.Database.Insert(false, 'idtoken', platformToken); // Add deployment id for multi tenant support
+            }, platformToken); // Add deployment id for multi tenant support
             // Mount context token
 
             const contextToken = {
@@ -306,10 +306,10 @@ class Provider {
               deepLinkingSettings: valid['https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings']
             }; // Store contextToken in database
 
-            if (await this.Database.Delete('contexttoken', {
+            await this.Database.Replace(false, 'contexttoken', {
               contextId: contextId,
               user: valid.sub
-            })) await this.Database.Insert(false, 'contexttoken', contextToken); // Creates platform session cookie
+            }, contextToken); // Creates platform session cookie
 
             res.cookie(platformCode, valid.sub, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
             provMainDebug('Generating LTIK and redirecting to endpoint');

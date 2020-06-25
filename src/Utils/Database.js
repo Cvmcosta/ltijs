@@ -41,6 +41,8 @@ class Database {
       namesRoles: JSON,
       createdAt: { type: Date, expires: 3600 * 24, default: Date.now }
     })
+    // idTokenSchema.index({ iss: 1, user: 1 })
+
     const contextTokenSchema = new Schema({
       contextId: String,
       user: String,
@@ -55,6 +57,8 @@ class Database {
       deepLinkingSettings: JSON,
       createdAt: { type: Date, expires: 3600 * 24, default: Date.now }
     })
+    // contextTokenSchema.index({ contextId: 1, user: 1 })
+
     const platformSchema = new Schema({
       platformUrl: {
         type: String,
@@ -70,11 +74,15 @@ class Database {
         key: String
       }
     })
+    // platformSchema.index({ platformUrl: 1 })
+
     const keySchema = new Schema({
       kid: String,
       iv: String,
       data: String
     })
+    // keySchema.index({ kid: 1 }, { unique: true })
+
     const accessTokenSchema = new Schema({
       platformUrl: String,
       scopes: String,
@@ -82,10 +90,13 @@ class Database {
       data: String,
       createdAt: { type: Date, expires: 3600, default: Date.now }
     })
+    // accessTokenSchema.index({ platformUrl: 1, scopes: 1 }, { unique: true })
+
     const nonceSchema = new Schema({
       nonce: String,
       createdAt: { type: Date, expires: 10, default: Date.now }
     })
+    // nonceSchema.index({ nonce: 1 })
 
     try {
       mongoose.model('idtoken', idTokenSchema)
@@ -192,6 +203,32 @@ class Database {
     }
     const newDoc = new Model(newDocData)
     await newDoc.save()
+    return true
+  }
+
+  /**
+   * @description Replace item in database. Creates a new document if it does not exist.
+   * @param {String} ENCRYPTIONKEY - Encryptionkey of the database, false if none.
+   * @param {String} collection - The collection to be accessed inside the database.
+   * @param {Object} query - Query for the item you are looking for in the format {type: "type1"}.
+   * @param {Object} item - The item Object you want to insert in the database.
+   * @param {Object} [index] - Key that should be used as index in case of Encrypted document.
+   */
+  async Replace (ENCRYPTIONKEY, collection, query, item, index) {
+    if (!collection || !item || (ENCRYPTIONKEY && !index)) throw new Error('Missing argument.')
+
+    const Model = mongoose.model(collection)
+    let newDocData = item
+    if (ENCRYPTIONKEY) {
+      const encrypted = await this.Encrypt(JSON.stringify(item), ENCRYPTIONKEY)
+      newDocData = {
+        ...index,
+        iv: encrypted.iv,
+        data: encrypted.data
+      }
+    }
+
+    await Model.replaceOne(query, newDocData, { upsert: true })
     return true
   }
 
