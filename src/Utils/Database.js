@@ -15,7 +15,7 @@ class Database {
    * @param {Object} database - Configuration object
    */
   constructor (database) {
-    if (!database.url) throw new Error('Missing database url configuration.')
+    if (!database || !database.url) throw new Error('Missing database configuration.')
     // Starts database connection
     if (database.connection) {
       if (!database.connection.useNewUrlParser) database.connection.useNewUrlParser = true
@@ -27,6 +27,8 @@ class Database {
     this.#dbConnection.url = database.url
     this.#dbConnection.options = database.connection
     this.#dbConnection.options.useUnifiedTopology = true
+    if (database.autoIndex === false) this.#dbConnection.options.autoIndex = false
+    if (database.debug) mongoose.set('debug', true)
 
     // Creating database schemas
     const idTokenSchema = new Schema({
@@ -41,7 +43,7 @@ class Database {
       namesRoles: JSON,
       createdAt: { type: Date, expires: 3600 * 24, default: Date.now }
     })
-    // idTokenSchema.index({ iss: 1, user: 1 })
+    idTokenSchema.index({ iss: 1, user: 1 })
 
     const contextTokenSchema = new Schema({
       contextId: String,
@@ -57,7 +59,7 @@ class Database {
       deepLinkingSettings: JSON,
       createdAt: { type: Date, expires: 3600 * 24, default: Date.now }
     })
-    // contextTokenSchema.index({ contextId: 1, user: 1 })
+    contextTokenSchema.index({ contextId: 1, user: 1 })
 
     const platformSchema = new Schema({
       platformUrl: {
@@ -74,14 +76,14 @@ class Database {
         key: String
       }
     })
-    // platformSchema.index({ platformUrl: 1 })
+    platformSchema.index({ platformUrl: 1 })
 
     const keySchema = new Schema({
       kid: String,
       iv: String,
       data: String
     })
-    // keySchema.index({ kid: 1 }, { unique: true })
+    keySchema.index({ kid: 1 }, { unique: true })
 
     const accessTokenSchema = new Schema({
       platformUrl: String,
@@ -90,13 +92,13 @@ class Database {
       data: String,
       createdAt: { type: Date, expires: 3600, default: Date.now }
     })
-    // accessTokenSchema.index({ platformUrl: 1, scopes: 1 }, { unique: true })
+    accessTokenSchema.index({ platformUrl: 1, scopes: 1 }, { unique: true })
 
     const nonceSchema = new Schema({
       nonce: String,
       createdAt: { type: Date, expires: 10, default: Date.now }
     })
-    // nonceSchema.index({ nonce: 1 })
+    nonceSchema.index({ nonce: 1 })
 
     try {
       mongoose.model('idtoken', idTokenSchema)
