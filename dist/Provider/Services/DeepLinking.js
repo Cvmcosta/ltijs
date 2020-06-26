@@ -9,8 +9,6 @@ var _classPrivateFieldSet2 = _interopRequireDefault(require("@babel/runtime/help
 /* Provider Deep Linking Service */
 const jwt = require('jsonwebtoken');
 
-const crypto = require('crypto');
-
 const provDeepLinkingDebug = require('debug')('provider:deepLinkingService');
 
 class DeepLinking {
@@ -99,7 +97,7 @@ class DeepLinking {
       aud: idtoken.iss,
       iat: Date.now() / 1000,
       exp: Date.now() / 1000 + 60,
-      nonce: crypto.randomBytes(16).toString('base64'),
+      nonce: encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``),
       'https://purl.imsglobal.org/spec/lti/claim/deployment_id': idtoken.deploymentId,
       'https://purl.imsglobal.org/spec/lti/claim/message_type': 'LtiDeepLinkingResponse',
       'https://purl.imsglobal.org/spec/lti/claim/version': '1.3.0'

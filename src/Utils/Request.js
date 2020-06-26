@@ -1,6 +1,4 @@
 /* Handle Requests */
-const crypto = require('crypto')
-
 class Request {
   /**
      * @description Handles the Lti 1.3 initial login flow (OIDC protocol).
