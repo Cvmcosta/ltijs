@@ -25,17 +25,17 @@ const provMainDebug = require('debug')('provider:main')
  */
 class Provider {
   // Pre-initiated variables
-  #loginUrl = '/login'
+  #loginRoute = '/login'
 
-  #appUrl = '/'
+  #appRoute = '/'
 
-  #sessionTimeoutUrl = '/sessionTimeout'
+  #sessionTimeoutRoute = '/sessionTimeout'
 
-  #invalidTokenUrl = '/invalidToken'
+  #invalidTokenRoute = '/invalidToken'
 
-  #keysetUrl = '/keys'
+  #keysetRoute = '/keys'
 
-  #whitelistedUrls = []
+  #whitelistedRoutes = []
 
   #ENCRYPTIONKEY
 
@@ -84,11 +84,11 @@ class Provider {
      * @param {String} [database.connection.user] - Database user for authentication if needed.
      * @param {String} [database.conenction.pass] - Database pass for authentication if needed.
      * @param {Object} [options] - Lti Provider additional options,.
-     * @param {String} [options.appUrl = '/'] - Lti Provider main url. If no option is set '/' is used.
-     * @param {String} [options.loginUrl = '/login'] - Lti Provider login url. If no option is set '/login' is used.
-     * @param {String} [options.sessionTimeoutUrl = '/sessionTimeout'] - Lti Provider session timeout url. If no option is set '/sessionTimeout' is used.
-     * @param {String} [options.invalidTokenUrl = '/invalidToken'] - Lti Provider invalid token url. If no option is set '/invalidToken' is used.
-     * @param {String} [options.keysetUrl = '/keys'] - Lti Provider public jwk keyset url. If no option is set '/keys' is used.
+     * @param {String} [options.appRoute = '/'] - Lti Provider main route. If no option is set '/' is used.
+     * @param {String} [options.loginRoute = '/login'] - Lti Provider login route. If no option is set '/login' is used.
+     * @param {String} [options.sessionTimeoutRoute = '/sessionTimeout'] - Lti Provider session timeout route. If no option is set '/sessionTimeout' is used.
+     * @param {String} [options.invalidTokenRoute = '/invalidToken'] - Lti Provider invalid token route. If no option is set '/invalidToken' is used.
+     * @param {String} [options.keysetRoute = '/keys'] - Lti Provider public jwk keyset route. If no option is set '/keys' is used.
      * @param {Boolean} [options.https = false] - Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https and are planning to configure ssl locally. If you set this option as true you can enable the secure flag in the cookies options of the onConnect method.
      * @param {Object} [options.ssl] - SSL certificate and key if https is enabled.
      * @param {String} [options.ssl.key] - SSL key.
@@ -114,11 +114,12 @@ class Provider {
     if (!database.plugin) this.Database = DB(database)
     else throw new Error('Database plugins are not yet supported with version 5.0 due to datbae structural changes.')
 
-    if (options && options.appUrl) this.#appUrl = options.appUrl
-    if (options && options.loginUrl) this.#loginUrl = options.loginUrl
-    if (options && options.sessionTimeoutUrl) this.#sessionTimeoutUrl = options.sessionTimeoutUrl
-    if (options && options.invalidTokenUrl) this.#invalidTokenUrl = options.invalidTokenUrl
-    if (options && options.keysetUrl) this.#keysetUrl = options.keysetUrl
+    if (options && (options.appRoute || options.appUrl)) this.#appRoute = options.appRoute || options.appUrl
+    if (options && (options.loginRoute || options.loginUrl)) this.#loginRoute = options.loginRoute || options.loginUrl
+    if (options && (options.sessionTimeoutRoute || options.sessionTimeoutUrl)) this.#sessionTimeoutRoute = options.sessionTimeoutRoute || options.sessionTimeoutUrl
+    if (options && (options.invalidTokenRoute || options.invalidTokenUrl)) this.#invalidTokenRoute = options.invalidTokenRoute || options.invalidTokenUrl
+    if (options && (options.keysetRoute || options.keysetUrl)) this.#keysetRoute = options.keysetRoute || options.keysetUrl
+
     if (options && options.devMode === true) this.#devMode = true
     if (options && options.tokenMaxAge !== undefined) this.#tokenMaxAge = options.tokenMaxAge
 
@@ -161,7 +162,7 @@ class Provider {
     const sessionValidator = async (req, res, next) => {
       provMainDebug('Receiving request at path: ' + req.baseUrl + req.path)
       // Ckeck if request is attempting to initiate oidc login flow or access reserved or whitelisted routes
-      if (req.path === this.#loginUrl || req.path === this.#sessionTimeoutUrl || req.path === this.#invalidTokenUrl || req.path === this.#keysetUrl) return next()
+      if (req.path === this.#loginRoute || req.path === this.#sessionTimeoutRoute || req.path === this.#invalidTokenRoute || req.path === this.#keysetRoute) return next()
 
       provMainDebug('Path does not match reserved endpoints')
 
@@ -263,13 +264,13 @@ class Provider {
 
             return res.redirect(req.baseUrl + req.path + '?' + urlSearchParams)
           } else {
-            if (this.#whitelistedUrls.indexOf(req.path) !== -1 || this.#whitelistedUrls.indexOf(req.path + '-method-' + req.method.toUpperCase()) !== -1) {
-              provMainDebug('Accessing as whitelisted URL')
+            if (this.#whitelistedRoutes.indexOf(req.path) !== -1 || this.#whitelistedRoutes.indexOf(req.path + '-method-' + req.method.toUpperCase()) !== -1) {
+              provMainDebug('Accessing as whitelisted route')
               return next()
             }
             provMainDebug('No LTIK found')
             provMainDebug('Request body: ', req.body)
-            return res.redirect(req.baseUrl + this.#invalidTokenUrl)
+            return res.redirect(req.baseUrl + this.#invalidTokenRoute)
           }
         }
 
@@ -278,8 +279,8 @@ class Provider {
         try {
           validLtik = jwt.verify(ltik, this.#ENCRYPTIONKEY)
         } catch (err) {
-          if (this.#whitelistedUrls.indexOf(req.path) !== -1 || this.#whitelistedUrls.indexOf(req.path + '-method-' + req.method.toUpperCase()) !== -1) {
-            provMainDebug('Accessing as whitelisted URL')
+          if (this.#whitelistedRoutes.indexOf(req.path) !== -1 || this.#whitelistedRoutes.indexOf(req.path + '-method-' + req.method.toUpperCase()) !== -1) {
+            provMainDebug('Accessing as whitelisted route')
             return next()
           }
           throw new Error(err.message)
@@ -322,18 +323,18 @@ class Provider {
           provMainDebug('No session cookie found')
           provMainDebug('Request body: ', req.body)
           provMainDebug('Passing request to session timeout handler')
-          return res.redirect(req.baseUrl + this.#sessionTimeoutUrl)
+          return res.redirect(req.baseUrl + this.#sessionTimeoutRoute)
         }
       } catch (err) {
         provAuthDebug(err)
         provMainDebug('Passing request to invalid token handler')
-        return res.redirect(req.baseUrl + this.#invalidTokenUrl)
+        return res.redirect(req.baseUrl + this.#invalidTokenRoute)
       }
     }
 
     this.app.use(sessionValidator)
 
-    this.app.all(this.#loginUrl, async (req, res) => {
+    this.app.all(this.#loginRoute, async (req, res) => {
       const params = { ...req.query, ...req.body }
       try {
         const iss = params.iss
@@ -369,19 +370,19 @@ class Provider {
       }
     })
 
-    // Session timeout, invalid token and keyset urls
-    this.app.all(this.#sessionTimeoutUrl, async (req, res, next) => {
+    // Session timeout, invalid token and keyset methods
+    this.app.all(this.#sessionTimeoutRoute, async (req, res, next) => {
       this.#sessionTimeoutCallback(req, res, next)
     })
-    this.app.all(this.#invalidTokenUrl, async (req, res, next) => {
+    this.app.all(this.#invalidTokenRoute, async (req, res, next) => {
       this.#invalidTokenCallback(req, res, next)
     })
-    this.app.get(this.#keysetUrl, async (req, res, next) => {
+    this.app.get(this.#keysetRoute, async (req, res, next) => {
       this.#keyset(req, res, next)
     })
 
     // Main app
-    this.app.all(this.#appUrl, async (req, res, next) => {
+    this.app.all(this.#appRoute, async (req, res, next) => {
       if (res.locals.context.messageType === 'LtiDeepLinkingRequest') return this.#deepLinkingCallback(res.locals.token, req, res, next)
       return this.#connectCallback(res.locals.token, req, res, next)
     })
@@ -415,7 +416,7 @@ class Provider {
         provMainDebug('Ltijs started listening on port: ', conf.port)
 
         // Startup message
-        const message = 'LTI Provider is listening on port ' + conf.port + '!\n\n LTI provider config: \n >App Url: ' + this.#appUrl + '\n >Initiate login URL: ' + this.#loginUrl + '\n >Keyset Url: ' + this.#keysetUrl + '\n >Session Timeout Url: ' + this.#sessionTimeoutUrl + '\n >Invalid Token Url: ' + this.#invalidTokenUrl
+        const message = 'LTI Provider is listening on port ' + conf.port + '!\n\n LTI provider config: \n >App Route: ' + this.#appRoute + '\n >Initiate Login Route: ' + this.#loginRoute + '\n >Keyset Route: ' + this.#keysetRoute + '\n >Session Timeout Route: ' + this.#sessionTimeoutRoute + '\n >Invalid Token Route: ' + this.#invalidTokenRoute
 
         if (!conf.silent) {
           console.log('  _   _______ _____       _  _____\n' +
@@ -465,7 +466,7 @@ class Provider {
     if (options) {
       if (options.sameSite || options.secure) console.log('Deprecation Warning: The optional parameters of the onConnect() method are now deprecated and will be removed in the 6.0 release. Cookie parameters can be found in the main Ltijs constructor options: ... { cookies: { secure: true, sameSite: \'None\' }.')
 
-      if (options.sessionTimeout || options.invalidToken) console.log('Deprecation Warning: The optional parameters of the onConnect() method are now deprecated and will be removed in the 6.0 release. Invalid token and Session Timeout routes can now be set with the onSessionTimeout() and onInvalidToken() methods.')
+      if (options.sessionTimeout || options.invalidToken) console.log('Deprecation Warning: The optional parameters of the onConnect() method are now deprecated and will be removed in the 6.0 release. Invalid token and Session Timeout methods can now be set with the onSessionTimeout() and onInvalidToken() methods.')
 
       if (options.sameSite) {
         this.#cookieOptions.sameSite = options.sameSite
@@ -526,60 +527,60 @@ class Provider {
   }
 
   /**
-   * @description Gets the login Url responsible for dealing with the OIDC login flow.
+   * @description Gets the main application route that will receive the final decoded Idtoken at the end of a successful launch.
    * @returns {String}
    */
-  loginUrl () {
-    return this.#loginUrl
+  appRoute () {
+    return this.#appRoute
   }
 
   /**
-   * @description Gets the main application Url that will receive the final decoded Idtoken at the end of a successful launch.
+   * @description Gets the login route responsible for dealing with the OIDC login flow.
    * @returns {String}
    */
-  appUrl () {
-    return this.#appUrl
+  loginRoute () {
+    return this.#loginRoute
   }
 
   /**
-     * @description Gets the session timeout Url that will be called whenever the system encounters a session timeout.
+     * @description Gets the session timeout route that will be called whenever the system encounters a session timeout.
      * @returns {String}
      */
-  sessionTimeoutUrl () {
-    return this.#sessionTimeoutUrl
+  sessionTimeoutRoute () {
+    return this.#sessionTimeoutRoute
   }
 
   /**
-     * @description Gets the invalid token Url that will be called whenever the system encounters a invalid token or cookie.
+     * @description Gets the invalid token route that will be called whenever the system encounters a invalid token or cookie.
      * @returns {String}
      */
-  invalidTokenUrl () {
-    return this.#invalidTokenUrl
+  invalidTokenRoute () {
+    return this.#invalidTokenRoute
   }
 
   /**
-     * @description Gets the keyset Url that will be used to retrieve a public jwk keyset.
+     * @description Gets the keyset route that will be used to retrieve a public jwk keyset.
      * @returns {String}
      */
-  keysetUrl () {
-    return this.#keysetUrl
+  keysetRoute () {
+    return this.#keysetRoute
   }
 
   /**
-   * @description Whitelists Urls to bypass the lti 1.3 authentication protocol. These Url dont have access to a idtoken
-   * @param {String} urls - Urls to be whitelisted
+   * @description Whitelists routes to bypass the lti 1.3 authentication protocol. These routes dont have access to a idtoken
+   * @param {String} routes - Routes to be whitelisted
    */
-  whitelist (...urls) {
-    if (!urls) throw new Error('No url passed.')
-    const formattedUrls = []
-    for (const url of urls) {
-      const isObject = url === Object(url)
+  whitelist (...routes) {
+    if (!routes) throw new Error('No route passed.')
+    const formattedRoutes = []
+    for (const route of routes) {
+      const isObject = route === Object(route)
       if (isObject) {
-        if (!url.route || !url.method) throw new Error('Wrong object format on route. Expects string ("/route") or object ({ route: "/route", method: "POST" })')
-        formattedUrls.push(url.route + '-method-' + url.method.toUpperCase())
-      } else formattedUrls.push(url)
+        if (!route.route || !route.method) throw new Error('Wrong object format on route. Expects string ("/route") or object ({ route: "/route", method: "POST" })')
+        formattedRoutes.push(route.route + '-method-' + route.method.toUpperCase())
+      } else formattedRoutes.push(route)
     }
-    this.#whitelistedUrls = formattedUrls
+    this.#whitelistedRoutes = formattedRoutes
     return true
   }
 
@@ -717,6 +718,48 @@ class Provider {
 
     // Redirects to path with queries
     return res.redirect(formattedPath)
+  }
+
+  // Deprecated methods, these methods will be removed in version 6.0
+
+  /**
+   * @deprecated
+   */
+  appUrl () {
+    console.log('Deprecation warning: The appUrl() method is now deprecated and will be removed in the 6.0 release. Use appRoute() instead.')
+    return this.appRoute()
+  }
+
+  /**
+   * @deprecated
+   */
+  loginUrl () {
+    console.log('Deprecation warning: The loginUrl() method is now deprecated and will be removed in the 6.0 release. Use loginRoute() instead.')
+    return this.loginRoute()
+  }
+
+  /**
+   * @deprecated
+   */
+  sessionTimeoutUrl () {
+    console.log('Deprecation warning: The sessionTimeoutUrl() method is now deprecated and will be removed in the 6.0 release. Use sessionTimeoutRoute() instead.')
+    return this.sessionTimeoutRoute()
+  }
+
+  /**
+   * @deprecated
+   */
+  invalidTokenUrl () {
+    console.log('Deprecation warning: The invalidTokenUrl() method is now deprecated and will be removed in the 6.0 release. Use invalidTokenRoute() instead.')
+    return this.invalidTokenRoute()
+  }
+
+  /**
+   * @deprecated
+   */
+  keysetUrl () {
+    console.log('Deprecation warning: The keysetUrl() method is now deprecated and will be removed in the 6.0 release. Use keysetRoute() instead.')
+    return this.keysetRoute()
   }
 }
 

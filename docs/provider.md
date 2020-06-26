@@ -122,7 +122,7 @@ const LTI = require('ltijs').Provider
 // Configure provider
 const lti = new LTI('EXAMPLEKEY', 
             { url: 'mongodb://localhost/database' }, 
-            { appUrl: '/', loginUrl: '/login', logger: true })
+            { appRoute: '/', loginRoute: '/login', logger: true })
 
 
 let setup = async () => {
@@ -238,10 +238,10 @@ Exposes methods for easy manipulation of the LTI 1.3 standard as a LTI Provider 
 | database.connection.pass | `String`  | Database pass for authentication if needed. | *Optional* |
 | database.plugin | `Object`  | If set, uses the given database plugin instead of the default MongoDB. | *Optional* |
 | options | `Object`  | LTI Provider options. | *Optional* |
-| options.appUrl | `String`  | = '/'] - Lti Provider main url. If no option is set '/' is used. | *Optional* |
-| options.loginUrl | `String`  | = '/login'] - Lti Provider login url. If no option is set '/login' is used. | *Optional* |
-| options.sessionTimeoutUrl | `String`  | = '/sessionTimeout'] - Lti Provider session timeout url. If no option is set '/sessionTimeout' is used. | *Optional* |
-| options.invalidTokenUrl | `String`  | = '/invalidToken'] - Lti Provider invalid token url. If no option is set '/invalidToken' is used. | *Optional* |
+| options.appRoute | `String`  | = '/'] - Lti Provider main url. If no option is set '/' is used. | *Optional* |
+| options.loginRoute | `String`  | = '/login'] - Lti Provider login url. If no option is set '/login' is used. | *Optional* |
+| options.sessionTimeoutRoute | `String`  | = '/sessionTimeout'] - Lti Provider session timeout url. If no option is set '/sessionTimeout' is used. | *Optional* |
+| options.invalidTokenRoute | `String`  | = '/invalidToken'] - Lti Provider invalid token url. If no option is set '/invalidToken' is used. | *Optional* |
 | options.https | `Boolean`  | = false]  Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https and are planning to configure ssl locally. ***If you set this option as true you can enable the secure flag in the cookies options***. | *Optional* |
 | options.ssl | `Object`  | SSL certificate and key if https is enabled. | *Optional* |
 | options.ssl.key | `String`  | SSL key. | *Optional* |
@@ -340,7 +340,7 @@ Sets the callback function called whenever theres a sucessfull deep linking requ
 
 
 
-#### Provider.loginUrl() 
+#### Provider.loginRoute() 
 
 Gets the login Url responsible for dealing with the OIDC login flow.
 
@@ -349,13 +349,13 @@ Gets the login Url responsible for dealing with the OIDC login flow.
 ##### Examples
 
 ```javascript
-provider.loginUrl()
+provider.loginRoute()
 ```
 
 
 
 
-#### Provider.appUrl() 
+#### Provider.appRoute() 
 
 Gets the main application Url that will receive the final decoded Idtoken.
 
@@ -366,14 +366,14 @@ Gets the main application Url that will receive the final decoded Idtoken.
 ##### Examples
 
 ```javascript
-provider.appUrl()
+provider.appRoute()
 ```
 
 
 
 
 
-#### Provider.sessionTimeoutUrl() 
+#### Provider.sessionTimeoutRoute() 
 
 Gets the session timeout Url that will be called whenever the system encounters a session timeout.
 
@@ -382,13 +382,13 @@ Gets the session timeout Url that will be called whenever the system encounters 
 ##### Examples
 
 ```javascript
-provider.sessionTimeoutUrl()
+provider.sessionTimeoutRoute()
 ```
 
 
 
 
-#### Provider.invalidTokenUrl() 
+#### Provider.invalidTokenRoute() 
 
 Gets the invalid token Url that will be called whenever the system encounters a invalid token or cookie.
 
@@ -399,13 +399,13 @@ Gets the invalid token Url that will be called whenever the system encounters a 
 ##### Examples
 
 ```javascript
-provider.invalidTokenUrl()
+provider.invalidTokenRoute()
 ```
 
 
 
 
-#### Provider.keysetUrl() 
+#### Provider.keysetRoute() 
 
 Gets the public JWK keyset Url.
 
@@ -416,7 +416,7 @@ Gets the public JWK keyset Url.
 ##### Examples
 
 ```javascript
-provider.keysetUrl()
+provider.keysetRoute()
 ```
 
 #### Provider.whitelist(urls)
@@ -578,7 +578,7 @@ const lti = new LTI('EXAMPLEKEY',
               connection:{ user:'user',
                           pass: 'pass'} 
             }, 
-            { appUrl: '/', loginUrl: '/login', 
+            { appRoute: '/', loginRoute: '/login', 
               staticPath: path.join(__dirname, '/views/'),
               https: true, 
               ssl: { key: privateKey, 
@@ -610,21 +610,21 @@ const lti = new LTI('EXAMPLEKEY',
               connection:{ user:'user',
                           pass: 'pass'} 
             }, 
-            { appUrl: '/main', 
-              loginUrl: '/login', 
-              sessionTimeoutUrl: '/sessionTimeout', 
-              invalidTokenUrl: '/invalidToken',
-              keysetUrl: '/keys' })
+            { appRoute: '/main', 
+              loginRoute: '/login', 
+              sessionTimeoutRoute: '/sessionTimeout', 
+              invalidTokenRoute: '/invalidToken',
+              keysetRoute: '/keys' })
 ```
 
 If no routes are specified the system defaults to:
 
 ```javascript
-appUrl = '/'
-loginUrl = '/login'
-sessionTimeoutUrl = '/sessionTimeout'
-invalidTokenUrl = '/invalidToken'
-keysetUrl = '/keys'
+appRoute = '/'
+loginRoute = '/login'
+sessionTimeoutRoute = '/sessionTimeout'
+invalidTokenRoute = '/invalidToken'
+keysetRoute = '/keys'
 ```
 
 ##### Serving static files
@@ -736,7 +736,7 @@ const lti = new LTI('EXAMPLEKEY',
               connection:{ user:'user',
                           pass: 'pass'} 
             }, 
-            {  keysetUrl: '/keyset' }) // Changed from '/keys' to '/keyset'
+            {  keysetRoute: '/keyset' }) // Changed from '/keys' to '/keyset'
 ```
 
 ### Server addon support

@@ -46,7 +46,7 @@
 > - Changed how Ltijs handles a server startup error, now it gracefully shutdowns and cloeses database connections.
 > - Cleaned up server startup code.
 > - Added log server startup debug message.
-> - Added keysetUrl to startup message.
+> - Added keysetRoute to startup message.
 > - Fixed bug where Ltijs would break if it didnot find the tld in an external request. Now it just carries on as a regular request in that case.
 
 

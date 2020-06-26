@@ -157,7 +157,7 @@ const LTI = require('ltijs').Provider
 // Configure provider
 const lti = new LTI('EXAMPLEKEY', 
             { url: 'mongodb://localhost/database' }, 
-            { appUrl: '/', loginUrl: '/login', logger: true })
+            { appRoute: '/', loginRoute: '/login', logger: true })
 
 
 let setup = async () => {

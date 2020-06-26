@@ -20,22 +20,22 @@ describe('Testing Provider', function () {
     const fn = () => {
       lti.setup('LTIKEY',
         { url: 'mongodb://127.0.0.1/testdatabase' },
-        { appUrl: '/', loginUrl: '/login', staticPath: path.join(__dirname, '/views/'), devMode: true })
+        { appRoute: '/', loginRoute: '/login', staticPath: path.join(__dirname, '/views/'), devMode: true })
       return lti
     }
     expect(fn).to.not.throw(Error)
   })
-  it('Provider.appUrl expected to return a String equal to argument', () => {
-    expect(lti.appUrl('/')).to.be.a('string').equal('/')
+  it('Provider.appRoute expected to return a String equal to argument', () => {
+    expect(lti.appRoute('/')).to.be.a('string').equal('/')
   })
-  it('Provider.loginUrl expected to return a String equal to argument', () => {
-    expect(lti.loginUrl('/login')).to.be.a('string').equal('/login')
+  it('Provider.loginRoute expected to return a String equal to argument', () => {
+    expect(lti.loginRoute('/login')).to.be.a('string').equal('/login')
   })
-  it('Provider.sessionTimeoutUrl expected to return a String equal to argument', () => {
-    expect(lti.sessionTimeoutUrl('/sessionTimeout')).to.be.a('string').equal('/sessionTimeout')
+  it('Provider.sessionTimeoutRoute expected to return a String equal to argument', () => {
+    expect(lti.sessionTimeoutRoute('/sessionTimeout')).to.be.a('string').equal('/sessionTimeout')
   })
-  it('Provider.invalidTokenUrl expected to return a String equal to argument', () => {
-    expect(lti.invalidTokenUrl('/invalidToken')).to.be.a('string').equal('/invalidToken')
+  it('Provider.invalidTokenRoute expected to return a String equal to argument', () => {
+    expect(lti.invalidTokenRoute('/invalidToken')).to.be.a('string').equal('/invalidToken')
   })
   it('Provider.whitelist expected to return true', () => {
     expect(lti.whitelist('/1', '/2')).to.be.equal(true)
@@ -75,7 +75,7 @@ describe('Testing Provider', function () {
   })
 
   it('Login route with unregistered platform is expected to return 401', async () => {
-    const url = await lti.loginUrl()
+    const url = await lti.loginRoute()
     return chai.request(lti.app).post(url).send({ iss: 'https://unregisteredPlatform.com' }).then(res => {
       expect(res).to.have.status(401)
     })
@@ -83,7 +83,7 @@ describe('Testing Provider', function () {
 
   it('Login route POST request with registered platform is expected to redirect to authenticationEndpoint', async () => {
     nock('http://localhost/moodle').get(/\/AuthorizationUrl.*/).reply(200)
-    const url = await lti.loginUrl()
+    const url = await lti.loginRoute()
     return chai.request(lti.app).post(url).send({ iss: 'http://localhost/moodle' }).then(res => {
       expect(res).to.redirectTo(/^http:\/\/localhost\/moodle\/AuthorizationUrl.*/)
     })
@@ -91,14 +91,14 @@ describe('Testing Provider', function () {
 
   it('Login route GET request with registered platform is expected to redirect to authenticationEndpoint', async () => {
     nock('http://localhost/moodle').get(/\/AuthorizationUrl.*/).reply(200)
-    const url = await lti.loginUrl()
+    const url = await lti.loginRoute()
     return chai.request(lti.app).get(url).query({ iss: 'http://localhost/moodle' }).then(res => {
       expect(res).to.redirectTo(/^http:\/\/localhost\/moodle\/AuthorizationUrl.*/)
     })
   })
 
   it('MainApp route receiving no idToken is expected to redirect to the session timeout route', async () => {
-    const url = await lti.appUrl()
+    const url = await lti.appRoute()
     return chai.request(lti.app).post(url).then(res => {
       expect(res).to.redirectTo(/.*\/invalidToken/)
     })
@@ -195,7 +195,7 @@ describe('Testing Provider', function () {
     })
     const state = encodeURIComponent(crypto.randomBytes(16).toString('hex'))
 
-    const url = await lti.appUrl()
+    const url = await lti.appRoute()
     return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: state }).set('Cookie', ['plataHR0cDovL2xvY2FsaG9zdC9tb29kbGU%3D/3_5=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
       expect(res).to.have.status(200)
     })
@@ -294,7 +294,7 @@ describe('Testing Provider', function () {
 
     const state = encodeURIComponent(crypto.randomBytes(16).toString('hex'))
 
-    const url = await lti.appUrl()
+    const url = await lti.appRoute()
     return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: state }).set('Cookie', ['plataHR0cDovL2xvY2FsaG9zdC9tb29kbGU%3D/3_5=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).set('host', 'http://localhost').then(res => {
       expect(res).to.redirectTo(/\/finalRoute/)
     })
@@ -803,7 +803,7 @@ describe('Testing Provider', function () {
   })
 
   it('Provider.keyset expected to return a keyset', async () => {
-    const url = await lti.keysetUrl()
+    const url = await lti.keysetRoute()
     return chai.request(lti.app).get(url).then(res => {
       expect(res.body).to.have.key('keys')
     })

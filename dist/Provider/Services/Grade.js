@@ -397,7 +397,6 @@ class Grade {
   } // Deprecated methods, these methods will be removed in version 6.0
 
   /**
-   * @description Gets lineitems from a given platform. This method is deprecated, use getLineItems() instead.
    * @deprecated
    */
 
@@ -407,7 +406,6 @@ class Grade {
     return this.getLineItems(idtoken, options, accessToken);
   }
   /**
-   * @description Creates a new lineItem for the given context. This method is deprecated, use createLineItem() instead.
    * @deprecated
    */
 
@@ -417,7 +415,6 @@ class Grade {
     return this.createLineItem(idtoken, lineItem, options, accessToken);
   }
   /**
-   * @description Deletes lineitems from a given platform. This method is deprecated, use createLineItem() instead.
    * @deprecated
    */
 
@@ -427,7 +424,6 @@ class Grade {
     return this.deleteLineItems(idtoken, options);
   }
   /**
-   * @description Publishes a score or grade to a platform. Represents the Score Publish service described in the lti 1.3 specification. This method is deprecated, use scorePublish() instead.
    * @deprecated
    */
 
@@ -437,7 +433,6 @@ class Grade {
     return this.scorePublish(idtoken, score, options);
   }
   /**
-   * @description Retrieves a certain lineitem's results. Represents the Result service described in the lti 1.3 specification. This method is deprecated, use scorePublish() instead.
    * @deprecated
    */
 

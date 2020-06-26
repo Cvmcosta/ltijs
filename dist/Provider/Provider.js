@@ -49,32 +49,32 @@ const provMainDebug = require('debug')('provider:main');
 
 class Provider {
   constructor() {
-    _loginUrl.set(this, {
+    _loginRoute.set(this, {
       writable: true,
       value: '/login'
     });
 
-    _appUrl.set(this, {
+    _appRoute.set(this, {
       writable: true,
       value: '/'
     });
 
-    _sessionTimeoutUrl.set(this, {
+    _sessionTimeoutRoute.set(this, {
       writable: true,
       value: '/sessionTimeout'
     });
 
-    _invalidTokenUrl.set(this, {
+    _invalidTokenRoute.set(this, {
       writable: true,
       value: '/invalidToken'
     });
 
-    _keysetUrl.set(this, {
+    _keysetRoute.set(this, {
       writable: true,
       value: '/keys'
     });
 
-    _whitelistedUrls.set(this, {
+    _whitelistedRoutes.set(this, {
       writable: true,
       value: []
     });
@@ -160,11 +160,11 @@ class Provider {
      * @param {String} [database.connection.user] - Database user for authentication if needed.
      * @param {String} [database.conenction.pass] - Database pass for authentication if needed.
      * @param {Object} [options] - Lti Provider additional options,.
-     * @param {String} [options.appUrl = '/'] - Lti Provider main url. If no option is set '/' is used.
-     * @param {String} [options.loginUrl = '/login'] - Lti Provider login url. If no option is set '/login' is used.
-     * @param {String} [options.sessionTimeoutUrl = '/sessionTimeout'] - Lti Provider session timeout url. If no option is set '/sessionTimeout' is used.
-     * @param {String} [options.invalidTokenUrl = '/invalidToken'] - Lti Provider invalid token url. If no option is set '/invalidToken' is used.
-     * @param {String} [options.keysetUrl = '/keys'] - Lti Provider public jwk keyset url. If no option is set '/keys' is used.
+     * @param {String} [options.appRoute = '/'] - Lti Provider main route. If no option is set '/' is used.
+     * @param {String} [options.loginRoute = '/login'] - Lti Provider login route. If no option is set '/login' is used.
+     * @param {String} [options.sessionTimeoutRoute = '/sessionTimeout'] - Lti Provider session timeout route. If no option is set '/sessionTimeout' is used.
+     * @param {String} [options.invalidTokenRoute = '/invalidToken'] - Lti Provider invalid token route. If no option is set '/invalidToken' is used.
+     * @param {String} [options.keysetRoute = '/keys'] - Lti Provider public jwk keyset route. If no option is set '/keys' is used.
      * @param {Boolean} [options.https = false] - Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https and are planning to configure ssl locally. If you set this option as true you can enable the secure flag in the cookies options of the onConnect method.
      * @param {Object} [options.ssl] - SSL certificate and key if https is enabled.
      * @param {String} [options.ssl.key] - SSL key.
@@ -188,11 +188,11 @@ class Provider {
 
     this.Database = null;
     if (!database.plugin) this.Database = DB(database);else throw new Error('Database plugins are not yet supported with version 5.0 due to datbae structural changes.');
-    if (options && options.appUrl) (0, _classPrivateFieldSet2.default)(this, _appUrl, options.appUrl);
-    if (options && options.loginUrl) (0, _classPrivateFieldSet2.default)(this, _loginUrl, options.loginUrl);
-    if (options && options.sessionTimeoutUrl) (0, _classPrivateFieldSet2.default)(this, _sessionTimeoutUrl, options.sessionTimeoutUrl);
-    if (options && options.invalidTokenUrl) (0, _classPrivateFieldSet2.default)(this, _invalidTokenUrl, options.invalidTokenUrl);
-    if (options && options.keysetUrl) (0, _classPrivateFieldSet2.default)(this, _keysetUrl, options.keysetUrl);
+    if (options && (options.appRoute || options.appUrl)) (0, _classPrivateFieldSet2.default)(this, _appRoute, options.appRoute || options.appUrl);
+    if (options && (options.loginRoute || options.loginUrl)) (0, _classPrivateFieldSet2.default)(this, _loginRoute, options.loginRoute || options.loginUrl);
+    if (options && (options.sessionTimeoutRoute || options.sessionTimeoutUrl)) (0, _classPrivateFieldSet2.default)(this, _sessionTimeoutRoute, options.sessionTimeoutRoute || options.sessionTimeoutUrl);
+    if (options && (options.invalidTokenRoute || options.invalidTokenUrl)) (0, _classPrivateFieldSet2.default)(this, _invalidTokenRoute, options.invalidTokenRoute || options.invalidTokenUrl);
+    if (options && (options.keysetRoute || options.keysetUrl)) (0, _classPrivateFieldSet2.default)(this, _keysetRoute, options.keysetRoute || options.keysetUrl);
     if (options && options.devMode === true) (0, _classPrivateFieldSet2.default)(this, _devMode, true);
     if (options && options.tokenMaxAge !== undefined) (0, _classPrivateFieldSet2.default)(this, _tokenMaxAge, options.tokenMaxAge); // Cookie options
 
@@ -232,7 +232,7 @@ class Provider {
     const sessionValidator = async (req, res, next) => {
       provMainDebug('Receiving request at path: ' + req.baseUrl + req.path); // Ckeck if request is attempting to initiate oidc login flow or access reserved or whitelisted routes
 
-      if (req.path === (0, _classPrivateFieldGet2.default)(this, _loginUrl) || req.path === (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl) || req.path === (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl) || req.path === (0, _classPrivateFieldGet2.default)(this, _keysetUrl)) return next();
+      if (req.path === (0, _classPrivateFieldGet2.default)(this, _loginRoute) || req.path === (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutRoute) || req.path === (0, _classPrivateFieldGet2.default)(this, _invalidTokenRoute) || req.path === (0, _classPrivateFieldGet2.default)(this, _keysetRoute)) return next();
       provMainDebug('Path does not match reserved endpoints');
 
       try {
@@ -329,14 +329,14 @@ class Provider {
             const urlSearchParams = query.toString();
             return res.redirect(req.baseUrl + req.path + '?' + urlSearchParams);
           } else {
-            if ((0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(req.path) !== -1 || (0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(req.path + '-method-' + req.method.toUpperCase()) !== -1) {
-              provMainDebug('Accessing as whitelisted URL');
+            if ((0, _classPrivateFieldGet2.default)(this, _whitelistedRoutes).indexOf(req.path) !== -1 || (0, _classPrivateFieldGet2.default)(this, _whitelistedRoutes).indexOf(req.path + '-method-' + req.method.toUpperCase()) !== -1) {
+              provMainDebug('Accessing as whitelisted route');
               return next();
             }
 
             provMainDebug('No LTIK found');
             provMainDebug('Request body: ', req.body);
-            return res.redirect(req.baseUrl + (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl));
+            return res.redirect(req.baseUrl + (0, _classPrivateFieldGet2.default)(this, _invalidTokenRoute));
           }
         }
 
@@ -346,8 +346,8 @@ class Provider {
         try {
           validLtik = jwt.verify(ltik, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
         } catch (err) {
-          if ((0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(req.path) !== -1 || (0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(req.path + '-method-' + req.method.toUpperCase()) !== -1) {
-            provMainDebug('Accessing as whitelisted URL');
+          if ((0, _classPrivateFieldGet2.default)(this, _whitelistedRoutes).indexOf(req.path) !== -1 || (0, _classPrivateFieldGet2.default)(this, _whitelistedRoutes).indexOf(req.path + '-method-' + req.method.toUpperCase()) !== -1) {
+            provMainDebug('Accessing as whitelisted route');
             return next();
           }
 
@@ -396,17 +396,17 @@ class Provider {
           provMainDebug('No session cookie found');
           provMainDebug('Request body: ', req.body);
           provMainDebug('Passing request to session timeout handler');
-          return res.redirect(req.baseUrl + (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl));
+          return res.redirect(req.baseUrl + (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutRoute));
         }
       } catch (err) {
         provAuthDebug(err);
         provMainDebug('Passing request to invalid token handler');
-        return res.redirect(req.baseUrl + (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl));
+        return res.redirect(req.baseUrl + (0, _classPrivateFieldGet2.default)(this, _invalidTokenRoute));
       }
     };
 
     this.app.use(sessionValidator);
-    this.app.all((0, _classPrivateFieldGet2.default)(this, _loginUrl), async (req, res) => {
+    this.app.all((0, _classPrivateFieldGet2.default)(this, _loginRoute), async (req, res) => {
       const params = _objectSpread(_objectSpread({}, req.query), req.body);
 
       try {
@@ -441,19 +441,19 @@ class Provider {
         provAuthDebug(err);
         res.sendStatus(400);
       }
-    }); // Session timeout, invalid token and keyset urls
+    }); // Session timeout, invalid token and keyset methods
 
-    this.app.all((0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl), async (req, res, next) => {
+    this.app.all((0, _classPrivateFieldGet2.default)(this, _sessionTimeoutRoute), async (req, res, next) => {
       (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutCallback2).call(this, req, res, next);
     });
-    this.app.all((0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl), async (req, res, next) => {
+    this.app.all((0, _classPrivateFieldGet2.default)(this, _invalidTokenRoute), async (req, res, next) => {
       (0, _classPrivateFieldGet2.default)(this, _invalidTokenCallback2).call(this, req, res, next);
     });
-    this.app.get((0, _classPrivateFieldGet2.default)(this, _keysetUrl), async (req, res, next) => {
+    this.app.get((0, _classPrivateFieldGet2.default)(this, _keysetRoute), async (req, res, next) => {
       (0, _classPrivateFieldGet2.default)(this, _keyset).call(this, req, res, next);
     }); // Main app
 
-    this.app.all((0, _classPrivateFieldGet2.default)(this, _appUrl), async (req, res, next) => {
+    this.app.all((0, _classPrivateFieldGet2.default)(this, _appRoute), async (req, res, next) => {
       if (res.locals.context.messageType === 'LtiDeepLinkingRequest') return (0, _classPrivateFieldGet2.default)(this, _deepLinkingCallback2).call(this, res.locals.token, req, res, next);
       return (0, _classPrivateFieldGet2.default)(this, _connectCallback2).call(this, res.locals.token, req, res, next);
     });
@@ -484,7 +484,7 @@ class Provider {
         await (0, _classPrivateFieldGet2.default)(this, _server).listen(conf.port);
         provMainDebug('Ltijs started listening on port: ', conf.port); // Startup message
 
-        const message = 'LTI Provider is listening on port ' + conf.port + '!\n\n LTI provider config: \n >App Url: ' + (0, _classPrivateFieldGet2.default)(this, _appUrl) + '\n >Initiate login URL: ' + (0, _classPrivateFieldGet2.default)(this, _loginUrl) + '\n >Keyset Url: ' + (0, _classPrivateFieldGet2.default)(this, _keysetUrl) + '\n >Session Timeout Url: ' + (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl) + '\n >Invalid Token Url: ' + (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl);
+        const message = 'LTI Provider is listening on port ' + conf.port + '!\n\n LTI provider config: \n >App Route: ' + (0, _classPrivateFieldGet2.default)(this, _appRoute) + '\n >Initiate Login Route: ' + (0, _classPrivateFieldGet2.default)(this, _loginRoute) + '\n >Keyset Route: ' + (0, _classPrivateFieldGet2.default)(this, _keysetRoute) + '\n >Session Timeout Route: ' + (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutRoute) + '\n >Invalid Token Route: ' + (0, _classPrivateFieldGet2.default)(this, _invalidTokenRoute);
 
         if (!conf.silent) {
           console.log('  _   _______ _____       _  _____\n' + ' | | |__   __|_   _|     | |/ ____|\n' + ' | |    | |    | |       | | (___  \n' + ' | |    | |    | |   _   | |\\___ \\ \n' + ' | |____| |   _| |_ | |__| |____) |\n' + ' |______|_|  |_____(_)____/|_____/ \n\n', message);
@@ -528,7 +528,7 @@ class Provider {
   onConnect(_connectCallback, options) {
     if (options) {
       if (options.sameSite || options.secure) console.log('Deprecation Warning: The optional parameters of the onConnect() method are now deprecated and will be removed in the 6.0 release. Cookie parameters can be found in the main Ltijs constructor options: ... { cookies: { secure: true, sameSite: \'None\' }.');
-      if (options.sessionTimeout || options.invalidToken) console.log('Deprecation Warning: The optional parameters of the onConnect() method are now deprecated and will be removed in the 6.0 release. Invalid token and Session Timeout routes can now be set with the onSessionTimeout() and onInvalidToken() methods.');
+      if (options.sessionTimeout || options.invalidToken) console.log('Deprecation Warning: The optional parameters of the onConnect() method are now deprecated and will be removed in the 6.0 release. Invalid token and Session Timeout methods can now be set with the onSessionTimeout() and onInvalidToken() methods.');
 
       if (options.sameSite) {
         (0, _classPrivateFieldGet2.default)(this, _cookieOptions).sameSite = options.sameSite;
@@ -596,70 +596,70 @@ class Provider {
     throw new Error('MissingCallback');
   }
   /**
-   * @description Gets the login Url responsible for dealing with the OIDC login flow.
+   * @description Gets the main application route that will receive the final decoded Idtoken at the end of a successful launch.
    * @returns {String}
    */
 
 
-  loginUrl() {
-    return (0, _classPrivateFieldGet2.default)(this, _loginUrl);
+  appRoute() {
+    return (0, _classPrivateFieldGet2.default)(this, _appRoute);
   }
   /**
-   * @description Gets the main application Url that will receive the final decoded Idtoken at the end of a successful launch.
+   * @description Gets the login route responsible for dealing with the OIDC login flow.
    * @returns {String}
    */
 
 
-  appUrl() {
-    return (0, _classPrivateFieldGet2.default)(this, _appUrl);
+  loginRoute() {
+    return (0, _classPrivateFieldGet2.default)(this, _loginRoute);
   }
   /**
-     * @description Gets the session timeout Url that will be called whenever the system encounters a session timeout.
+     * @description Gets the session timeout route that will be called whenever the system encounters a session timeout.
      * @returns {String}
      */
 
 
-  sessionTimeoutUrl() {
-    return (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl);
+  sessionTimeoutRoute() {
+    return (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutRoute);
   }
   /**
-     * @description Gets the invalid token Url that will be called whenever the system encounters a invalid token or cookie.
+     * @description Gets the invalid token route that will be called whenever the system encounters a invalid token or cookie.
      * @returns {String}
      */
 
 
-  invalidTokenUrl() {
-    return (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl);
+  invalidTokenRoute() {
+    return (0, _classPrivateFieldGet2.default)(this, _invalidTokenRoute);
   }
   /**
-     * @description Gets the keyset Url that will be used to retrieve a public jwk keyset.
+     * @description Gets the keyset route that will be used to retrieve a public jwk keyset.
      * @returns {String}
      */
 
 
-  keysetUrl() {
-    return (0, _classPrivateFieldGet2.default)(this, _keysetUrl);
+  keysetRoute() {
+    return (0, _classPrivateFieldGet2.default)(this, _keysetRoute);
   }
   /**
-   * @description Whitelists Urls to bypass the lti 1.3 authentication protocol. These Url dont have access to a idtoken
-   * @param {String} urls - Urls to be whitelisted
+   * @description Whitelists routes to bypass the lti 1.3 authentication protocol. These routes dont have access to a idtoken
+   * @param {String} routes - Routes to be whitelisted
    */
 
 
-  whitelist(...urls) {
-    if (!urls) throw new Error('No url passed.');
-    const formattedUrls = [];
+  whitelist(...routes) {
+    if (!routes) throw new Error('No route passed.');
+    const formattedRoutes = [];
 
-    for (const url of urls) {
-      const isObject = url === Object(url);
+    for (const route of routes) {
+      const isObject = route === Object(route);
 
       if (isObject) {
-        if (!url.route || !url.method) throw new Error('Wrong object format on route. Expects string ("/route") or object ({ route: "/route", method: "POST" })');
-        formattedUrls.push(url.route + '-method-' + url.method.toUpperCase());
-      } else formattedUrls.push(url);
+        if (!route.route || !route.method) throw new Error('Wrong object format on route. Expects string ("/route") or object ({ route: "/route", method: "POST" })');
+        formattedRoutes.push(route.route + '-method-' + route.method.toUpperCase());
+      } else formattedRoutes.push(route);
     }
 
-    (0, _classPrivateFieldSet2.default)(this, _whitelistedUrls, formattedUrls);
+    (0, _classPrivateFieldSet2.default)(this, _whitelistedRoutes, formattedRoutes);
     return true;
   }
   /**
@@ -833,21 +833,67 @@ class Provider {
     }); // Redirects to path with queries
 
     return res.redirect(formattedPath);
+  } // Deprecated methods, these methods will be removed in version 6.0
+
+  /**
+   * @deprecated
+   */
+
+
+  appUrl() {
+    console.log('Deprecation warning: The appUrl() method is now deprecated and will be removed in the 6.0 release. Use appRoute() instead.');
+    return this.appRoute();
+  }
+  /**
+   * @deprecated
+   */
+
+
+  loginUrl() {
+    console.log('Deprecation warning: The loginUrl() method is now deprecated and will be removed in the 6.0 release. Use loginRoute() instead.');
+    return this.loginRoute();
+  }
+  /**
+   * @deprecated
+   */
+
+
+  sessionTimeoutUrl() {
+    console.log('Deprecation warning: The sessionTimeoutUrl() method is now deprecated and will be removed in the 6.0 release. Use sessionTimeoutRoute() instead.');
+    return this.sessionTimeoutRoute();
+  }
+  /**
+   * @deprecated
+   */
+
+
+  invalidTokenUrl() {
+    console.log('Deprecation warning: The invalidTokenUrl() method is now deprecated and will be removed in the 6.0 release. Use invalidTokenRoute() instead.');
+    return this.invalidTokenRoute();
+  }
+  /**
+   * @deprecated
+   */
+
+
+  keysetUrl() {
+    console.log('Deprecation warning: The keysetUrl() method is now deprecated and will be removed in the 6.0 release. Use keysetRoute() instead.');
+    return this.keysetRoute();
   }
 
 }
 
-var _loginUrl = new WeakMap();
+var _loginRoute = new WeakMap();
 
-var _appUrl = new WeakMap();
+var _appRoute = new WeakMap();
 
-var _sessionTimeoutUrl = new WeakMap();
+var _sessionTimeoutRoute = new WeakMap();
 
-var _invalidTokenUrl = new WeakMap();
+var _invalidTokenRoute = new WeakMap();
 
-var _keysetUrl = new WeakMap();
+var _keysetRoute = new WeakMap();
 
-var _whitelistedUrls = new WeakMap();
+var _whitelistedRoutes = new WeakMap();
 
 var _ENCRYPTIONKEY = new WeakMap();
 

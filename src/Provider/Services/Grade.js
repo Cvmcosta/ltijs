@@ -317,7 +317,6 @@ class Grade {
   // Deprecated methods, these methods will be removed in version 6.0
 
   /**
-   * @description Gets lineitems from a given platform. This method is deprecated, use getLineItems() instead.
    * @deprecated
    */
   async GetLineItems (idtoken, options, accessToken) {
@@ -326,7 +325,6 @@ class Grade {
   }
 
   /**
-   * @description Creates a new lineItem for the given context. This method is deprecated, use createLineItem() instead.
    * @deprecated
    */
   async CreateLineItem (idtoken, lineItem, options, accessToken) {
@@ -335,7 +333,6 @@ class Grade {
   }
 
   /**
-   * @description Deletes lineitems from a given platform. This method is deprecated, use createLineItem() instead.
    * @deprecated
    */
   async DeleteLineItems (idtoken, options) {
@@ -344,7 +341,6 @@ class Grade {
   }
 
   /**
-   * @description Publishes a score or grade to a platform. Represents the Score Publish service described in the lti 1.3 specification. This method is deprecated, use scorePublish() instead.
    * @deprecated
    */
   async ScorePublish (idtoken, score, options) {
@@ -353,7 +349,6 @@ class Grade {
   }
 
   /**
-   * @description Retrieves a certain lineitem's results. Represents the Result service described in the lti 1.3 specification. This method is deprecated, use scorePublish() instead.
    * @deprecated
    */
   async Result (idtoken, options) {
