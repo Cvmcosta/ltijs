@@ -17,7 +17,7 @@ class Request {
       client_id: request.client_id || await platform.platformClientId(),
       redirect_uri: request.target_link_uri,
       login_hint: request.login_hint,
-      nonce: crypto.randomBytes(20).toString('base64'),
+      nonce: encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``),
       prompt: 'none',
       state: state
     }
