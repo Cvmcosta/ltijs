@@ -73,6 +73,7 @@ class Database {
     });
     idTokenSchema.index({
       iss: 1,
+      deploymentId: 1,
       user: 1
     });
     const contextTokenSchema = new Schema({
@@ -98,10 +99,7 @@ class Database {
       user: 1
     });
     const platformSchema = new Schema({
-      platformUrl: {
-        type: String,
-        unique: true
-      },
+      platformUrl: String,
       platformName: String,
       clientId: String,
       authEndpoint: String,
@@ -114,6 +112,8 @@ class Database {
     });
     platformSchema.index({
       platformUrl: 1
+    }, {
+      unique: true
     });
     const keySchema = new Schema({
       kid: String,

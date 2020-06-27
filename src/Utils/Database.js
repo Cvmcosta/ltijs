@@ -43,7 +43,7 @@ class Database {
       namesRoles: JSON,
       createdAt: { type: Date, expires: 3600 * 24, default: Date.now }
     })
-    idTokenSchema.index({ iss: 1, user: 1 })
+    idTokenSchema.index({ iss: 1, deploymentId: 1, user: 1 })
 
     const contextTokenSchema = new Schema({
       contextId: String,
@@ -62,10 +62,7 @@ class Database {
     contextTokenSchema.index({ contextId: 1, user: 1 })
 
     const platformSchema = new Schema({
-      platformUrl: {
-        type: String,
-        unique: true
-      },
+      platformUrl: String,
       platformName: String,
       clientId: String,
       authEndpoint: String,
@@ -76,7 +73,7 @@ class Database {
         key: String
       }
     })
-    platformSchema.index({ platformUrl: 1 })
+    platformSchema.index({ platformUrl: 1 }, { unique: true })
 
     const keySchema = new Schema({
       kid: String,

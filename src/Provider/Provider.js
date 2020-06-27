@@ -201,9 +201,10 @@ class Provider {
 
             const courseId = valid['https://purl.imsglobal.org/spec/lti/claim/context'] ? valid['https://purl.imsglobal.org/spec/lti/claim/context'].id : 'NF'
             const resourceId = valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'] ? valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'].id : 'NF'
+            const deploymentId = valid['https://purl.imsglobal.org/spec/lti/claim/deployment_id']
 
-            const contextId = encodeURIComponent(valid.iss + courseId + '_' + resourceId) // Add deployment id for multi tenant support
-            const platformCode = encodeURIComponent('lti' + Buffer.from(valid.iss).toString('base64')) // Add deployment id for multi tenant support
+            const contextId = encodeURIComponent(valid.iss + deploymentId + courseId + '_' + resourceId)
+            const platformCode = encodeURIComponent('lti' + Buffer.from(valid.iss + deploymentId).toString('base64'))
 
             // Mount platform token
             const platformToken = {
@@ -224,7 +225,7 @@ class Provider {
             }
 
             // Store idToken in database
-            await this.Database.Replace(false, 'idtoken', { iss: valid.iss, user: valid.sub }, platformToken) // Add deployment id for multi tenant support
+            await this.Database.Replace(false, 'idtoken', { iss: valid.iss, deploymentId: deploymentId, user: valid.sub }, platformToken)
 
             // Mount context token
             const contextToken = {
@@ -249,7 +250,8 @@ class Provider {
 
             provMainDebug('Generating LTIK and redirecting to endpoint')
             const newLtikObj = {
-              platformUrl: valid.iss, // Add deployment id for multi tenant support
+              platformUrl: valid.iss,
+              deploymentId: deploymentId,
               platformCode: platformCode,
               contextId: contextId,
               user: valid.sub,
@@ -289,6 +291,7 @@ class Provider {
 
         const platformUrl = validLtik.platformUrl
         const platformCode = validLtik.platformCode
+        const deploymentId = validLtik.deploymentId
         const contextId = validLtik.contextId
         let user = validLtik.user
 
@@ -302,7 +305,7 @@ class Provider {
         if (user) {
           provAuthDebug('Valid session found')
           // Gets corresponding id token from database
-          let idToken = await this.Database.Get(false, 'idtoken', { iss: platformUrl, user: user }) // Add deployment id for multi tenant support
+          let idToken = await this.Database.Get(false, 'idtoken', { iss: platformUrl, deploymentId: deploymentId, user: user })
           if (!idToken) throw new Error('No id token found in database')
           idToken = idToken[0]
 
@@ -339,7 +342,7 @@ class Provider {
       try {
         const iss = params.iss
         provMainDebug('Receiving a login request from: ' + iss)
-        const platform = await this.getPlatform(iss) // Add deployment id for multi tenant support
+        const platform = await this.getPlatform(iss)
         if (platform) {
           provMainDebug('Redirecting to platform authentication endpoint')
 
@@ -350,7 +353,7 @@ class Provider {
           // Setting up validation info
           const cookieOptions = JSON.parse(JSON.stringify(this.#cookieOptions))
           cookieOptions.maxAge = 60 * 10 * 1000 // Adding max age to state cookie = 10min
-          res.cookie('state' + state, iss, cookieOptions) // Add deployment id for multi tenant support
+          res.cookie('state' + state, iss, cookieOptions)
 
           // Redirect to authentication endpoint
           const query = await Request.ltiAdvantageLogin(params, platform, state)
