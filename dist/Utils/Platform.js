@@ -83,6 +83,14 @@ class Platform {
     (0, _classPrivateFieldSet2.default)(this, _Database, Database);
   }
   /**
+   * @description Gets the platform url.
+   */
+
+
+  async platformUrl() {
+    return (0, _classPrivateFieldGet2.default)(this, _platformUrl);
+  }
+  /**
      * @description Sets/Gets the platform name.
      * @param {string} [name] - Platform name.
      */
@@ -96,22 +104,6 @@ class Platform {
       platformName: name
     });
     (0, _classPrivateFieldSet2.default)(this, _platformName, name);
-    return this;
-  }
-  /**
-     * @description Sets/Gets the platform url.
-     * @param {string} [url] - Platform url.
-     */
-
-
-  async platformUrl(url) {
-    if (!url) return (0, _classPrivateFieldGet2.default)(this, _platformUrl);
-    await (0, _classPrivateFieldGet2.default)(this, _Database).Modify(false, 'platform', {
-      platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl)
-    }, {
-      platformUrl: url
-    });
-    (0, _classPrivateFieldSet2.default)(this, _platformUrl, url);
     return this;
   }
   /**

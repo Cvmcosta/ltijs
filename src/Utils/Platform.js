@@ -49,6 +49,13 @@ class Platform {
   }
 
   /**
+   * @description Gets the platform url.
+   */
+  async platformUrl () {
+    return this.#platformUrl
+  }
+
+  /**
      * @description Sets/Gets the platform name.
      * @param {string} [name] - Platform name.
      */
@@ -56,17 +63,6 @@ class Platform {
     if (!name) return this.#platformName
     await this.#Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { platformName: name })
     this.#platformName = name
-    return this
-  }
-
-  /**
-     * @description Sets/Gets the platform url.
-     * @param {string} [url] - Platform url.
-     */
-  async platformUrl (url) {
-    if (!url) return this.#platformUrl
-    await this.#Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { platformUrl: url })
-    this.#platformUrl = url
     return this
   }
 
