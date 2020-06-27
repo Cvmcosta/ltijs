@@ -117,6 +117,7 @@ class Database {
     });
     const keySchema = new Schema({
       kid: String,
+      platformUrl: String,
       iv: String,
       data: String
     });

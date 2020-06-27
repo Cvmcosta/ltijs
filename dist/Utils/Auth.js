@@ -21,7 +21,7 @@ class Auth {
      * @param {String} ENCRYPTIONKEY - Encryption key.
      * @returns {String} kid for the keypair.
      */
-  static async generateProviderKeyPair(ENCRYPTIONKEY, Database) {
+  static async generateProviderKeyPair(ENCRYPTIONKEY, Database, platformUrl) {
     let kid = crypto.randomBytes(16).toString('hex');
 
     while (await Database.Get(false, 'publickey', {
@@ -53,11 +53,17 @@ class Auth {
       key: privateKey,
       kid: kid
     };
-    await Database.Insert(ENCRYPTIONKEY, 'publickey', pubkeyobj, {
-      kid: kid
+    await Database.Replace(ENCRYPTIONKEY, 'publickey', {
+      platformUrl: platformUrl
+    }, pubkeyobj, {
+      kid: kid,
+      platformUrl: platformUrl
     });
-    await Database.Insert(ENCRYPTIONKEY, 'privatekey', privkeyobj, {
-      kid: kid
+    await Database.Replace(ENCRYPTIONKEY, 'privatekey', {
+      platformUrl: platformUrl
+    }, privkeyobj, {
+      kid: kid,
+      platformUrl: platformUrl
     });
     return kid;
   }

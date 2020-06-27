@@ -608,12 +608,12 @@ class Provider {
 
       if (!_platform) {
         if (!platform.name || !platform.clientId || !platform.authenticationEndpoint || !platform.accesstokenEndpoint || !platform.authConfig) throw new Error('Error registering platform. Missing arguments.')
-        kid = await Auth.generateProviderKeyPair(this.#ENCRYPTIONKEY, this.Database)
+        kid = await Auth.generateProviderKeyPair(this.#ENCRYPTIONKEY, this.Database, platform.url)
         const plat = new Platform(platform.name, platform.url, platform.clientId, platform.authenticationEndpoint, platform.accesstokenEndpoint, kid, this.#ENCRYPTIONKEY, platform.authConfig, this.Database)
 
         // Save platform to db
         provMainDebug('Registering new platform: ' + platform.url)
-        await this.Database.Insert(false, 'platform', { platformName: platform.name, platformUrl: platform.url, clientId: platform.clientId, authEndpoint: platform.authenticationEndpoint, accesstokenEndpoint: platform.accesstokenEndpoint, kid: kid, authConfig: platform.authConfig })
+        await this.Database.Replace(false, 'platform', { platformUrl: platform.url }, { platformName: platform.name, platformUrl: platform.url, clientId: platform.clientId, authEndpoint: platform.authenticationEndpoint, accesstokenEndpoint: platform.accesstokenEndpoint, kid: kid, authConfig: platform.authConfig })
 
         return plat
       } else {
