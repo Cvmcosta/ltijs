@@ -463,7 +463,7 @@ class Provider {
      * @param {Number} [options.port] - Deployment port. 3000 by default.
      * @param {Boolean} [options.silent] - If true, disables initial startup message.
      * @param {Boolean} [options.serverless] - If true, Ltijs does not start an Express server instance. This allows usage as a middleware and with services like AWS. Ignores 'port' parameter.
-     * @returns {Promise<true| false>}
+     * @returns {Promise<true>}
      */
 
 
@@ -504,7 +504,7 @@ class Provider {
   }
   /**
    * @description Closes connection to database and stops server.
-   * @returns {Promise<true | false>}
+   * @returns {Promise<true>}
    */
 
 
@@ -525,6 +525,7 @@ class Provider {
 
 
   onConnect(_connectCallback, options) {
+    /* istanbul ignore next */
     if (options) {
       if (options.sameSite || options.secure) console.log('Deprecation Warning: The optional parameters of the onConnect() method are now deprecated and will be removed in the 6.0 release. Cookie parameters can be found in the main Ltijs constructor options: ... { cookies: { secure: true, sameSite: \'None\' }.');
       if (options.sessionTimeout || options.invalidToken) console.log('Deprecation Warning: The optional parameters of the onConnect() method are now deprecated and will be removed in the 6.0 release. Invalid token and Session Timeout methods can now be set with the onSessionTimeout() and onInvalidToken() methods.');
@@ -672,7 +673,7 @@ class Provider {
      * @param {object} platform.authConfig - Authentication method and key for verifying messages from the platform. {method: "RSA_KEY", key:"PUBLIC KEY..."}
      * @param {String} platform.authConfig.method - Method of authorization "RSA_KEY" or "JWK_KEY" or "JWK_SET".
      * @param {String} platform.authConfig.key - Either the RSA public key provided by the platform, or the JWK key, or the JWK keyset address.
-     * @returns {Promise<Platform|false>}
+     * @returns {Promise<Platform>}
      */
 
 
@@ -751,19 +752,19 @@ class Provider {
   /**
      * @description Deletes a platform.
      * @param {string} url - Platform url.
-     * @returns {Promise<true | false>}
+     * @returns {Promise<true>}
      */
 
 
   async deletePlatform(url) {
     if (!url) throw new Error('No url provided');
     const platform = await this.getPlatform(url);
-    if (platform) return platform.remove();
-    return false;
+    if (platform) await platform.remove();
+    return true;
   }
   /**
      * @description Gets all platforms.
-     * @returns {Promise<Array<Platform>| false>}
+     * @returns {Promise<Array<Platform>>}
      */
 
 

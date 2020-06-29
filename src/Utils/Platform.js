@@ -170,7 +170,10 @@ class Platform {
    * @description Deletes a registered platform.
    */
   async remove () {
-    return Promise.all([this.#Database.Delete('platform', { platformUrl: this.#platformUrl }), this.#Database.Delete('publickey', { kid: this.#kid }), this.#Database.Delete('privatekey', { kid: this.#kid })])
+    await this.#Database.Delete('platform', { platformUrl: this.#platformUrl })
+    await this.#Database.Delete('publickey', { kid: this.#kid })
+    await this.#Database.Delete('privatekey', { kid: this.#kid })
+    return true
   }
 }
 

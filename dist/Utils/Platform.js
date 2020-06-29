@@ -238,13 +238,16 @@ class Platform {
 
 
   async remove() {
-    return Promise.all([(0, _classPrivateFieldGet2.default)(this, _Database).Delete('platform', {
+    await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('platform', {
       platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl)
-    }), (0, _classPrivateFieldGet2.default)(this, _Database).Delete('publickey', {
+    });
+    await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('publickey', {
       kid: (0, _classPrivateFieldGet2.default)(this, _kid)
-    }), (0, _classPrivateFieldGet2.default)(this, _Database).Delete('privatekey', {
+    });
+    await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('privatekey', {
       kid: (0, _classPrivateFieldGet2.default)(this, _kid)
-    })]);
+    });
+    return true;
   }
 
 }
