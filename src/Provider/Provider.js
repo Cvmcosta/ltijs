@@ -686,6 +686,7 @@ class Provider {
    * @example lti.redirect(response, '/path', { isNewResource: true })
    */
   async redirect (res, path, options) {
+    if (!res || !path) throw new Error('MISSING_ARGUMENT')
     if (!res.locals.token) return res.redirect(path) // If no token is present, just redirects
     provMainDebug('Redirecting to: ', path)
     const token = res.locals.token
