@@ -430,7 +430,7 @@ class Provider {
                       ' |______|_|  |_____(_)____/|_____/ \n\n', message)
         }
       }
-      if (this.#devMode) console.log('\nStarting in Dev Mode, state validation and session cookies will not be required. THIS SHOULD NOT BE USED IN A PRODUCTION ENVIRONMENT!')
+      if (this.#devMode && !conf.silent) console.log('\nStarting in Dev Mode, state validation and session cookies will not be required. THIS SHOULD NOT BE USED IN A PRODUCTION ENVIRONMENT!')
 
       // Sets up gracefull shutdown
       process.on('SIGINT', async () => {
@@ -448,6 +448,8 @@ class Provider {
 
   /**
    * @description Closes connection to database and stops server.
+   * @param {Object} [options] - Deployment options.
+   * @param {Boolean} [options.silent] - If true, disables messages.
    * @returns {Promise<true>}
    */
   async close (options) {
@@ -609,7 +611,7 @@ class Provider {
 
       if (!_platform) {
         if (!platform.name || !platform.clientId || !platform.authenticationEndpoint || !platform.accesstokenEndpoint || !platform.authConfig) throw new Error('Error registering platform. Missing arguments.')
-        kid = await Auth.generateProviderKeyPair(this.#ENCRYPTIONKEY, this.Database, platform.url)
+        kid = await Auth.generatePlatformKeyPair(this.#ENCRYPTIONKEY, this.Database, platform.url)
         const plat = new Platform(platform.name, platform.url, platform.clientId, platform.authenticationEndpoint, platform.accesstokenEndpoint, kid, this.#ENCRYPTIONKEY, platform.authConfig, this.Database)
 
         // Save platform to db

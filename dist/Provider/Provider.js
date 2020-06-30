@@ -489,7 +489,7 @@ class Provider {
           console.log('  _   _______ _____       _  _____\n' + ' | | |__   __|_   _|     | |/ ____|\n' + ' | |    | |    | |       | | (___  \n' + ' | |    | |    | |   _   | |\\___ \\ \n' + ' | |____| |   _| |_ | |__| |____) |\n' + ' |______|_|  |_____(_)____/|_____/ \n\n', message);
         }
       }
-      if ((0, _classPrivateFieldGet2.default)(this, _devMode)) console.log('\nStarting in Dev Mode, state validation and session cookies will not be required. THIS SHOULD NOT BE USED IN A PRODUCTION ENVIRONMENT!'); // Sets up gracefull shutdown
+      if ((0, _classPrivateFieldGet2.default)(this, _devMode) && !conf.silent) console.log('\nStarting in Dev Mode, state validation and session cookies will not be required. THIS SHOULD NOT BE USED IN A PRODUCTION ENVIRONMENT!'); // Sets up gracefull shutdown
 
       process.on('SIGINT', async () => {
         await this.close(options);
@@ -504,6 +504,8 @@ class Provider {
   }
   /**
    * @description Closes connection to database and stops server.
+   * @param {Object} [options] - Deployment options.
+   * @param {Boolean} [options.silent] - If true, disables messages.
    * @returns {Promise<true>}
    */
 
@@ -686,7 +688,7 @@ class Provider {
 
       if (!_platform) {
         if (!platform.name || !platform.clientId || !platform.authenticationEndpoint || !platform.accesstokenEndpoint || !platform.authConfig) throw new Error('Error registering platform. Missing arguments.');
-        kid = await Auth.generateProviderKeyPair((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), this.Database, platform.url);
+        kid = await Auth.generatePlatformKeyPair((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), this.Database, platform.url);
         const plat = new Platform(platform.name, platform.url, platform.clientId, platform.authenticationEndpoint, platform.accesstokenEndpoint, kid, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), platform.authConfig, this.Database); // Save platform to db
 
         provMainDebug('Registering new platform: ' + platform.url);
@@ -791,6 +793,7 @@ class Provider {
 
 
   async redirect(res, path, options) {
+    if (!res || !path) throw new Error('MISSING_ARGUMENT');
     if (!res.locals.token) return res.redirect(path); // If no token is present, just redirects
 
     provMainDebug('Redirecting to: ', path);

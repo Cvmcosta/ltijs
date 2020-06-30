@@ -10,11 +10,11 @@ const provAuthDebug = require('debug')('provider:auth')
  */
 class Auth {
   /**
-     * @description Generates a new keypairfor the platform.
+     * @description Generates a new keypair for a platform.
      * @param {String} ENCRYPTIONKEY - Encryption key.
      * @returns {String} kid for the keypair.
      */
-  static async generateProviderKeyPair (ENCRYPTIONKEY, Database, platformUrl) {
+  static async generatePlatformKeyPair (ENCRYPTIONKEY, Database, platformUrl) {
     let kid = crypto.randomBytes(16).toString('hex')
 
     while (await Database.Get(false, 'publickey', { kid: kid })) {
