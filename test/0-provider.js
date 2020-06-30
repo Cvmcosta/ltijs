@@ -63,6 +63,25 @@ describe('Testing Provider', function () {
   it('Provider.deploy expected to resolve true', async () => {
     await expect(lti.deploy({ silent: true })).to.eventually.become(true)
   })
+  it('Provider.registerPlatform expected to throw error when missing argument', async () => {
+    await expect(lti.registerPlatform({
+      url: 'http://localhost/moodle',
+      name: 'Platform Name',
+      authenticationEndpoint: 'http://localhost/moodle/AuthorizationUrl',
+      accesstokenEndpoint: 'http://localhost/moodle/AccessTokenUrl',
+      authConfig: { method: 'JWK_SET', key: 'http://localhost/moodle/keyset' }
+    })).to.be.rejectedWith(Error)
+  })
+  it('Provider.registerPlatform expected to throw error when invalid auth config method is passed', async () => {
+    await expect(lti.registerPlatform({
+      url: 'http://localhost/moodle',
+      name: 'Platform Name',
+      clientId: 'ClientIdThePlatformCreatedForYourApp',
+      authenticationEndpoint: 'http://localhost/moodle/AuthorizationUrl',
+      accesstokenEndpoint: 'http://localhost/moodle/AccessTokenUrl',
+      authConfig: { method: 'INVALID_METHOD', key: 'http://localhost/moodle/keyset' }
+    })).to.be.rejectedWith(Error)
+  })
   it('Provider.registerPlatform expected to resolve Platform object', () => {
     return expect(lti.registerPlatform({
       url: 'http://localhost/moodle',
@@ -72,6 +91,14 @@ describe('Testing Provider', function () {
       accesstokenEndpoint: 'http://localhost/moodle/AccessTokenUrl',
       authConfig: { method: 'JWK_SET', key: 'http://localhost/moodle/keyset' }
     })).to.eventually.be.instanceOf(Platform)
+  })
+  it('Provider.registerPlatform expected to apply changes to registered Platform object', async () => {
+    const name = 'New platform name'
+    const plat = await lti.registerPlatform({
+      url: 'http://localhost/moodle',
+      name: name
+    })
+    return expect(plat.platformName()).to.eventually.become(name)
   })
   it('Provider.getPlatform expected to resolve Platform object', async () => {
     return expect(lti.getPlatform('http://localhost/moodle')).to.eventually.be.instanceOf(Platform)

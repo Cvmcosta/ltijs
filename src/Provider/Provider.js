@@ -54,11 +54,11 @@ class Provider {
   #deepLinkingCallback = async (connection, req, res, next) => { return next() }
 
   #sessionTimeoutCallback = async (req, res) => {
-    return res.status(401).send('Token invalid or expired. Please reinitiate login.')
+    return res.status(401).send('INVALID_OR_EXPIRED_TOKEN. Please reinitiate login.')
   }
 
   #invalidTokenCallback = async (req, res) => {
-    return res.status(401).send('Invalid token. Please reinitiate login.')
+    return res.status(401).send('INVALID_TOKEN. Please reinitiate login.')
   }
 
   // Assembles and sends keyset
@@ -103,9 +103,9 @@ class Provider {
      * @param {Number} [options.tokenMaxAge = 10] - Sets the idToken max age allowed in seconds. Defaults to 10 seconds. If false, disables max age validation.
      */
   setup (encryptionkey, database, options) {
-    if (options && options.https && (!options.ssl || !options.ssl.key || !options.ssl.cert)) throw new Error('No ssl Key  or Certificate found for local https configuration.')
-    if (!encryptionkey) throw new Error('Encryptionkey parameter missing in options.')
-    if (!database) throw new Error('Missing database configurations.')
+    if (options && options.https && (!options.ssl || !options.ssl.key || !options.ssl.cert)) throw new Error('MISSING_SSL_KEY_CERTIFICATE')
+    if (!encryptionkey) throw new Error('MISSING_ENCRYPTION_KEY')
+    if (!database) throw new Error('MISSING_DATABASE_CONFIGURATIONS')
 
     /**
      * @description Database object.
@@ -306,12 +306,12 @@ class Provider {
           provAuthDebug('Valid session found')
           // Gets corresponding id token from database
           let idToken = await this.Database.Get(false, 'idtoken', { iss: platformUrl, deploymentId: deploymentId, user: user })
-          if (!idToken) throw new Error('No id token found in database')
+          if (!idToken) throw new Error('IDTOKEN_NOT_FOUND_DB')
           idToken = idToken[0]
 
           // Gets correspondent context token from database
           let contextToken = await this.Database.Get(false, 'contexttoken', { contextId: contextId, user: user })
-          if (!contextToken) throw new Error('No context token found in database')
+          if (!contextToken) throw new Error('CONTEXTTOKEN_NOT_FOUND_DB')
           contextToken = contextToken[0]
           idToken.platformContext = contextToken
 
@@ -365,7 +365,7 @@ class Provider {
           }))
         } else {
           provMainDebug('Unregistered platform attempting connection: ' + iss)
-          return res.status(401).send('Unregistered platform.')
+          return res.status(401).send('UNREGISTERED_PLATFORM')
         }
       } catch (err) {
         provAuthDebug(err)
@@ -487,7 +487,7 @@ class Provider {
       this.#connectCallback = _connectCallback
       return true
     }
-    throw new Error('MissingCallback')
+    throw new Error('MISSING_CALLBACK')
   }
 
   /**
@@ -501,7 +501,7 @@ class Provider {
       this.#deepLinkingCallback = _deepLinkingCallback
       return true
     }
-    throw new Error('MissingCallback')
+    throw new Error('MISSING_CALLBACK')
   }
 
   /**
@@ -515,7 +515,7 @@ class Provider {
       this.#sessionTimeoutCallback = _sessionTimeoutCallback
       return true
     }
-    throw new Error('MissingCallback')
+    throw new Error('MISSING_CALLBACK')
   }
 
   /**
@@ -529,7 +529,7 @@ class Provider {
       this.#invalidTokenCallback = _invalidTokenCallback
       return true
     }
-    throw new Error('MissingCallback')
+    throw new Error('MISSING_CALLBACK')
   }
 
   /**
@@ -577,12 +577,12 @@ class Provider {
    * @param {String} routes - Routes to be whitelisted
    */
   whitelist (...routes) {
-    if (!routes) throw new Error('No route passed.')
+    if (!routes) throw new Error('MISSING_ROUTES')
     const formattedRoutes = []
     for (const route of routes) {
       const isObject = route === Object(route)
       if (isObject) {
-        if (!route.route || !route.method) throw new Error('Wrong object format on route. Expects string ("/route") or object ({ route: "/route", method: "POST" })')
+        if (!route.route || !route.method) throw new Error('WRONG_FORMAT. Details: Expects string ("/route") or object ({ route: "/route", method: "POST" })')
         formattedRoutes.push(route.route + '-method-' + route.method.toUpperCase())
       } else formattedRoutes.push(route)
     }
@@ -604,13 +604,16 @@ class Provider {
      * @returns {Promise<Platform>}
      */
   async registerPlatform (platform) {
-    if (!platform || !platform.url) throw new Error('Error. Missing platform Url.')
+    if (!platform || !platform.url) throw new Error('MISSING_PLATFORM_URL')
     let kid
-    try {
-      const _platform = await this.getPlatform(platform.url)
+    const _platform = await this.getPlatform(platform.url)
 
-      if (!_platform) {
-        if (!platform.name || !platform.clientId || !platform.authenticationEndpoint || !platform.accesstokenEndpoint || !platform.authConfig) throw new Error('Error registering platform. Missing arguments.')
+    if (!_platform) {
+      if (!platform.name || !platform.clientId || !platform.authenticationEndpoint || !platform.accesstokenEndpoint || !platform.authConfig) throw new Error('MISSING_PARAMS')
+      if (platform.authConfig.method !== 'RSA_KEY' && platform.authConfig.method !== 'JWK_KEY' && platform.authConfig.method !== 'JWK_SET') throw new Error('INVALID_AUTHCONFIG_METHOD. Details: Valid methods are "RSA_KEY", "JWK_KEY", "JWK_SET".')
+      if (!platform.authConfig.key) throw new Error('MISSING_AUTHCONFIG_KEY')
+
+      try {
         kid = await Auth.generatePlatformKeyPair(this.#ENCRYPTIONKEY, this.Database, platform.url)
         const plat = new Platform(platform.name, platform.url, platform.clientId, platform.authenticationEndpoint, platform.accesstokenEndpoint, kid, this.#ENCRYPTIONKEY, platform.authConfig, this.Database)
 
@@ -619,17 +622,17 @@ class Provider {
         await this.Database.Replace(false, 'platform', { platformUrl: platform.url }, { platformName: platform.name, platformUrl: platform.url, clientId: platform.clientId, authEndpoint: platform.authenticationEndpoint, accesstokenEndpoint: platform.accesstokenEndpoint, kid: kid, authConfig: platform.authConfig })
 
         return plat
-      } else {
-        provMainDebug('Platform already registered.')
-        await this.Database.Modify(false, 'platform', { platformUrl: platform.url }, { platformName: platform.name || await _platform.platformName(), clientId: platform.clientId || await _platform.platformClientId(), authEndpoint: platform.authenticationEndpoint || await _platform.platformAuthEndpoint(), accesstokenEndpoint: platform.accesstokenEndpoint || await _platform.platformAccessTokenEndpoint(), authConfig: platform.authConfig || await _platform.platformAuthConfig() })
-        return _platform
+      } catch (err) {
+        await this.Database.Delete('publickey', { kid: kid })
+        await this.Database.Delete('privatekey', { kid: kid })
+        await this.Database.Delete('platform', { platformUrl: platform.url })
+        provMainDebug(err.message)
+        throw new Error(err)
       }
-    } catch (err) {
-      await this.Database.Delete('publickey', { kid: kid })
-      await this.Database.Delete('privatekey', { kid: kid })
-      await this.Database.Delete('platform', { platformUrl: platform.url })
-      provMainDebug(err.message)
-      throw new Error(err)
+    } else {
+      provMainDebug('Platform already registered.')
+      await this.Database.Modify(false, 'platform', { platformUrl: platform.url }, { platformName: platform.name || await _platform.platformName(), clientId: platform.clientId || await _platform.platformClientId(), authEndpoint: platform.authenticationEndpoint || await _platform.platformAuthEndpoint(), accesstokenEndpoint: platform.accesstokenEndpoint || await _platform.platformAccessTokenEndpoint(), authConfig: platform.authConfig || await _platform.platformAuthConfig() })
+      return this.getPlatform(platform.url)
     }
   }
 
@@ -639,15 +642,18 @@ class Provider {
      * @returns {Promise<Platform | false>}
      */
   async getPlatform (url, ENCRYPTIONKEY, Database) {
-    if (!url) throw new Error('No url provided')
+    if (!url) throw new Error('MISSING_PLATFORM_URL')
 
-    const plat = Database !== undefined ? await Database.Get(false, 'platform', { platformUrl: url }) : await this.Database.Get(false, 'platform', { platformUrl: url })
+    const _Database = Database || this.Database
+    const _ENCRYPTIONKEY = ENCRYPTIONKEY || this.#ENCRYPTIONKEY
+
+    const plat = await _Database.Get(false, 'platform', { platformUrl: url })
 
     if (!plat) return false
     const obj = plat[0]
 
     if (!obj) return false
-    const result = new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, ENCRYPTIONKEY !== undefined ? ENCRYPTIONKEY : this.#ENCRYPTIONKEY, obj.authConfig, Database !== undefined ? Database : this.Database)
+    const result = new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, _ENCRYPTIONKEY, obj.authConfig, _Database)
 
     return result
   }
@@ -658,7 +664,7 @@ class Provider {
      * @returns {Promise<true>}
      */
   async deletePlatform (url) {
-    if (!url) throw new Error('No url provided')
+    if (!url) throw new Error('MISSING_PLATFORM_URL')
     const platform = await this.getPlatform(url)
     if (platform) await platform.remove()
     return true

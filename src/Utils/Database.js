@@ -15,7 +15,7 @@ class Database {
    * @param {Object} database - Configuration object
    */
   constructor (database) {
-    if (!database || !database.url) throw new Error('Missing database configuration.')
+    if (!database || !database.url) throw new Error('MISSING_DATABASE_CONFIG')
     // Starts database connection
     if (database.connection) {
       if (!database.connection.useNewUrlParser) database.connection.useNewUrlParser = true
@@ -161,7 +161,7 @@ class Database {
      * @param {Object} [query] - Query for the item you are looking for in the format {type: "type1"}.
      */
   async Get (ENCRYPTIONKEY, collection, query) {
-    if (!collection) throw new Error('Missing collection argument.')
+    if (!collection) throw new Error('MISSING_COLLECTION')
 
     const Model = mongoose.model(collection)
     const result = await Model.find(query)
@@ -189,7 +189,7 @@ class Database {
      * @param {Object} [index] - Key that should be used as index in case of Encrypted document.
      */
   async Insert (ENCRYPTIONKEY, collection, item, index) {
-    if (!collection || !item || (ENCRYPTIONKEY && !index)) throw new Error('Missing argument.')
+    if (!collection || !item || (ENCRYPTIONKEY && !index)) throw new Error('MISSING_PARAMS')
 
     const Model = mongoose.model(collection)
     let newDocData = item
@@ -215,7 +215,7 @@ class Database {
    * @param {Object} [index] - Key that should be used as index in case of Encrypted document.
    */
   async Replace (ENCRYPTIONKEY, collection, query, item, index) {
-    if (!collection || !item || (ENCRYPTIONKEY && !index)) throw new Error('Missing argument.')
+    if (!collection || !item || (ENCRYPTIONKEY && !index)) throw new Error('MISSING_PARAMS')
 
     const Model = mongoose.model(collection)
     let newDocData = item
@@ -240,7 +240,7 @@ class Database {
      * @param {Object} modification - The modification you want to make in the format {type: "type2"}.
      */
   async Modify (ENCRYPTIONKEY, collection, query, modification) {
-    if (!collection || !query || !modification) throw new Error('Missing argument.')
+    if (!collection || !query || !modification) throw new Error('MISSING_PARAMS')
 
     const Model = mongoose.model(collection)
 
@@ -264,7 +264,7 @@ class Database {
      * @param {Object} query - The entry you want to delete in the format {type: "type1"}.
      */
   async Delete (collection, query) {
-    if (!collection || !query) throw new Error('Missing argument.')
+    if (!collection || !query) throw new Error('MISSING_PARAMS')
     const Model = mongoose.model(collection)
     await Model.deleteMany(query)
     return true

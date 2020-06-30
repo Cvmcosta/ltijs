@@ -23,6 +23,7 @@ describe('Testing LTI 1.3 flow', function () {
       expect(res).to.have.status(401)
     })
   })
+
   it('Login route POST request with registered platform is expected to redirect to authenticationEndpoint', async () => {
     const url = lti.loginRoute()
     return chai.request(lti.app).post(url).send({ iss: 'http://localhost/moodle' }).then(res => {

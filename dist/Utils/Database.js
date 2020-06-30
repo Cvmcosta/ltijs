@@ -34,7 +34,7 @@ class Database {
       value: {}
     });
 
-    if (!database || !database.url) throw new Error('Missing database configuration.'); // Starts database connection
+    if (!database || !database.url) throw new Error('MISSING_DATABASE_CONFIG'); // Starts database connection
 
     if (database.connection) {
       if (!database.connection.useNewUrlParser) database.connection.useNewUrlParser = true;
@@ -219,7 +219,7 @@ class Database {
 
 
   async Get(ENCRYPTIONKEY, collection, query) {
-    if (!collection) throw new Error('Missing collection argument.');
+    if (!collection) throw new Error('MISSING_COLLECTION');
     const Model = mongoose.model(collection);
     const result = await Model.find(query);
 
@@ -248,7 +248,7 @@ class Database {
 
 
   async Insert(ENCRYPTIONKEY, collection, item, index) {
-    if (!collection || !item || ENCRYPTIONKEY && !index) throw new Error('Missing argument.');
+    if (!collection || !item || ENCRYPTIONKEY && !index) throw new Error('MISSING_PARAMS');
     const Model = mongoose.model(collection);
     let newDocData = item;
 
@@ -275,7 +275,7 @@ class Database {
 
 
   async Replace(ENCRYPTIONKEY, collection, query, item, index) {
-    if (!collection || !item || ENCRYPTIONKEY && !index) throw new Error('Missing argument.');
+    if (!collection || !item || ENCRYPTIONKEY && !index) throw new Error('MISSING_PARAMS');
     const Model = mongoose.model(collection);
     let newDocData = item;
 
@@ -302,7 +302,7 @@ class Database {
 
 
   async Modify(ENCRYPTIONKEY, collection, query, modification) {
-    if (!collection || !query || !modification) throw new Error('Missing argument.');
+    if (!collection || !query || !modification) throw new Error('MISSING_PARAMS');
     const Model = mongoose.model(collection);
     let newMod = modification;
 
@@ -327,7 +327,7 @@ class Database {
 
 
   async Delete(collection, query) {
-    if (!collection || !query) throw new Error('Missing argument.');
+    if (!collection || !query) throw new Error('MISSING_PARAMS');
     const Model = mongoose.model(collection);
     await Model.deleteMany(query);
     return true;

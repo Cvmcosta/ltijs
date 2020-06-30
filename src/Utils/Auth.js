@@ -61,7 +61,7 @@ class Auth {
      */
   static async validateToken (token, devMode, validationParameters, getPlatform, ENCRYPTIONKEY, Database) {
     const decoded = jwt.decode(token, { complete: true })
-    if (!decoded) throw new Error('Invalid JWT received')
+    if (!decoded) throw new Error('INVALID_JWT_RECEIVED')
 
     const kid = decoded.header.kid
     validationParameters.alg = decoded.header.alg
@@ -70,29 +70,29 @@ class Auth {
     provAuthDebug('Request Iss claim: ' + validationParameters.iss)
     provAuthDebug('Response Iss claim: ' + decoded.payload.iss)
     if (!validationParameters.iss) {
-      if (!devMode) throw new Error('IssClaimDoesNotMatch')
+      if (!devMode) throw new Error('ISS_CLAIM_DOES_NOT_MATCH')
       else { provAuthDebug('Dev Mode enabled: Missing state validation cookies will be ignored') }
-    } else if (validationParameters.iss !== decoded.payload.iss) throw new Error('IssClaimDoesNotMatch')
+    } else if (validationParameters.iss !== decoded.payload.iss) throw new Error('ISS_CLAIM_DOES_NOT_MATCH')
 
     provAuthDebug('Attempting to retrieve registered platform')
     const platform = await getPlatform(decoded.payload.iss, ENCRYPTIONKEY, Database)
-    if (!platform) throw new Error('NoPlatformRegistered')
+    if (!platform) throw new Error('UNREGISTERED_PLATFORM')
 
     const authConfig = await platform.platformAuthConfig()
 
     switch (authConfig.method) {
       case 'JWK_SET': {
         provAuthDebug('Retrieving key from jwk_set')
-        if (!kid) throw new Error('NoKidFoundInToken')
+        if (!kid) throw new Error('KID_NOT_FOUND')
 
         const keysEndpoint = authConfig.key
         const res = await got.get(keysEndpoint).json()
         const keyset = res.keys
-        if (!keyset) throw new Error('NoKeySetFound')
+        if (!keyset) throw new Error('KEYSET_NOT_FOUND')
         const jwk = keyset.find(key => {
           return key.kid === kid
         })
-        if (!jwk) throw new Error('NoKeyFound')
+        if (!jwk) throw new Error('KEY_NOT_FOUND')
         provAuthDebug('Converting JWK key to PEM key')
         const key = await Jwk.export({ jwk: jwk })
         const verified = await this.verifyToken(token, key, validationParameters, platform, Database)
@@ -100,7 +100,7 @@ class Auth {
       }
       case 'JWK_KEY': {
         provAuthDebug('Retrieving key from jwk_key')
-        if (!authConfig.key) throw new Error('NoKeyFound')
+        if (!authConfig.key) throw new Error('KEY_NOT_FOUND')
 
         const key = Jwk.jwk2pem(authConfig.key)
 
@@ -110,14 +110,14 @@ class Auth {
       case 'RSA_KEY': {
         provAuthDebug('Retrieving key from rsa_key')
         const key = authConfig.key
-        if (!key) throw new Error('NoKeyFound')
+        if (!key) throw new Error('KEY_NOT_FOUND')
 
         const verified = await this.verifyToken(token, key, validationParameters, platform, Database)
         return (verified)
       }
       default: {
         provAuthDebug('No auth configuration found for platform')
-        throw new Error('NoAuthConfigFound')
+        throw new Error('AUTHCONFIG_NOT_FOUND')
       }
     }
   }
@@ -165,10 +165,10 @@ class Auth {
     provAuthDebug("Validating if aud (Audience) claim matches the value of the tool's clientId given by the platform")
     provAuthDebug('Aud claim: ' + token.aud)
     provAuthDebug("Tool's clientId: " + await platform.platformClientId())
-    if (!token.aud.includes(await platform.platformClientId())) throw new Error('AudDoesNotMatchClientId')
+    if (!token.aud.includes(await platform.platformClientId())) throw new Error('AUD_DOES_NOT_MATCH_CLIENTID')
     if (Array.isArray(token.aud)) {
       provAuthDebug('More than one aud listed, searching for azp claim')
-      if (token.azp && token.azp !== await platform.platformClientId()) throw new Error('AzpClaimDoesNotMatchClientId')
+      if (token.azp && token.azp !== await platform.platformClientId()) throw new Error('AZP_DOES_NOT_MATCH_CLIENTID')
     }
     return true
   }
@@ -179,7 +179,7 @@ class Auth {
      */
   static async validateAlg (alg) {
     provAuthDebug('Checking alg claim. Alg: ' + alg)
-    if (alg !== 'RS256') throw new Error('NoRSA256Alg')
+    if (alg !== 'RS256') throw new Error('ALG_NOT_RS256')
     return true
   }
 
@@ -198,7 +198,7 @@ class Auth {
     provAuthDebug('Current_time: ' + curTime)
     const timePassed = curTime - token.iat
     provAuthDebug('Time passed: ' + timePassed)
-    if (timePassed > maxAge) throw new Error('TokenTooOld')
+    if (timePassed > maxAge) throw new Error('TOKEN_TOO_OLD')
     return true
   }
 
@@ -210,7 +210,7 @@ class Auth {
     provAuthDebug('Validating nonce')
     provAuthDebug('Nonce: ' + token.nonce)
 
-    if (await Database.Get(false, 'nonce', { nonce: token.nonce })) throw new Error('NonceAlreadyStored')
+    if (await Database.Get(false, 'nonce', { nonce: token.nonce })) throw new Error('NONCE_ALREADY_RECEIVED')
     provAuthDebug('Storing nonce')
     await Database.Insert(false, 'nonce', { nonce: token.nonce })
 
@@ -225,28 +225,28 @@ class Auth {
     provAuthDebug('Initiating LTI 1.3 core claims validation')
 
     provAuthDebug('Checking Message type claim')
-    if (token['https://purl.imsglobal.org/spec/lti/claim/message_type'] !== 'LtiResourceLinkRequest' && token['https://purl.imsglobal.org/spec/lti/claim/message_type'] !== 'LtiDeepLinkingRequest') throw new Error('NoMessageTypeClaim')
+    if (token['https://purl.imsglobal.org/spec/lti/claim/message_type'] !== 'LtiResourceLinkRequest' && token['https://purl.imsglobal.org/spec/lti/claim/message_type'] !== 'LtiDeepLinkingRequest') throw new Error('NO_MESSAGE_TYPE_CLAIM')
 
     if (token['https://purl.imsglobal.org/spec/lti/claim/message_type'] === 'LtiResourceLinkRequest') {
       provAuthDebug('Checking Target Link Uri claim')
-      if (!token['https://purl.imsglobal.org/spec/lti/claim/target_link_uri']) throw new Error('NoTargetLinkUriClaim')
+      if (!token['https://purl.imsglobal.org/spec/lti/claim/target_link_uri']) throw new Error('NO_TARGET_LINK_URI_CLAIM')
 
       provAuthDebug('Checking Resource Link Id claim')
-      if (!token['https://purl.imsglobal.org/spec/lti/claim/resource_link'] || !token['https://purl.imsglobal.org/spec/lti/claim/resource_link'].id) throw new Error('NoResourceLinkIdClaim')
+      if (!token['https://purl.imsglobal.org/spec/lti/claim/resource_link'] || !token['https://purl.imsglobal.org/spec/lti/claim/resource_link'].id) throw new Error('NO_RESOURCE_LINK_ID_CLAIM')
     }
 
     provAuthDebug('Checking LTI Version claim')
-    if (!token['https://purl.imsglobal.org/spec/lti/claim/version']) throw new Error('NoLTIVersionClaim')
-    if (token['https://purl.imsglobal.org/spec/lti/claim/version'] !== '1.3.0') throw new Error('WrongLTIVersionClaim')
+    if (!token['https://purl.imsglobal.org/spec/lti/claim/version']) throw new Error('NO_LTI_VERSION_CLAIM')
+    if (token['https://purl.imsglobal.org/spec/lti/claim/version'] !== '1.3.0') throw new Error('WRONG_LTI_VERSION_CLAIM')
 
     provAuthDebug('Checking Deployment Id claim')
-    if (!token['https://purl.imsglobal.org/spec/lti/claim/deployment_id']) throw new Error('NoDeploymentIdClaim')
+    if (!token['https://purl.imsglobal.org/spec/lti/claim/deployment_id']) throw new Error('NO_DEPLOYMENT_ID_CLAIM')
 
     provAuthDebug('Checking Sub claim')
-    if (!token.sub) throw new Error('NoSubClaim')
+    if (!token.sub) throw new Error('NO_SUB_CLAIM')
 
     provAuthDebug('Checking Roles claim')
-    if (!token['https://purl.imsglobal.org/spec/lti/claim/roles']) throw new Error('NoRolesClaim')
+    if (!token['https://purl.imsglobal.org/spec/lti/claim/roles']) throw new Error('NO_ROLES_CLAIM')
   }
 
   /**

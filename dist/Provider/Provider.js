@@ -79,7 +79,7 @@ class Provider {
       value: []
     });
 
-    _ENCRYPTIONKEY.set(this, {
+    _ENCRYPTIONKEY2.set(this, {
       writable: true,
       value: void 0
     });
@@ -120,14 +120,14 @@ class Provider {
     _sessionTimeoutCallback2.set(this, {
       writable: true,
       value: async (req, res) => {
-        return res.status(401).send('Token invalid or expired. Please reinitiate login.');
+        return res.status(401).send('INVALID_OR_EXPIRED_TOKEN. Please reinitiate login.');
       }
     });
 
     _invalidTokenCallback2.set(this, {
       writable: true,
       value: async (req, res) => {
-        return res.status(401).send('Invalid token. Please reinitiate login.');
+        return res.status(401).send('INVALID_TOKEN. Please reinitiate login.');
       }
     });
 
@@ -135,7 +135,7 @@ class Provider {
       writable: true,
       value: async (req, res) => {
         try {
-          const keyset = await Keyset.build(this.Database, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
+          const keyset = await Keyset.build(this.Database, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2));
           return res.status(200).send(keyset);
         } catch (err) {
           provMainDebug(err);
@@ -179,9 +179,9 @@ class Provider {
      * @param {Number} [options.tokenMaxAge = 10] - Sets the idToken max age allowed in seconds. Defaults to 10 seconds. If false, disables max age validation.
      */
   setup(encryptionkey, database, options) {
-    if (options && options.https && (!options.ssl || !options.ssl.key || !options.ssl.cert)) throw new Error('No ssl Key  or Certificate found for local https configuration.');
-    if (!encryptionkey) throw new Error('Encryptionkey parameter missing in options.');
-    if (!database) throw new Error('Missing database configurations.');
+    if (options && options.https && (!options.ssl || !options.ssl.key || !options.ssl.cert)) throw new Error('MISSING_SSL_KEY_CERTIFICATE');
+    if (!encryptionkey) throw new Error('MISSING_ENCRYPTION_KEY');
+    if (!database) throw new Error('MISSING_DATABASE_CONFIGURATIONS');
     /**
      * @description Database object.
      */
@@ -205,8 +205,8 @@ class Provider {
       if (options.cookies.secure === true) (0, _classPrivateFieldGet2.default)(this, _cookieOptions).secure = true;
     }
 
-    (0, _classPrivateFieldSet2.default)(this, _ENCRYPTIONKEY, encryptionkey);
-    (0, _classPrivateFieldSet2.default)(this, _server, new Server(options ? options.https : false, options ? options.ssl : false, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), options ? options.cors : true, options ? options.serverAddon : false));
+    (0, _classPrivateFieldSet2.default)(this, _ENCRYPTIONKEY2, encryptionkey);
+    (0, _classPrivateFieldSet2.default)(this, _server, new Server(options ? options.https : false, options ? options.ssl : false, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), options ? options.cors : true, options ? options.serverAddon : false));
     /**
      * @description Express server object.
      */
@@ -216,17 +216,17 @@ class Provider {
      * @description Grading service.
      */
 
-    this.Grade = new GradeService(this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), this.Database);
+    this.Grade = new GradeService(this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), this.Database);
     /**
      * @description Deep Linking service.
      */
 
-    this.DeepLinking = new DeepLinkingService(this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), this.Database);
+    this.DeepLinking = new DeepLinkingService(this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), this.Database);
     /**
      * @description Names and Roles service.
      */
 
-    this.NamesAndRoles = new NamesAndRolesService(this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), this.Database);
+    this.NamesAndRoles = new NamesAndRolesService(this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), this.Database);
     if (options && options.staticPath) (0, _classPrivateFieldGet2.default)(this, _server).setStaticPath(options.staticPath); // Registers main athentication and routing middleware
 
     const sessionValidator = async (req, res, next) => {
@@ -258,7 +258,7 @@ class Provider {
               iss: validationCookie,
               maxAge: (0, _classPrivateFieldGet2.default)(this, _tokenMaxAge)
             };
-            const valid = await Auth.validateToken(idtoken, (0, _classPrivateFieldGet2.default)(this, _devMode), validationParameters, this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), this.Database); // Deletes state validation cookie
+            const valid = await Auth.validateToken(idtoken, (0, _classPrivateFieldGet2.default)(this, _devMode), validationParameters, this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), this.Database); // Deletes state validation cookie
 
             res.clearCookie('state' + state, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
             provAuthDebug('Successfully validated token!');
@@ -322,7 +322,7 @@ class Provider {
 
             }; // Signing context token
 
-            const newLtik = jwt.sign(newLtikObj, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
+            const newLtik = jwt.sign(newLtikObj, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2));
             const query = new URLSearchParams(req.query);
             query.append('ltik', newLtik);
             const urlSearchParams = query.toString();
@@ -343,7 +343,7 @@ class Provider {
         let validLtik;
 
         try {
-          validLtik = jwt.verify(ltik, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
+          validLtik = jwt.verify(ltik, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2));
         } catch (err) {
           if ((0, _classPrivateFieldGet2.default)(this, _whitelistedRoutes).indexOf(req.path) !== -1 || (0, _classPrivateFieldGet2.default)(this, _whitelistedRoutes).indexOf(req.path + '-method-' + req.method.toUpperCase()) !== -1) {
             provMainDebug('Accessing as whitelisted route');
@@ -376,14 +376,14 @@ class Provider {
             deploymentId: deploymentId,
             user: user
           });
-          if (!idToken) throw new Error('No id token found in database');
+          if (!idToken) throw new Error('IDTOKEN_NOT_FOUND_DB');
           idToken = idToken[0]; // Gets correspondent context token from database
 
           let contextToken = await this.Database.Get(false, 'contexttoken', {
             contextId: contextId,
             user: user
           });
-          if (!contextToken) throw new Error('No context token found in database');
+          if (!contextToken) throw new Error('CONTEXTTOKEN_NOT_FOUND_DB');
           contextToken = contextToken[0];
           idToken.platformContext = contextToken; // Creating local variables
 
@@ -434,7 +434,7 @@ class Provider {
           }));
         } else {
           provMainDebug('Unregistered platform attempting connection: ' + iss);
-          return res.status(401).send('Unregistered platform.');
+          return res.status(401).send('UNREGISTERED_PLATFORM');
         }
       } catch (err) {
         provAuthDebug(err);
@@ -547,7 +547,7 @@ class Provider {
       return true;
     }
 
-    throw new Error('MissingCallback');
+    throw new Error('MISSING_CALLBACK');
   }
   /**
    * @description Sets the callback function called whenever there's a sucessfull deep linking launch, exposing a "token" object containing the idtoken information.
@@ -563,7 +563,7 @@ class Provider {
       return true;
     }
 
-    throw new Error('MissingCallback');
+    throw new Error('MISSING_CALLBACK');
   }
   /**
    * @description Sets the callback function called when no valid session is found during a request validation.
@@ -579,7 +579,7 @@ class Provider {
       return true;
     }
 
-    throw new Error('MissingCallback');
+    throw new Error('MISSING_CALLBACK');
   }
   /**
    * @description Sets the callback function called when the token received fails to be validated.
@@ -595,7 +595,7 @@ class Provider {
       return true;
     }
 
-    throw new Error('MissingCallback');
+    throw new Error('MISSING_CALLBACK');
   }
   /**
    * @description Gets the main application route that will receive the final decoded Idtoken at the end of a successful launch.
@@ -649,14 +649,14 @@ class Provider {
 
 
   whitelist(...routes) {
-    if (!routes) throw new Error('No route passed.');
+    if (!routes) throw new Error('MISSING_ROUTES');
     const formattedRoutes = [];
 
     for (const route of routes) {
       const isObject = route === Object(route);
 
       if (isObject) {
-        if (!route.route || !route.method) throw new Error('Wrong object format on route. Expects string ("/route") or object ({ route: "/route", method: "POST" })');
+        if (!route.route || !route.method) throw new Error('WRONG_FORMAT. Details: Expects string ("/route") or object ({ route: "/route", method: "POST" })');
         formattedRoutes.push(route.route + '-method-' + route.method.toUpperCase());
       } else formattedRoutes.push(route);
     }
@@ -680,16 +680,19 @@ class Provider {
 
 
   async registerPlatform(platform) {
-    if (!platform || !platform.url) throw new Error('Error. Missing platform Url.');
+    if (!platform || !platform.url) throw new Error('MISSING_PLATFORM_URL');
     let kid;
 
-    try {
-      const _platform = await this.getPlatform(platform.url);
+    const _platform = await this.getPlatform(platform.url);
 
-      if (!_platform) {
-        if (!platform.name || !platform.clientId || !platform.authenticationEndpoint || !platform.accesstokenEndpoint || !platform.authConfig) throw new Error('Error registering platform. Missing arguments.');
-        kid = await Auth.generatePlatformKeyPair((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), this.Database, platform.url);
-        const plat = new Platform(platform.name, platform.url, platform.clientId, platform.authenticationEndpoint, platform.accesstokenEndpoint, kid, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), platform.authConfig, this.Database); // Save platform to db
+    if (!_platform) {
+      if (!platform.name || !platform.clientId || !platform.authenticationEndpoint || !platform.accesstokenEndpoint || !platform.authConfig) throw new Error('MISSING_PARAMS');
+      if (platform.authConfig.method !== 'RSA_KEY' && platform.authConfig.method !== 'JWK_KEY' && platform.authConfig.method !== 'JWK_SET') throw new Error('INVALID_AUTHCONFIG_METHOD. Details: Valid methods are "RSA_KEY", "JWK_KEY", "JWK_SET".');
+      if (!platform.authConfig.key) throw new Error('MISSING_AUTHCONFIG_KEY');
+
+      try {
+        kid = await Auth.generatePlatformKeyPair((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), this.Database, platform.url);
+        const plat = new Platform(platform.name, platform.url, platform.clientId, platform.authenticationEndpoint, platform.accesstokenEndpoint, kid, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), platform.authConfig, this.Database); // Save platform to db
 
         provMainDebug('Registering new platform: ' + platform.url);
         await this.Database.Replace(false, 'platform', {
@@ -704,31 +707,31 @@ class Provider {
           authConfig: platform.authConfig
         });
         return plat;
-      } else {
-        provMainDebug('Platform already registered.');
-        await this.Database.Modify(false, 'platform', {
-          platformUrl: platform.url
-        }, {
-          platformName: platform.name || (await _platform.platformName()),
-          clientId: platform.clientId || (await _platform.platformClientId()),
-          authEndpoint: platform.authenticationEndpoint || (await _platform.platformAuthEndpoint()),
-          accesstokenEndpoint: platform.accesstokenEndpoint || (await _platform.platformAccessTokenEndpoint()),
-          authConfig: platform.authConfig || (await _platform.platformAuthConfig())
+      } catch (err) {
+        await this.Database.Delete('publickey', {
+          kid: kid
         });
-        return _platform;
+        await this.Database.Delete('privatekey', {
+          kid: kid
+        });
+        await this.Database.Delete('platform', {
+          platformUrl: platform.url
+        });
+        provMainDebug(err.message);
+        throw new Error(err);
       }
-    } catch (err) {
-      await this.Database.Delete('publickey', {
-        kid: kid
-      });
-      await this.Database.Delete('privatekey', {
-        kid: kid
-      });
-      await this.Database.Delete('platform', {
+    } else {
+      provMainDebug('Platform already registered.');
+      await this.Database.Modify(false, 'platform', {
         platformUrl: platform.url
+      }, {
+        platformName: platform.name || (await _platform.platformName()),
+        clientId: platform.clientId || (await _platform.platformClientId()),
+        authEndpoint: platform.authenticationEndpoint || (await _platform.platformAuthEndpoint()),
+        accesstokenEndpoint: platform.accesstokenEndpoint || (await _platform.platformAccessTokenEndpoint()),
+        authConfig: platform.authConfig || (await _platform.platformAuthConfig())
       });
-      provMainDebug(err.message);
-      throw new Error(err);
+      return this.getPlatform(platform.url);
     }
   }
   /**
@@ -739,16 +742,19 @@ class Provider {
 
 
   async getPlatform(url, ENCRYPTIONKEY, Database) {
-    if (!url) throw new Error('No url provided');
-    const plat = Database !== undefined ? await Database.Get(false, 'platform', {
-      platformUrl: url
-    }) : await this.Database.Get(false, 'platform', {
+    if (!url) throw new Error('MISSING_PLATFORM_URL');
+
+    const _Database = Database || this.Database;
+
+    const _ENCRYPTIONKEY = ENCRYPTIONKEY || (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2);
+
+    const plat = await _Database.Get(false, 'platform', {
       platformUrl: url
     });
     if (!plat) return false;
     const obj = plat[0];
     if (!obj) return false;
-    const result = new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, ENCRYPTIONKEY !== undefined ? ENCRYPTIONKEY : (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), obj.authConfig, Database !== undefined ? Database : this.Database);
+    const result = new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, _ENCRYPTIONKEY, obj.authConfig, _Database);
     return result;
   }
   /**
@@ -759,7 +765,7 @@ class Provider {
 
 
   async deletePlatform(url) {
-    if (!url) throw new Error('No url provided');
+    if (!url) throw new Error('MISSING_PLATFORM_URL');
     const platform = await this.getPlatform(url);
     if (platform) await platform.remove();
     return true;
@@ -775,7 +781,7 @@ class Provider {
     const platforms = await this.Database.Get(false, 'platform');
 
     if (platforms) {
-      for (const obj of platforms) returnArray.push(new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), obj.authConfig, this.Database));
+      for (const obj of platforms) returnArray.push(new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), obj.authConfig, this.Database));
 
       return returnArray;
     }
@@ -900,7 +906,7 @@ var _keysetRoute = new WeakMap();
 
 var _whitelistedRoutes = new WeakMap();
 
-var _ENCRYPTIONKEY = new WeakMap();
+var _ENCRYPTIONKEY2 = new WeakMap();
 
 var _devMode = new WeakMap();
 

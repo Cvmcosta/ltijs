@@ -110,9 +110,9 @@ class Platform {
   async platformAuthConfig (method, key) {
     if (!method && !key) return this.#authConfig
 
-    if (method !== 'RSA_KEY' && method !== 'JWK_KEY' && method !== 'JWK_SET') throw new Error('Invalid message validation method. Valid methods are "RSA_KEY", "JWK_KEY", "JWK_SET"')
+    if (method !== 'RSA_KEY' && method !== 'JWK_KEY' && method !== 'JWK_SET') throw new Error('INVALID_METHOD. Details: Valid methods are "RSA_KEY", "JWK_KEY", "JWK_SET".')
 
-    if (!key) throw new Error('Missing secong argument key or keyset_url.')
+    if (!key) throw new Error('MISSING_KEY')
 
     const authConfig = {
       method: method,
