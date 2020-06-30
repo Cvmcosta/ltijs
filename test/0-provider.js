@@ -106,4 +106,43 @@ describe('Testing Provider', function () {
     }
     expect(fn).to.not.throw(Error)
   })
+  it('Provider.onDeepLinking expected to throw error when receiving no callback', () => {
+    const fn = () => {
+      return lti.onDeepLinking()
+    }
+    expect(fn).to.throw(Error)
+  })
+
+  it('Provider.onDeepLinking expected to not throw error when receiving callback', () => {
+    const fn = () => {
+      return lti.onDeepLinking((req, res) => { res.status(200).send('It works!') })
+    }
+    expect(fn).to.not.throw(Error)
+  })
+  it('Provider.onSessionTimeout expected to throw error when receiving no callback', () => {
+    const fn = () => {
+      return lti.onSessionTimeout()
+    }
+    expect(fn).to.throw(Error)
+  })
+
+  it('Provider.onSessionTimeout expected to not throw error when receiving callback', () => {
+    const fn = () => {
+      return lti.onSessionTimeout((req, res) => { res.status(200).send('It works!') })
+    }
+    expect(fn).to.not.throw(Error)
+  })
+  it('Provider.onInvalidToken expected to throw error when receiving no callback', () => {
+    const fn = () => {
+      return lti.onInvalidToken()
+    }
+    expect(fn).to.throw(Error)
+  })
+
+  it('Provider.onInvalidToken expected to not throw error when receiving callback', () => {
+    const fn = () => {
+      return lti.onInvalidToken((req, res) => { res.status(200).send('It works!') })
+    }
+    expect(fn).to.not.throw(Error)
+  })
 })
