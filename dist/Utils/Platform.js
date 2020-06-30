@@ -104,7 +104,7 @@ class Platform {
       platformName: name
     });
     (0, _classPrivateFieldSet2.default)(this, _platformName, name);
-    return this;
+    return name;
   }
   /**
      * @description Sets/Gets the platform client id.
@@ -120,14 +120,14 @@ class Platform {
       clientId: clientId
     });
     (0, _classPrivateFieldSet2.default)(this, _clientId, clientId);
-    return this;
+    return clientId;
   }
   /**
      * @description Gets the platform key_id.
      */
 
 
-  platformKid() {
+  async platformKid() {
     return (0, _classPrivateFieldGet2.default)(this, _kid);
   }
   /**
@@ -175,7 +175,7 @@ class Platform {
       authConfig: authConfig
     });
     (0, _classPrivateFieldSet2.default)(this, _authConfig2, authConfig);
-    return this;
+    return authConfig;
   }
   /**
      * @description Sets/Gets the platform authorization endpoint used to perform the OIDC login.
@@ -191,7 +191,7 @@ class Platform {
       authEndpoint: authEndpoint
     });
     (0, _classPrivateFieldSet2.default)(this, _authEndpoint, authEndpoint);
-    return this;
+    return authEndpoint;
   }
   /**
      * @description Sets/Gets the platform access token endpoint used to authenticate messages to the platform.
@@ -207,7 +207,7 @@ class Platform {
       accesstokenEndpoint: accesstokenEndpoint
     });
     (0, _classPrivateFieldSet2.default)(this, _accesstokenEndpoint, accesstokenEndpoint);
-    return this;
+    return accesstokenEndpoint;
   }
   /**
      * @description Gets the platform access token or attempts to generate a new one.
@@ -237,7 +237,7 @@ class Platform {
    */
 
 
-  async remove() {
+  async delete() {
     await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('platform', {
       platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl)
     });
@@ -248,6 +248,15 @@ class Platform {
       kid: (0, _classPrivateFieldGet2.default)(this, _kid)
     });
     return true;
+  }
+  /**
+   * @deprecated
+   */
+
+
+  async remove() {
+    console.log('Deprecation warning: The Platform.remove() method is now deprecated and will be removed in the 6.0 release. Use Platform.delete() instead.');
+    return this.delete();
   }
 
 }

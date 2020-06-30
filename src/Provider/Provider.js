@@ -49,6 +49,9 @@ class Provider {
     signed: true
   }
 
+  // Setup flag
+  #setup = false
+
   #connectCallback = async (connection, req, res, next) => { return next() }
 
   #deepLinkingCallback = async (connection, req, res, next) => { return next() }
@@ -103,6 +106,7 @@ class Provider {
      * @param {Number} [options.tokenMaxAge = 10] - Sets the idToken max age allowed in seconds. Defaults to 10 seconds. If false, disables max age validation.
      */
   setup (encryptionkey, database, options) {
+    if (this.#setup) throw new Error('PROVIDER_ALREADY_SETUP')
     if (options && options.https && (!options.ssl || !options.ssl.key || !options.ssl.cert)) throw new Error('MISSING_SSL_KEY_CERTIFICATE')
     if (!encryptionkey) throw new Error('MISSING_ENCRYPTION_KEY')
     if (!database) throw new Error('MISSING_DATABASE_CONFIGURATIONS')
@@ -389,6 +393,9 @@ class Provider {
       if (res.locals.context.messageType === 'LtiDeepLinkingRequest') return this.#deepLinkingCallback(res.locals.token, req, res, next)
       return this.#connectCallback(res.locals.token, req, res, next)
     })
+
+    this.#setup = true
+    return this
   }
 
   /**
@@ -400,6 +407,7 @@ class Provider {
      * @returns {Promise<true>}
      */
   async deploy (options) {
+    if (!this.#setup) throw new Error('PROVIDER_NOT_SETUP')
     provMainDebug('Attempting to connect to database')
     try {
       await this.Database.setup()
@@ -666,7 +674,7 @@ class Provider {
   async deletePlatform (url) {
     if (!url) throw new Error('MISSING_PLATFORM_URL')
     const platform = await this.getPlatform(url)
-    if (platform) await platform.remove()
+    if (platform) await platform.delete()
     return true
   }
 

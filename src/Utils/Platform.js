@@ -63,7 +63,7 @@ class Platform {
     if (!name) return this.#platformName
     await this.#Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { platformName: name })
     this.#platformName = name
-    return this
+    return name
   }
 
   /**
@@ -74,13 +74,13 @@ class Platform {
     if (!clientId) return this.#clientId
     await this.#Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { clientId: clientId })
     this.#clientId = clientId
-    return this
+    return clientId
   }
 
   /**
      * @description Gets the platform key_id.
      */
-  platformKid () {
+  async platformKid () {
     return this.#kid
   }
 
@@ -121,7 +121,7 @@ class Platform {
 
     await this.#Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { authConfig: authConfig })
     this.#authConfig = authConfig
-    return this
+    return authConfig
   }
 
   /**
@@ -132,7 +132,7 @@ class Platform {
     if (!authEndpoint) return this.#authEndpoint
     await this.#Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { authEndpoint: authEndpoint })
     this.#authEndpoint = authEndpoint
-    return this
+    return authEndpoint
   }
 
   /**
@@ -143,7 +143,7 @@ class Platform {
     if (!accesstokenEndpoint) return this.#accesstokenEndpoint
     await this.#Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { accesstokenEndpoint: accesstokenEndpoint })
     this.#accesstokenEndpoint = accesstokenEndpoint
-    return this
+    return accesstokenEndpoint
   }
 
   /**
@@ -169,11 +169,19 @@ class Platform {
   /**
    * @description Deletes a registered platform.
    */
-  async remove () {
+  async delete () {
     await this.#Database.Delete('platform', { platformUrl: this.#platformUrl })
     await this.#Database.Delete('publickey', { kid: this.#kid })
     await this.#Database.Delete('privatekey', { kid: this.#kid })
     return true
+  }
+
+  /**
+   * @deprecated
+   */
+  async remove () {
+    console.log('Deprecation warning: The Platform.remove() method is now deprecated and will be removed in the 6.0 release. Use Platform.delete() instead.')
+    return this.delete()
   }
 }
 

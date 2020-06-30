@@ -147,7 +147,7 @@ Sets/Gets the platform client id.
 
 
 
-#### Platform.platformKid() 
+#### async Platform.platformKid() 
 
 Gets the platform key_id.
 
@@ -292,7 +292,7 @@ Gets the platform access token or attempts to generate a new one.
 
 
 
-#### async Platform.remove() 
+#### async Platform.delete() 
 
 Deletes a registered platform.
 

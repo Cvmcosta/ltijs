@@ -103,6 +103,11 @@ class Provider {
       }
     });
 
+    _setup.set(this, {
+      writable: true,
+      value: false
+    });
+
     _connectCallback2.set(this, {
       writable: true,
       value: async (connection, req, res, next) => {
@@ -179,6 +184,7 @@ class Provider {
      * @param {Number} [options.tokenMaxAge = 10] - Sets the idToken max age allowed in seconds. Defaults to 10 seconds. If false, disables max age validation.
      */
   setup(encryptionkey, database, options) {
+    if ((0, _classPrivateFieldGet2.default)(this, _setup)) throw new Error('PROVIDER_ALREADY_SETUP');
     if (options && options.https && (!options.ssl || !options.ssl.key || !options.ssl.cert)) throw new Error('MISSING_SSL_KEY_CERTIFICATE');
     if (!encryptionkey) throw new Error('MISSING_ENCRYPTION_KEY');
     if (!database) throw new Error('MISSING_DATABASE_CONFIGURATIONS');
@@ -456,6 +462,8 @@ class Provider {
       if (res.locals.context.messageType === 'LtiDeepLinkingRequest') return (0, _classPrivateFieldGet2.default)(this, _deepLinkingCallback2).call(this, res.locals.token, req, res, next);
       return (0, _classPrivateFieldGet2.default)(this, _connectCallback2).call(this, res.locals.token, req, res, next);
     });
+    (0, _classPrivateFieldSet2.default)(this, _setup, true);
+    return this;
   }
   /**
      * @description Starts listening to a given port for LTI requests and opens connection to the database.
@@ -468,6 +476,7 @@ class Provider {
 
 
   async deploy(options) {
+    if (!(0, _classPrivateFieldGet2.default)(this, _setup)) throw new Error('PROVIDER_NOT_SETUP');
     provMainDebug('Attempting to connect to database');
 
     try {
@@ -767,7 +776,7 @@ class Provider {
   async deletePlatform(url) {
     if (!url) throw new Error('MISSING_PLATFORM_URL');
     const platform = await this.getPlatform(url);
-    if (platform) await platform.remove();
+    if (platform) await platform.delete();
     return true;
   }
   /**
@@ -913,6 +922,8 @@ var _devMode = new WeakMap();
 var _tokenMaxAge = new WeakMap();
 
 var _cookieOptions = new WeakMap();
+
+var _setup = new WeakMap();
 
 var _connectCallback2 = new WeakMap();
 

@@ -18,4 +18,14 @@ describe('Testing shutdown method', function () {
     await expect(lti.deletePlatform('http://localhost/moodle')).to.eventually.become(true)
     return expect(lti.close({ silent: true })).to.eventually.equal(true)
   })
+  it('Provider.registerPlatform expected to throw error when Provider is closed', async () => {
+    await expect(lti.registerPlatform({
+      url: 'http://localhost/moodle',
+      name: 'Platform Name',
+      clientId: 'ClientIdThePlatformCreatedForYourApp',
+      authenticationEndpoint: 'http://localhost/moodle/AuthorizationUrl',
+      accesstokenEndpoint: 'http://localhost/moodle/AccessTokenUrl',
+      authConfig: { method: 'INVALID_METHOD', key: 'http://localhost/moodle/keyset' }
+    })).to.be.rejectedWith(Error)
+  })
 })

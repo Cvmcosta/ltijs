@@ -4,6 +4,8 @@ var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefau
 
 var _defineProperty2 = _interopRequireDefault(require("@babel/runtime/helpers/defineProperty"));
 
+var _classPrivateFieldSet2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldSet"));
+
 var _classPrivateFieldGet2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldGet"));
 
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
@@ -32,6 +34,11 @@ class Database {
     _dbConnection.set(this, {
       writable: true,
       value: {}
+    });
+
+    _deploy.set(this, {
+      writable: true,
+      value: false
     });
 
     if (!database || !database.url) throw new Error('MISSING_DATABASE_CONFIG'); // Starts database connection
@@ -201,6 +208,7 @@ class Database {
       }, 1000);
     });
     if (this.db.readyState === 0) await mongoose.connect((0, _classPrivateFieldGet2.default)(this, _dbConnection).url, (0, _classPrivateFieldGet2.default)(this, _dbConnection).options);
+    (0, _classPrivateFieldSet2.default)(this, _deploy, true);
     return true;
   } // Closes connection to the database
 
@@ -208,6 +216,7 @@ class Database {
   async Close() {
     mongoose.connection.removeAllListeners();
     await mongoose.connection.close();
+    (0, _classPrivateFieldSet2.default)(this, _deploy, false);
     return true;
   }
   /**
@@ -219,6 +228,7 @@ class Database {
 
 
   async Get(ENCRYPTIONKEY, collection, query) {
+    if (!(0, _classPrivateFieldGet2.default)(this, _deploy)) throw new Error('PROVIDER_NOT_DEPLOYED');
     if (!collection) throw new Error('MISSING_COLLECTION');
     const Model = mongoose.model(collection);
     const result = await Model.find(query);
@@ -248,6 +258,7 @@ class Database {
 
 
   async Insert(ENCRYPTIONKEY, collection, item, index) {
+    if (!(0, _classPrivateFieldGet2.default)(this, _deploy)) throw new Error('PROVIDER_NOT_DEPLOYED');
     if (!collection || !item || ENCRYPTIONKEY && !index) throw new Error('MISSING_PARAMS');
     const Model = mongoose.model(collection);
     let newDocData = item;
@@ -275,6 +286,7 @@ class Database {
 
 
   async Replace(ENCRYPTIONKEY, collection, query, item, index) {
+    if (!(0, _classPrivateFieldGet2.default)(this, _deploy)) throw new Error('PROVIDER_NOT_DEPLOYED');
     if (!collection || !item || ENCRYPTIONKEY && !index) throw new Error('MISSING_PARAMS');
     const Model = mongoose.model(collection);
     let newDocData = item;
@@ -302,6 +314,7 @@ class Database {
 
 
   async Modify(ENCRYPTIONKEY, collection, query, modification) {
+    if (!(0, _classPrivateFieldGet2.default)(this, _deploy)) throw new Error('PROVIDER_NOT_DEPLOYED');
     if (!collection || !query || !modification) throw new Error('MISSING_PARAMS');
     const Model = mongoose.model(collection);
     let newMod = modification;
@@ -327,6 +340,7 @@ class Database {
 
 
   async Delete(collection, query) {
+    if (!(0, _classPrivateFieldGet2.default)(this, _deploy)) throw new Error('PROVIDER_NOT_DEPLOYED');
     if (!collection || !query) throw new Error('MISSING_PARAMS');
     const Model = mongoose.model(collection);
     await Model.deleteMany(query);
@@ -375,6 +389,8 @@ class Database {
 }
 
 var _dbConnection = new WeakMap();
+
+var _deploy = new WeakMap();
 
 module.exports = (options, plugin) => {
   // Add plugin funcionality back

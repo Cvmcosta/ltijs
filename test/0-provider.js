@@ -24,6 +24,11 @@ const keysetRoute = '/keysetroute'
 describe('Testing Provider', function () {
   this.timeout(10000)
 
+  // Testing setup flag
+  it('Provider.deploy expected to throw error when Provider not setup', async () => {
+    await expect(lti.deploy({ silent: true })).to.be.rejectedWith(Error)
+  })
+
   // Setting up provider
   it('Provider.setup expected to not throw Error', () => {
     const fn = () => {
@@ -41,6 +46,33 @@ describe('Testing Provider', function () {
       return lti
     }
     expect(fn).to.not.throw(Error)
+  })
+  it('Provider.setup expected to throw Error when already setup', () => {
+    const fn = () => {
+      lti.setup('LTIKEY',
+        { url: 'mongodb://127.0.0.1/testdatabase' },
+        {
+          appRoute: appRoute,
+          loginRoute: loginRoute,
+          sessionTimeoutRoute: sessionTimeoutRoute,
+          invalidTokenRoute: invalidTokenRoute,
+          keysetRoute: keysetRoute,
+          staticPath: path.join(__dirname, '/views/'),
+          devMode: true
+        })
+      return lti
+    }
+    expect(fn).to.throw(Error)
+  })
+  it('Provider.registerPlatform expected to throw error when Provider not deployed', async () => {
+    await expect(lti.registerPlatform({
+      url: 'http://localhost/moodle',
+      name: 'Platform Name',
+      clientId: 'ClientIdThePlatformCreatedForYourApp',
+      authenticationEndpoint: 'http://localhost/moodle/AuthorizationUrl',
+      accesstokenEndpoint: 'http://localhost/moodle/AccessTokenUrl',
+      authConfig: { method: 'INVALID_METHOD', key: 'http://localhost/moodle/keyset' }
+    })).to.be.rejectedWith(Error)
   })
   it('Provider.appRoute expected to return registered route', () => {
     expect(lti.appRoute()).to.be.a('string').equal(appRoute)
@@ -86,10 +118,10 @@ describe('Testing Provider', function () {
     return expect(lti.registerPlatform({
       url: 'http://localhost/moodle',
       name: 'Platform Name',
-      clientId: 'ClientIdThePlatformCreatedForYourApp',
-      authenticationEndpoint: 'http://localhost/moodle/AuthorizationUrl',
-      accesstokenEndpoint: 'http://localhost/moodle/AccessTokenUrl',
-      authConfig: { method: 'JWK_SET', key: 'http://localhost/moodle/keyset' }
+      clientId: 'ClientId1',
+      authenticationEndpoint: 'http://localhost/moodle/AuthorizationUrl1',
+      accesstokenEndpoint: 'http://localhost/moodle/AccessTokenUrl1',
+      authConfig: { method: 'JWK_SET', key: 'http://localhost/moodle/keyset1' }
     })).to.eventually.be.instanceOf(Platform)
   })
   it('Provider.registerPlatform expected to apply changes to registered Platform object', async () => {
@@ -111,7 +143,7 @@ describe('Testing Provider', function () {
     await lti.registerPlatform({
       url: 'http://localhost/moodle2',
       name: 'Platform Name 2',
-      clientId: 'ClientIdThePlatformCreatedForYourApp2',
+      clientId: 'ClientId2',
       authenticationEndpoint: 'http://localhost/moodle/AuthorizationUrl2',
       accesstokenEndpoint: 'http://localhost/moodle/AccessTokenUrl2',
       authConfig: { method: 'JWK_SET', key: 'http://localhost/moodle/keyset2' }
@@ -120,6 +152,57 @@ describe('Testing Provider', function () {
     await expect(lti.deletePlatform('http://localhost/moodle2')).to.eventually.become(true)
     await expect(lti.getPlatform('http://localhost/moodle2')).to.eventually.become(false)
   })
+
+  it('Platform.platformUrl expected to return platform url', async () => {
+    const plat = await lti.getPlatform('http://localhost/moodle')
+    return expect(plat.platformUrl()).to.eventually.become('http://localhost/moodle')
+  })
+  it('Platform.platformKid expected to return platform kid string', async () => {
+    const plat = await lti.getPlatform('http://localhost/moodle')
+    return expect(plat.platformKid()).to.eventually.be.a('string')
+  })
+  it('Platform.platformPublicKey expected to return platform kid string', async () => {
+    const plat = await lti.getPlatform('http://localhost/moodle')
+    return expect(plat.platformPublicKey()).to.eventually.be.a('string')
+  })
+  it('Platform.platformPrivateKey expected to return platform kid string', async () => {
+    const plat = await lti.getPlatform('http://localhost/moodle')
+    return expect(plat.platformPrivateKey()).to.eventually.be.a('string')
+  })
+  it('Platform.platformName expected to alter platform name', async () => {
+    const value = 'Platform name'
+    const plat = await lti.getPlatform('http://localhost/moodle')
+    await plat.platformName(value)
+    return expect(plat.platformName()).to.eventually.become(value)
+  })
+  it('Platform.platformClientId expected to alter platform client id', async () => {
+    const value = 'ClientId'
+    const plat = await lti.getPlatform('http://localhost/moodle')
+    await plat.platformClientId(value)
+    return expect(plat.platformClientId()).to.eventually.become(value)
+  })
+  it('Platform.platformAuthConfig expected to alter platform auth configuration', async () => {
+    const value = {
+      method: 'JWK_SET',
+      key: 'http://localhost/moodle/keyset'
+    }
+    const plat = await lti.getPlatform('http://localhost/moodle')
+    await plat.platformAuthConfig(value.method, value.key)
+    return expect(plat.platformAuthConfig()).to.eventually.become(value)
+  })
+  it('Platform.platformAuthEndpoint expected to alter platform authentication endpoint', async () => {
+    const value = 'http://localhost/moodle/AuthorizationUrl'
+    const plat = await lti.getPlatform('http://localhost/moodle')
+    await plat.platformAuthEndpoint(value)
+    return expect(plat.platformAuthEndpoint()).to.eventually.become(value)
+  })
+  it('Platform.platformAccessTokenEndpoint expected to alter platform authentication endpoint', async () => {
+    const value = 'http://localhost/moodle/AccessTokenUrl'
+    const plat = await lti.getPlatform('http://localhost/moodle')
+    await plat.platformAccessTokenEndpoint(value)
+    return expect(plat.platformAccessTokenEndpoint()).to.eventually.become(value)
+  })
+
   it('Provider.onConnect expected to throw error when receiving no callback', () => {
     const fn = () => {
       return lti.onConnect()
