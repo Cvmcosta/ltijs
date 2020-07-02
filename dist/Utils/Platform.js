@@ -15,6 +15,24 @@ const provPlatformDebug = require('debug')('provider:platform');
  */
 
 
+var _platformName = new WeakMap();
+
+var _platformUrl = new WeakMap();
+
+var _clientId = new WeakMap();
+
+var _authEndpoint = new WeakMap();
+
+var _authConfig2 = new WeakMap();
+
+var _ENCRYPTIONKEY2 = new WeakMap();
+
+var _accesstokenEndpoint = new WeakMap();
+
+var _kid = new WeakMap();
+
+var _Database = new WeakMap();
+
 class Platform {
   /**
      * @param {string} name - Platform name.
@@ -260,23 +278,5 @@ class Platform {
   }
 
 }
-
-var _platformName = new WeakMap();
-
-var _platformUrl = new WeakMap();
-
-var _clientId = new WeakMap();
-
-var _authEndpoint = new WeakMap();
-
-var _authConfig2 = new WeakMap();
-
-var _ENCRYPTIONKEY2 = new WeakMap();
-
-var _accesstokenEndpoint = new WeakMap();
-
-var _kid = new WeakMap();
-
-var _Database = new WeakMap();
 
 module.exports = Platform;

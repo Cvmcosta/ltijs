@@ -32,6 +32,10 @@ const provMainDebug = require('debug')('consumer:main');
  */
 
 
+var _ENCRYPTIONKEY = new WeakMap();
+
+var _dbConnection = new WeakMap();
+
 class Consumer {
   /**
    * @description Exposes methods for easy manipualtion of the LTI 1.3 standard as a LTI Provider and a "server" object to manipulate the Express instance.
@@ -68,7 +72,3 @@ class Consumer {
   }
 
 }
-
-var _ENCRYPTIONKEY = new WeakMap();
-
-var _dbConnection = new WeakMap();

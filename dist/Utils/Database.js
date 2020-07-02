@@ -25,6 +25,10 @@ const provDatabaseDebug = require('debug')('provider:database');
  */
 
 
+var _dbConnection = new WeakMap();
+
+var _deploy = new WeakMap();
+
 class Database {
   /**
    * @description Mongodb configuration setup
@@ -387,10 +391,6 @@ class Database {
   }
 
 }
-
-var _dbConnection = new WeakMap();
-
-var _deploy = new WeakMap();
 
 module.exports = (options, plugin) => {
   // Add plugin funcionality back

@@ -47,6 +47,40 @@ const provMainDebug = require('debug')('provider:main');
  */
 
 
+var _loginRoute = new WeakMap();
+
+var _appRoute = new WeakMap();
+
+var _sessionTimeoutRoute = new WeakMap();
+
+var _invalidTokenRoute = new WeakMap();
+
+var _keysetRoute = new WeakMap();
+
+var _whitelistedRoutes = new WeakMap();
+
+var _ENCRYPTIONKEY2 = new WeakMap();
+
+var _devMode = new WeakMap();
+
+var _tokenMaxAge = new WeakMap();
+
+var _cookieOptions = new WeakMap();
+
+var _setup = new WeakMap();
+
+var _connectCallback2 = new WeakMap();
+
+var _deepLinkingCallback2 = new WeakMap();
+
+var _sessionTimeoutCallback2 = new WeakMap();
+
+var _invalidTokenCallback2 = new WeakMap();
+
+var _keyset = new WeakMap();
+
+var _server = new WeakMap();
+
 class Provider {
   constructor() {
     _loginRoute.set(this, {
@@ -427,7 +461,7 @@ class Provider {
           provMainDebug('Generated state: ', state); // Setting up validation info
 
           const cookieOptions = JSON.parse(JSON.stringify((0, _classPrivateFieldGet2.default)(this, _cookieOptions)));
-          cookieOptions.maxAge = 60 * 10 * 1000; // Adding max age to state cookie = 10min
+          cookieOptions.maxAge = 60 * 5 * 1000; // Adding max age to state cookie = 5min
 
           res.cookie('state' + state, iss, cookieOptions); // Redirect to authentication endpoint
 
@@ -902,39 +936,5 @@ class Provider {
   }
 
 }
-
-var _loginRoute = new WeakMap();
-
-var _appRoute = new WeakMap();
-
-var _sessionTimeoutRoute = new WeakMap();
-
-var _invalidTokenRoute = new WeakMap();
-
-var _keysetRoute = new WeakMap();
-
-var _whitelistedRoutes = new WeakMap();
-
-var _ENCRYPTIONKEY2 = new WeakMap();
-
-var _devMode = new WeakMap();
-
-var _tokenMaxAge = new WeakMap();
-
-var _cookieOptions = new WeakMap();
-
-var _setup = new WeakMap();
-
-var _connectCallback2 = new WeakMap();
-
-var _deepLinkingCallback2 = new WeakMap();
-
-var _sessionTimeoutCallback2 = new WeakMap();
-
-var _invalidTokenCallback2 = new WeakMap();
-
-var _keyset = new WeakMap();
-
-var _server = new WeakMap();
 
 module.exports = new Provider();

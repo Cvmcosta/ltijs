@@ -11,6 +11,12 @@ const jwt = require('jsonwebtoken');
 
 const provDeepLinkingDebug = require('debug')('provider:deepLinkingService');
 
+var _getPlatform = new WeakMap();
+
+var _ENCRYPTIONKEY = new WeakMap();
+
+var _Database = new WeakMap();
+
 class DeepLinking {
   constructor(getPlatform, ENCRYPTIONKEY, Database) {
     _getPlatform.set(this, {
@@ -135,11 +141,5 @@ class DeepLinking {
   }
 
 }
-
-var _getPlatform = new WeakMap();
-
-var _ENCRYPTIONKEY = new WeakMap();
-
-var _Database = new WeakMap();
 
 module.exports = DeepLinking;

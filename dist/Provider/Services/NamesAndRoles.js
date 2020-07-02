@@ -11,6 +11,12 @@ const got = require('got');
 
 const provNamesAndRolesServiceDebug = require('debug')('provider:namesAndRolesService');
 
+var _getPlatform = new WeakMap();
+
+var _ENCRYPTIONKEY = new WeakMap();
+
+var _Database = new WeakMap();
+
 class NamesAndRoles {
   constructor(getPlatform, ENCRYPTIONKEY, Database) {
     _getPlatform.set(this, {
@@ -115,11 +121,5 @@ class NamesAndRoles {
   }
 
 }
-
-var _getPlatform = new WeakMap();
-
-var _ENCRYPTIONKEY = new WeakMap();
-
-var _Database = new WeakMap();
 
 module.exports = NamesAndRoles;

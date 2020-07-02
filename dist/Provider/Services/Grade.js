@@ -15,6 +15,12 @@ const got = require('got');
 
 const provGradeServiceDebug = require('debug')('provider:gradeService');
 
+var _getPlatform = new WeakMap();
+
+var _ENCRYPTIONKEY = new WeakMap();
+
+var _Database = new WeakMap();
+
 class Grade {
   constructor(getPlatform, ENCRYPTIONKEY, Database) {
     _getPlatform.set(this, {
@@ -443,11 +449,5 @@ class Grade {
   }
 
 }
-
-var _getPlatform = new WeakMap();
-
-var _ENCRYPTIONKEY = new WeakMap();
-
-var _Database = new WeakMap();
 
 module.exports = Grade;

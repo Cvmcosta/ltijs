@@ -356,7 +356,7 @@ class Provider {
 
           // Setting up validation info
           const cookieOptions = JSON.parse(JSON.stringify(this.#cookieOptions))
-          cookieOptions.maxAge = 60 * 10 * 1000 // Adding max age to state cookie = 10min
+          cookieOptions.maxAge = 60 * 5 * 1000 // Adding max age to state cookie = 5min
           res.cookie('state' + state, iss, cookieOptions)
 
           // Redirect to authentication endpoint

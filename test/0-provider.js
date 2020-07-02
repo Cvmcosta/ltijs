@@ -41,7 +41,7 @@ describe('Testing Provider', function () {
           invalidTokenRoute: invalidTokenRoute,
           keysetRoute: keysetRoute,
           staticPath: path.join(__dirname, '/views/'),
-          devMode: true
+          devMode: false
         })
       return lti
     }
@@ -58,7 +58,7 @@ describe('Testing Provider', function () {
           invalidTokenRoute: invalidTokenRoute,
           keysetRoute: keysetRoute,
           staticPath: path.join(__dirname, '/views/'),
-          devMode: true
+          devMode: false
         })
       return lti
     }
@@ -93,7 +93,10 @@ describe('Testing Provider', function () {
     expect(lti.whitelist('/whitelist1', { route: '/whitelist2', method: 'POST' })).to.be.equal(true)
   })
   it('Provider.deploy expected to resolve true', async () => {
-    await expect(lti.deploy({ silent: true })).to.eventually.become(true)
+    await expect(lti.deploy({ silent: true, port: 3001 })).to.eventually.become(true)
+  })
+  it('Cleaning environment and preparing for registration tests', () => {
+    return expect(lti.deletePlatform('http://localhost/moodle')).to.eventually.become(true)
   })
   it('Provider.registerPlatform expected to throw error when missing argument', async () => {
     await expect(lti.registerPlatform({
@@ -161,11 +164,11 @@ describe('Testing Provider', function () {
     const plat = await lti.getPlatform('http://localhost/moodle')
     return expect(plat.platformKid()).to.eventually.be.a('string')
   })
-  it('Platform.platformPublicKey expected to return platform kid string', async () => {
+  it('Platform.platformPublicKey expected to return publickey string', async () => {
     const plat = await lti.getPlatform('http://localhost/moodle')
     return expect(plat.platformPublicKey()).to.eventually.be.a('string')
   })
-  it('Platform.platformPrivateKey expected to return platform kid string', async () => {
+  it('Platform.platformPrivateKey expected to return privatekey string', async () => {
     const plat = await lti.getPlatform('http://localhost/moodle')
     return expect(plat.platformPrivateKey()).to.eventually.be.a('string')
   })
@@ -212,7 +215,7 @@ describe('Testing Provider', function () {
 
   it('Provider.onConnect expected to not throw error when receiving callback', () => {
     const fn = () => {
-      return lti.onConnect((req, res) => { res.status(200).send('It works!') })
+      return lti.onConnect((conn, req, res) => { res.status(200).send('It works!') })
     }
     expect(fn).to.not.throw(Error)
   })
@@ -238,7 +241,7 @@ describe('Testing Provider', function () {
 
   it('Provider.onSessionTimeout expected to not throw error when receiving callback', () => {
     const fn = () => {
-      return lti.onSessionTimeout((req, res) => { res.status(200).send('It works!') })
+      return lti.onSessionTimeout((req, res) => { res.status(401).send('Session Timeout!') })
     }
     expect(fn).to.not.throw(Error)
   })
@@ -251,7 +254,7 @@ describe('Testing Provider', function () {
 
   it('Provider.onInvalidToken expected to not throw error when receiving callback', () => {
     const fn = () => {
-      return lti.onInvalidToken((req, res) => { res.status(200).send('It works!') })
+      return lti.onInvalidToken((req, res) => { res.status(401).send('Invalid token!') })
     }
     expect(fn).to.not.throw(Error)
   })
