@@ -17,6 +17,6 @@ jobs:
     - stage: "Install"
       script: npm install
     - stage: "Testing"
-      script: npm test
+      script: npm run test
     - stage: "Coverage"
       script: npm run report-coverage
