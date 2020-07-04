@@ -10,8 +10,7 @@
   "scripts": {
     "test": "nyc mocha",
     "build": "standard 'src/**/*.js' --fix && babel src -d dist",
-    "start": "node index.js",
-    "report-coverage": "nyc report --reporter=text-lcov > coverage.lcov && codecov"
+    "start": "node index.js"
   },
   "repository": {
     "type": "git",

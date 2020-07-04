@@ -20,5 +20,5 @@ jobs:
       script: npm run test
     - stage: "Coverage"
       script:
-        - mkdir .nyc_output
-        - npm run report-coverage
+        - istanbul cover ./node_modules/mocha/bin/_mocha --reporter test -- -R spec
+        - codecov
