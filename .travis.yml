@@ -16,6 +16,8 @@ jobs:
   include:
     - stage: "Install"
       script: npm install
+    - stage: "Pretest"
+      script: mkdir .nyc_output
     - stage: "Testing"
       script: npm run test
     - stage: "Coverage"
