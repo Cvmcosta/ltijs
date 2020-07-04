@@ -48,9 +48,14 @@ class Grade {
       provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']')
     }
 
-    const lineitemsEndpoint = idtoken.endpoint.lineitems
+    let lineitemsEndpoint = idtoken.endpoint.lineitems
+    let query = []
+    if (lineitemsEndpoint.indexOf('?') !== -1) {
+      query = Array.from(new URLSearchParams(lineitemsEndpoint.split('\?')[1]))
+      lineitemsEndpoint = lineitemsEndpoint.split('\?')[0]
+    }
 
-    let queryParams = []
+    let queryParams = [...query]
     if (options) {
       if (options.resourceLinkId) queryParams.push(['resource_link_id', idtoken.platformContext.resource.id])
       if (options.limit) queryParams.push(['limit', options.limit])
@@ -276,31 +281,29 @@ class Grade {
 
     const lineItems = await this.getLineItems(idtoken, options, accessToken)
 
-    let queryParams = []
+    const queryParams = []
     if (options) {
       if (options.userId) queryParams.push(['user_id', options.userId])
       if (limit) queryParams.push(['limit', limit])
     }
-    queryParams = new URLSearchParams(queryParams)
-    queryParams = queryParams.toString()
 
     const resultsArray = []
 
     for (const lineitem of lineItems) {
       try {
         const lineitemUrl = lineitem.id
+        let query = []
         let resultsUrl = lineitemUrl + '/results'
 
         if (lineitemUrl.indexOf('?') !== -1) {
-          const query = lineitemUrl.split('\?')[1]
+          query = Array.from(new URLSearchParams(lineitemUrl.split('\?')[1]))
           const url = lineitemUrl.split('\?')[0]
-          resultsUrl = url + '/results?' + query + '&' + queryParams
-        } else {
-          resultsUrl = resultsUrl + '?' + queryParams
+          resultsUrl = url + '/results'
         }
-
+        let searchParams = [...queryParams, ...query]
+        searchParams = new URLSearchParams(searchParams)
         provGradeServiceDebug('Requesting results from: ' + resultsUrl)
-        const results = await got.get(resultsUrl, { headers: { Authorization: accessToken.token_type + ' ' + accessToken.access_token, Accept: 'application/vnd.ims.lis.v2.resultcontainer+json' } }).json()
+        const results = await got.get(resultsUrl, { searchParams: searchParams, headers: { Authorization: accessToken.token_type + ' ' + accessToken.access_token, Accept: 'application/vnd.ims.lis.v2.resultcontainer+json' } }).json()
 
         resultsArray.push({
           lineItem: lineitem.id,

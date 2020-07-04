@@ -121,7 +121,7 @@ describe('Testing Names and Roles Service', function () {
       access_token: 'dkj4985kjaIAJDJ89kl8rkn5',
       token_type: 'bearer',
       expires_in: 3600,
-      scope: 'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem https://purl.imsglobal.org/spec/lti-ags/scope/result/read'
+      scope: 'https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly'
     })
 
     nock('http://localhost/moodle').get('/members?role=Learner&limit=2').reply(200, membersResult)
@@ -159,7 +159,7 @@ describe('Testing Names and Roles Service', function () {
       access_token: 'dkj4985kjaIAJDJ89kl8rkn5',
       token_type: 'bearer',
       expires_in: 3600,
-      scope: 'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem https://purl.imsglobal.org/spec/lti-ags/scope/result/read'
+      scope: 'https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly'
     })
 
     nock('http://localhost/moodle').get('/members/1?role=Learner&limit=2').reply(200, membersResult)
