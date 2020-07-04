@@ -14,11 +14,9 @@ install:
   
 jobs:
   include:
-    - stage: "Coverage"
-      script:
-        - npm install
-        - istanbul cover ./node_modules/mocha/bin/_mocha --reporter test -- -R spec
-        - codecov
+    - stage: "Install"
+      script: npm install
     - stage: "Testing"
       script: npm test
-      if: branch = master
+    - stage: "Coverage"
+      script: npm run report-coverage
