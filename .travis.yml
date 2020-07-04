@@ -1,6 +1,6 @@
 language: node_js
 node_js:
-  - "10"
+  - "11"
 services: mongodb
 cache:
   directories:
@@ -19,7 +19,6 @@ jobs:
         - npm install
         - istanbul cover ./node_modules/mocha/bin/_mocha --reporter test -- -R spec
         - codecov
-      if: branch = master
     - stage: "Testing"
       script: npm test
       if: branch = master

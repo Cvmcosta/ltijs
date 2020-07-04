@@ -8,7 +8,7 @@
     "node": ">=10.19.0"
   },
   "scripts": {
-    "test": "mocha",
+    "test": "nyc mocha",
     "build": "standard 'src/**/*.js' --fix && babel src -d dist",
     "start": "node index.js"
   },
@@ -56,9 +56,10 @@
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "chai-http": "^4.3.0",
-    "eslint": "^7.3.1",
+    "eslint": "^7.4.0",
     "mocha": "^8.0.1",
     "nock": "^13.0.2",
+    "nyc": "^15.1.0",
     "standard": "^14.3.4"
   },
   "standard": {
