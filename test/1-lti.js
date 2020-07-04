@@ -112,6 +112,7 @@ describe('Testing LTI 1.3 flow', function () {
     const url = lti.loginRoute()
     return chai.request(lti.app).post(url).send({ iss: 'http://localhost/moodle' }).then(res => {
       expect(res).to.redirectTo(/^http:\/\/localhost\/moodle\/AuthorizationUrl.*/)
+      expect(res).to.have.status(404)
     })
   })
 
@@ -119,6 +120,7 @@ describe('Testing LTI 1.3 flow', function () {
     const url = lti.loginRoute()
     return chai.request(lti.app).get(url).query({ iss: 'http://localhost/moodle' }).then(res => {
       expect(res).to.redirectTo(/^http:\/\/localhost\/moodle\/AuthorizationUrl.*/)
+      expect(res).to.have.status(404)
     })
   })
 
