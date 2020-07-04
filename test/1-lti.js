@@ -110,17 +110,33 @@ describe('Testing LTI 1.3 flow', function () {
 
   it('Login route POST request with registered platform is expected to redirect to authenticationEndpoint', async () => {
     const url = lti.loginRoute()
+    nock('http://localhost/moodle').get(/\/AuthorizationUrl?.*/).reply(200)
     return chai.request(lti.app).post(url).send({ iss: 'http://localhost/moodle' }).then(res => {
       expect(res).to.redirectTo(/^http:\/\/localhost\/moodle\/AuthorizationUrl.*/)
-      expect(res).to.have.status(404)
+      expect(res).to.have.status(200)
     })
   })
 
   it('Login route GET request with registered platform is expected to redirect to authenticationEndpoint', async () => {
     const url = lti.loginRoute()
+    nock('http://localhost/moodle').get(/\/AuthorizationUrl?.*/).reply(200)
     return chai.request(lti.app).get(url).query({ iss: 'http://localhost/moodle' }).then(res => {
       expect(res).to.redirectTo(/^http:\/\/localhost\/moodle\/AuthorizationUrl.*/)
-      expect(res).to.have.status(404)
+      expect(res).to.have.status(200)
+    })
+  })
+
+  it('Keyset route GET request is expected to return valid keyset', async () => {
+    const url = lti.keysetRoute()
+    const plat = await lti.getPlatform('http://localhost/moodle')
+    const kid = await plat.platformKid()
+    return chai.request(lti.app).get(url).then(res => {
+      expect(res).to.have.status(200)
+      const keyset = JSON.parse(res.text)
+      const key = keyset.keys.find(key => {
+        return key.kid === kid
+      })
+      expect(key).to.not.equal(undefined)
     })
   })
 
