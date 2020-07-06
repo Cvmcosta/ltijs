@@ -227,7 +227,7 @@ class Provider {
      */
 
     this.Database = null;
-    if (!database.plugin) this.Database = DB(database);else throw new Error('Database plugins are not yet supported with version 5.0 due to datbae structural changes.');
+    if (!database.plugin) this.Database = new DB(database);else throw new Error('Database plugins are not yet supported with version 5.0 due to datbae structural changes.');
     if (options && (options.appRoute || options.appUrl)) (0, _classPrivateFieldSet2.default)(this, _appRoute, options.appRoute || options.appUrl);
     if (options && (options.loginRoute || options.loginUrl)) (0, _classPrivateFieldSet2.default)(this, _loginRoute, options.loginRoute || options.loginUrl);
     if (options && (options.sessionTimeoutRoute || options.sessionTimeoutUrl)) (0, _classPrivateFieldSet2.default)(this, _sessionTimeoutRoute, options.sessionTimeoutRoute || options.sessionTimeoutUrl);

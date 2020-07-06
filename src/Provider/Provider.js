@@ -115,7 +115,7 @@ class Provider {
      * @description Database object.
      */
     this.Database = null
-    if (!database.plugin) this.Database = DB(database)
+    if (!database.plugin) this.Database = new DB(database)
     else throw new Error('Database plugins are not yet supported with version 5.0 due to datbae structural changes.')
 
     if (options && (options.appRoute || options.appUrl)) this.#appRoute = options.appRoute || options.appUrl
