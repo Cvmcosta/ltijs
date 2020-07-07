@@ -22,6 +22,9 @@
 
 Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps! 
 
+> Ltijs is now IMS Certified, the next major release 5.0 will bring many new improvements, including the reintroduction of support for database plugins.
+
+
 > v4.0.0
 > MAJOR CHANGE
 > - Implemented Names and Roles Service.
@@ -29,7 +32,6 @@ Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps
 > - Separated generated access tokens based on their scope.
 > - Improved Access token generation method with the ability to specify the scope.
 > - Changed Grade Service methods names to improve code consistency, old method names are deprecated and will keep working until the 5.0 release.
-> - Started process of certifying Ltijs with the IMS's LTI Advantage Conformance Certificate.
 > - View entire [CHANGELOG](changelog.md)
 
 > v3.6.0
