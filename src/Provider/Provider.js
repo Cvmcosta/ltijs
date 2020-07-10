@@ -390,7 +390,7 @@ class Provider {
 
     // Main app
     this.app.all(this.#appRoute, async (req, res, next) => {
-      if (res.locals.context.messageType === 'LtiDeepLinkingRequest') return this.#deepLinkingCallback(res.locals.token, req, res, next)
+      if (res.locals.context && res.locals.context.messageType === 'LtiDeepLinkingRequest') return this.#deepLinkingCallback(res.locals.token, req, res, next)
       return this.#connectCallback(res.locals.token, req, res, next)
     })
 
