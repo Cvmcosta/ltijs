@@ -52,9 +52,9 @@ class Provider {
   // Setup flag
   #setup = false
 
-  #connectCallback = async (connection, req, res, next) => { return next() }
+  #connectCallback = async (token, req, res, next) => { return next() }
 
-  #deepLinkingCallback = async (connection, req, res, next) => { return next() }
+  #deepLinkingCallback = async (token, req, res, next) => { return next() }
 
   #sessionTimeoutCallback = async (req, res) => {
     return res.status(401).send('INVALID_OR_EXPIRED_TOKEN. Please reinitiate login.')
@@ -81,8 +81,9 @@ class Provider {
      * @description Provider configuration method.
      * @param {String} encryptionkey - Secret used to sign cookies and encrypt other info.
      * @param {Object} database - The Database configurations to open and manage connection, uses MongoDB Driver.
-     * @param {String} [database.url] - Database Url (Ex: mongodb://localhost/applicationdb).
+     * @param {String} database.url - Database Url (Ex: mongodb://localhost/applicationdb).
      * @param {Object} [database.plugin] - If set, must be the Database object of the desired database plugin.
+     * @param {Boolean} [database.debug] - If set to true, enables mongoose debug mode.
      * @param {Object} [database.connection] - Database connection options (Ex: user, pass)
      * @param {String} [database.connection.user] - Database user for authentication if needed.
      * @param {String} [database.conenction.pass] - Database pass for authentication if needed.
@@ -109,14 +110,14 @@ class Provider {
     if (this.#setup) throw new Error('PROVIDER_ALREADY_SETUP')
     if (options && options.https && (!options.ssl || !options.ssl.key || !options.ssl.cert)) throw new Error('MISSING_SSL_KEY_CERTIFICATE')
     if (!encryptionkey) throw new Error('MISSING_ENCRYPTION_KEY')
-    if (!database) throw new Error('MISSING_DATABASE_CONFIGURATIONS')
+    if (!database) throw new Error('MISSING_DATABASE_CONFIGURATION')
 
     /**
      * @description Database object.
      */
     this.Database = null
     if (!database.plugin) this.Database = new DB(database)
-    else throw new Error('Database plugins are not yet supported with version 5.0 due to datbae structural changes.')
+    else this.Database = database.plugin
 
     if (options && (options.appRoute || options.appUrl)) this.#appRoute = options.appRoute || options.appUrl
     if (options && (options.loginRoute || options.loginUrl)) this.#loginRoute = options.loginRoute || options.loginUrl

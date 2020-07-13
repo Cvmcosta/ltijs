@@ -8,7 +8,16 @@ const provDatabaseDebug = require('debug')('provider:database')
  * @description Collection of static methods to manipulate the database.
  */
 class Database {
-  #dbConnection = {}
+  #dbUrl
+
+  #dbConnection = {
+    useNewUrlParser: true,
+    keepAlive: true,
+    keepAliveInitialDelay: 300000,
+    connectTimeoutMS: 300000,
+    useUnifiedTopology: true
+  }
+
   #deploy = false
 
   /**
@@ -17,19 +26,15 @@ class Database {
    */
   constructor (database) {
     if (!database || !database.url) throw new Error('MISSING_DATABASE_CONFIG')
-    // Starts database connection
-    if (database.connection) {
-      if (!database.connection.useNewUrlParser) database.connection.useNewUrlParser = true
-      if (!database.connection.keepAlive) database.connection.keepAlive = true
-      if (!database.connection.keepAliveInitialDelay) database.connection.keepAliveInitialDelay = 300000
-    } else {
-      database.connection = { useNewUrlParser: true, keepAlive: true, keepAliveInitialDelay: 300000, connectTimeoutMS: 300000 }
-    }
-    this.#dbConnection.url = database.url
-    this.#dbConnection.options = database.connection
-    this.#dbConnection.options.useUnifiedTopology = true
-    if (database.autoIndex === false) this.#dbConnection.options.autoIndex = false
+
+    // Configures database connection
+    this.#dbUrl = database.url
     if (database.debug) mongoose.set('debug', true)
+
+    this.#dbConnection = {
+      ...this.#dbConnection,
+      ...database.connection
+    }
 
     // Creating database schemas
     const idTokenSchema = new Schema({
@@ -136,7 +141,7 @@ class Database {
       setTimeout(async () => {
         if (this.db.readyState === 0) {
           try {
-            await mongoose.connect(this.#dbConnection.url, this.#dbConnection.options)
+            await mongoose.connect(this.#dbUrl, this.#dbConnection)
           } catch (err) {
             provDatabaseDebug('Error in MongoDb connection: ' + err)
           }
@@ -144,7 +149,7 @@ class Database {
       }, 1000)
     })
 
-    if (this.db.readyState === 0) await mongoose.connect(this.#dbConnection.url, this.#dbConnection.options)
+    if (this.db.readyState === 0) await mongoose.connect(this.#dbUrl, this.#dbConnection)
     this.#deploy = true
     return true
   }

@@ -2,14 +2,19 @@
 	<br>
 	<br>
 	<a href="https://cvmcosta.github.io/ltijs"><img width="360" src="logo-300.svg"></img></a>
+  <a href​="https://site.imsglobal.org/certifications/coursekey/ltijs"​><img
+    width="80"
+    src="https://www.imsglobal.org/sites/default/files/IMSconformancelogoREG.png"
+    alt="IMS Global Certified" border="0">
+  </a>
 </div>
 
 
 
-> Turn your application into a LTI 1.3 tool provider.
+> Easily turn your web application into into a LTI 1.3 Learning Tool.
 
 
-[![travisci](https://img.shields.io/travis/cvmcosta/ltijs.svg)](https://travis-ci.org/Cvmcosta/ltijs)
+[![travisci](https://travis-ci.org/Cvmcosta/ltijs.svg?branch=master)](https://travis-ci.org/Cvmcosta/ltijs)
 [![codecov](https://codecov.io/gh/Cvmcosta/ltijs/branch/master/graph/badge.svg)](https://codecov.io/gh/Cvmcosta/ltijs)
 [![Node Version](https://img.shields.io/node/v/ltijs.svg)](https://www.npmjs.com/package/ltijs)
 [![NPM package](https://img.shields.io/npm/v/ltijs.svg)](https://www.npmjs.com/package/ltijs)
@@ -23,22 +28,23 @@
 
 Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps! 
 
+> [Ltijs is LTI Advantage Complete Certified by IMS](https://site.imsglobal.org/certifications/coursekey/ltijs)
 
-## Features
+> Ltijs version 5.0 is a re-release of the project as a Certified LTI library, that comes with many improvements and new functionalities and a few API changes, see bellow for a migration guide from version 4.0 and a complete list of the changes made:
+> - [Migrating from version 4](https://cvmcosta.github.io/ltijs/#/migration)
+> - [5.0 Changelog](https://cvmcosta.github.io/ltijs/#/certchanges)
 
+## Feature roadmap
 
 | Feature | Implementation | Documentation |
 | --------- | - | - |
-| LTI Provider | <center>✔️</center> | <center>✔️</center> |
-| [Platform Class](https://cvmcosta.github.io/ltijs/#/platform) | <center>✔️</center> | <center>✔️</center> |
-| Database plugins | <center>✔️</center> | <center>✔️</center> |
-| [Keyset endpoint support](#keyset-endpoint) | <center>✔️</center> | <center>✔️</center> |
+| [Keyset endpoint support](https://cvmcosta.me/ltijs/#/provider?id=keyset-endpoint) | <center>✔️</center> | <center>✔️</center> |
 | [Deep Linking Service Class](https://cvmcosta.me/ltijs/#/deeplinking) | <center>✔️</center> | <center>✔️</center> |
 | [Grading Service Class](https://cvmcosta.me/ltijs/#/grading) | <center>✔️</center> | <center>✔️</center> |
 | [Names and Roles Service Class](https://cvmcosta.me/ltijs/#/namesandroles) | <center>✔️</center> | <center>✔️</center> |
-| Detailed Database Error Logging | <center></center> | <center></center> |
+| Database plugins | <center>✔️</center> | <center>✔️</center> |
+| Key Rotation | <center></center> | <center></center> |
 | Redis caching | <center></center> | <center></center> |
-
 
 
 
@@ -64,6 +70,7 @@ Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps
 - [Using the Names and Roles service with Ltijs](#the-names-and-roles-provisioning-service)
 - [Logging and Debugging](#logging-and-debugging)
 - [Contributing](#contributing)
+- [Special thanks](#special-thanks)
 - [License](#license)
 
 ---
@@ -566,7 +573,7 @@ const lti = new LTI('EXAMPLEKEY',
             }, 
             { staticPath: path.join(__dirname, '/views/') })
 ```
-The second parameter of the contructor, `database`, is an object with an `url` field, that should be the database url, and, ***if your database requires authentication***, a `connection` field, that must contain [MongoDB Driver's connection options](http://mongodb.github.io/node-mongodb-native/2.2/api/MongoClient.html#connect).
+The second parameter of the contructor, `database`, is an object with an `url` field, that should be the database url, and, if needed, a `connection` field, that must contain [MongoDB Driver's connection options](http://mongodb.github.io/node-mongodb-native/2.2/api/MongoClient.html#connect), like authentication information.
 
 
 The third parameter, `options`, allows you to configure a staticPath from where the express server serves static files, setup a local https configuration, setup the server logger, customize the server main routes, and configure cookie parameters: 
@@ -1127,7 +1134,7 @@ And if you feel like it, you can donate any amount through paypal, it helps a lo
 [![Donate](https://img.shields.io/badge/Donate-Buy%20me%20a%20coffe-blue)](https://www.buymeacoffee.com/UL5fBsi)
 
 
-### Contributors
+### Main contributors
 
 <table>
   <tr>
@@ -1138,6 +1145,27 @@ And if you feel like it, you can donate any amount through paypal, it helps a lo
   </tr>
   
 </table>
+
+
+---
+
+## Special thanks
+
+<div align="center">
+	<a href="https://cvmcosta.github.io/ltijs"><img width="150" src="ufma-logo.png"></img></a>
+</div>
+
+> I would like to thank the Federal University of Maranhão for the support throughout the entire development process.
+
+
+
+
+<div align="center">
+<br>
+	<a href="https://cvmcosta.github.io/ltijs"><img width="180" src="coursekey-logo.png"></img></a>
+</div>
+
+> I would like to thank CourseKey for making the Certification process possible and allowing me to be an IMS Member through them, which will contribute immensely to the future of the project.
 
 
 

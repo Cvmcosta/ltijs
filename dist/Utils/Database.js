@@ -4,9 +4,9 @@ var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefau
 
 var _defineProperty2 = _interopRequireDefault(require("@babel/runtime/helpers/defineProperty"));
 
-var _classPrivateFieldSet2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldSet"));
-
 var _classPrivateFieldGet2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldGet"));
+
+var _classPrivateFieldSet2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldSet"));
 
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
 
@@ -25,6 +25,8 @@ const provDatabaseDebug = require('debug')('provider:database');
  */
 
 
+var _dbUrl = new WeakMap();
+
 var _dbConnection = new WeakMap();
 
 var _deploy = new WeakMap();
@@ -35,9 +37,20 @@ class Database {
    * @param {Object} database - Configuration object
    */
   constructor(database) {
+    _dbUrl.set(this, {
+      writable: true,
+      value: void 0
+    });
+
     _dbConnection.set(this, {
       writable: true,
-      value: {}
+      value: {
+        useNewUrlParser: true,
+        keepAlive: true,
+        keepAliveInitialDelay: 300000,
+        connectTimeoutMS: 300000,
+        useUnifiedTopology: true
+      }
     });
 
     _deploy.set(this, {
@@ -45,26 +58,11 @@ class Database {
       value: false
     });
 
-    if (!database || !database.url) throw new Error('MISSING_DATABASE_CONFIG'); // Starts database connection
+    if (!database || !database.url) throw new Error('MISSING_DATABASE_CONFIG'); // Configures database connection
 
-    if (database.connection) {
-      if (!database.connection.useNewUrlParser) database.connection.useNewUrlParser = true;
-      if (!database.connection.keepAlive) database.connection.keepAlive = true;
-      if (!database.connection.keepAliveInitialDelay) database.connection.keepAliveInitialDelay = 300000;
-    } else {
-      database.connection = {
-        useNewUrlParser: true,
-        keepAlive: true,
-        keepAliveInitialDelay: 300000,
-        connectTimeoutMS: 300000
-      };
-    }
-
-    (0, _classPrivateFieldGet2.default)(this, _dbConnection).url = database.url;
-    (0, _classPrivateFieldGet2.default)(this, _dbConnection).options = database.connection;
-    (0, _classPrivateFieldGet2.default)(this, _dbConnection).options.useUnifiedTopology = true;
-    if (database.autoIndex === false) (0, _classPrivateFieldGet2.default)(this, _dbConnection).options.autoIndex = false;
-    if (database.debug) mongoose.set('debug', true); // Creating database schemas
+    (0, _classPrivateFieldSet2.default)(this, _dbUrl, database.url);
+    if (database.debug) mongoose.set('debug', true);
+    (0, _classPrivateFieldSet2.default)(this, _dbConnection, _objectSpread(_objectSpread({}, (0, _classPrivateFieldGet2.default)(this, _dbConnection)), database.connection)); // Creating database schemas
 
     const idTokenSchema = new Schema({
       iss: String,
@@ -204,14 +202,14 @@ class Database {
       setTimeout(async () => {
         if (this.db.readyState === 0) {
           try {
-            await mongoose.connect((0, _classPrivateFieldGet2.default)(this, _dbConnection).url, (0, _classPrivateFieldGet2.default)(this, _dbConnection).options);
+            await mongoose.connect((0, _classPrivateFieldGet2.default)(this, _dbUrl), (0, _classPrivateFieldGet2.default)(this, _dbConnection));
           } catch (err) {
             provDatabaseDebug('Error in MongoDb connection: ' + err);
           }
         }
       }, 1000);
     });
-    if (this.db.readyState === 0) await mongoose.connect((0, _classPrivateFieldGet2.default)(this, _dbConnection).url, (0, _classPrivateFieldGet2.default)(this, _dbConnection).options);
+    if (this.db.readyState === 0) await mongoose.connect((0, _classPrivateFieldGet2.default)(this, _dbUrl), (0, _classPrivateFieldGet2.default)(this, _dbConnection));
     (0, _classPrivateFieldSet2.default)(this, _deploy, true);
     return true;
   } // Closes connection to the database

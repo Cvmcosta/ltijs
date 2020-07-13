@@ -144,14 +144,14 @@ class Provider {
 
     _connectCallback2.set(this, {
       writable: true,
-      value: async (connection, req, res, next) => {
+      value: async (token, req, res, next) => {
         return next();
       }
     });
 
     _deepLinkingCallback2.set(this, {
       writable: true,
-      value: async (connection, req, res, next) => {
+      value: async (token, req, res, next) => {
         return next();
       }
     });
@@ -193,8 +193,9 @@ class Provider {
      * @description Provider configuration method.
      * @param {String} encryptionkey - Secret used to sign cookies and encrypt other info.
      * @param {Object} database - The Database configurations to open and manage connection, uses MongoDB Driver.
-     * @param {String} [database.url] - Database Url (Ex: mongodb://localhost/applicationdb).
+     * @param {String} database.url - Database Url (Ex: mongodb://localhost/applicationdb).
      * @param {Object} [database.plugin] - If set, must be the Database object of the desired database plugin.
+     * @param {Boolean} [database.debug] - If set to true, enables mongoose debug mode.
      * @param {Object} [database.connection] - Database connection options (Ex: user, pass)
      * @param {String} [database.connection.user] - Database user for authentication if needed.
      * @param {String} [database.conenction.pass] - Database pass for authentication if needed.
@@ -221,13 +222,13 @@ class Provider {
     if ((0, _classPrivateFieldGet2.default)(this, _setup)) throw new Error('PROVIDER_ALREADY_SETUP');
     if (options && options.https && (!options.ssl || !options.ssl.key || !options.ssl.cert)) throw new Error('MISSING_SSL_KEY_CERTIFICATE');
     if (!encryptionkey) throw new Error('MISSING_ENCRYPTION_KEY');
-    if (!database) throw new Error('MISSING_DATABASE_CONFIGURATIONS');
+    if (!database) throw new Error('MISSING_DATABASE_CONFIGURATION');
     /**
      * @description Database object.
      */
 
     this.Database = null;
-    if (!database.plugin) this.Database = new DB(database);else throw new Error('Database plugins are not yet supported with version 5.0 due to datbae structural changes.');
+    if (!database.plugin) this.Database = new DB(database);else this.Database = database.plugin;
     if (options && (options.appRoute || options.appUrl)) (0, _classPrivateFieldSet2.default)(this, _appRoute, options.appRoute || options.appUrl);
     if (options && (options.loginRoute || options.loginUrl)) (0, _classPrivateFieldSet2.default)(this, _loginRoute, options.loginRoute || options.loginUrl);
     if (options && (options.sessionTimeoutRoute || options.sessionTimeoutUrl)) (0, _classPrivateFieldSet2.default)(this, _sessionTimeoutRoute, options.sessionTimeoutRoute || options.sessionTimeoutUrl);
