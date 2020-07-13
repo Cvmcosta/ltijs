@@ -1148,7 +1148,7 @@ And if you feel like it, you can donate any amount through paypal, it helps a lo
 ## Special thanks
 
 <div align="center">
-	<a href="https://cvmcosta.github.io/ltijs"><img width="150" src="ufma-logo.png"></img></a>
+	<a href="https://portais.ufma.br/PortalUfma/" target='_blank'><img width="150" src="ufma-logo.png"></img></a>
 </div>
 
 > I would like to thank the Federal University of Maranhão for the support throughout the entire development process.
@@ -1158,7 +1158,7 @@ And if you feel like it, you can donate any amount through paypal, it helps a lo
 
 <div align="center">
 <br>
-	<a href="https://cvmcosta.github.io/ltijs"><img width="180" src="coursekey-logo.png"></img></a>
+	<a href="https://coursekey.com/" target='_blank'><img width="180" src="coursekey-logo.png"></img></a>
 </div>
 
 > I would like to thank CourseKey for making the Certification process possible and allowing me to be an IMS Member through them, which will contribute immensely to the future of the project.
