@@ -84,7 +84,8 @@ $ npm install ltijs
 ### MongoDB
 
 This package natively uses mongoDB by default to store and manage the server data, so you need to have it installed, see link bellow for further instructions.
-[Installing mongoDB](https://docs.mongodb.com/manual/administration/install-community/)
+
+  - [Installing mongoDB](https://docs.mongodb.com/manual/administration/install-community/)
 
 
 ### Database Plugins
