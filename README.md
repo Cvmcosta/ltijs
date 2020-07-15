@@ -184,7 +184,7 @@ If you find a bug or think that something is hard to understand feel free to ope
 
 And if you feel like it, you can donate any amount through paypal, it helps a lot.
 
-<a href="https://www.buymeacoffee.com/UL5fBsi" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/lato-green.png" alt="Buy Me A Coffee" style="height: 51px !important;width: 217px !important;" ></a>
+<a href="https://www.buymeacoffee.com/UL5fBsi" target="_blank"><img width="217" src="https://cdn.buymeacoffee.com/buttons/lato-green.png" alt="Buy Me A Coffee"></a>
 
 ### Main contributors
 
