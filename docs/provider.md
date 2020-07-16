@@ -696,22 +696,6 @@ lti.onConnect(
 ```
 
 
-
-##### Options
-
-The method also allows you to specify sessionTimeOut and invalidToken route functions to handle these cases.
-
-```javascript
-lti.onConnect(
-  (conection, request, response,  next) => {
-    response.send('User connected!')
-  }, {
-    sessionTimeout: (req, res) => { res.send('Session timed out') }, 
-    invalidToken: (req, res) => { res.send('Invalid token') } 
-  }
-)
-```
-
 #### The app property
 
 The LTI object gives you a `app` property that is an instance of the Express server, through this property you can create routes just like with regular [Express](https://expressjs.com/).

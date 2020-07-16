@@ -25,7 +25,14 @@
 ## Table of Contents
 
 - [Introduction](#introduction)
-- [Usage](#usage)
+- [Changes](#Changes)
+  - [Removed constructor](#removed-constructor)
+  - [Removed onConnect optional parameters](#removed-onconnect-optional-parameters)
+  - [Changed how reserved endpoints are mentioned](#changed-how-reserved-endpoints-are-mentioned)
+  - [Renamed Platform remove method to delete](#renamed-platform-remove-method-to-delete)
+  - [Bumped required version of Node](#bumped-required-version-of-node)
+  - [Changed error handling policy](#changed-error-handling-policy)
+  - [Added development mode](#added-development-mode)
 - [License](#license)
 
 ---
@@ -34,55 +41,193 @@
 ## Introduction
 
 
-Ltijs implements the [LTI 1.3 Assignment and Grading Service Specification](https://www.imsglobal.org/spec/lti-ags/v2p0/) in the form of the **Grade Class**.
+Ltijs version 5.0 is a re-release of the project as a Certified LTI library, that comes with many improvements and new functionalities and a few API changes, see bellow for a migration guide from version 4.0.
 
 ___
 
 
-## Basic Usage
+## Changes
 
+#### Removed constructor
 
-##### Sending grades to a platform
+*OBS: This is the only trully **breaking change** of version 5.0. All the other changes have some form of fallback in place that will keep old code working (Even if showing some deprecation warnings).*
 
-Ltijs is able to send grades to a platform in the [application/vnd.ims.lis.v1.score+json](https://www.imsglobal.org/spec/lti-ags/v2p0/#score-publish-service) LTI standard:
+> **This:**
 
-```javascript
-{
-  "scoreGiven" : 83,
-  "comment" : "This is exceptional work.",
-  "activityProgress" : "Completed",
-  "gradingProgress": "FullyGraded"
-}
+``` javascript
+// Require Provider 
+const Lti = require('ltijs').Provider
+
+// Setup provider using contructor
+const lti = new Lti('LTIKEY', // Key used to sign cookies and tokens
+         { url: 'mongodb://localhost/database' }, // Database configuration
+         { appUrl: '/', loginUrl: '/login' }) // Optionally, specify some of the reserved routes
 ```
 
-> This excludes the fields *timestamp*, *userId* and *scoreMaximum* of the specification, because the *messagePlatform()* function fills them automatically using the idtoken passed
+> **Becomes this:**
 
+``` javascript
+// Require Provider 
+const lti = require('ltijs').Provider
 
-Sending the grade: 
-
-```javascript
-let grade = {
-  scoreGiven: 50,
-  activityProgress: 'Completed',
-  gradingProgress: 'FullyGraded'
-}
-
-// Sends a grade to a platform's grade line
-lti.Grade.scorePublish(res.locals.token, grade)
+// Setup provider using setup method
+lti.setup('LTIKEY', // Key used to sign cookies and tokens
+         { url: 'mongodb://localhost/database' }, // Database configuration
+         { appRoute: '/', loginRoute: '/login' }) // Optionally, specify some of the reserved routes
 ```
 
+The constructor was replaced with a `setup()` method that **works in the exact same way**. This was done because Ltijs now works as a singleton, which allows it's functionalities to be accessed across multiple files:
 
-
-##### Retrieving grades from a platform
-
-Ltijs is able to retrieve grades from a platform:
+You can setup Ltijs in file `a.js`:
 
 ```javascript
-// Retrieves grade from a platform's grade line only for the current user
-let result  = await lti.Grade.result(res.locals.token, { userId: true })
+// a.js 
+// Require Provider 
+const lti = require('ltijs').Provider
+
+// Setup provider
+lti.setup('LTIKEY', // Key used to sign cookies and tokens
+         { url: 'mongodb://localhost/database' }, // Database configuration
+         { appRoute: '/', loginRoute: '/login' }) // Optionally, specify some of the reserved routes
+
+lti.deploy()
 ```
 
+And access the same object in a second file `b.js`:
 
+```javascript
+// b.js 
+// Require Provider 
+const lti = require('ltijs').Provider
+
+// Sending grade in a diferent file
+lti.app.post('/grade', async (req, res) => {
+  let grade = {
+    scoreGiven: 50,
+    activityProgress: 'Completed',
+    gradingProgress: 'FullyGraded'
+  }
+
+  // Sends a grade to a platform's grade line
+  await lti.Grade.scorePublish(res.locals.token, grade)
+  res.sendStatus(201)
+})
+```
+
+#### Removed onConnect optional parameters
+
+> **This:**
+
+``` javascript
+lti.onConnect(
+  (conection, request, response,  next) => {
+    response.send('User connected!')
+  }, {
+    sessionTimeout: (req, res) => { res.send('Session timed out') }, 
+    invalidToken: (req, res) => { res.send('Invalid token') } 
+  }
+)
+```
+
+> **Becomes this:**
+
+``` javascript
+lti.onConnect((conection, request, response,  next) => {
+    response.send('User connected!')
+  }
+)
+lti.onInvalidToken((req, res) => { 
+  res.send('Invalid token') 
+  }
+)
+lti.onSessionTimeout((req, res) => { 
+  res.send('Session timed out') 
+  }
+)
+```
+
+The onConnect optional parameters that allowed you to specify how to handle Invalid tokens or Session timeouts were removed and turned into their own standalone methods.
+
+#### Changed how reserved endpoints are mentioned
+
+> **This:**
+
+``` javascript
+// Setup provider using contructor
+const lti = new Lti('LTIKEY', // Key used to sign cookies and tokens
+         { url: 'mongodb://localhost/database' }, // Database configuration
+         { appUrl: '/', loginUrl: '/login' }) // Optionally, specify some of the reserved routes
+
+console.log(lti.appUrl())
+```
+
+> **Becomes this:**
+
+``` javascript
+// Setup provider using setup method
+lti.setup('LTIKEY', // Key used to sign cookies and tokens
+         { url: 'mongodb://localhost/database' }, // Database configuration
+         { appRoute: '/', loginRoute: '/login' }) // Optionally, specify some of the reserved routes
+
+console.log(lti.appRoute())
+```
+
+The reserved endpoint used to be called **Urls** (appUrl, loginUrl, ...) and now are called **Routes** (appRoute, loginRoute, ...), both in the setup parameters where they are set and in the methods used to retrieve them (lti.appRoute(), lti.loginRoute()). 
+
+ - **appUrl: '/app'** => **appRoute: '/app'**
+ - **lti.appUrl()** => **lti.appRoute()**
+
+The term **Url** could cause some confusion and users could end up setting `appUrl` as `appUrl: 'http://localhost:3000/app'` instead of `appUrl: '/app'`, **Route** is a more accurate description. I'm hoping this change can help avoid such issues.
+
+
+#### Renamed Platform remove method to delete
+
+> **This:**
+
+``` javascript
+platform.remove()
+```
+
+> **Becomes this:**
+
+``` javascript
+platform.delete()
+```
+
+Changed the platform deletion method from `remove` to `delete` in order to make it more similar to the `lti.deletePlatform()` method.
+
+#### Bumped required version of Node
+
+Required version of node was changed from **8.6.0** to **10.19.0** due to a dependency update.
+
+#### Changed error handling policy
+
+In previous versions, Ltijs would catch errors thrown within methods, log them and then return false. In version 5.0, errors are not caught by the methods themselves, this was done to give developers more freedom on how they choose to handle errors. The logger functionality was also removed, developers can now choose how to log access and error information. 
+
+*(This change does not apply to the LTI authentication flow, errors thrown during the validation process still redirect to the invalid token or session timeout endpoints)*
+
+
+#### Added development mode
+
+Version 5.0 of Ltijs validates login requests using a `state` cookie to prevent cross-site request forgery as recommmended by the IMS specification. This can sometimes cause issues in certain development environments if the browser cannot set the required cookie, for example when trying to set a cross domain cookie without the `secure=true` and `sameSite=none` cookie flags (which don't work without https).
+
+The **devMode** flag tells Ltijs to bypass cookie validation, which allows the application to run properly even without being able to set cookies. ***This flag should never be used in a production environment, instead developers should set the secure and sameSite cookie flags that will allow browser to set cross domain cookies.***
+
+> In a development environment, without https, not being able to set cross domain cookies:
+
+``` javascript
+const lti = new Lti('LTIKEY', // Key used to sign cookies and tokens
+         { url: 'mongodb://localhost/database' }, // Database configuration
+         { devMode: true }) // Dev mode set to true
+```
+
+> In a production environment, with https:
+
+``` javascript
+const lti = new Lti('LTIKEY', // Key used to sign cookies and tokens
+         { url: 'mongodb://localhost/database' }, // Database configuration
+         { cookies: { secure: false, sameSite: 'None' } }) // Correct cookie configuration set
+```
 
 ---
 
