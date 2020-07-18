@@ -57,7 +57,7 @@ class NamesAndRoles {
 
     provNamesAndRolesServiceDebug('Attempting to retrieve memberships');
     provNamesAndRolesServiceDebug('Target platform: ' + idtoken.iss);
-    const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database));
+    const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, idtoken.clientId, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database));
 
     if (!platform) {
       provNamesAndRolesServiceDebug('Platform not found');

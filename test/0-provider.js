@@ -68,7 +68,7 @@ describe('Testing Provider', function () {
     await expect(lti.registerPlatform({
       url: 'http://localhost/moodle',
       name: 'Platform Name',
-      clientId: 'ClientIdThePlatformCreatedForYourApp',
+      clientId: 'ClientId1',
       authenticationEndpoint: 'http://localhost/moodle/AuthorizationUrl',
       accesstokenEndpoint: 'http://localhost/moodle/AccessTokenUrl',
       authConfig: { method: 'INVALID_METHOD', key: 'http://localhost/moodle/keyset' }
@@ -111,7 +111,7 @@ describe('Testing Provider', function () {
     await expect(lti.registerPlatform({
       url: 'http://localhost/moodle',
       name: 'Platform Name',
-      clientId: 'ClientIdThePlatformCreatedForYourApp',
+      clientId: 'ClientId1',
       authenticationEndpoint: 'http://localhost/moodle/AuthorizationUrl',
       accesstokenEndpoint: 'http://localhost/moodle/AccessTokenUrl',
       authConfig: { method: 'INVALID_METHOD', key: 'http://localhost/moodle/keyset' }
@@ -127,16 +127,28 @@ describe('Testing Provider', function () {
       authConfig: { method: 'JWK_SET', key: 'http://localhost/moodle/keyset1' }
     })).to.eventually.be.instanceOf(Platform)
   })
+  it('Provider.registerPlatform with same Url and different Clientid expected to resolve Platform object', () => {
+    return expect(lti.registerPlatform({
+      url: 'http://localhost/moodle',
+      name: 'Platform Name 2',
+      clientId: 'ClientId2',
+      authenticationEndpoint: 'http://localhost/moodle/AuthorizationUrl1',
+      accesstokenEndpoint: 'http://localhost/moodle/AccessTokenUrl1',
+      authConfig: { method: 'JWK_SET', key: 'http://localhost/moodle/keyset1' }
+    })).to.eventually.be.instanceOf(Platform)
+  })
   it('Provider.registerPlatform expected to apply changes to registered Platform object', async () => {
     const name = 'New platform name'
     const plat = await lti.registerPlatform({
       url: 'http://localhost/moodle',
+      clientId: 'ClientId1',
       name: name
     })
     return expect(plat.platformName()).to.eventually.become(name)
   })
   it('Provider.getPlatform expected to resolve Platform object', async () => {
-    return expect(lti.getPlatform('http://localhost/moodle')).to.eventually.be.instanceOf(Platform)
+    await expect(lti.getPlatform('http://localhost/moodle', 'ClientId1')).to.eventually.be.instanceOf(Platform)
+    return expect(lti.getPlatform('http://localhost/moodle', 'ClientId2')).to.eventually.be.instanceOf(Platform)
   })
   it('Provider.getAllPlatforms expected to resolve Array containing registered platforms', async () => {
     const plats = await lti.getAllPlatforms()
@@ -154,6 +166,11 @@ describe('Testing Provider', function () {
     await expect(lti.getPlatform('http://localhost/moodle2')).to.eventually.be.instanceOf(Platform)
     await expect(lti.deletePlatform('http://localhost/moodle2')).to.eventually.become(true)
     await expect(lti.getPlatform('http://localhost/moodle2')).to.eventually.become(false)
+  })
+  it('Provider.deletePlatform with clientID expected to return true and delete the platform', async () => {
+    await expect(lti.getPlatform('http://localhost/moodle', 'ClientId2')).to.eventually.be.instanceOf(Platform)
+    await expect(lti.deletePlatform('http://localhost/moodle', 'ClientId2')).to.eventually.become(true)
+    await expect(lti.getPlatform('http://localhost/moodle', 'ClientId2')).to.eventually.become(false)
   })
 
   it('Platform.platformUrl expected to return platform url', async () => {
@@ -178,11 +195,9 @@ describe('Testing Provider', function () {
     await plat.platformName(value)
     return expect(plat.platformName()).to.eventually.become(value)
   })
-  it('Platform.platformClientId expected to alter platform client id', async () => {
-    const value = 'ClientId'
+  it('Platform.platformClientId expected to return platform client id', async () => {
     const plat = await lti.getPlatform('http://localhost/moodle')
-    await plat.platformClientId(value)
-    return expect(plat.platformClientId()).to.eventually.become(value)
+    return expect(plat.platformClientId()).to.eventually.become('ClientId1')
   })
   it('Platform.platformAuthConfig expected to alter platform auth configuration', async () => {
     const value = {

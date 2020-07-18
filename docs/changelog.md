@@ -9,6 +9,46 @@
 
 ### CHANGELOG
 
+#### V5.0.0
+> 2020-07-17
+
+> Got the IMS LTI Advantage Complete Certification!
+
+> BREAKING CHANGES
+> - Provider no longer has a contructor, instead it has a setup() method that takes the exact same arguments.
+> - Provider now works as a singleton. This allows it to be accessed in multiple files, calling setup only once.
+> - Changed authentication flow, which might cause issues due to cross domain cookie limitations in certain development environments.
+> - Added **devMode** flag to setup options to deal with the possible issues caused by cross domain cookies.
+> - Removed onConnect options and added **onInvalidToken** and **onSessionTimeout** methods.
+> - Changed how reserved endpoints are mentioned in methods and options from Urls to Routes. Ex1: **lti.appUrl() => lti.appRoute()**. Ex2: **... loginUrl: '/app'}) => ... loginRoute: '/app'})**
+> - Changed Platform.remove() to Platform.delete().
+> - Bumped required version of Ltijs to **10.19.0**.
+> - Changed error handling policy, now Ltijs **allows the user to decide how to handle errors** instead of catching them inside the methods, logging them and returning false.
+
+> NEW FEATURES
+> - Ltijs now allows multiple entry points to be used for the launch instead of only allowing the main app route.
+> - Redirect method now works with non LTI requests.
+> - Added a maxAge parameter where the developer can choose the idtoken's maximun allowed age. Defaults to 10 seconds and can be turned off entirely by setting the parameter to false.
+> - Added a new Database method Replace().
+> - Added indexes to the MondoDB schemas.
+> - Added debug option to MongoDB options.
+> - Added support for multi tenant by taking the deploymentId into consideration when storing and retrieving information.
+
+> IMPROVEMENTS
+> - Improved performance with new authentication system that only generates one cookie for every platform-user pair and stores relevant data in the Ltik so it doesnt have to reassemble platform or context codes.
+> - Improved redirection performance since it no longer rebuilds Ltik.
+> - Refactored some code to use native Node APIs and remove unecessary dependencies, reducing bundle size.
+> - Updated dependencies.
+> - Rewrote tests to increase coverage and include IMS Certification Tests.
+
+> FIXES
+> - Removed hability to change platform Url.
+> - General fixes to Grade Service to get certification.
+> - Fixed bug where Ltijs would create duplicates of platforms and keys if ran in cluster mode.
+> - Provider.deletePlatform no longer returns false when the platform doesn't exist.
+> - Redirection method now validates it's arguments.
+> - Changed key generation name to better reflect it's functionality.
+
 #### V4.0.0
 > 2020-05-15
 > MAJOR CHANGE

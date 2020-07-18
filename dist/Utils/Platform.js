@@ -109,6 +109,14 @@ class Platform {
     return (0, _classPrivateFieldGet2.default)(this, _platformUrl);
   }
   /**
+   * @description Gets the platform client id.
+   */
+
+
+  async platformClientId() {
+    return (0, _classPrivateFieldGet2.default)(this, _clientId);
+  }
+  /**
      * @description Sets/Gets the platform name.
      * @param {string} [name] - Platform name.
      */
@@ -123,22 +131,6 @@ class Platform {
     });
     (0, _classPrivateFieldSet2.default)(this, _platformName, name);
     return name;
-  }
-  /**
-     * @description Sets/Gets the platform client id.
-     * @param {string} [clientId] - Platform client id.
-     */
-
-
-  async platformClientId(clientId) {
-    if (!clientId) return (0, _classPrivateFieldGet2.default)(this, _clientId);
-    await (0, _classPrivateFieldGet2.default)(this, _Database).Modify(false, 'platform', {
-      platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl)
-    }, {
-      clientId: clientId
-    });
-    (0, _classPrivateFieldSet2.default)(this, _clientId, clientId);
-    return clientId;
   }
   /**
      * @description Gets the platform key_id.
@@ -257,7 +249,8 @@ class Platform {
 
   async delete() {
     await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('platform', {
-      platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl)
+      platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl),
+      clientId: (0, _classPrivateFieldGet2.default)(this, _clientId)
     });
     await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('publickey', {
       kid: (0, _classPrivateFieldGet2.default)(this, _kid)

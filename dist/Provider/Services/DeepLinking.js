@@ -89,7 +89,7 @@ class DeepLinking {
 
     if (!Array.isArray(contentItems)) contentItems = [contentItems]; // Gets platform
 
-    const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database));
+    const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, idtoken.clientId, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database));
 
     if (!platform) {
       provDeepLinkingDebug('Platform not found');

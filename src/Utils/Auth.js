@@ -14,7 +14,7 @@ class Auth {
      * @param {String} ENCRYPTIONKEY - Encryption key.
      * @returns {String} kid for the keypair.
      */
-  static async generatePlatformKeyPair (ENCRYPTIONKEY, Database, platformUrl) {
+  static async generatePlatformKeyPair (ENCRYPTIONKEY, Database, platformUrl, platformClientId) {
     let kid = crypto.randomBytes(16).toString('hex')
 
     while (await Database.Get(false, 'publickey', { kid: kid })) {
@@ -44,8 +44,8 @@ class Auth {
       kid: kid
     }
 
-    await Database.Replace(ENCRYPTIONKEY, 'publickey', { platformUrl: platformUrl }, pubkeyobj, { kid: kid, platformUrl: platformUrl })
-    await Database.Replace(ENCRYPTIONKEY, 'privatekey', { platformUrl: platformUrl }, privkeyobj, { kid: kid, platformUrl: platformUrl })
+    await Database.Replace(ENCRYPTIONKEY, 'publickey', { platformUrl: platformUrl, clientId: platformClientId }, pubkeyobj, { kid: kid, platformUrl: platformUrl, clientId: platformClientId })
+    await Database.Replace(ENCRYPTIONKEY, 'privatekey', { platformUrl: platformUrl, clientId: platformClientId }, privkeyobj, { kid: kid, platformUrl: platformUrl, clientId: platformClientId })
 
     return kid
   }
@@ -75,7 +75,14 @@ class Auth {
     } else if (validationParameters.iss !== decoded.payload.iss) throw new Error('ISS_CLAIM_DOES_NOT_MATCH')
 
     provAuthDebug('Attempting to retrieve registered platform')
-    const platform = await getPlatform(decoded.payload.iss, ENCRYPTIONKEY, Database)
+    let platform
+    if (!Array.isArray(decoded.payload.aud)) platform = await getPlatform(decoded.payload.iss, decoded.payload.aud, ENCRYPTIONKEY, Database)
+    else {
+      for (const aud of decoded.payload.aud) {
+        platform = await getPlatform(decoded.payload.iss, aud, ENCRYPTIONKEY, Database)
+        if (platform) break
+      }
+    }
     if (!platform) throw new Error('UNREGISTERED_PLATFORM')
 
     const authConfig = await platform.platformAuthConfig()
@@ -134,7 +141,7 @@ class Auth {
     const verified = jwt.verify(token, key, { algorithms: [validationParameters.alg] })
     await this.oidcValidation(verified, platform, validationParameters, Database)
     await this.claimValidation(verified)
-
+    verified.clientId = await platform.platformClientId()
     return verified
   }
 
@@ -165,7 +172,6 @@ class Auth {
     provAuthDebug("Validating if aud (Audience) claim matches the value of the tool's clientId given by the platform")
     provAuthDebug('Aud claim: ' + token.aud)
     provAuthDebug("Tool's clientId: " + await platform.platformClientId())
-    if (!token.aud.includes(await platform.platformClientId())) throw new Error('AUD_DOES_NOT_MATCH_CLIENTID')
     if (Array.isArray(token.aud)) {
       provAuthDebug('More than one aud listed, searching for azp claim')
       if (token.azp && token.azp !== await platform.platformClientId()) throw new Error('AZP_DOES_NOT_MATCH_CLIENTID')

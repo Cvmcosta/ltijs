@@ -50,7 +50,7 @@ const resultsResponse = [
 const tokenValid = {
   exp: Math.floor(Date.now() / 1000) + (60 * 60),
   iss: 'http://localhost/moodle',
-  aud: 'ClientId',
+  aud: 'ClientId1',
   'https://purl.imsglobal.org/spec/lti/claim/deployment_id': '2',
   'https://purl.imsglobal.org/spec/lti/claim/target_link_uri': 'https://localhost',
   sub: '2',
@@ -167,7 +167,7 @@ describe('Testing Assignment and Grades Service', function () {
       }
     })
 
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;', 'ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGUy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
+    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;', 'ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
       expect(res).to.have.status(200)
       const lineItems = JSON.parse(res.text)
       expect(lineItems).to.deep.equal(lineItemsResponse)
@@ -210,7 +210,7 @@ describe('Testing Assignment and Grades Service', function () {
       }
     })
 
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;', 'ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGUy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
+    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;', 'ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
       expect(res).to.have.status(200)
       const lineItem = JSON.parse(res.text)
       expect(lineItem).to.deep.equal(newLineItem)
@@ -250,7 +250,7 @@ describe('Testing Assignment and Grades Service', function () {
       }
     })
 
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;', 'ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGUy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
+    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;', 'ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
       expect(res).to.have.status(200)
       const deleteLineItems = JSON.parse(res.text)
       const response = {
@@ -306,7 +306,7 @@ describe('Testing Assignment and Grades Service', function () {
       }
     })
 
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;', 'ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGUy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
+    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;', 'ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
       expect(res).to.have.status(200)
       const scoreLineItems = JSON.parse(res.text)
       const response = {
@@ -371,7 +371,7 @@ describe('Testing Assignment and Grades Service', function () {
       }
     })
 
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;', 'ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGUy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
+    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;', 'ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
       expect(res).to.have.status(200)
       const results = JSON.parse(res.text)
       expect(results).to.deep.equal(resultsResponse)

@@ -305,9 +305,10 @@ class Provider {
             provAuthDebug('Successfully validated token!');
             const courseId = valid['https://purl.imsglobal.org/spec/lti/claim/context'] ? valid['https://purl.imsglobal.org/spec/lti/claim/context'].id : 'NF';
             const resourceId = valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'] ? valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'].id : 'NF';
+            const clientId = valid.clientId;
             const deploymentId = valid['https://purl.imsglobal.org/spec/lti/claim/deployment_id'];
-            const contextId = encodeURIComponent(valid.iss + deploymentId + courseId + '_' + resourceId);
-            const platformCode = encodeURIComponent('lti' + Buffer.from(valid.iss + deploymentId).toString('base64')); // Mount platform token
+            const contextId = encodeURIComponent(valid.iss + clientId + deploymentId + courseId + '_' + resourceId);
+            const platformCode = encodeURIComponent('lti' + Buffer.from(valid.iss + clientId + deploymentId).toString('base64')); // Mount platform token
 
             const platformToken = {
               iss: valid.iss,
@@ -320,6 +321,7 @@ class Provider {
                 email: valid.email
               },
               platformInfo: valid['https://purl.imsglobal.org/spec/lti/claim/tool_platform'],
+              clientId: valid.clientId,
               deploymentId: valid['https://purl.imsglobal.org/spec/lti/claim/deployment_id'],
               lis: valid['https://purl.imsglobal.org/spec/lti/claim/lis'],
               endpoint: valid['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint'],
@@ -328,6 +330,7 @@ class Provider {
 
             await this.Database.Replace(false, 'idtoken', {
               iss: valid.iss,
+              clientId: clientId,
               deploymentId: deploymentId,
               user: valid.sub
             }, platformToken); // Mount context token
@@ -355,6 +358,7 @@ class Provider {
             provMainDebug('Generating LTIK and redirecting to endpoint');
             const newLtikObj = {
               platformUrl: valid.iss,
+              clientId: clientId,
               deploymentId: deploymentId,
               platformCode: platformCode,
               contextId: contextId,
@@ -397,6 +401,7 @@ class Provider {
         provMainDebug('LTIK successfully verified');
         const platformUrl = validLtik.platformUrl;
         const platformCode = validLtik.platformCode;
+        const clientId = validLtik.clientId;
         const deploymentId = validLtik.deploymentId;
         const contextId = validLtik.contextId;
         let user = validLtik.user;
@@ -414,6 +419,7 @@ class Provider {
 
           let idToken = await this.Database.Get(false, 'idtoken', {
             iss: platformUrl,
+            clientId: clientId,
             deploymentId: deploymentId,
             user: user
           });
@@ -453,7 +459,8 @@ class Provider {
       try {
         const iss = params.iss;
         provMainDebug('Receiving a login request from: ' + iss);
-        const platform = await this.getPlatform(iss);
+        let platform;
+        if (params.client_id) platform = await this.getPlatform(iss, params.client_id);else platform = await this.getPlatform(iss);
 
         if (platform) {
           provMainDebug('Redirecting to platform authentication endpoint'); // Create state parameter used to validade authentication response
@@ -724,23 +731,26 @@ class Provider {
 
 
   async registerPlatform(platform) {
-    if (!platform || !platform.url) throw new Error('MISSING_PLATFORM_URL');
+    if (!platform || !platform.url || !platform.clientId) throw new Error('MISSING_PLATFORM_URL_OR_CLIENTID');
     let kid;
 
-    const _platform = await this.getPlatform(platform.url);
+    const _platform = await this.getPlatform(platform.url, platform.clientId);
 
     if (!_platform) {
-      if (!platform.name || !platform.clientId || !platform.authenticationEndpoint || !platform.accesstokenEndpoint || !platform.authConfig) throw new Error('MISSING_PARAMS');
+      if (!platform.name || !platform.authenticationEndpoint || !platform.accesstokenEndpoint || !platform.authConfig) throw new Error('MISSING_PARAMS');
       if (platform.authConfig.method !== 'RSA_KEY' && platform.authConfig.method !== 'JWK_KEY' && platform.authConfig.method !== 'JWK_SET') throw new Error('INVALID_AUTHCONFIG_METHOD. Details: Valid methods are "RSA_KEY", "JWK_KEY", "JWK_SET".');
       if (!platform.authConfig.key) throw new Error('MISSING_AUTHCONFIG_KEY');
 
       try {
-        kid = await Auth.generatePlatformKeyPair((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), this.Database, platform.url);
+        kid = await Auth.generatePlatformKeyPair((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), this.Database, platform.url, platform.clientId);
         const plat = new Platform(platform.name, platform.url, platform.clientId, platform.authenticationEndpoint, platform.accesstokenEndpoint, kid, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), platform.authConfig, this.Database); // Save platform to db
 
-        provMainDebug('Registering new platform: ' + platform.url);
+        provMainDebug('Registering new platform');
+        provMainDebug('Platform Url: ' + platform.url);
+        provMainDebug('Platform ClientId: ' + platform.clientId);
         await this.Database.Replace(false, 'platform', {
-          platformUrl: platform.url
+          platformUrl: platform.url,
+          clientId: platform.clientId
         }, {
           platformName: platform.name,
           platformUrl: platform.url,
@@ -759,41 +769,47 @@ class Provider {
           kid: kid
         });
         await this.Database.Delete('platform', {
-          platformUrl: platform.url
+          platformUrl: platform.url,
+          clientId: platform.clientId
         });
         provMainDebug(err.message);
         throw new Error(err);
       }
     } else {
-      provMainDebug('Platform already registered.');
+      provMainDebug('Platform already registered');
       await this.Database.Modify(false, 'platform', {
-        platformUrl: platform.url
+        platformUrl: platform.url,
+        clientId: platform.clientId
       }, {
         platformName: platform.name || (await _platform.platformName()),
-        clientId: platform.clientId || (await _platform.platformClientId()),
         authEndpoint: platform.authenticationEndpoint || (await _platform.platformAuthEndpoint()),
         accesstokenEndpoint: platform.accesstokenEndpoint || (await _platform.platformAccessTokenEndpoint()),
         authConfig: platform.authConfig || (await _platform.platformAuthConfig())
       });
-      return this.getPlatform(platform.url);
+      return this.getPlatform(platform.url, platform.clientId);
     }
   }
   /**
      * @description Gets a platform.
      * @param {String} url - Platform url.
+     * @param {String} [clientId] - Tool clientId.
      * @returns {Promise<Platform | false>}
      */
 
 
-  async getPlatform(url, ENCRYPTIONKEY, Database) {
+  async getPlatform(url, clientId, ENCRYPTIONKEY, Database) {
     if (!url) throw new Error('MISSING_PLATFORM_URL');
 
     const _Database = Database || this.Database;
 
     const _ENCRYPTIONKEY = ENCRYPTIONKEY || (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2);
 
-    const plat = await _Database.Get(false, 'platform', {
+    let plat;
+    if (!clientId) plat = await _Database.Get(false, 'platform', {
       platformUrl: url
+    });else plat = await _Database.Get(false, 'platform', {
+      platformUrl: url,
+      clientId: clientId
     });
     if (!plat) return false;
     const obj = plat[0];
@@ -804,13 +820,14 @@ class Provider {
   /**
      * @description Deletes a platform.
      * @param {string} url - Platform url.
+     * @param {String} [clientId] - Tool clientId.
      * @returns {Promise<true>}
      */
 
 
-  async deletePlatform(url) {
+  async deletePlatform(url, clientId) {
     if (!url) throw new Error('MISSING_PLATFORM_URL');
-    const platform = await this.getPlatform(url);
+    const platform = await this.getPlatform(url, clientId);
     if (platform) await platform.delete();
     return true;
   }

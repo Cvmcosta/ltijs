@@ -35,7 +35,7 @@ class Grade {
     provGradeServiceDebug('Target platform: ' + idtoken.iss)
 
     if (!accessToken) {
-      const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#Database) // Remove and use DB instead
+      const platform = await this.#getPlatform(idtoken.iss, idtoken.clientId, this.#ENCRYPTIONKEY, this.#Database) // Remove and use DB instead
 
       if (!platform) {
         provGradeServiceDebug('Platform not found')
@@ -90,7 +90,7 @@ class Grade {
     provGradeServiceDebug('Target platform: ' + idtoken.iss)
 
     if (!accessToken) {
-      const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#Database)
+      const platform = await this.#getPlatform(idtoken.iss, idtoken.clientId, this.#ENCRYPTIONKEY, this.#Database)
 
       if (!platform) {
         provGradeServiceDebug('Platform not found')
@@ -129,7 +129,7 @@ class Grade {
 
     provGradeServiceDebug('Target platform: ' + idtoken.iss)
 
-    const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#Database)
+    const platform = await this.#getPlatform(idtoken.iss, idtoken.clientId, this.#ENCRYPTIONKEY, this.#Database)
 
     if (!platform) {
       provGradeServiceDebug('Platform not found')
@@ -179,7 +179,7 @@ class Grade {
     if (!score) { provGradeServiceDebug('Score object missing.'); throw new Error('MISSING_SCORE') }
     provGradeServiceDebug('Target platform: ' + idtoken.iss)
 
-    const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#Database)
+    const platform = await this.#getPlatform(idtoken.iss, idtoken.clientId, this.#ENCRYPTIONKEY, this.#Database)
 
     if (!platform) {
       provGradeServiceDebug('Platform not found')
@@ -256,7 +256,7 @@ class Grade {
 
     provGradeServiceDebug('Target platform: ' + idtoken.iss)
 
-    const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#Database)
+    const platform = await this.#getPlatform(idtoken.iss, idtoken.clientId, this.#ENCRYPTIONKEY, this.#Database)
 
     if (!platform) {
       provGradeServiceDebug('Platform not found')

@@ -30,7 +30,7 @@ class NamesAndRoles {
     provNamesAndRolesServiceDebug('Attempting to retrieve memberships')
     provNamesAndRolesServiceDebug('Target platform: ' + idtoken.iss)
 
-    const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#Database)
+    const platform = await this.#getPlatform(idtoken.iss, idtoken.clientId, this.#ENCRYPTIONKEY, this.#Database)
 
     if (!platform) {
       provNamesAndRolesServiceDebug('Platform not found')

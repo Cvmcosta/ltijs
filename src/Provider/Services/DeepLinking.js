@@ -59,7 +59,7 @@ class DeepLinking {
     if (!Array.isArray(contentItems)) contentItems = [contentItems]
 
     // Gets platform
-    const platform = await this.#getPlatform(idtoken.iss, this.#ENCRYPTIONKEY, this.#Database)
+    const platform = await this.#getPlatform(idtoken.iss, idtoken.clientId, this.#ENCRYPTIONKEY, this.#Database)
     if (!platform) {
       provDeepLinkingDebug('Platform not found')
       throw new Error('PLATFORM_NOT_FOUND')

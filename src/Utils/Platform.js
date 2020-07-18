@@ -56,6 +56,13 @@ class Platform {
   }
 
   /**
+   * @description Gets the platform client id.
+   */
+  async platformClientId () {
+    return this.#clientId
+  }
+
+  /**
      * @description Sets/Gets the platform name.
      * @param {string} [name] - Platform name.
      */
@@ -64,17 +71,6 @@ class Platform {
     await this.#Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { platformName: name })
     this.#platformName = name
     return name
-  }
-
-  /**
-     * @description Sets/Gets the platform client id.
-     * @param {string} [clientId] - Platform client id.
-     */
-  async platformClientId (clientId) {
-    if (!clientId) return this.#clientId
-    await this.#Database.Modify(false, 'platform', { platformUrl: this.#platformUrl }, { clientId: clientId })
-    this.#clientId = clientId
-    return clientId
   }
 
   /**
@@ -170,7 +166,7 @@ class Platform {
    * @description Deletes a registered platform.
    */
   async delete () {
-    await this.#Database.Delete('platform', { platformUrl: this.#platformUrl })
+    await this.#Database.Delete('platform', { platformUrl: this.#platformUrl, clientId: this.#clientId })
     await this.#Database.Delete('publickey', { kid: this.#kid })
     await this.#Database.Delete('privatekey', { kid: this.#kid })
     return true
