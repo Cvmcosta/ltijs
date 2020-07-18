@@ -111,7 +111,7 @@ describe('Testing LTI 1.3 flow', function () {
   it('Login route POST request with registered platform is expected to redirect to authenticationEndpoint', async () => {
     const url = lti.loginRoute()
     nock('http://localhost/moodle').get(/\/AuthorizationUrl?.*/).reply(200)
-    return chai.request(lti.app).post(url).send({ iss: 'http://localhost/moodle' }).then(res => {
+    return chai.request(lti.app).post(url).send({ iss: 'http://localhost/moodle', login_hint: '2', target_link_uri: 'http://localhost:3000/' }).then(res => {
       expect(res).to.redirectTo(/^http:\/\/localhost\/moodle\/AuthorizationUrl.*/)
       expect(res).to.have.status(200)
     })
@@ -120,7 +120,7 @@ describe('Testing LTI 1.3 flow', function () {
   it('Login route GET request with registered platform is expected to redirect to authenticationEndpoint', async () => {
     const url = lti.loginRoute()
     nock('http://localhost/moodle').get(/\/AuthorizationUrl?.*/).reply(200)
-    return chai.request(lti.app).get(url).query({ iss: 'http://localhost/moodle' }).then(res => {
+    return chai.request(lti.app).get(url).query({ iss: 'http://localhost/moodle', login_hint: '2', target_link_uri: 'http://localhost:3000/' }).then(res => {
       expect(res).to.redirectTo(/^http:\/\/localhost\/moodle\/AuthorizationUrl.*/)
       expect(res).to.have.status(200)
     })

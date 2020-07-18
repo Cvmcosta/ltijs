@@ -350,6 +350,7 @@ class Provider {
     this.app.all(this.#loginRoute, async (req, res) => {
       const params = { ...req.query, ...req.body }
       try {
+        if (!params.iss || !params.login_hint || !params.target_link_uri) return res.status(401).send('MISSING_PARAMETERS')
         const iss = params.iss
         provMainDebug('Receiving a login request from: ' + iss)
         let platform
