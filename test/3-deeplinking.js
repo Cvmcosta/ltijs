@@ -153,7 +153,7 @@ describe('Testing Deep Linking Service', function () {
     const state = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     const url = await lti.appRoute()
 
-    const plat = await lti.getPlatform(token.iss)
+    const plat = await lti.getPlatform(token.iss, token.aud)
 
     nock('http://localhost/moodle').get('/keyset').reply(200, {
       keys: [
@@ -194,7 +194,7 @@ describe('Testing Deep Linking Service', function () {
     const state = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     const url = await lti.appRoute()
 
-    const plat = await lti.getPlatform(token.iss)
+    const plat = await lti.getPlatform(token.iss, token.aud)
 
     nock('http://localhost/moodle').get('/keyset').reply(200, {
       keys: [

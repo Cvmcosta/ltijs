@@ -461,7 +461,7 @@ class Provider {
         const iss = params.iss;
         provMainDebug('Receiving a login request from: ' + iss);
         let platform;
-        if (params.client_id) platform = await this.getPlatform(iss, params.client_id);else platform = await this.getPlatform(iss);
+        if (params.client_id) platform = await this.getPlatform(iss, params.client_id);else platform = (await this.getPlatform(iss))[0];
 
         if (platform) {
           provMainDebug('Redirecting to platform authentication endpoint'); // Create state parameter used to validade authentication response
@@ -794,7 +794,7 @@ class Provider {
      * @description Gets a platform.
      * @param {String} url - Platform url.
      * @param {String} [clientId] - Tool clientId.
-     * @returns {Promise<Platform | false>}
+     * @returns {Promise<Array<Platform>, Platform | false>}
      */
 
 
@@ -805,29 +805,40 @@ class Provider {
 
     const _ENCRYPTIONKEY = ENCRYPTIONKEY || (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2);
 
-    let plat;
-    if (!clientId) plat = await _Database.Get(false, 'platform', {
+    if (clientId) {
+      const result = await _Database.Get(false, 'platform', {
+        platformUrl: url,
+        clientId: clientId
+      });
+      if (!result) return false;
+      const plat = result[0];
+      const platform = new Platform(plat.platformName, plat.platformUrl, plat.clientId, plat.authEndpoint, plat.accesstokenEndpoint, plat.kid, _ENCRYPTIONKEY, plat.authConfig, _Database);
+      return platform;
+    }
+
+    const result = await _Database.Get(false, 'platform', {
       platformUrl: url
-    });else plat = await _Database.Get(false, 'platform', {
-      platformUrl: url,
-      clientId: clientId
     });
-    if (!plat) return false;
-    const obj = plat[0];
-    if (!obj) return false;
-    const result = new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, _ENCRYPTIONKEY, obj.authConfig, _Database);
-    return result;
+    if (!result) return false;
+    const platforms = [];
+
+    for (const plat of result) {
+      const platform = new Platform(plat.platformName, plat.platformUrl, plat.clientId, plat.authEndpoint, plat.accesstokenEndpoint, plat.kid, _ENCRYPTIONKEY, plat.authConfig, _Database);
+      platforms.push(platform);
+    }
+
+    return platforms;
   }
   /**
      * @description Deletes a platform.
      * @param {string} url - Platform url.
-     * @param {String} [clientId] - Tool clientId.
+     * @param {String} clientId - Tool clientId.
      * @returns {Promise<true>}
      */
 
 
   async deletePlatform(url, clientId) {
-    if (!url) throw new Error('MISSING_PLATFORM_URL');
+    if (!url || !clientId) throw new Error('MISSING_PARAM');
     const platform = await this.getPlatform(url, clientId);
     if (platform) await platform.delete();
     return true;

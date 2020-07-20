@@ -26,7 +26,8 @@
 
 - [Introduction](#introduction)
 - [Changes](#Changes)
-  - [Removed constructor](#removed-constructor)
+  - [Removed Ltijs constructor](#removed-ltijs-constructor)
+  - [Platform registration and retrieval changes](#platform-registration-and-retrieval-changes)
   - [Removed onConnect optional parameters](#removed-onconnect-optional-parameters)
   - [Changed how reserved endpoints are mentioned](#changed-how-reserved-endpoints-are-mentioned)
   - [Renamed Platform remove method to delete](#renamed-platform-remove-method-to-delete)
@@ -48,7 +49,7 @@ ___
 
 ## Changes
 
-#### Removed constructor
+#### Removed Ltijs constructor
 
 *OBS: This is the only trully **breaking change** of version 5.0. All the other changes have some form of fallback in place that will keep old code working (Even if showing some deprecation warnings).*
 
@@ -112,6 +113,59 @@ lti.app.post('/grade', async (req, res) => {
   await lti.Grade.scorePublish(res.locals.token, grade)
   res.sendStatus(201)
 })
+```
+
+#### Platform registration and retrieval changes
+
+> **This:**
+``` javascript
+const plat = await lti.getPlatform('http://plat.com')
+```
+
+> **Becomes this:**
+``` javascript
+const plat = await lti.getPlatform('http://plat.com', 'CLIENTID')
+```
+
+Platform registration now accepts multiple platforms with the same platform Url as long as they have different Client Ids. This was implemented to deal with Canvas's LTI implementation where every instructure hosted Canvas instance sends the same issuer (platform Url) in the login request, so Ltijs needs to be able to register multiple platforms with the same Url.
+
+To accomodate this change, the registration parameter can now receive an additional parameter `clientId`. **Whenever the method receives only the platformUrl, it will return an Array of Platform objects. Passing the two arguments returns only the desired Platform object.**
+
+Passing only the platformUrl:
+``` javascript
+/*
+Returns [Platform, Platform]
+*/
+const plat = await lti.getPlatform('http://plat.com')
+```
+
+Passing platformUrl and ClientId:
+``` javascript
+/*
+Returns Platform
+*/
+const plat = await lti.getPlatform('http://plat.com', 'CLIENTID2')
+```
+
+A new `clientId` field was also added to the IdToken object to help with programmatically retrieving platforms relevant to a specific LTI launch.
+
+```javascript
+lti.onConnect((token, request, response,  next) => {
+    const plat = await lti.getPlatform(token.iss, token.clientId)
+  }
+)
+```
+
+To prevent accidental deletions, the `lti.deletePlatform` method **requires both parameters to be passed:**
+
+> **This:**
+``` javascript
+await lti.deletePlatform('http://plat.com')
+```
+
+> **Becomes this:**
+``` javascript
+await lti.deletePlatform('http://plat.com', 'CLIENTID')
 ```
 
 #### Removed onConnect optional parameters

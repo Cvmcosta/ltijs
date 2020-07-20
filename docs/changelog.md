@@ -16,6 +16,8 @@
 
 > BREAKING CHANGES
 > - Provider no longer has a contructor, instead it has a setup() method that takes the exact same arguments.
+> - Provider.getPlatform now takes two arguments (platformUrl and clientId). Using only platformUrl results in a Platform array being returned.
+> - Provider.deletePlatform now takes two arguments (platformUrl and clientId). Using only platformUrl throws an error to avoid accidental deletion of multiple platforms.
 > - Provider now works as a singleton. This allows it to be accessed in multiple files, calling setup only once.
 > - Changed authentication flow, which might cause issues due to cross domain cookie limitations in certain development environments.
 > - Added **devMode** flag to setup options to deal with the possible issues caused by cross domain cookies.
@@ -43,6 +45,7 @@
 
 > FIXES
 > - Removed hability to change platform Url.
+> - Removed hability to change platform clientId.
 > - General fixes to Grade Service to get certification.
 > - Fixed bug where Ltijs would create duplicates of platforms and keys if ran in cluster mode.
 > - Provider.deletePlatform no longer returns false when the platform doesn't exist.

@@ -128,7 +128,7 @@ describe('Testing LTI 1.3 flow', function () {
 
   it('Keyset route GET request is expected to return valid keyset', async () => {
     const url = lti.keysetRoute()
-    const plat = await lti.getPlatform('http://localhost/moodle')
+    const plat = await lti.getPlatform('http://localhost/moodle', 'ClientId1')
     const kid = await plat.platformKid()
     return chai.request(lti.app).get(url).then(res => {
       expect(res).to.have.status(200)

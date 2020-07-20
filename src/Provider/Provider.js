@@ -355,7 +355,7 @@ class Provider {
         provMainDebug('Receiving a login request from: ' + iss)
         let platform
         if (params.client_id) platform = await this.getPlatform(iss, params.client_id)
-        else platform = await this.getPlatform(iss)
+        else platform = (await this.getPlatform(iss))[0]
 
         if (platform) {
           provMainDebug('Redirecting to platform authentication endpoint')
@@ -660,7 +660,7 @@ class Provider {
      * @description Gets a platform.
      * @param {String} url - Platform url.
      * @param {String} [clientId] - Tool clientId.
-     * @returns {Promise<Platform | false>}
+     * @returns {Promise<Array<Platform>, Platform | false>}
      */
   async getPlatform (url, clientId, ENCRYPTIONKEY, Database) {
     if (!url) throw new Error('MISSING_PLATFORM_URL')
@@ -668,27 +668,34 @@ class Provider {
     const _Database = Database || this.Database
     const _ENCRYPTIONKEY = ENCRYPTIONKEY || this.#ENCRYPTIONKEY
 
-    let plat
-    if (!clientId) plat = await _Database.Get(false, 'platform', { platformUrl: url })
-    else plat = await _Database.Get(false, 'platform', { platformUrl: url, clientId: clientId })
+    if (clientId) {
+      const result = await _Database.Get(false, 'platform', { platformUrl: url, clientId: clientId })
+      if (!result) return false
+      const plat = result[0]
+      const platform = new Platform(plat.platformName, plat.platformUrl, plat.clientId, plat.authEndpoint, plat.accesstokenEndpoint, plat.kid, _ENCRYPTIONKEY, plat.authConfig, _Database)
+      return platform
+    }
 
-    if (!plat) return false
-    const obj = plat[0]
+    const result = await _Database.Get(false, 'platform', { platformUrl: url })
+    if (!result) return false
 
-    if (!obj) return false
-    const result = new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, _ENCRYPTIONKEY, obj.authConfig, _Database)
+    const platforms = []
+    for (const plat of result) {
+      const platform = new Platform(plat.platformName, plat.platformUrl, plat.clientId, plat.authEndpoint, plat.accesstokenEndpoint, plat.kid, _ENCRYPTIONKEY, plat.authConfig, _Database)
+      platforms.push(platform)
+    }
 
-    return result
+    return platforms
   }
 
   /**
      * @description Deletes a platform.
      * @param {string} url - Platform url.
-     * @param {String} [clientId] - Tool clientId.
+     * @param {String} clientId - Tool clientId.
      * @returns {Promise<true>}
      */
   async deletePlatform (url, clientId) {
-    if (!url) throw new Error('MISSING_PLATFORM_URL')
+    if (!url || !clientId) throw new Error('MISSING_PARAM')
     const platform = await this.getPlatform(url, clientId)
     if (platform) await platform.delete()
     return true
