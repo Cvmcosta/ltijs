@@ -30,25 +30,12 @@ Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps
 > - [Migrating from version 4](https://cvmcosta.github.io/ltijs/#/migration)
 > - [CHANGELOG](https://cvmcosta.github.io/ltijs/#/changelog)
 
-## Feature roadmap
-
-| Feature | Implementation | Documentation |
-| --------- | - | - |
-| [Keyset endpoint support](https://cvmcosta.me/ltijs/#/provider?id=keyset-endpoint) | <center>✔️</center> | <center>✔️</center> |
-| [Deep Linking Service Class](https://cvmcosta.me/ltijs/#/deeplinking) | <center>✔️</center> | <center>✔️</center> |
-| [Grading Service Class](https://cvmcosta.me/ltijs/#/grading) | <center>✔️</center> | <center>✔️</center> |
-| [Names and Roles Service Class](https://cvmcosta.me/ltijs/#/namesandroles) | <center>✔️</center> | <center>✔️</center> |
-| Database plugins | <center>✔️</center> | <center>✔️</center> |
-| Key Rotation | <center></center> | <center></center> |
-| Redis caching | <center></center> | <center></center> |
-
-
-
 ## Table of Contents
 
 - [Introduction](#introduction)
-- [Examples](#examples)
-- [Tutorial](#tutorial)
+- [Feature roadmap](#feature-roadmap)
+- [Installation](#installation)
+- [Quick start](#quick-start)
 - [Documentation](#documentation)
 - [Usage](#usage)
   - [Setting up provider](#setting-up-provider)
@@ -64,76 +51,95 @@ Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps
 - [Deep Linking with Ltijs](#deep-linking-with-ltijs)
 - [Sending and retrieving grades with Ltijs](#sending-grades-with-ltijs)
 - [Using the Names and Roles service with Ltijs](#the-names-and-roles-provisioning-service)
-- [Logging and Debugging](#logging-and-debugging)
+- [Debugging](#debugging)
 - [Contributing](#contributing)
 - [Special thanks](#special-thanks)
 - [License](#license)
 
 ---
+
 ## Introduction
-According to the [IMS Global Learning Consortium](https://www.imsglobal.org/), a  LTI tool Provider is the external application or service providing functionality to the consumer [platform](platform.md). <sup>[ref](https://www.imsglobal.org/spec/lti/v1p3/#platforms-and-tools)</sup>
+
+The Learning Tools Interoperability (LTI) protocol is a standard for integration of rich learning applications within educational environments. <sup>[ref](https://www.imsglobal.org/spec/lti/v1p3/)</sup>
 
 
-This package implements a tool provider as an [Express](https://expressjs.com/) server, with preconfigured routes and methods that manage the [LTI 1.3](https://www.imsglobal.org/spec/lti/v1p3/) protocol for you. Making it fast and simple to create a working learning tool without having to worry about manually implementing any of the security and validation required to do so. 
+This library implements a tool provider as an [Express](https://expressjs.com/) server, with preconfigured routes and methods that manage the [LTI 1.3](https://www.imsglobal.org/spec/lti/v1p3/) protocol for you. Making it fast and simple to create a working learning tool with access to every LTI service, without having to worry about manually implementing any of the security and validation required to do so. 
 
-#### Other documentations
-- [Platform class documentation](https://cvmcosta.me/ltijs/#/platform)
-- [Deep Linking Service class documentation](https://cvmcosta.me/ltijs/#/deeplinking)
-- [Grading Service class documentation](https://cvmcosta.github.io/ltijs/#/grading)
+---
+
+
+## Feature roadmap
+
+| Feature | Implementation | Documentation |
+| --------- | - | - |
+| [Keyset endpoint support](https://cvmcosta.me/ltijs/#/provider?id=keyset-endpoint) | <center>✔️</center> | <center>✔️</center> |
+| [Deep Linking Service Class](https://cvmcosta.me/ltijs/#/deeplinking) | <center>✔️</center> | <center>✔️</center> |
+| [Grading Service Class](https://cvmcosta.me/ltijs/#/grading) | <center>✔️</center> | <center>✔️</center> |
+| [Names and Roles Service Class](https://cvmcosta.me/ltijs/#/namesandroles) | <center>✔️</center> | <center>✔️</center> |
+| Database plugins | <center>✔️</center> | <center>✔️</center> |
+| Key Rotation | <center></center> | <center></center> |
+| Redis caching | <center></center> | <center></center> |
 
 
 ---
 
-## Examples
 
-Example of provider usage
 
-> Install Ltijs
+## Installation
+
+### Installing the package
 
 ```shell
 $ npm install ltijs
 ```
 
-> Install mongoDB. Ltijs  uses mongodb to store and manage information
 
- - [Installing mongoDB](https://docs.mongodb.com/manual/administration/install-community)
+### MongoDB
 
- ***WARNING: THE 3.0 (DEEP LINKING) UPDATE BROKE DATABASE PLUGIN COMPATIBILITY. THE FOLLOWING PLUGINS CURRENTLY ONLY WORK WITH EARLIER VERSIONS:***
+This package natively uses mongoDB by default to store and manage the server data, so you need to have it installed, see link bellow for further instructions.
 
-
-> Alternatively you can use Postgresql database via the [ltijs-postgresql](https://www.npmjs.com/package/ltijs-postgresql) plugin
-
-- [Using PostgreSQL with Ltijs](https://www.npmjs.com/package/ltijs-postgresql)
+  - [Installing mongoDB](https://docs.mongodb.com/manual/administration/install-community/)
 
 
-> Alternatively you can use Firestore database via the [ltijs-firestore](https://github.com/lucastercas/ltijs-firestore) plugin
+### Database Plugins
 
-- [Using Firestore with Ltijs](https://github.com/lucastercas/ltijs-firestore)
+Ltijs can also be used with other databases through database plugins that use the same structure as the main database class.
 
-***Obs: The officially supported database is MongoDB, the plugins are created by the community and are not mantained by me.***
+  -  [PostgreSQL Plugin](https://www.npmjs.com/package/ltijs-postgresql)
 
 
-> Instantiate and use Provider class
+---
+
+## Quick start
+
+
+> Setting up Ltijs
+
 
 
 ```javascript
 const path = require('path')
 
 // Require Provider 
-const LTI = require('ltijs').Provider
+const lti = require('ltijs').Provider
 
-// Configure provider
-const lti = new LTI('EXAMPLEKEY', 
-            { url: 'mongodb://localhost/database' }, 
-            { appRoute: '/', loginRoute: '/login', logger: true })
+// Setup provider
+lti.setup('LTIKEY', // Key used to sign cookies and tokens
+         { url: 'mongodb://localhost/database' }, // Database configuration
+         { appRoute: '/', loginRoute: '/login' }) // Optionally, specify some of the reserved routes
 
+// Set lti launch callback
+lti.onConnect((token, req, res) => {
+  console.log(token)
+  return res.send('It\'s alive!')
+})
 
-let setup = async () => {
-  // Deploy and open connection to the database
-  await lti.deploy({ port: 3000 })
+const setup = async () => {
+  // Deploy server and open connection to the database
+  await lti.deploy({ port: 3000 }) // Specifying port. Defaults to 3000
 
   // Register platform
-  let plat = await lti.registerPlatform({ 
+  await lti.registerPlatform({ 
     url: 'https://platform.url',
     name: 'Platform Name',
     clientId: 'TOOLCLIENTID',
@@ -141,90 +147,49 @@ let setup = async () => {
     accesstokenEndpoint: 'https://platform.url/token',
     authConfig: { method: 'JWK_SET', key: 'https://platform.url/keyset' }
   })
-
-  // Set connection callback
-  lti.onConnect((connection, request, response) => {
-    // Call redirect function
-    lti.redirect(response, '/main')
-  })
-
-  // Set main route 
-  lti.app.get('/main', (req, res) => {
-    // Id token
-    console.log(res.locals.token)
-    res.send('It\'s alive!')
-  })
 }
+
 setup()
 ```
-
-
-
-**Register a platform to work with your tool** 
-> **[Registering a new platform](#registering-a-new-platform)**
-
-> Checkout the **[Platform class documentation](https://cvmcosta.github.io/ltijs/#/platform)**
-
-
-**Routing with Ltijs is a bit diferent from regular Express routing so here's an useful tutorial:** 
-
-
-> **[Understand routing and context with Ltijs](#routing-and-context)**
-
-
-**If your tool is going to function as a hub serving multiple resources:**
-
-> **[Serving multiple resources](#serving-multiple-resources)**
-> Also heckout the **[Deep Linking Service class documentation](https://cvmcosta.github.io/ltijs/#/deeplinking)**
-
-**If your tool is going to send grades to the platform:**
-> Checkout the **[Grading Service class documentation](https://cvmcosta.github.io/ltijs/#/grading)**
-
-## Tutorial
-
-You can find a quick tutorial on how to set ltijs up and use it to send grades to a Moodle platform [here](https://medium.com/@cvmcosta2/creating-a-lti-provider-with-ltijs-8b569d94825c).
-
 
 ---
 
 ## Documentation
 
 ### Provider
->The Ltijs Provider Class
-
-Exposes methods for easy manipualtion of the LTI 1.3 standard as a LTI Provider, an "app" object to manipulate the [Express](https://expressjs.com/) server and a [Mongoose.Connection](https://mongoosejs.com/docs/api/connection.html) "db" object.
+>The Ltijs Provider Class implements the LTI 1.3 protocol and services.
 
 
-#### provider.app
-Express server object.
+#### Provider.app
+[Express](https://expressjs.com/) server instance.
 
 **Type**: ```Express```
 
 
-#### provider.Database
-Database object. Allows you to perform the database operations in the same way the internal code does.
+#### Provider.Database
+Database object. Allows you to perform the database operations using the same methods used by the internal code.
 
 **Type**: ```Database```  
 
 
-#### provider.Grade
-Instance of the [Grade Class](https://cvmcosta.github.io/ltijs/#/grading), implementing the Assignment and Grade service of the LTI 1.3 protocol.
+#### Provider.Grade
+[Grade Class](https://cvmcosta.github.io/ltijs/#/grading), implementing the Assignment and Grade service of the LTI 1.3 protocol.
 
 **Type**: ```Grade```
 
-#### provider.DeepLinking
-Instance of the [DeepLinking Class](https://cvmcosta.github.io/ltijs/#/deeplinking), implementing the Deep Linking service of the LTI 1.3 protocol.
+#### Provider.DeepLinking
+[DeepLinking Class](https://cvmcosta.github.io/ltijs/#/deeplinking), implementing the Deep Linking service of the LTI 1.3 protocol.
 
 **Type**: ```DeepLinking```
 
-#### provider.NamesAndRoles
-Instance of the [NamesAndRoles Class](https://cvmcosta.github.io/ltijs/#/namesandroles), implementing the Names and Roles Provisioning service of the LTI 1.3 protocol.
+#### Provider.NamesAndRoles
+[NamesAndRoles Class](https://cvmcosta.github.io/ltijs/#/namesandroles), implementing the Names and Roles Provisioning service of the LTI 1.3 protocol.
 
 **Type**: ```NamesAndRoles```
 
-#### Provider.constructor(encryptionkey, database [, options]) 
+#### Provider.setup(encryptionkey, database [, options]) 
 
-Exposes methods for easy manipulation of the LTI 1.3 standard as a LTI Provider and a "app" object to manipulate the [Express](https://expressjs.com/) server.
+Method used to setup and configure the LTI provider.
 
 
 
@@ -233,29 +198,32 @@ Exposes methods for easy manipulation of the LTI 1.3 standard as a LTI Provider 
 
 | Name | Type | Description |  |
 | ---- | ---- | ----------- | -------- |
-| encryptionkey | `String`  | Secret used to sign cookies and other info. | &nbsp; |
-| database | `Object`  | LTI Provider options. | |
+| encryptionkey | `String`  | Secret used to sign cookies and encrypt data. | &nbsp; |
+| database | `Object`  | Database configuration. | |
 | database.url | `String`  | Database url (Ex: mongodb://localhost/applicationdb). |  |
-| database.connection | `Object`  | Database connection options. Can be any option supported by the [MongoDB Driver](http://mongodb.github.io/node-mongodb-native/2.2/api/MongoClient.html#connect) | *Optional* |
-| database.connection.user | `String`  | Database user for authentication if needed. | *Optional* |
-| database.connection.pass | `String`  | Database pass for authentication if needed. | *Optional* |
+| database.connection | `Object`  | MongoDB database connection options. Can be any option supported by the [MongoDB Driver](http://mongodb.github.io/node-mongodb-native/2.2/api/MongoClient.html#connect). | *Optional* |
+| database.connection.user | `String`  | Database user for authentication, if needed. | *Optional* |
+| database.connection.pass | `String`  | Database pass for authentication, if needed. | *Optional* |
+| database.debug | `Boolean`  | If set to true, enables mongoose debug mode. **Default: false**. | *Optional* |
 | database.plugin | `Object`  | If set, uses the given database plugin instead of the default MongoDB. | *Optional* |
 | options | `Object`  | LTI Provider options. | *Optional* |
-| options.appRoute | `String`  | = '/'] - Lti Provider main url. If no option is set '/' is used. | *Optional* |
-| options.loginRoute | `String`  | = '/login'] - Lti Provider login url. If no option is set '/login' is used. | *Optional* |
-| options.sessionTimeoutRoute | `String`  | = '/sessionTimeout'] - Lti Provider session timeout url. If no option is set '/sessionTimeout' is used. | *Optional* |
-| options.invalidTokenRoute | `String`  | = '/invalidToken'] - Lti Provider invalid token url. If no option is set '/invalidToken' is used. | *Optional* |
-| options.https | `Boolean`  | = false]  Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https and are planning to configure ssl locally. ***If you set this option as true you can enable the secure flag in the cookies options***. | *Optional* |
-| options.ssl | `Object`  | SSL certificate and key if https is enabled. | *Optional* |
+| options.appRoute | `String`  | Lti Provider main url. **Default: '/'**. | *Optional* |
+| options.loginRoute | `String`  | Lti Provider login url. **Default: '/login'**. | *Optional* |
+| options.keysetRoute | `String`  | Lti Provider public jwk keyset route. **Default: '/keys'**. | *Optional* |
+| options.sessionTimeoutRoute | `String`  | Lti Provider session timeout url. **Default: '/sessiontimeout'**. | *Optional* |
+| options.invalidTokenRoute | `String`  | Lti Provider invalid token url. **Default: '/invalidtoken'**. | *Optional* |
+| options.https | `Boolean`  |  Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https and are planning to configure ssl through Express. **Default: false**. | *Optional* |
+| options.ssl | `Object`  | SSL certificate and key to be used ***if https flag is enabled.*** | *Optional* |
 | options.ssl.key | `String`  | SSL key. | *Optional* |
 | options.ssl.cert | `String`  | SSL certificate. | *Optional* |
 | options.staticPath | `String`  | The path for the static files your application might serve (Ex: _dirname+"/public") | *Optional* |
-| options.logger | `Boolean`  | If true, allows Ltijs to generate logging files for server requests and errors. | *Optional* |
-| options.cors | `Boolean`  | = true] If false, disable cors. | *Optional* |
+| options.cors | `Boolean`  | If set to false, disables cors. **Default: true**. | *Optional* |
 | options.serverAddon | `Function` |  Allows the execution of a method inside of the server contructor. Can be used to register middlewares. | *Optional* |
 | options.cookies | `Object` | Cookie configuration. Allows you to configure, sameSite and secure parameters. | *Optional* |
-| options.cookies.secure | `Boolean` | Cookie secure parameter. If true, only allows cookies to be passed over https. | *Optional* |
-| options.cookies.sameSite | `String` | Cookie sameSite parameter. If cookies are going to be set across domains, set this parameter to 'None'. | *Optional* |
+| options.cookies.secure | `Boolean` | Cookie secure parameter. If true, only allows cookies to be passed over https. **Default: false**. | *Optional* |
+| options.cookies.sameSite | `String` | Cookie sameSite parameter. If cookies are going to be set across domains, set this parameter to 'None'. **Default: Lax**. | *Optional* |
+| options.devMode | `Boolean` | If true, does not require state and session cookies to be present (If present, they are still validated). This allows Ltijs to work on development environments where cookies cannot be set. **Default: false**. ***THIS SHOULD NOT BE USED IN A PRODUCTION ENVIRONMENT.*** | *Optional* |
+| options.tokenMaxAge | `String` | Sets the idToken max age allowed in seconds. Defaults to 10 seconds. If false, disables max age validation. **Default: 10**. | *Optional* |
 
 #### async Provider.deploy(options) 
 
@@ -266,10 +234,10 @@ Starts listening to a given port for LTI requests and opens connection to the co
 
 | Name | Type | Description |  |
 | ---- | ---- | ----------- | -------- |
-| options | `Object`  | Deployment options | *Optional* |
-| options.port | `Number`  | The port the Provider should listen to. If no value is set, listens to port 3000 | *Optional* |
-| options.silent | `Boolean`  | If true, supresses the initial console logs and the graceful shutdown console logs | *Optional* |
-| options.serverless | `Boolean`  | If true, Ltijs does not start an Express server instance. This allows usage as a middleware and with services like AWS. Ignores 'port' parameter. | *Optional* |
+| options | `Object`  | Deployment options. | *Optional* |
+| options.port | `Number`  | The port the Provider should listen to. **Default: 3000**. | *Optional* |
+| options.silent | `Boolean`  | If true, supresses the deployment messages. **Default: false**. | *Optional* |
+| options.serverless | `Boolean`  | If true, Ltijs does not start an Express server instance. This allows usage as a middleware and with services like AWS. Ignores 'port' parameter. **Default: false**. | *Optional* |
 
 ##### Returns
 
@@ -282,42 +250,23 @@ Starts listening to a given port for LTI requests and opens connection to the co
 
 Closes connection to database and stops server.
 
+##### Parameters
+
+| Name | Type | Description |  |
+| ---- | ---- | ----------- | -------- |
+| options | `Object`  | Options. | *Optional* |
+| options.silent | `Boolean`  | If true, disables shutdown messages. **Default: false**. | *Optional* |
+
 
 ##### Returns
 
-- Promise that resolves ```true``` when it's done or ```false``` if something fails.
+- Promise that resolves ```true``` when the shutdown is complete.
 
 
 
-#### Provider.onConnect(_connectCallback[, options]) 
+#### Provider.onConnect(connectCallback) 
 
-Sets the callback function called whenever theres a sucessfull connection, exposing a Conection object containing the id_token decoded parameters.
-
-
-
-
-##### Parameters
-
-| Name | Type | Description |  |
-| ---- | ---- | ----------- | -------- |
-| _connectCallback | `Function`  | Function that is going to be called everytime a platform sucessfully connects to the provider. | &nbsp; |
-| options | `Object`  | Options configuring the usage of cookies to pass the Id Token data to the client. | *Optional* |
-| options.sessionTimeout | `Function`  | Route/Function executed everytime the session expires. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}). | *Optional* |
-| options.invalidToken | `Function`  | Route/Function executed everytime the system receives an invalid token or cookie. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}). | *Optional* |
-
-
-
-
-##### Examples
-
-```javascript
-.onConnect((conection, response)=>{response.send(connection)})
-```
-
-
-#### Provider.onDeepLinking(_connectCallback[, options]) 
-
-Sets the callback function called whenever theres a sucessfull deep linking request connection, exposing a Conection object containing the id_token decoded parameters. Through this callback you can display your Deep Linking view.
+Sets the callback method called whenever theres a sucessfull connection, exposing a token object containing the decoded idToken and the usual Express route parameters (Request, Response and Next).
 
 
 
@@ -326,10 +275,8 @@ Sets the callback function called whenever theres a sucessfull deep linking requ
 
 | Name | Type | Description |  |
 | ---- | ---- | ----------- | -------- |
-| _deepLinkingCallback | `Function`  | Function that is going to be called everytime a platform sucessfully launches a deep linking request. | &nbsp; |
-| options | `Object`  | Options configuring the usage of cookies to pass the Id Token data to the client. | *Optional* |
-| options.sessionTimeout | `Function`  | Route/Function executed everytime the session expires. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}). | *Optional* |
-| options.invalidToken | `Function`  | Route/Function executed everytime the system receives an invalid token or cookie. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}). | *Optional* |
+| connectCallback | `Function`  | Callback method called everytime a platform sucessfully launches to the provider main endpoint. | &nbsp; |
+
 
 
 
@@ -337,30 +284,96 @@ Sets the callback function called whenever theres a sucessfull deep linking requ
 ##### Examples
 
 ```javascript
-.onDeepLinking((conection, response)=>{response.send(connection)})
+lti.onConnect((token, req, res, next) => { res.send(token) })
+```
+
+*This default method set to this callback simply fowards the request to the next handler, so the usage of onConnect is optional:*
+
+```javascript
+// Equivalent to onConnect usage above
+lti.app.get(lti.appRoute(), (req, res, next) => { res.send(res.locals.token) })
 ```
 
 
+#### Provider.onDeepLinking(deepLinkingCallback) 
+
+Sets the callback method called whenever theres a sucessfull deep linking request connection, exposing a token object containing the decoded idToken and the usual Express route parameters (Request, Response and Next). Through this callback you can display your Deep Linking view.
 
 
-#### Provider.loginRoute() 
 
-Gets the login Url responsible for dealing with the OIDC login flow.
+
+##### Parameters
+
+| Name | Type | Description |  |
+| ---- | ---- | ----------- | -------- |
+| deepLinkingCallback | `Function`  | Callback method called everytime a platform sucessfully launches a deep linking request. | &nbsp; |
+
+
 
 
 
 ##### Examples
 
 ```javascript
-provider.loginRoute()
+lti.onDeepLinking((token, req, res, next) => { res.send(token) })
 ```
 
+#### Provider.onSessionTimeout(sessionTimeoutCallback) 
+
+Sets the callback method called when no valid session is found during a request validation.
+
+
+
+
+##### Parameters
+
+| Name | Type | Description |  |
+| ---- | ---- | ----------- | -------- |
+| sessionTimeoutCallback | `Function`  |  Callback method called when no valid session is found during a request validation. | &nbsp; |
+
+
+
+
+
+##### Examples
+
+```javascript
+lti.onSessionTimeout((req, res, next) => { return res.status(401).send('SESSION_TIMEOUT. Please reinitiate login.') })
+```
+
+*Ltijs provides a default method for this callback.*
+
+
+#### Provider.onInvalidToken(invalidTokenCallback) 
+
+Sets the callback method called when the token received fails the validation process.
+
+
+
+
+##### Parameters
+
+| Name | Type | Description |  |
+| ---- | ---- | ----------- | -------- |
+| invalidTokenCallback | `Function`  |  Callback method called when the token received fails the validation process. | &nbsp; |
+
+
+
+
+
+##### Examples
+
+```javascript
+lti.onInvalidToken((req, res, next) => { return res.status(401).send('INVALID_TOKEN. Please reinitiate login.') })
+```
+
+*Ltijs provides a default method for this callback.*
 
 
 
 #### Provider.appRoute() 
 
-Gets the main application Url that will receive the final decoded Idtoken.
+Gets the main application Route that will receive the final decoded Idtoken.
 
 
 
@@ -369,23 +382,36 @@ Gets the main application Url that will receive the final decoded Idtoken.
 ##### Examples
 
 ```javascript
-provider.appRoute()
+lti.appRoute()
 ```
 
+
+
+#### Provider.loginRoute() 
+
+Gets the login Route responsible for dealing with the OIDC login flow.
+
+
+
+##### Examples
+
+```javascript
+lti.loginRoute()
+```
 
 
 
 
 #### Provider.sessionTimeoutRoute() 
 
-Gets the session timeout Url that will be called whenever the system encounters a session timeout.
+Gets the session timeout Route that will be called whenever the system encounters a session timeout.
 
 
 
 ##### Examples
 
 ```javascript
-provider.sessionTimeoutRoute()
+lti.sessionTimeoutRoute()
 ```
 
 
@@ -393,7 +419,7 @@ provider.sessionTimeoutRoute()
 
 #### Provider.invalidTokenRoute() 
 
-Gets the invalid token Url that will be called whenever the system encounters a invalid token or cookie.
+Gets the invalid token Route that will be called whenever the system encounters a invalid token or cookie.
 
 
 
@@ -402,7 +428,7 @@ Gets the invalid token Url that will be called whenever the system encounters a 
 ##### Examples
 
 ```javascript
-provider.invalidTokenRoute()
+lti.invalidTokenRoute()
 ```
 
 
@@ -410,7 +436,7 @@ provider.invalidTokenRoute()
 
 #### Provider.keysetRoute() 
 
-Gets the public JWK keyset Url.
+Gets the public JWK keyset Route.
 
 
 
@@ -419,11 +445,11 @@ Gets the public JWK keyset Url.
 ##### Examples
 
 ```javascript
-provider.keysetRoute()
+lti.keysetRoute()
 ```
 
 #### Provider.whitelist(urls)
-Whitelists Urls to bypass the lti 1.3 authentication protocol. These Url dont have access to an idtoken.
+Whitelists routes to bypass the lti 1.3 authentication protocol. If they fail validation, these routes are still accessed but aren't given an idToken.
 
 
 
@@ -434,16 +460,18 @@ Whitelists Urls to bypass the lti 1.3 authentication protocol. These Url dont ha
 ##### Examples
 
 ```javascript
-provider.whitelist('/log', '/home')
-provider.whitelist('/log', '/home', '/route')
-provider.whitelist('/log', '/home', { route: '/route', method: 'POST' })
+// Whitelisting routes
+lti.whitelist('/log', '/home')
+
+// Whitelisting routes with specific methods
+lti.whitelist('/log', '/home', { route: '/route', method: 'POST' })
 ```
 
 
 
-#### async Provider.registerPlatform(Url, name, clientId, authenticationEndpoint, authConfig) 
+#### async Provider.registerPlatform(platform) 
 
-Registers a [Platform](platform.md).
+Registers a new [Platform](platform.md).
 
 
 ##### Parameters
@@ -466,13 +494,27 @@ Registers a [Platform](platform.md).
 ##### Returns
 
 
- - Promise that resolves a [Platform](platform.md) object if it succeeds and ```false``` if it fails.
+ - Promise that resolves a [Platform](platform.md).
+
+
+##### Example
+
+```javascript
+await lti.registerPlatform({ 
+  url: 'https://platform.url',
+  name: 'Platform Name',
+  clientId: 'TOOLCLIENTID',
+  authenticationEndpoint: 'https://platform.url/auth',
+  accesstokenEndpoint: 'https://platform.url/token',
+  authConfig: { method: 'JWK_SET', key: 'https://platform.url/keyset' }
+})
+```
 
 
 
-#### async Provider.getPlatform(url) 
+#### async Provider.getPlatform(url, clientId) 
 
-Gets a [Platform](platform.md).
+Retrieves a [Platform](platform.md).
 
 
 
@@ -482,6 +524,7 @@ Gets a [Platform](platform.md).
 | Name | Type | Description |  |
 | ---- | ---- | ----------- | -------- |
 | url | `String`  | Platform url. | &nbsp; |
+| clientId | `String`  | Tool Client Id url. | &nbsp; |
 
 
 
@@ -489,8 +532,14 @@ Gets a [Platform](platform.md).
 ##### Returns
 
 
-- Promise that resolves a [Platform](platform.md) object if it succeeds and ```false``` if it fails.
+- Promise that resolves a [Platform](platform.md).
 
+
+##### Example
+
+```javascript
+const plat = await lti.getPlatform('https://platform.url', 'TOOLCLIENTID')
+```
 
 
 #### async Provider.deletePlatform(url) 
@@ -504,11 +553,19 @@ Deletes a [Platform](platform.md).
 | Name | Type | Description |  |
 | ---- | ---- | ----------- | -------- |
 | url | `String`  | Platform url. | &nbsp; |
+| clientId | `String`  | Tool Client Id url. | &nbsp; |
 
 
 ##### Returns
 
-- Promise that resolves ```false``` if it fails.
+- Promise that resolves ```true```.
+
+##### Example
+
+```javascript
+await lti.deletePlatform('https://platform.url', 'TOOLCLIENTID')
+```
+
 
 #### async Provider.getAllPlatforms() 
 
@@ -518,15 +575,19 @@ Gets all [platforms](platform.md).
 
 ##### Returns
 
+- Promise that resolves a [Platform](platform.md) object array.
 
-- Promise that resolves a [Platform](platform.md) object array if it succeeds and ```false``` if it fails.
 
+##### Example
 
+```javascript
+const platforms = await lti.getAllPlatforms()
+```
 
 
 #### async Provider.redirect(response, path [, options]) 
 
-Redirects to another route, handles the context in the url and if the route is a specific resource, generates the context cookie for it.
+Redirects to a new location. Passes Ltik if present.
 
 
 
@@ -538,12 +599,11 @@ Redirects to another route, handles the context in the url and if the route is a
 | response | `Object`  | Espress response object.| &nbsp; |
 | path | `String`  | Redirect path. | &nbsp; |
 | [options] | <code>Object</code> |  Redirection options | *Optional* |
-| [options.isNewResource] | <code>Boolean</code> | If true creates new resource and its cookie | *Optional* |
-| [options.ignoreRoot] | <code>Boolean</code> |  If true deletes de main path (/) database tokenb on redirect, this saves storage space and is recommended if you are using your main root only to redirect | *Optional* |
+| [options.isNewResource] | <code>Boolean</code> | If true, changes the path variable on the context token. | *Optional* |
 
 **Example**  
 ```js
-lti.generatePathCookie(response, '/path', { isNewResource: true })
+lti.redirect(res, '/path', { isNewResource: true })
 ```
 
 ---
@@ -615,8 +675,8 @@ const lti = new LTI('EXAMPLEKEY',
             }, 
             { appRoute: '/main', 
               loginRoute: '/login', 
-              sessionTimeoutRoute: '/sessionTimeout', 
-              invalidTokenRoute: '/invalidToken',
+              sessionTimeoutRoute: '/sessiontimeout', 
+              invalidTokenRoute: '/invalidtoken',
               keysetRoute: '/keys' })
 ```
 
@@ -625,8 +685,8 @@ If no routes are specified the system defaults to:
 ```javascript
 appRoute = '/'
 loginRoute = '/login'
-sessionTimeoutRoute = '/sessionTimeout'
-invalidTokenRoute = '/invalidToken'
+sessionTimeoutRoute = '/sessiontimeout'
+invalidTokenRoute = '/invalidtoken'
 keysetRoute = '/keys'
 ```
 
@@ -681,9 +741,9 @@ app.use('/lti', lti.app)
 
 #### The onConnect() method
 
-The `onConnect()` method is called whenever a request successfully arrives at the main app url, and you can specify the callback function that is called. 
+The `onConnect()` method is called whenever a request successfully arrives at the main app url, and you can specify the callback method that is called. 
 
-Outside of it's first argument `connection`, that is the user's validated `idtoken`, the callback function will be given the three main Express route parameters (req, res, next).
+Outside of it's first argument `connection`, that is the user's validated `idtoken`, the callback method will be given the three main Express route parameters (req, res, next).
 
 > The **[idtoken](#idtoken)** can also be found in the **response.locals.token** object.
 
@@ -1073,27 +1133,10 @@ The Names and Roles Provisioning Service class documentation can be accessed [he
 
 ---
 
-## Logging and Debugging
-
-### Logging
-
-**Ltijs** generates error and server logs if the logger parameter of the constructor's additional options is set to true.
-
-```javascript
-// Configure provider
-const lti = new LTI('EXAMPLEKEY', 
-            { url: 'mongodb://localhost/database'
-            }, 
-            { logger: true })
-```
-
-Logs will be generated inside a `logs` folder in the root of your project.
+## Debugging
 
 
-### Debugging
-
-
-**Ltijs** uses [debug](https://www.npmjs.com/package/debug) to log various events in the console. Just append `DEBUG='provider:*'` before yout node or npm command and it should be working.
+**Ltijs** uses [debug](https://www.npmjs.com/package/debug) to log various events to the console. Just append `DEBUG='provider:*'` before your node or npm command and it should work.
 
 ```shell
 DEBUG='provider:*' npm start

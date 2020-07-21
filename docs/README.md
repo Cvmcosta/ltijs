@@ -35,8 +35,7 @@ Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps
 - [Introduction](#introduction)
 - [Feature roadmap](#feature-roadmap)
 - [Installation](#installation)
-- [Tutorial](#tutorial)
-- [Usage](#usage)
+- [Quick start](#quick-start)
 - [Documentation](#documentation)
 - [Contributing](#contributing)
 - [Special thanks](#special-thanks)
@@ -45,10 +44,11 @@ Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps
 
 ---
 ## Introduction
-According to the [IMS Global Learning Consortium](https://www.imsglobal.org/), the Learning Tools Interoperability (LTI) protocol is an IMS standard for integration of rich learning applications within educational environments. <sup>[ref](https://www.imsglobal.org/spec/lti/v1p3/)</sup>
+
+The Learning Tools Interoperability (LTI) protocol is a standard for integration of rich learning applications within educational environments. <sup>[ref](https://www.imsglobal.org/spec/lti/v1p3/)</sup>
 
 
-This framework implements a tool provider as an [Express](https://expressjs.com/) server, with preconfigured routes and methods that manage the [LTI 1.3](https://www.imsglobal.org/spec/lti/v1p3/) protocol for you. Making it fast and simple to create a working learning tool with access to every LTI service, without having to worry about manually implementing any of the security and validation required to do so. 
+This library implements a tool provider as an [Express](https://expressjs.com/) server, with preconfigured routes and methods that manage the [LTI 1.3](https://www.imsglobal.org/spec/lti/v1p3/) protocol for you. Making it fast and simple to create a working learning tool with access to every LTI service, without having to worry about manually implementing any of the security and validation required to do so. 
 
 
 ---
@@ -95,24 +95,7 @@ Ltijs can also be used with other databases through database plugins that use th
 
 ---
 
-
-## Tutorial
-
-You can find a quick tutorial on how to set Ltijs up and use it to send grades to a Moodle platform [here](https://medium.com/@cvmcosta2/creating-a-lti-provider-with-ltijs-8b569d94825c).
-
 ## Quick start
-
-
-> Install Ltijs
-
-```shell
-$ npm install ltijs
-```
-
-> Install mongoDB
-
- - [Installing mongoDB](https://docs.mongodb.com/manual/administration/install-community/)
-
 
 > Setting up Ltijs
 

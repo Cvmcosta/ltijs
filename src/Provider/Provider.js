@@ -21,7 +21,7 @@ const provAuthDebug = require('debug')('provider:auth')
 const provMainDebug = require('debug')('provider:main')
 
 /**
- * @descripttion Exposes methods for easy manipulation of the LTI 1.3 standard as a LTI Provider and a "server" object to manipulate the Express instance
+ * @descripttion LTI Provider Class that implements the LTI 1.3 protocol and services.
  */
 class Provider {
   // Pre-initiated variables
@@ -29,9 +29,9 @@ class Provider {
 
   #appRoute = '/'
 
-  #sessionTimeoutRoute = '/sessionTimeout'
+  #sessionTimeoutRoute = '/sessiontimeout'
 
-  #invalidTokenRoute = '/invalidToken'
+  #invalidTokenRoute = '/invalidtoken'
 
   #keysetRoute = '/keys'
 
@@ -57,7 +57,7 @@ class Provider {
   #deepLinkingCallback = async (token, req, res, next) => { return next() }
 
   #sessionTimeoutCallback = async (req, res) => {
-    return res.status(401).send('INVALID_OR_EXPIRED_TOKEN. Please reinitiate login.')
+    return res.status(401).send('SESSION_TIMEOUT. Please reinitiate login.')
   }
 
   #invalidTokenCallback = async (req, res) => {
@@ -80,25 +80,25 @@ class Provider {
   /**
      * @description Provider configuration method.
      * @param {String} encryptionkey - Secret used to sign cookies and encrypt other info.
-     * @param {Object} database - The Database configurations to open and manage connection, uses MongoDB Driver.
+     * @param {Object} database - Database configuration.
      * @param {String} database.url - Database Url (Ex: mongodb://localhost/applicationdb).
      * @param {Object} [database.plugin] - If set, must be the Database object of the desired database plugin.
      * @param {Boolean} [database.debug] - If set to true, enables mongoose debug mode.
-     * @param {Object} [database.connection] - Database connection options (Ex: user, pass)
+     * @param {Object} [database.connection] - MongoDB database connection options (Ex: user, pass)
      * @param {String} [database.connection.user] - Database user for authentication if needed.
      * @param {String} [database.conenction.pass] - Database pass for authentication if needed.
-     * @param {Object} [options] - Lti Provider additional options,.
+     * @param {Object} [options] - Lti Provider options.
      * @param {String} [options.appRoute = '/'] - Lti Provider main route. If no option is set '/' is used.
      * @param {String} [options.loginRoute = '/login'] - Lti Provider login route. If no option is set '/login' is used.
-     * @param {String} [options.sessionTimeoutRoute = '/sessionTimeout'] - Lti Provider session timeout route. If no option is set '/sessionTimeout' is used.
-     * @param {String} [options.invalidTokenRoute = '/invalidToken'] - Lti Provider invalid token route. If no option is set '/invalidToken' is used.
+     * @param {String} [options.sessionTimeoutRoute = '/sessiontimeout'] - Lti Provider session timeout route. If no option is set '/sessiontimeout' is used.
+     * @param {String} [options.invalidTokenRoute = '/invalidtoken'] - Lti Provider invalid token route. If no option is set '/invalidtoken' is used.
      * @param {String} [options.keysetRoute = '/keys'] - Lti Provider public jwk keyset route. If no option is set '/keys' is used.
-     * @param {Boolean} [options.https = false] - Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https and are planning to configure ssl locally. If you set this option as true you can enable the secure flag in the cookies options of the onConnect method.
+     * @param {Boolean} [options.https = false] - Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https and are planning to configure ssl through Express.
      * @param {Object} [options.ssl] - SSL certificate and key if https is enabled.
      * @param {String} [options.ssl.key] - SSL key.
      * @param {String} [options.ssl.cert] - SSL certificate.
      * @param {String} [options.staticPath] - The path for the static files your application might serve (Ex: _dirname+"/public")
-     * @param {Boolean} [options.cors = true] - If false, disables cors.
+     * @param {Boolean} [options.cors = true] - If set to false, disables cors.
      * @param {Function} [options.serverAddon] - Allows the execution of a method inside of the server contructor. Can be used to register middlewares.
      * @param {Object} [options.cookies] - Cookie configuration. Allows you to configure, sameSite and secure parameters.
      * @param {Boolean} [options.cookies.secure = false] - Cookie secure parameter. If true, only allows cookies to be passed over https.
@@ -591,7 +591,7 @@ class Provider {
   }
 
   /**
-   * @description Whitelists routes to bypass the lti 1.3 authentication protocol. These routes dont have access to a idtoken
+   * @description Whitelists routes to bypass the lti 1.3 authentication protocol. If they fail validation, these routes are still accessed but aren't given an idToken.
    * @param {String} routes - Routes to be whitelisted
    */
   whitelist (...routes) {
@@ -706,18 +706,18 @@ class Provider {
      * @returns {Promise<Array<Platform>>}
      */
   async getAllPlatforms () {
-    const returnArray = []
-    const platforms = await this.Database.Get(false, 'platform')
+    const platforms = []
+    const result = await this.Database.Get(false, 'platform')
 
-    if (platforms) {
-      for (const obj of platforms) returnArray.push(new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, this.#ENCRYPTIONKEY, obj.authConfig, this.Database))
-      return returnArray
+    if (result) {
+      for (const plat of result) platforms.push(new Platform(plat.platformName, plat.platformUrl, plat.clientId, plat.authEndpoint, plat.accesstokenEndpoint, plat.kid, this.#ENCRYPTIONKEY, plat.authConfig, this.Database))
+      return platforms
     }
     return []
   }
 
   /**
-   * @description Redirect to a new location and sets path variable if the location represents a separate resource.
+   * @description Redirects to a new location. Passes Ltik if present.
    * @param {Object} res - Express response object.
    * @param {String} path - Redirect path.
    * @param {Object} [options] - Redirection options.
