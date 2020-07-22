@@ -144,6 +144,7 @@ class Database {
     });
     const accessTokenSchema = new Schema({
       platformUrl: String,
+      clientId: String,
       scopes: String,
       iv: String,
       data: String,
@@ -155,6 +156,7 @@ class Database {
     });
     accessTokenSchema.index({
       platformUrl: 1,
+      clientId: 1,
       scopes: 1
     }, {
       unique: true

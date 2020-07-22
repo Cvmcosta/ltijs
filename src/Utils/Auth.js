@@ -261,9 +261,11 @@ class Auth {
      * @param {Platform} platform - Platform object of the platform you want to access.
      */
   static async getAccessToken (scopes, platform, ENCRYPTIONKEY, Database) {
+    const platformUrl = await platform.platformUrl()
+    const clientId = await platform.platformClientId()
     const confjwt = {
-      iss: await platform.platformClientId(),
-      sub: await platform.platformClientId(),
+      sub: clientId,
+      iss: clientId,
       aud: await platform.platformAccessTokenEndpoint(),
       iat: Date.now() / 1000,
       exp: Date.now() / 1000 + 60,
@@ -283,9 +285,7 @@ class Auth {
     const access = await got.post(await platform.platformAccessTokenEndpoint(), { form: message }).json()
     provAuthDebug('Successfully generated new access_token')
 
-    const platformUrl = await platform.platformUrl()
-    await Database.Replace(ENCRYPTIONKEY, 'accesstoken', { platformUrl: platformUrl, scopes: scopes }, { token: access }, { platformUrl: platformUrl, scopes: scopes })
-
+    await Database.Replace(ENCRYPTIONKEY, 'accesstoken', { platformUrl: platformUrl, clientId: clientId, scopes: scopes }, { token: access }, { platformUrl: platformUrl, clientId: clientId, scopes: scopes })
     return access
   }
 }

@@ -94,12 +94,13 @@ class Database {
 
     const accessTokenSchema = new Schema({
       platformUrl: String,
+      clientId: String,
       scopes: String,
       iv: String,
       data: String,
       createdAt: { type: Date, expires: 3600, default: Date.now }
     })
-    accessTokenSchema.index({ platformUrl: 1, scopes: 1 }, { unique: true })
+    accessTokenSchema.index({ platformUrl: 1, clientId: 1, scopes: 1 }, { unique: true })
 
     const nonceSchema = new Schema({
       nonce: String,

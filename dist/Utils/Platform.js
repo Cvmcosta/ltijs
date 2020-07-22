@@ -125,7 +125,8 @@ class Platform {
   async platformName(name) {
     if (!name) return (0, _classPrivateFieldGet2.default)(this, _platformName);
     await (0, _classPrivateFieldGet2.default)(this, _Database).Modify(false, 'platform', {
-      platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl)
+      platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl),
+      clientId: (0, _classPrivateFieldGet2.default)(this, _clientId)
     }, {
       platformName: name
     });
@@ -180,7 +181,8 @@ class Platform {
       key: key
     };
     await (0, _classPrivateFieldGet2.default)(this, _Database).Modify(false, 'platform', {
-      platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl)
+      platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl),
+      clientId: (0, _classPrivateFieldGet2.default)(this, _clientId)
     }, {
       authConfig: authConfig
     });
@@ -196,7 +198,8 @@ class Platform {
   async platformAuthEndpoint(authEndpoint) {
     if (!authEndpoint) return (0, _classPrivateFieldGet2.default)(this, _authEndpoint);
     await (0, _classPrivateFieldGet2.default)(this, _Database).Modify(false, 'platform', {
-      platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl)
+      platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl),
+      clientId: (0, _classPrivateFieldGet2.default)(this, _clientId)
     }, {
       authEndpoint: authEndpoint
     });
@@ -212,7 +215,8 @@ class Platform {
   async platformAccessTokenEndpoint(accesstokenEndpoint) {
     if (!accesstokenEndpoint) return (0, _classPrivateFieldGet2.default)(this, _accesstokenEndpoint);
     await (0, _classPrivateFieldGet2.default)(this, _Database).Modify(false, 'platform', {
-      platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl)
+      platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl),
+      clientId: (0, _classPrivateFieldGet2.default)(this, _clientId)
     }, {
       accesstokenEndpoint: accesstokenEndpoint
     });
@@ -228,6 +232,7 @@ class Platform {
   async platformAccessToken(scopes) {
     const token = await (0, _classPrivateFieldGet2.default)(this, _Database).Get((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), 'accesstoken', {
       platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl),
+      clientId: (0, _classPrivateFieldGet2.default)(this, _clientId),
       scopes: scopes
     });
 
