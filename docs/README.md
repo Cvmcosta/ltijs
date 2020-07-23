@@ -90,7 +90,7 @@ This package natively uses mongoDB by default to store and manage the server dat
 
 Ltijs can also be used with other databases through database plugins that use the same structure as the main database class.
 
-  -  [PostgreSQL Plugin](https://www.npmjs.com/package/ltijs-postgresql)
+  -  [Sequelize Plugin](https://github.com/Cvmcosta/ltijs-sequelize)(MySQL, PostgreSQL)
 
 
 ---
