@@ -8,43 +8,54 @@ const provDatabaseDebug = require('debug')('provider:database')
  * @description Collection of static methods to manipulate the database.
  */
 class Database {
-  #dbConnection = {}
+  #dbUrl
+
+  #dbConnection = {
+    useNewUrlParser: true,
+    keepAlive: true,
+    keepAliveInitialDelay: 300000,
+    connectTimeoutMS: 300000,
+    useUnifiedTopology: true
+  }
+
+  #deploy = false
 
   /**
    * @description Mongodb configuration setup
    * @param {Object} database - Configuration object
    */
   constructor (database) {
-    if (!database.url) throw new Error('Missing database url configuration.')
-    // Starts database connection
-    if (database.connection) {
-      if (!database.connection.useNewUrlParser) database.connection.useNewUrlParser = true
-      if (!database.connection.keepAlive) database.connection.keepAlive = true
-      if (!database.connection.keepAliveInitialDelay) database.connection.keepAliveInitialDelay = 300000
-    } else {
-      database.connection = { useNewUrlParser: true, keepAlive: true, keepAliveInitialDelay: 300000, connectTimeoutMS: 300000 }
+    if (!database || !database.url) throw new Error('MISSING_DATABASE_CONFIG')
+
+    // Configures database connection
+    this.#dbUrl = database.url
+    if (database.debug) mongoose.set('debug', true)
+
+    this.#dbConnection = {
+      ...this.#dbConnection,
+      ...database.connection
     }
-    this.#dbConnection.url = database.url
-    this.#dbConnection.options = database.connection
-    this.#dbConnection.options.useUnifiedTopology = true
 
     // Creating database schemas
     const idTokenSchema = new Schema({
       iss: String,
-      issuerCode: String,
       user: String,
       roles: [String],
       userInfo: JSON,
       platformInfo: JSON,
+      clientId: String,
+      deploymentId: String,
       lis: JSON,
       endpoint: JSON,
       namesRoles: JSON,
       createdAt: { type: Date, expires: 3600 * 24, default: Date.now }
     })
+    idTokenSchema.index({ iss: 1, clientId: 1, deploymentId: 1, user: 1 })
+
     const contextTokenSchema = new Schema({
-      path: String,
+      contextId: String,
       user: String,
-      deploymentId: String,
+      path: String,
       targetLinkUri: String,
       context: JSON,
       resource: JSON,
@@ -55,11 +66,10 @@ class Database {
       deepLinkingSettings: JSON,
       createdAt: { type: Date, expires: 3600 * 24, default: Date.now }
     })
+    contextTokenSchema.index({ contextId: 1, user: 1 })
+
     const platformSchema = new Schema({
-      platformUrl: {
-        type: String,
-        unique: true
-      },
+      platformUrl: String,
       platformName: String,
       clientId: String,
       authEndpoint: String,
@@ -70,30 +80,33 @@ class Database {
         key: String
       }
     })
+    platformSchema.index({ platformUrl: 1 })
+    platformSchema.index({ platformUrl: 1, clientId: 1 }, { unique: true })
+
     const keySchema = new Schema({
       kid: String,
+      platformUrl: String,
+      clientId: String,
       iv: String,
       data: String
     })
+    keySchema.index({ kid: 1 }, { unique: true })
+
     const accessTokenSchema = new Schema({
       platformUrl: String,
+      clientId: String,
       scopes: String,
       iv: String,
       data: String,
       createdAt: { type: Date, expires: 3600, default: Date.now }
     })
+    accessTokenSchema.index({ platformUrl: 1, clientId: 1, scopes: 1 }, { unique: true })
+
     const nonceSchema = new Schema({
       nonce: String,
       createdAt: { type: Date, expires: 10, default: Date.now }
     })
-    const validationSchema = new Schema({
-      state: {
-        type: String,
-        unique: true
-      },
-      iss: String,
-      createdAt: { type: Date, expires: 60, default: Date.now }
-    })
+    nonceSchema.index({ nonce: 1 })
 
     try {
       mongoose.model('idtoken', idTokenSchema)
@@ -103,7 +116,6 @@ class Database {
       mongoose.model('publickey', keySchema)
       mongoose.model('accesstoken', accessTokenSchema)
       mongoose.model('nonce', nonceSchema)
-      mongoose.model('validation', validationSchema)
     } catch (err) {
       provDatabaseDebug('Model already registered. Continuing')
     }
@@ -133,7 +145,7 @@ class Database {
       setTimeout(async () => {
         if (this.db.readyState === 0) {
           try {
-            await mongoose.connect(this.#dbConnection.url, this.#dbConnection.options)
+            await mongoose.connect(this.#dbUrl, this.#dbConnection)
           } catch (err) {
             provDatabaseDebug('Error in MongoDb connection: ' + err)
           }
@@ -141,7 +153,8 @@ class Database {
       }, 1000)
     })
 
-    if (this.db.readyState === 0) await mongoose.connect(this.#dbConnection.url, this.#dbConnection.options)
+    if (this.db.readyState === 0) await mongoose.connect(this.#dbUrl, this.#dbConnection)
+    this.#deploy = true
     return true
   }
 
@@ -149,6 +162,7 @@ class Database {
   async Close () {
     mongoose.connection.removeAllListeners()
     await mongoose.connection.close()
+    this.#deploy = false
     return true
   }
 
@@ -159,7 +173,8 @@ class Database {
      * @param {Object} [query] - Query for the item you are looking for in the format {type: "type1"}.
      */
   async Get (ENCRYPTIONKEY, collection, query) {
-    if (!collection) throw new Error('Missing collection argument.')
+    if (!this.#deploy) throw new Error('PROVIDER_NOT_DEPLOYED')
+    if (!collection) throw new Error('MISSING_COLLECTION')
 
     const Model = mongoose.model(collection)
     const result = await Model.find(query)
@@ -187,7 +202,8 @@ class Database {
      * @param {Object} [index] - Key that should be used as index in case of Encrypted document.
      */
   async Insert (ENCRYPTIONKEY, collection, item, index) {
-    if (!collection || !item || (ENCRYPTIONKEY && !index)) throw new Error('Missing argument.')
+    if (!this.#deploy) throw new Error('PROVIDER_NOT_DEPLOYED')
+    if (!collection || !item || (ENCRYPTIONKEY && !index)) throw new Error('MISSING_PARAMS')
 
     const Model = mongoose.model(collection)
     let newDocData = item
@@ -205,6 +221,33 @@ class Database {
   }
 
   /**
+   * @description Replace item in database. Creates a new document if it does not exist.
+   * @param {String} ENCRYPTIONKEY - Encryptionkey of the database, false if none.
+   * @param {String} collection - The collection to be accessed inside the database.
+   * @param {Object} query - Query for the item you are looking for in the format {type: "type1"}.
+   * @param {Object} item - The item Object you want to insert in the database.
+   * @param {Object} [index] - Key that should be used as index in case of Encrypted document.
+   */
+  async Replace (ENCRYPTIONKEY, collection, query, item, index) {
+    if (!this.#deploy) throw new Error('PROVIDER_NOT_DEPLOYED')
+    if (!collection || !item || (ENCRYPTIONKEY && !index)) throw new Error('MISSING_PARAMS')
+
+    const Model = mongoose.model(collection)
+    let newDocData = item
+    if (ENCRYPTIONKEY) {
+      const encrypted = await this.Encrypt(JSON.stringify(item), ENCRYPTIONKEY)
+      newDocData = {
+        ...index,
+        iv: encrypted.iv,
+        data: encrypted.data
+      }
+    }
+
+    await Model.replaceOne(query, newDocData, { upsert: true })
+    return true
+  }
+
+  /**
      * @description Assign value to item in database
      * @param {String} ENCRYPTIONKEY - Encryptionkey of the database, false if none.
      * @param {String} collection - The collection to be accessed inside the database.
@@ -212,7 +255,8 @@ class Database {
      * @param {Object} modification - The modification you want to make in the format {type: "type2"}.
      */
   async Modify (ENCRYPTIONKEY, collection, query, modification) {
-    if (!collection || !query || !modification) throw new Error('Missing argument.')
+    if (!this.#deploy) throw new Error('PROVIDER_NOT_DEPLOYED')
+    if (!collection || !query || !modification) throw new Error('MISSING_PARAMS')
 
     const Model = mongoose.model(collection)
 
@@ -236,7 +280,8 @@ class Database {
      * @param {Object} query - The entry you want to delete in the format {type: "type1"}.
      */
   async Delete (collection, query) {
-    if (!collection || !query) throw new Error('Missing argument.')
+    if (!this.#deploy) throw new Error('PROVIDER_NOT_DEPLOYED')
+    if (!collection || !query) throw new Error('MISSING_PARAMS')
     const Model = mongoose.model(collection)
     await Model.deleteMany(query)
     return true

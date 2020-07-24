@@ -1,14 +1,14 @@
 {
   "name": "ltijs",
-  "version": "4.1.1",
-  "description": "Turn your application into a fully integratable LTI 1.3 tool.",
+  "version": "5.0.0",
+  "description": "Easily turn your web application into a LTI 1.3 Learning Tool.",
   "main": "index.js",
   "engineStrict": true,
   "engines": {
-    "node": ">=8.6.0"
+    "node": ">=10.19.0"
   },
   "scripts": {
-    "test": "mocha",
+    "test": "nyc mocha",
     "build": "standard 'src/**/*.js' --fix && babel src -d dist",
     "start": "node index.js"
   },
@@ -31,7 +31,7 @@
   },
   "homepage": "https://cvmcosta.github.io/ltijs",
   "dependencies": {
-    "@babel/runtime": "^7.9.2",
+    "@babel/runtime": "^7.10.4",
     "body-parser": "^1.19.0",
     "cookie-parser": "^1.4.5",
     "cors": "^2.8.5",
@@ -39,33 +39,28 @@
     "express": "^4.17.1",
     "express-bearer-token": "^2.4.0",
     "fast-url-parser": "^1.1.3",
-    "got": "^11.1.0",
-    "helmet": "^3.22.0",
+    "got": "^11.5.0",
+    "helmet": "^3.23.3",
     "jsonwebtoken": "^8.5.1",
-    "lodash.find": "^4.6.0",
-    "mongoose": "^5.9.7",
-    "morgan": "^1.10.0",
-    "node-jose": "^1.1.4",
-    "pem-jwk": "^2.0.0",
-    "tld-extract": "^1.1.2",
-    "valid-url": "^1.0.9",
-    "winston": "^3.2.1"
+    "mongoose": "^5.9.22",
+    "rasha": "^1.2.5"
   },
   "devDependencies": {
-    "@babel/cli": "^7.4.4",
-    "@babel/core": "^7.9.0",
-    "@babel/plugin-proposal-class-properties": "^7.4.4",
-    "@babel/plugin-transform-runtime": "^7.9.0",
-    "@babel/preset-env": "^7.9.5",
-    "@babel/register": "^7.9.0",
-    "babel-eslint": "^10.0.2",
+    "@babel/cli": "^7.10.4",
+    "@babel/core": "^7.10.4",
+    "@babel/plugin-proposal-class-properties": "^7.10.4",
+    "@babel/plugin-transform-runtime": "^7.10.4",
+    "@babel/preset-env": "^7.10.4",
+    "@babel/register": "^7.10.4",
+    "babel-eslint": "^10.1.0",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "chai-http": "^4.3.0",
-    "eslint": "^6.0.1",
-    "mocha": "^7.1.1",
-    "nock": "^12.0.3",
-    "standard": "^14.3.3"
+    "eslint": "^7.4.0",
+    "mocha": "^8.0.1",
+    "nock": "^13.0.2",
+    "nyc": "^15.1.0",
+    "standard": "^14.3.4"
   },
   "standard": {
     "parser": "babel-eslint",

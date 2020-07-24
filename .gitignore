@@ -1,3 +1,4 @@
 /node_modules
-/src/Consumer
-/dist/Consumer
+.nyc_output
+coverage
+*.lcov

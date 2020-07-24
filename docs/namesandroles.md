@@ -4,13 +4,14 @@
 	<br>
 	<br>
 	<a href="https://cvmcosta.github.io/ltijs"><img width="360" src="logo-300.svg"></img></a>
+  <a href="https://site.imsglobal.org/certifications/coursekey/ltijs"​ target='_blank'><img width="80" src="https://www.imsglobal.org/sites/default/files/IMSconformancelogoREG.png" alt="IMS Global Certified" border="0"></img></a>
 </div>
 
 
 > Names and Roles Provisioning Service class
 
 
-[![travisci](https://img.shields.io/travis/cvmcosta/ltijs.svg)](https://travis-ci.org/Cvmcosta/ltijs)
+[![travisci](https://travis-ci.org/Cvmcosta/ltijs.svg?branch=master)](https://travis-ci.org/Cvmcosta/ltijs)
 [![codecov](https://codecov.io/gh/Cvmcosta/ltijs/branch/master/graph/badge.svg)](https://codecov.io/gh/Cvmcosta/ltijs)
 [![Node Version](https://img.shields.io/node/v/ltijs.svg)](https://www.npmjs.com/package/ltijs)
 [![NPM package](https://img.shields.io/npm/v/ltijs.svg)](https://www.npmjs.com/package/ltijs)
@@ -149,51 +150,11 @@ The `getMembers()` method allows us to apply filters to the request, and these f
 ### Example basic usage: 
 
 ```javascript
-const path = require('path')
-
-// Require Provider 
-const LTI = require('ltijs').Provider
-
-// Configure provider
-const lti = new LTI('EXAMPLEKEY', 
-            { url: 'mongodb://localhost/database' }, 
-            { appUrl: '/', loginUrl: '/login', logger: true })
-
-
-let setup = async () => {
-  // Deploy and open connection to the database
-  await lti.deploy({ port: 3000 })
-
-  // Register platform
-  let plat = await lti.registerPlatform({ 
-    url: 'https://platform.url',
-    name: 'Platform Name',
-    clientId: 'TOOLCLIENTID',
-    authenticationEndpoint: 'https://platform.url/auth',
-    accesstokenEndpoint: 'https://platform.url/token',
-    authConfig: { method: 'JWK_SET', key: 'https://platform.url/keyset' }
-  })
-
-  // Regular connection callback
-  lti.onConnect((connection, request, response) => {
-    // Call redirect function
-    lti.redirect(response, '/main')
-  })
-
-  // Main route 
-  lti.app.get('/main', (req, res) => {
-    // Id token
-    console.log(res.locals.token)
-    res.send('It\'s alive!')
-  })
-
-  // Members route
-   lti.app.get('/members', async (req, res) => {
-    const members = await lti.NamesAndRoles.getMembers(res.locals.token) // Gets context members
-    res.send(members)
-  })
-}
-setup()
+// Members route
+lti.app.get('/members', async (req, res) => {
+  const members = await lti.NamesAndRoles.getMembers(res.locals.token) // Gets context members
+  res.send(members)
+})
 ```
 
 

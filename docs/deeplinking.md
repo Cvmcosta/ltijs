@@ -4,13 +4,14 @@
 	<br>
 	<br>
 	<a href="https://cvmcosta.github.io/ltijs"><img width="360" src="logo-300.svg"></img></a>
+  <a href="https://site.imsglobal.org/certifications/coursekey/ltijs"​ target='_blank'><img width="80" src="https://www.imsglobal.org/sites/default/files/IMSconformancelogoREG.png" alt="IMS Global Certified" border="0"></img></a>
 </div>
 
 
 > Deep Linking Service class
 
 
-[![travisci](https://img.shields.io/travis/cvmcosta/ltijs.svg)](https://travis-ci.org/Cvmcosta/ltijs)
+[![travisci](https://travis-ci.org/Cvmcosta/ltijs.svg?branch=master)](https://travis-ci.org/Cvmcosta/ltijs)
 [![codecov](https://codecov.io/gh/Cvmcosta/ltijs/branch/master/graph/badge.svg)](https://codecov.io/gh/Cvmcosta/ltijs)
 [![Node Version](https://img.shields.io/node/v/ltijs.svg)](https://www.npmjs.com/package/ltijs)
 [![NPM package](https://img.shields.io/npm/v/ltijs.svg)](https://www.npmjs.com/package/ltijs)
@@ -58,9 +59,9 @@ Whenever a platform makes a successfull deep linking launch to the tool, the dee
 
 ```javascript
 // Deep Linking callback
-lti.onDeepLinking((connection, request, response) => {
+lti.onDeepLinking((token, req, res) => {
   // Call redirect function to deep linking view
-  lti.redirect(response, '/deeplink')
+  lti.redirect(res, '/deeplink')
 })
 
 // Deep Linking route, displays the resource selection view
@@ -69,7 +70,7 @@ lti.app.get('/deeplink', async (req, res) => {
 })
 ```
 
-**Deep linking uses the same endpoint as regular launches**
+**Deep linking launches uses the same endpoint as regular launches.**
 
 
 #### Deep linking message
@@ -202,78 +203,32 @@ ex: 'resource_registration_failed'
 ### Example: 
 
 ```javascript
-const path = require('path')
+// Deep Linking callback
+lti.onDeepLinking((token, req, res) => {
+  // Displays the resource selection view
+  return res.sendFile(path.join(__dirname, '/public/resources.html'))
+})
 
-// Require Provider 
-const LTI = require('ltijs').Provider
+// Handles deep linking request generation with the selected resource
+lti.app.post('/deeplink', async (req, res) => {
+  const resource = req.body
 
-// Configure provider
-const lti = new LTI('EXAMPLEKEY', 
-            { url: 'mongodb://localhost/database' }, 
-            { appUrl: '/', loginUrl: '/login', logger: true })
-
-
-let setup = async () => {
-  // Deploy and open connection to the database
-  await lti.deploy({ port: 3000 })
-
-  // Register platform
-  let plat = await lti.registerPlatform({ 
-    url: 'https://platform.url',
-    name: 'Platform Name',
-    clientId: 'TOOLCLIENTID',
-    authenticationEndpoint: 'https://platform.url/auth',
-    accesstokenEndpoint: 'https://platform.url/token',
-    authConfig: { method: 'JWK_SET', key: 'https://platform.url/keyset' }
-  })
-
-  // Regular connection callback
-  lti.onConnect((connection, request, response) => {
-    // Call redirect function
-    lti.redirect(response, '/main')
-  })
-
-  // Main route 
-  lti.app.get('/main', (req, res) => {
-    // Id token
-    console.log(res.locals.token)
-    res.send('It\'s alive!')
-  })
-
-
-  // Deep Linking callback
-  lti.onDeepLinking((connection, request, response) => {
-    // Call redirect function to deep linking view
-    lti.redirect(response, '/deeplink')
-  })
-
-  // Deep Linking route, displays the resource selection view
-  lti.app.get('/deeplink', async (req, res) => {
-    return res.sendFile(path.join(__dirname, '/public/resources.html'))
-  })
-
-  // Handles deep linking request generation with the selected resource
-  lti.app.post('/deeplink', async (req, res) => {
-    const resource = req.body
-
-    const items = [
-      {
-        type: 'ltiResourceLink',
-        title: resource.title,
-        custom: {
-          resourceurl: resource.path,
-          resourcename: resource.title
-        }
+  const items = [
+    {
+      type: 'ltiResourceLink',
+      title: resource.title,
+      custom: {
+        resourceurl: resource.path,
+        resourcename: resource.title
       }
-    ]
+    }
+  ]
 
-    // Creates the deep linking request form
-    const form = await lti.DeepLinking.createDeepLinkingForm(res.locals.token, items, { message: 'Successfully registered resource!' })
+  // Creates the deep linking request form
+  const form = await lti.DeepLinking.createDeepLinkingForm(res.locals.token, items, { message: 'Successfully registered resource!' })
 
-    return res.send(form)
-  })
-}
-setup()
+  return res.send(form)
+})
 ```
 
 

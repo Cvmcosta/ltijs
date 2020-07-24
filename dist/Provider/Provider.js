@@ -25,7 +25,7 @@ const Platform = require('../Utils/Platform');
 
 const Auth = require('../Utils/Auth');
 
-const Mongodb = require('../Utils/Database');
+const DB = require('../Utils/Database');
 
 const Keyset = require('../Utils/Keyset');
 
@@ -37,96 +37,95 @@ const NamesAndRolesService = require('./Services/NamesAndRoles');
 
 const url = require('fast-url-parser');
 
-const _path = require('path');
-
 const jwt = require('jsonwebtoken');
-
-const winston = require('winston');
-
-const validUrl = require('valid-url');
-
-const crypto = require('crypto');
-
-const tldparser = require('tld-extract');
 
 const provAuthDebug = require('debug')('provider:auth');
 
 const provMainDebug = require('debug')('provider:main');
 /**
- * @descripttion Exposes methods for easy manipulation of the LTI 1.3 standard as a LTI Provider and a "server" object to manipulate the Express instance
+ * @descripttion LTI Provider Class that implements the LTI 1.3 protocol and services.
  */
 
 
-class Provider {
-  // Pre-initiated variables
-  // Assembles and sends keyset
+var _loginRoute = new WeakMap();
 
-  /**
-     * @description Exposes methods for easy manipualtion of the LTI 1.3 standard as a LTI Provider and a "server" object to manipulate the Express instance.
-     * @param {String} encryptionkey - Secret used to sign cookies and encrypt other info.
-     * @param {Object} database - The Database configurations to open and manage connection, uses MongoDB Driver.
-     * @param {String} [database.url] - Database Url (Ex: mongodb://localhost/applicationdb).
-     * @param {Object} [database.plugin] - If set, must be the Database object of the desired database plugin.
-     * @param {Object} [database.connection] - Database connection options (Ex: user, pass)
-     * @param {String} [database.connection.user] - Database user for authentication if needed.
-     * @param {String} [database.conenction.pass] - Database pass for authentication if needed.
-     * @param {Object} [options] - Lti Provider additional options,.
-     * @param {String} [options.appUrl = '/'] - Lti Provider main url. If no option is set '/' is used.
-     * @param {String} [options.loginUrl = '/login'] - Lti Provider login url. If no option is set '/login' is used.
-     * @param {String} [options.sessionTimeoutUrl = '/sessionTimeout'] - Lti Provider session timeout url. If no option is set '/sessionTimeout' is used.
-     * @param {String} [options.invalidTokenUrl = '/invalidToken'] - Lti Provider invalid token url. If no option is set '/invalidToken' is used.
-     * @param {String} [options.keysetUrl = '/keys'] - Lti Provider public jwk keyset url. If no option is set '/keys' is used.
-     * @param {Boolean} [options.https = false] - Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https and are planning to configure ssl locally. If you set this option as true you can enable the secure flag in the cookies options of the onConnect method.
-     * @param {Object} [options.ssl] - SSL certificate and key if https is enabled.
-     * @param {String} [options.ssl.key] - SSL key.
-     * @param {String} [options.ssl.cert] - SSL certificate.
-     * @param {String} [options.staticPath] - The path for the static files your application might serve (Ex: _dirname+"/public")
-     * @param {Boolean} [options.logger = false] - If true, allows Ltijs to generate logging files for server requests and errors.
-     * @param {Boolean} [options.cors = true] - If false, disables cors.
-     * @param {Function} [options.serverAddon] - Allows the execution of a method inside of the server contructor. Can be used to register middlewares.
-     * @param {Object} [options.cookies] - Cookie configuration. Allows you to configure, sameSite and secure parameters.
-     * @param {Boolean} [options.cookies.secure = false] - Cookie secure parameter. If true, only allows cookies to be passed over https.
-     * @param {String} [options.cookies.sameSite = 'Lax'] - Cookie sameSite parameter. If cookies are going to be set across domains, set this parameter to 'None'.
-     */
-  constructor(encryptionkey, database, options) {
-    _loginUrl.set(this, {
+var _appRoute = new WeakMap();
+
+var _sessionTimeoutRoute = new WeakMap();
+
+var _invalidTokenRoute = new WeakMap();
+
+var _keysetRoute = new WeakMap();
+
+var _whitelistedRoutes = new WeakMap();
+
+var _ENCRYPTIONKEY2 = new WeakMap();
+
+var _devMode = new WeakMap();
+
+var _tokenMaxAge = new WeakMap();
+
+var _cookieOptions = new WeakMap();
+
+var _setup = new WeakMap();
+
+var _connectCallback2 = new WeakMap();
+
+var _deepLinkingCallback2 = new WeakMap();
+
+var _sessionTimeoutCallback2 = new WeakMap();
+
+var _invalidTokenCallback2 = new WeakMap();
+
+var _keyset = new WeakMap();
+
+var _server = new WeakMap();
+
+class Provider {
+  constructor() {
+    _loginRoute.set(this, {
       writable: true,
       value: '/login'
     });
 
-    _appUrl.set(this, {
+    _appRoute.set(this, {
       writable: true,
       value: '/'
     });
 
-    _sessionTimeoutUrl.set(this, {
+    _sessionTimeoutRoute.set(this, {
       writable: true,
-      value: '/sessionTimeout'
+      value: '/sessiontimeout'
     });
 
-    _invalidTokenUrl.set(this, {
+    _invalidTokenRoute.set(this, {
       writable: true,
-      value: '/invalidToken'
+      value: '/invalidtoken'
     });
 
-    _keysetUrl.set(this, {
+    _keysetRoute.set(this, {
       writable: true,
       value: '/keys'
     });
 
-    _whitelistedUrls.set(this, {
+    _whitelistedRoutes.set(this, {
       writable: true,
       value: []
     });
 
-    _ENCRYPTIONKEY.set(this, {
+    _ENCRYPTIONKEY2.set(this, {
       writable: true,
       value: void 0
     });
 
-    _logger.set(this, {
+    _devMode.set(this, {
       writable: true,
       value: false
+    });
+
+    _tokenMaxAge.set(this, {
+      writable: true,
+      value: 10
     });
 
     _cookieOptions.set(this, {
@@ -138,31 +137,36 @@ class Provider {
       }
     });
 
+    _setup.set(this, {
+      writable: true,
+      value: false
+    });
+
     _connectCallback2.set(this, {
       writable: true,
-      value: (connection, req, res, next) => {
-        return res.send('It works!');
+      value: async (token, req, res, next) => {
+        return next();
       }
     });
 
     _deepLinkingCallback2.set(this, {
       writable: true,
-      value: (connection, req, res, next) => {
-        return res.send('Deep Linking works!');
+      value: async (token, req, res, next) => {
+        return next();
       }
     });
 
-    _sessionTimedOut.set(this, {
+    _sessionTimeoutCallback2.set(this, {
       writable: true,
-      value: (req, res) => {
-        return res.status(401).send('Token invalid or expired. Please reinitiate login.');
+      value: async (req, res) => {
+        return res.status(401).send('SESSION_TIMEOUT. Please reinitiate login.');
       }
     });
 
-    _invalidToken.set(this, {
+    _invalidTokenCallback2.set(this, {
       writable: true,
-      value: (req, res) => {
-        return res.status(401).send('Invalid token. Please reinitiate login.');
+      value: async (req, res) => {
+        return res.status(401).send('INVALID_TOKEN. Please reinitiate login.');
       }
     });
 
@@ -170,11 +174,11 @@ class Provider {
       writable: true,
       value: async (req, res) => {
         try {
-          const keyset = await Keyset.build(this.Database, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger));
+          const keyset = await Keyset.build(this.Database, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2));
           return res.status(200).send(keyset);
         } catch (err) {
-          provMainDebug(err.message);
-          return res.status(500).send(err.message);
+          provMainDebug(err);
+          res.sendStatus(500);
         }
       }
     });
@@ -183,73 +187,65 @@ class Provider {
       writable: true,
       value: void 0
     });
+  }
 
-    if (options && options.https && (!options.ssl || !options.ssl.key || !options.ssl.cert)) throw new Error('No ssl Key  or Certificate found for local https configuration.');
-    if (!encryptionkey) throw new Error('Encryptionkey parameter missing in options.');
-    if (!database) throw new Error('Missing database configurations.');
+  /**
+     * @description Provider configuration method.
+     * @param {String} encryptionkey - Secret used to sign cookies and encrypt other info.
+     * @param {Object} database - Database configuration.
+     * @param {String} database.url - Database Url (Ex: mongodb://localhost/applicationdb).
+     * @param {Object} [database.plugin] - If set, must be the Database object of the desired database plugin.
+     * @param {Boolean} [database.debug] - If set to true, enables mongoose debug mode.
+     * @param {Object} [database.connection] - MongoDB database connection options (Ex: user, pass)
+     * @param {String} [database.connection.user] - Database user for authentication if needed.
+     * @param {String} [database.conenction.pass] - Database pass for authentication if needed.
+     * @param {Object} [options] - Lti Provider options.
+     * @param {String} [options.appRoute = '/'] - Lti Provider main route. If no option is set '/' is used.
+     * @param {String} [options.loginRoute = '/login'] - Lti Provider login route. If no option is set '/login' is used.
+     * @param {String} [options.sessionTimeoutRoute = '/sessiontimeout'] - Lti Provider session timeout route. If no option is set '/sessiontimeout' is used.
+     * @param {String} [options.invalidTokenRoute = '/invalidtoken'] - Lti Provider invalid token route. If no option is set '/invalidtoken' is used.
+     * @param {String} [options.keysetRoute = '/keys'] - Lti Provider public jwk keyset route. If no option is set '/keys' is used.
+     * @param {Boolean} [options.https = false] - Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https and are planning to configure ssl through Express.
+     * @param {Object} [options.ssl] - SSL certificate and key if https is enabled.
+     * @param {String} [options.ssl.key] - SSL key.
+     * @param {String} [options.ssl.cert] - SSL certificate.
+     * @param {String} [options.staticPath] - The path for the static files your application might serve (Ex: _dirname+"/public")
+     * @param {Boolean} [options.cors = true] - If set to false, disables cors.
+     * @param {Function} [options.serverAddon] - Allows the execution of a method inside of the server contructor. Can be used to register middlewares.
+     * @param {Object} [options.cookies] - Cookie configuration. Allows you to configure, sameSite and secure parameters.
+     * @param {Boolean} [options.cookies.secure = false] - Cookie secure parameter. If true, only allows cookies to be passed over https.
+     * @param {String} [options.cookies.sameSite = 'Lax'] - Cookie sameSite parameter. If cookies are going to be set across domains, set this parameter to 'None'.
+     * @param {String} [options.cookies.domain] - Cookie domain parameter. This parameter can be used to specify a domain so that the cookies set by Ltijs can be shared between subdomains.
+     * @param {Boolean} [options.devMode = false] - If true, does not require state and session cookies to be present (If present, they are still validated). This allows ltijs to work on development environments where cookies cannot be set. THIS SHOULD NOT BE USED IN A PRODUCTION ENVIRONMENT.
+     * @param {Number} [options.tokenMaxAge = 10] - Sets the idToken max age allowed in seconds. Defaults to 10 seconds. If false, disables max age validation.
+     */
+  setup(encryptionkey, database, options) {
+    if ((0, _classPrivateFieldGet2.default)(this, _setup)) throw new Error('PROVIDER_ALREADY_SETUP');
+    if (options && options.https && (!options.ssl || !options.ssl.key || !options.ssl.cert)) throw new Error('MISSING_SSL_KEY_CERTIFICATE');
+    if (!encryptionkey) throw new Error('MISSING_ENCRYPTION_KEY');
+    if (!database) throw new Error('MISSING_DATABASE_CONFIGURATION');
     /**
      * @description Database object.
      */
 
     this.Database = null;
-    if (!database.plugin) this.Database = new Mongodb(database);else this.Database = database.plugin;
-    if (options && options.appUrl) (0, _classPrivateFieldSet2.default)(this, _appUrl, options.appUrl);
-    if (options && options.loginUrl) (0, _classPrivateFieldSet2.default)(this, _loginUrl, options.loginUrl);
-    if (options && options.sessionTimeoutUrl) (0, _classPrivateFieldSet2.default)(this, _sessionTimeoutUrl, options.sessionTimeoutUrl);
-    if (options && options.invalidTokenUrl) (0, _classPrivateFieldSet2.default)(this, _invalidTokenUrl, options.invalidTokenUrl);
-    if (options && options.keysetUrl) (0, _classPrivateFieldSet2.default)(this, _keysetUrl, options.keysetUrl); // Cookie options
+    if (!database.plugin) this.Database = new DB(database);else this.Database = database.plugin;
+    if (options && (options.appRoute || options.appUrl)) (0, _classPrivateFieldSet2.default)(this, _appRoute, options.appRoute || options.appUrl);
+    if (options && (options.loginRoute || options.loginUrl)) (0, _classPrivateFieldSet2.default)(this, _loginRoute, options.loginRoute || options.loginUrl);
+    if (options && (options.sessionTimeoutRoute || options.sessionTimeoutUrl)) (0, _classPrivateFieldSet2.default)(this, _sessionTimeoutRoute, options.sessionTimeoutRoute || options.sessionTimeoutUrl);
+    if (options && (options.invalidTokenRoute || options.invalidTokenUrl)) (0, _classPrivateFieldSet2.default)(this, _invalidTokenRoute, options.invalidTokenRoute || options.invalidTokenUrl);
+    if (options && (options.keysetRoute || options.keysetUrl)) (0, _classPrivateFieldSet2.default)(this, _keysetRoute, options.keysetRoute || options.keysetUrl);
+    if (options && options.devMode === true) (0, _classPrivateFieldSet2.default)(this, _devMode, true);
+    if (options && options.tokenMaxAge !== undefined) (0, _classPrivateFieldSet2.default)(this, _tokenMaxAge, options.tokenMaxAge); // Cookie options
 
     if (options && options.cookies) {
-      if (options.cookies.sameSite) {
-        (0, _classPrivateFieldGet2.default)(this, _cookieOptions).sameSite = options.cookies.sameSite;
-        if (options.cookies.sameSite.toLowerCase() === 'none') (0, _classPrivateFieldGet2.default)(this, _cookieOptions).secure = true;
-      }
-
       if (options.cookies.secure === true) (0, _classPrivateFieldGet2.default)(this, _cookieOptions).secure = true;
-    } // Setting up logger
-
-
-    let loggerServer = false;
-
-    if (options && options.logger) {
-      (0, _classPrivateFieldSet2.default)(this, _logger, winston.createLogger({
-        format: winston.format.combine(winston.format.timestamp(), winston.format.json(), winston.format.prettyPrint()),
-        transports: [new winston.transports.File({
-          filename: 'logs/ltijs_error.log',
-          level: 'error',
-          handleExceptions: true,
-          maxsize: 250000,
-          // 500kb (with two files)
-          maxFiles: 1,
-          colorize: false,
-          tailable: true
-        })],
-        exitOnError: false
-      })); // Server logger
-
-      loggerServer = winston.createLogger({
-        format: winston.format.combine(winston.format.timestamp(), winston.format.prettyPrint()),
-        transports: [new winston.transports.File({
-          filename: 'logs/ltijs_server.log',
-          handleExceptions: true,
-          json: true,
-          maxsize: 250000,
-          // 500kb (with two files)
-          maxFiles: 1,
-          colorize: false,
-          tailable: true
-        })],
-        exitOnError: false
-      });
-      loggerServer.stream = {
-        write: function (message) {
-          loggerServer.info(message);
-        }
-      };
+      if (options.cookies.sameSite) (0, _classPrivateFieldGet2.default)(this, _cookieOptions).sameSite = options.cookies.sameSite;
+      if (options.cookies.domain) (0, _classPrivateFieldGet2.default)(this, _cookieOptions).domain = options.cookies.domain;
     }
 
-    (0, _classPrivateFieldSet2.default)(this, _ENCRYPTIONKEY, encryptionkey);
-    (0, _classPrivateFieldSet2.default)(this, _server, new Server(options ? options.https : false, options ? options.ssl : false, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), loggerServer, options ? options.cors : true, options ? options.serverAddon : false));
+    (0, _classPrivateFieldSet2.default)(this, _ENCRYPTIONKEY2, encryptionkey);
+    (0, _classPrivateFieldSet2.default)(this, _server, new Server(options ? options.https : false, options ? options.ssl : false, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), options ? options.cors : true, options ? options.serverAddon : false));
     /**
      * @description Express server object.
      */
@@ -259,23 +255,23 @@ class Provider {
      * @description Grading service.
      */
 
-    this.Grade = new GradeService(this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger), this.Database);
+    this.Grade = new GradeService(this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), this.Database);
     /**
      * @description Deep Linking service.
      */
 
-    this.DeepLinking = new DeepLinkingService(this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger), this.Database);
+    this.DeepLinking = new DeepLinkingService(this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), this.Database);
     /**
      * @description Names and Roles service.
      */
 
-    this.NamesAndRoles = new NamesAndRolesService(this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger), this.Database);
+    this.NamesAndRoles = new NamesAndRolesService(this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), this.Database);
     if (options && options.staticPath) (0, _classPrivateFieldGet2.default)(this, _server).setStaticPath(options.staticPath); // Registers main athentication and routing middleware
 
     const sessionValidator = async (req, res, next) => {
       provMainDebug('Receiving request at path: ' + req.baseUrl + req.path); // Ckeck if request is attempting to initiate oidc login flow or access reserved or whitelisted routes
 
-      if (req.path === (0, _classPrivateFieldGet2.default)(this, _loginUrl) || req.path === (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl) || req.path === (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl) || req.path === (0, _classPrivateFieldGet2.default)(this, _keysetUrl)) return next();
+      if (req.path === (0, _classPrivateFieldGet2.default)(this, _loginRoute) || req.path === (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutRoute) || req.path === (0, _classPrivateFieldGet2.default)(this, _invalidTokenRoute) || req.path === (0, _classPrivateFieldGet2.default)(this, _keysetRoute)) return next();
       provMainDebug('Path does not match reserved endpoints');
 
       try {
@@ -289,41 +285,31 @@ class Provider {
         if (!ltik) {
           const idtoken = req.body.id_token;
 
-          if (req.path === (0, _classPrivateFieldGet2.default)(this, _appUrl) && idtoken) {
+          if (idtoken) {
             // No ltik found but request contains an idtoken
-            provMainDebug('Received idtoken for validation');
-            const decoded = jwt.decode(idtoken, {
-              complete: true
-            });
-            if (!decoded) throw new Error('Invalid JWT received'); // Rettrieves state
+            provMainDebug('Received idtoken for validation'); // Retrieves state
 
             const state = req.body.state; // Retrieving validation parameters from cookies
 
-            let validationInfo = await this.Database.Get(false, 'validation', {
-              state: state
-            });
-            validationInfo = validationInfo[0];
+            provAuthDebug('Response state: ' + state);
+            const validationCookie = cookies['state' + state];
             const validationParameters = {
-              state: validationInfo ? validationInfo.state : false,
-              iss: validationInfo ? validationInfo.iss : false
+              iss: validationCookie,
+              maxAge: (0, _classPrivateFieldGet2.default)(this, _tokenMaxAge)
             };
-            const valid = await Auth.validateToken(idtoken, decoded, state, validationParameters, this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger), this.Database); // Deleting validation info
+            const valid = await Auth.validateToken(idtoken, (0, _classPrivateFieldGet2.default)(this, _devMode), validationParameters, this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), this.Database); // Deletes state validation cookie
 
-            await this.Database.Delete('validation', {
-              state: state
-            });
+            res.clearCookie('state' + state, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
             provAuthDebug('Successfully validated token!');
-            const issuerCode = 'plat' + encodeURIComponent(Buffer.from(valid.iss).toString('base64'));
             const courseId = valid['https://purl.imsglobal.org/spec/lti/claim/context'] ? valid['https://purl.imsglobal.org/spec/lti/claim/context'].id : 'NF';
-            const resourseId = valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'] ? valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'].id : 'NF';
-            const activityId = courseId + '_' + resourseId;
-
-            const contextPath = _path.join(issuerCode, (0, _classPrivateFieldGet2.default)(this, _appUrl), activityId); // Mount platform token
-
+            const resourceId = valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'] ? valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'].id : 'NF';
+            const clientId = valid.clientId;
+            const deploymentId = valid['https://purl.imsglobal.org/spec/lti/claim/deployment_id'];
+            const contextId = encodeURIComponent(valid.iss + clientId + deploymentId + courseId + '_' + resourceId);
+            const platformCode = encodeURIComponent('lti' + Buffer.from(valid.iss + clientId + deploymentId).toString('base64')); // Mount platform token
 
             const platformToken = {
               iss: valid.iss,
-              issuerCode: issuerCode,
               user: valid.sub,
               roles: valid['https://purl.imsglobal.org/spec/lti/claim/roles'],
               userInfo: {
@@ -333,20 +319,24 @@ class Provider {
                 email: valid.email
               },
               platformInfo: valid['https://purl.imsglobal.org/spec/lti/claim/tool_platform'],
+              clientId: valid.clientId,
+              deploymentId: valid['https://purl.imsglobal.org/spec/lti/claim/deployment_id'],
               lis: valid['https://purl.imsglobal.org/spec/lti/claim/lis'],
               endpoint: valid['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint'],
               namesRoles: valid['https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice']
             }; // Store idToken in database
 
-            if (await this.Database.Delete('idtoken', {
-              issuerCode: issuerCode,
-              user: platformToken.user
-            })) await this.Database.Insert(false, 'idtoken', platformToken); // Mount context token
+            await this.Database.Replace(false, 'idtoken', {
+              iss: valid.iss,
+              clientId: clientId,
+              deploymentId: deploymentId,
+              user: valid.sub
+            }, platformToken); // Mount context token
 
             const contextToken = {
-              path: contextPath,
+              contextId: contextId,
+              path: req.path,
               user: valid.sub,
-              deploymentId: valid['https://purl.imsglobal.org/spec/lti/claim/deployment_id'],
               targetLinkUri: valid['https://purl.imsglobal.org/spec/lti/claim/target_link_uri'],
               context: valid['https://purl.imsglobal.org/spec/lti/claim/context'],
               resource: valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'],
@@ -357,29 +347,42 @@ class Provider {
               deepLinkingSettings: valid['https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings']
             }; // Store contextToken in database
 
-            if (await this.Database.Delete('contexttoken', {
-              path: contextPath,
-              user: contextToken.user
-            })) await this.Database.Insert(false, 'contexttoken', contextToken);
-            res.cookie(contextPath, platformToken.user, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
-            provMainDebug('Generating LTIK and redirecting to main endpoint');
+            await this.Database.Replace(false, 'contexttoken', {
+              contextId: contextId,
+              user: valid.sub
+            }, contextToken); // Creates platform session cookie
+
+            res.cookie(platformCode, valid.sub, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
+            provMainDebug('Generating LTIK and redirecting to endpoint');
             const newLtikObj = {
-              issuer: issuerCode,
-              path: (0, _classPrivateFieldGet2.default)(this, _appUrl),
-              activityId: activityId
+              platformUrl: valid.iss,
+              clientId: clientId,
+              deploymentId: deploymentId,
+              platformCode: platformCode,
+              contextId: contextId,
+              user: valid.sub,
+              s: state // Added state to make unique ltiks
+
             }; // Signing context token
 
-            const newLtik = jwt.sign(newLtikObj, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
-            return res.redirect(307, req.baseUrl + (0, _classPrivateFieldGet2.default)(this, _appUrl) + '?ltik=' + newLtik);
+            const newLtik = jwt.sign(newLtikObj, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2));
+            const query = new URLSearchParams(req.query);
+            query.append('ltik', newLtik);
+            const urlSearchParams = query.toString();
+            return res.redirect(req.baseUrl + req.path + '?' + urlSearchParams);
           } else {
-            if ((0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(req.path) !== -1 || (0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(req.path + '-method-' + req.method.toUpperCase()) !== -1) {
-              provMainDebug('Accessing as whitelisted URL');
+            if ((0, _classPrivateFieldGet2.default)(this, _whitelistedRoutes).find(r => {
+              if (r.route instanceof RegExp && r.route.test(req.path) || r.route === req.path) return r.method === 'ALL' || r.method === req.method.toUpperCase();
+              return false;
+            })) {
+              provMainDebug('Accessing as whitelisted route');
               return next();
             }
 
             provMainDebug('No LTIK found');
             provMainDebug('Request body: ', req.body);
-            return res.redirect(req.baseUrl + (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl));
+            provMainDebug('Passing request to invalid token handler');
+            return res.redirect(req.baseUrl + (0, _classPrivateFieldGet2.default)(this, _invalidTokenRoute));
           }
         }
 
@@ -387,10 +390,13 @@ class Provider {
         let validLtik;
 
         try {
-          validLtik = jwt.verify(ltik, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
+          validLtik = jwt.verify(ltik, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2));
         } catch (err) {
-          if ((0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(req.path) !== -1 || (0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(req.path + '-method-' + req.method.toUpperCase()) !== -1) {
-            provMainDebug('Accessing as whitelisted URL');
+          if ((0, _classPrivateFieldGet2.default)(this, _whitelistedRoutes).find(r => {
+            if (r.route instanceof RegExp && r.route.test(req.path) || r.route === req.path) return r.method === 'ALL' || r.method === req.method.toUpperCase();
+            return false;
+          })) {
+            provMainDebug('Accessing as whitelisted route');
             return next();
           }
 
@@ -398,121 +404,114 @@ class Provider {
         }
 
         provMainDebug('LTIK successfully verified');
-        let user = false;
-        const issuerCode = validLtik.issuer;
-
-        const contextPath = _path.join(issuerCode, validLtik.path, validLtik.activityId); // Matches path to cookie
-
-
+        const platformUrl = validLtik.platformUrl;
+        const platformCode = validLtik.platformCode;
+        const clientId = validLtik.clientId;
+        const deploymentId = validLtik.deploymentId;
+        const contextId = validLtik.contextId;
+        let user = validLtik.user;
         provMainDebug('Attempting to retrieve matching session cookie');
-        let contextTokenName;
+        const cookieUser = cookies[platformCode];
 
-        for (const key of Object.keys(cookies).sort((a, b) => b.length - a.length)) {
-          if (contextPath.indexOf(key) !== -1) {
-            user = cookies[key];
-            contextTokenName = key;
-            break;
+        if (!cookieUser) {
+          if (!(0, _classPrivateFieldGet2.default)(this, _devMode)) user = false;else {
+            provMainDebug('Dev Mode enabled: Missing session cookies will be ignored');
           }
-        } // Check if user already has session cookie stored in its browser
-
+        } else if (user.toString() !== cookieUser.toString()) user = false;
 
         if (user) {
-          provAuthDebug('Session cookie found'); // Gets correspondent id token from database
+          provAuthDebug('Valid session found'); // Gets corresponding id token from database
 
           let idToken = await this.Database.Get(false, 'idtoken', {
-            issuerCode: issuerCode,
+            iss: platformUrl,
+            clientId: clientId,
+            deploymentId: deploymentId,
             user: user
           });
-          if (!idToken) throw new Error('No id token found in database');
+          if (!idToken) throw new Error('IDTOKEN_NOT_FOUND_DB');
           idToken = idToken[0]; // Gets correspondent context token from database
 
           let contextToken = await this.Database.Get(false, 'contexttoken', {
-            path: contextTokenName,
+            contextId: contextId,
             user: user
           });
-          if (!contextToken) throw new Error('No context token found in database');
+          if (!contextToken) throw new Error('CONTEXTTOKEN_NOT_FOUND_DB');
           contextToken = contextToken[0];
           idToken.platformContext = contextToken; // Creating local variables
 
           res.locals.context = contextToken;
           res.locals.token = idToken;
+          res.locals.ltik = ltik;
           provMainDebug('Passing request to next handler');
           return next();
         } else {
           provMainDebug('No session cookie found');
           provMainDebug('Request body: ', req.body);
-          if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
-            level: 'error',
-            message: req.body
-          });
           provMainDebug('Passing request to session timeout handler');
-          return res.redirect(req.baseUrl + (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl));
+          return res.redirect(req.baseUrl + (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutRoute));
         }
       } catch (err) {
-        provAuthDebug(err.message);
-        if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
-          level: 'error',
-          message: 'Message: ' + err.message + '\nStack: ' + err.stack
-        });
+        provAuthDebug(err);
         provMainDebug('Passing request to invalid token handler');
-        return res.redirect(req.baseUrl + (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl));
+        return res.redirect(req.baseUrl + (0, _classPrivateFieldGet2.default)(this, _invalidTokenRoute));
       }
     };
 
     this.app.use(sessionValidator);
-    this.app.all((0, _classPrivateFieldGet2.default)(this, _loginUrl), async (req, res) => {
-      const params = _objectSpread({}, req.query, {}, req.body);
+    this.app.all((0, _classPrivateFieldGet2.default)(this, _loginRoute), async (req, res) => {
+      const params = _objectSpread(_objectSpread({}, req.query), req.body);
 
       try {
+        if (!params.iss || !params.login_hint || !params.target_link_uri) return res.status(401).send('MISSING_PARAMETERS');
         const iss = params.iss;
         provMainDebug('Receiving a login request from: ' + iss);
-        const platform = await this.getPlatform(iss);
+        let platform;
+        if (params.client_id) platform = await this.getPlatform(iss, params.client_id);else platform = (await this.getPlatform(iss))[0];
 
         if (platform) {
           provMainDebug('Redirecting to platform authentication endpoint'); // Create state parameter used to validade authentication response
 
-          const state = encodeURIComponent(crypto.randomBytes(8).toString('hex'));
+          const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``);
           provMainDebug('Generated state: ', state); // Setting up validation info
 
-          await this.Database.Insert(false, 'validation', {
-            state: state,
-            iss: iss
-          }); // Redirect to authentication endpoint
+          const cookieOptions = JSON.parse(JSON.stringify((0, _classPrivateFieldGet2.default)(this, _cookieOptions)));
+          cookieOptions.maxAge = 60 * 1000; // Adding max age to state cookie = 1min
+
+          res.cookie('state' + state, iss, cookieOptions); // Redirect to authentication endpoint
 
           const query = await Request.ltiAdvantageLogin(params, platform, state);
-          provMainDebug('Login request: ', query);
+          provMainDebug('Login request: ');
+          provMainDebug(query);
           res.redirect(url.format({
             pathname: await platform.platformAuthEndpoint(),
             query: query
           }));
         } else {
           provMainDebug('Unregistered platform attempting connection: ' + iss);
-          return res.status(401).send('Unregistered platform.');
+          return res.status(401).send('UNREGISTERED_PLATFORM');
         }
       } catch (err) {
         provAuthDebug(err);
-        if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
-          level: 'error',
-          message: 'Message: ' + err.message + '\nStack: ' + err.stack
-        });
-        return res.status(400).send('Bad Request.');
+        res.sendStatus(400);
       }
-    }); // Session timeout, invalid token and keyset urls
+    }); // Session timeout, invalid token and keyset methods
 
-    this.app.all((0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl), async (req, res, next) => {
-      (0, _classPrivateFieldGet2.default)(this, _sessionTimedOut).call(this, req, res, next);
+    this.app.all((0, _classPrivateFieldGet2.default)(this, _sessionTimeoutRoute), async (req, res, next) => {
+      (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutCallback2).call(this, req, res, next);
     });
-    this.app.all((0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl), async (req, res, next) => {
-      (0, _classPrivateFieldGet2.default)(this, _invalidToken).call(this, req, res, next);
+    this.app.all((0, _classPrivateFieldGet2.default)(this, _invalidTokenRoute), async (req, res, next) => {
+      (0, _classPrivateFieldGet2.default)(this, _invalidTokenCallback2).call(this, req, res, next);
     });
-    this.app.get((0, _classPrivateFieldGet2.default)(this, _keysetUrl), async (req, res, next) => {
+    this.app.get((0, _classPrivateFieldGet2.default)(this, _keysetRoute), async (req, res, next) => {
       (0, _classPrivateFieldGet2.default)(this, _keyset).call(this, req, res, next);
     }); // Main app
 
-    this.app.all((0, _classPrivateFieldGet2.default)(this, _appUrl), async (req, res, next) => {
-      if (res.locals.context.messageType === 'LtiDeepLinkingRequest') return (0, _classPrivateFieldGet2.default)(this, _deepLinkingCallback2).call(this, res.locals.token, req, res, next);
+    this.app.all((0, _classPrivateFieldGet2.default)(this, _appRoute), async (req, res, next) => {
+      if (res.locals.context && res.locals.context.messageType === 'LtiDeepLinkingRequest') return (0, _classPrivateFieldGet2.default)(this, _deepLinkingCallback2).call(this, res.locals.token, req, res, next);
       return (0, _classPrivateFieldGet2.default)(this, _connectCallback2).call(this, res.locals.token, req, res, next);
     });
+    (0, _classPrivateFieldSet2.default)(this, _setup, true);
+    return this;
   }
   /**
      * @description Starts listening to a given port for LTI requests and opens connection to the database.
@@ -520,11 +519,12 @@ class Provider {
      * @param {Number} [options.port] - Deployment port. 3000 by default.
      * @param {Boolean} [options.silent] - If true, disables initial startup message.
      * @param {Boolean} [options.serverless] - If true, Ltijs does not start an Express server instance. This allows usage as a middleware and with services like AWS. Ignores 'port' parameter.
-     * @returns {Promise<true| false>}
+     * @returns {Promise<true>}
      */
 
 
   async deploy(options) {
+    if (!(0, _classPrivateFieldGet2.default)(this, _setup)) throw new Error('PROVIDER_NOT_SETUP');
     provMainDebug('Attempting to connect to database');
 
     try {
@@ -536,16 +536,17 @@ class Provider {
       if (options && options.port) conf.port = options.port;
       if (options && options.silent) conf.silent = options.silent; // Starts server on given port
 
-      if (options && options.serverless) console.log('Ltijs started in experimental serverless mode!');else {
+      if (options && options.serverless) console.log('Ltijs started in serverless mode...');else {
         await (0, _classPrivateFieldGet2.default)(this, _server).listen(conf.port);
         provMainDebug('Ltijs started listening on port: ', conf.port); // Startup message
 
-        const message = 'LTI Provider is listening on port ' + conf.port + '!\n\n LTI provider config: \n >App Url: ' + (0, _classPrivateFieldGet2.default)(this, _appUrl) + '\n >Initiate login URL: ' + (0, _classPrivateFieldGet2.default)(this, _loginUrl) + '\n >Keyset Url: ' + (0, _classPrivateFieldGet2.default)(this, _keysetUrl) + '\n >Session Timeout Url: ' + (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl) + '\n >Invalid Token Url: ' + (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl);
+        const message = 'LTI Provider is listening on port ' + conf.port + '!\n\n LTI provider config: \n >App Route: ' + (0, _classPrivateFieldGet2.default)(this, _appRoute) + '\n >Initiate Login Route: ' + (0, _classPrivateFieldGet2.default)(this, _loginRoute) + '\n >Keyset Route: ' + (0, _classPrivateFieldGet2.default)(this, _keysetRoute) + '\n >Session Timeout Route: ' + (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutRoute) + '\n >Invalid Token Route: ' + (0, _classPrivateFieldGet2.default)(this, _invalidTokenRoute);
 
         if (!conf.silent) {
           console.log('  _   _______ _____       _  _____\n' + ' | | |__   __|_   _|     | |/ ____|\n' + ' | |    | |    | |       | | (___  \n' + ' | |    | |    | |   _   | |\\___ \\ \n' + ' | |____| |   _| |_ | |__| |____) |\n' + ' |______|_|  |_____(_)____/|_____/ \n\n', message);
         }
-      } // Sets up gracefull shutdown
+      }
+      if ((0, _classPrivateFieldGet2.default)(this, _devMode) && !conf.silent) console.log('\nStarting in Dev Mode, state validation and session cookies will not be required. THIS SHOULD NOT BE USED IN A PRODUCTION ENVIRONMENT!'); // Sets up gracefull shutdown
 
       process.on('SIGINT', async () => {
         await this.close(options);
@@ -553,61 +554,49 @@ class Provider {
       });
       return true;
     } catch (err) {
-      console.log('Error deploying server:', err.message);
-      if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
-        level: 'error',
-        message: 'Message: ' + err.message + '\nStack: ' + err.stack
-      });
+      console.log('Error during deployment: ', err);
       await this.close(options);
       process.exit();
     }
   }
   /**
    * @description Closes connection to database and stops server.
-   * @returns {Promise<true | false>}
+   * @param {Object} [options] - Deployment options.
+   * @param {Boolean} [options.silent] - If true, disables messages.
+   * @returns {Promise<true>}
    */
 
 
   async close(options) {
-    try {
-      if (!options || options.silent !== true) console.log('\nClosing server...');
-      await (0, _classPrivateFieldGet2.default)(this, _server).close();
-      if (!options || options.silent !== true) console.log('Closing connection to the database...');
-      await this.Database.Close();
-      if (!options || options.silent !== true) console.log('Shutdown complete.');
-      return true;
-    } catch (err) {
-      provMainDebug(err.message);
-      if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
-        level: 'error',
-        message: 'Message: ' + err.message + '\nStack: ' + err.stack
-      });
-      return false;
-    }
+    if (!options || options.silent !== true) console.log('\nClosing server...');
+    await (0, _classPrivateFieldGet2.default)(this, _server).close();
+    if (!options || options.silent !== true) console.log('Closing connection to the database...');
+    await this.Database.Close();
+    if (!options || options.silent !== true) console.log('Shutdown complete.');
+    return true;
   }
   /**
-     * @description Sets the callback function called whenever theres a sucessfull connection, exposing a Conection object containing the id_token decoded parameters.
-     * @param {Function} _connectCallback - Function that is going to be called everytime a platform sucessfully connects to the provider.
-     * @param {Object} [options] - Options configuring the usage of cookies to pass the Id Token data to the client.
-     * @param {Boolean} [options.secure = false] - Secure property of the cookie.
-     * @param {String} [options.sameSite = 'Lax'] - sameSite property of the cookie.
-     * @param {Function} [options.sessionTimeout] - Route function executed everytime the session expires. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}).
-     * @param {Function} [options.invalidToken] - Route function executed everytime the system receives an invalid token or cookie. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}).
-     * @example .onConnect((conection, request, response)=>{response.send(connection)}, {secure: true})
+     * @description Sets the callback function called whenever there's a sucessfull lti 1.3 launch, exposing a "token" object containing the idtoken information.
+     * @param {Function} _connectCallback - Callback function called everytime a platform sucessfully launches to the provider.
+     * @example .onConnect((token, request, response)=>{response.send('OK')})
      * @returns {true}
      */
 
 
   onConnect(_connectCallback, options) {
+    /* istanbul ignore next */
     if (options) {
+      if (options.sameSite || options.secure) console.log('Deprecation Warning: The optional parameters of the onConnect() method are now deprecated and will be removed in the 6.0 release. Cookie parameters can be found in the main Ltijs constructor options: ... { cookies: { secure: true, sameSite: \'None\' }.');
+      if (options.sessionTimeout || options.invalidToken) console.log('Deprecation Warning: The optional parameters of the onConnect() method are now deprecated and will be removed in the 6.0 release. Invalid token and Session Timeout methods can now be set with the onSessionTimeout() and onInvalidToken() methods.');
+
       if (options.sameSite) {
         (0, _classPrivateFieldGet2.default)(this, _cookieOptions).sameSite = options.sameSite;
         if (options.sameSite.toLowerCase() === 'none') (0, _classPrivateFieldGet2.default)(this, _cookieOptions).secure = true;
       }
 
       if (options.secure === true) (0, _classPrivateFieldGet2.default)(this, _cookieOptions).secure = true;
-      if (options.sessionTimeout) (0, _classPrivateFieldSet2.default)(this, _sessionTimedOut, options.sessionTimeout);
-      if (options.invalidToken) (0, _classPrivateFieldSet2.default)(this, _invalidToken, options.invalidToken);
+      if (options.sessionTimeout) (0, _classPrivateFieldSet2.default)(this, _sessionTimeoutCallback2, options.sessionTimeout);
+      if (options.invalidToken) (0, _classPrivateFieldSet2.default)(this, _invalidTokenCallback2, options.invalidToken);
     }
 
     if (_connectCallback) {
@@ -615,105 +604,127 @@ class Provider {
       return true;
     }
 
-    throw new Error('Missing callback');
+    throw new Error('MISSING_CALLBACK');
   }
   /**
-     * @description Sets the callback function called whenever theres a sucessfull deep linking request, exposing a Conection object containing the id_token decoded parameters.
-     * @param {Function} _deepLinkingCallback - Function that is going to be called everytime a platform sucessfully launches a deep linking request.
-     * @param {Object} [options] - Options configuring the usage of cookies to pass the Id Token data to the client.
-     * @param {Boolean} [options.secure = false] - Secure property of the cookie.
-     * @param {String} [options.sameSite = 'Lax'] - sameSite property of the cookie.
-     * @param {Function} [options.sessionTimeout] - Route function executed everytime the session expires. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}).
-     * @param {Function} [options.invalidToken] - Route function executed everytime the system receives an invalid token or cookie. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}).
-     * @example .onDeepLinking((conection, request, response)=>{response.send(connection)}, {secure: true})
-     * @returns {true}
-     */
+   * @description Sets the callback function called whenever there's a sucessfull deep linking launch, exposing a "token" object containing the idtoken information.
+   * @param {Function} _deepLinkingCallback - Callback function called everytime a platform sucessfully launches a deep linking request.
+   * @example .onDeepLinking((token, request, response)=>{response.send('OK')})
+   * @returns {true}
+   */
 
 
-  onDeepLinking(_deepLinkingCallback, options) {
-    if (options) {
-      if (options.sameSite) {
-        (0, _classPrivateFieldGet2.default)(this, _cookieOptions).sameSite = options.sameSite;
-        if (options.sameSite.toLowerCase() === 'none') (0, _classPrivateFieldGet2.default)(this, _cookieOptions).secure = true;
-      }
-
-      if (options.secure === true) (0, _classPrivateFieldGet2.default)(this, _cookieOptions).secure = true;
-      if (options.sessionTimeout) (0, _classPrivateFieldSet2.default)(this, _sessionTimedOut, options.sessionTimeout);
-      if (options.invalidToken) (0, _classPrivateFieldSet2.default)(this, _invalidToken, options.invalidToken);
-    }
-
+  onDeepLinking(_deepLinkingCallback) {
     if (_deepLinkingCallback) {
       (0, _classPrivateFieldSet2.default)(this, _deepLinkingCallback2, _deepLinkingCallback);
       return true;
     }
 
-    throw new Error('Missing callback');
+    throw new Error('MISSING_CALLBACK');
   }
   /**
-   * @description Gets the login Url responsible for dealing with the OIDC login flow.
-   * @returns {String}
+   * @description Sets the callback function called when no valid session is found during a request validation.
+   * @param {Function} _sessionTimeoutCallback - Callback method.
+   * @example .onSessionTimeout((request, response)=>{response.send('Session timeout')})
+   * @returns {true}
    */
 
 
-  loginUrl() {
-    return (0, _classPrivateFieldGet2.default)(this, _loginUrl);
-  }
-  /**
-   * @description Gets the main application Url that will receive the final decoded Idtoken.
-   * @returns {String}
-   */
-
-
-  appUrl() {
-    return (0, _classPrivateFieldGet2.default)(this, _appUrl);
-  }
-  /**
-     * @description Gets the session timeout Url that will be called whenever the system encounters a session timeout.
-     * @returns {String}
-     */
-
-
-  sessionTimeoutUrl() {
-    return (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutUrl);
-  }
-  /**
-     * @description Gets the invalid token Url that will be called whenever the system encounters a invalid token or cookie.
-     * @returns {String}
-     */
-
-
-  invalidTokenUrl() {
-    return (0, _classPrivateFieldGet2.default)(this, _invalidTokenUrl);
-  }
-  /**
-     * @description Gets the keyset Url that will be used to retrieve a public jwk keyset.
-     * @returns {String}
-     */
-
-
-  keysetUrl() {
-    return (0, _classPrivateFieldGet2.default)(this, _keysetUrl);
-  }
-  /**
-   * @description Whitelists Urls to bypass the lti 1.3 authentication protocol. These Url dont have access to a idtoken
-   * @param {String} urls - Urls to be whitelisted
-   */
-
-
-  whitelist(...urls) {
-    if (!urls) throw new Error('No url passed.');
-    const formattedUrls = [];
-
-    for (const url of urls) {
-      const isObject = url === Object(url);
-
-      if (isObject) {
-        if (!url.route || !url.method) throw new Error('Wrong object format on route. Expects string ("/route") or object ({ route: "/route", method: "POST" })');
-        formattedUrls.push(url.route + '-method-' + url.method.toUpperCase());
-      } else formattedUrls.push(url);
+  onSessionTimeout(_sessionTimeoutCallback) {
+    if (_sessionTimeoutCallback) {
+      (0, _classPrivateFieldSet2.default)(this, _sessionTimeoutCallback2, _sessionTimeoutCallback);
+      return true;
     }
 
-    (0, _classPrivateFieldSet2.default)(this, _whitelistedUrls, formattedUrls);
+    throw new Error('MISSING_CALLBACK');
+  }
+  /**
+   * @description Sets the callback function called when the token received fails to be validated.
+   * @param {Function} _invalidTokenCallback - Callback method.
+   * @example .onInvalidToken((request, response)=>{response.send('Invalid token')})
+   * @returns {true}
+   */
+
+
+  onInvalidToken(_invalidTokenCallback) {
+    if (_invalidTokenCallback) {
+      (0, _classPrivateFieldSet2.default)(this, _invalidTokenCallback2, _invalidTokenCallback);
+      return true;
+    }
+
+    throw new Error('MISSING_CALLBACK');
+  }
+  /**
+   * @description Gets the main application route that will receive the final decoded Idtoken at the end of a successful launch.
+   * @returns {String}
+   */
+
+
+  appRoute() {
+    return (0, _classPrivateFieldGet2.default)(this, _appRoute);
+  }
+  /**
+   * @description Gets the login route responsible for dealing with the OIDC login flow.
+   * @returns {String}
+   */
+
+
+  loginRoute() {
+    return (0, _classPrivateFieldGet2.default)(this, _loginRoute);
+  }
+  /**
+     * @description Gets the session timeout route that will be called whenever the system encounters a session timeout.
+     * @returns {String}
+     */
+
+
+  sessionTimeoutRoute() {
+    return (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutRoute);
+  }
+  /**
+     * @description Gets the invalid token route that will be called whenever the system encounters a invalid token or cookie.
+     * @returns {String}
+     */
+
+
+  invalidTokenRoute() {
+    return (0, _classPrivateFieldGet2.default)(this, _invalidTokenRoute);
+  }
+  /**
+     * @description Gets the keyset route that will be used to retrieve a public jwk keyset.
+     * @returns {String}
+     */
+
+
+  keysetRoute() {
+    return (0, _classPrivateFieldGet2.default)(this, _keysetRoute);
+  }
+  /**
+   * @description Whitelists routes to bypass the Ltijs authentication protocol. If validation fails, these routes are still accessed but aren't given an idToken.
+   * @param {String} routes - Routes to be whitelisted
+   */
+
+
+  whitelist(...routes) {
+    if (!routes) throw new Error('MISSING_ROUTES');
+    const formattedRoutes = [];
+
+    for (const route of routes) {
+      const isObject = !(route instanceof RegExp) && route === Object(route);
+
+      if (isObject) {
+        if (!route.route || !route.method) throw new Error('WRONG_FORMAT. Details: Expects string ("/route") or object ({ route: "/route", method: "POST" })');
+        formattedRoutes.push({
+          route: route.route,
+          method: route.method.toUpperCase()
+        });
+      } else formattedRoutes.push({
+        route: route,
+        method: 'ALL'
+      });
+    }
+
+    (0, _classPrivateFieldSet2.default)(this, _whitelistedRoutes, formattedRoutes);
     return true;
   }
   /**
@@ -727,24 +738,32 @@ class Provider {
      * @param {object} platform.authConfig - Authentication method and key for verifying messages from the platform. {method: "RSA_KEY", key:"PUBLIC KEY..."}
      * @param {String} platform.authConfig.method - Method of authorization "RSA_KEY" or "JWK_KEY" or "JWK_SET".
      * @param {String} platform.authConfig.key - Either the RSA public key provided by the platform, or the JWK key, or the JWK keyset address.
-     * @returns {Promise<Platform|false>}
+     * @returns {Promise<Platform>}
      */
 
 
   async registerPlatform(platform) {
-    if (!platform || !platform.url) throw new Error('Error. Missing platform Url.');
+    if (!platform || !platform.url || !platform.clientId) throw new Error('MISSING_PLATFORM_URL_OR_CLIENTID');
     let kid;
 
-    try {
-      const _platform = await this.getPlatform(platform.url);
+    const _platform = await this.getPlatform(platform.url, platform.clientId);
 
-      if (!_platform) {
-        if (!platform.name || !platform.clientId || !platform.authenticationEndpoint || !platform.accesstokenEndpoint || !platform.authConfig) throw new Error('Error registering platform. Missing arguments.');
-        kid = await Auth.generateProviderKeyPair((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), this.Database);
-        const plat = new Platform(platform.name, platform.url, platform.clientId, platform.authenticationEndpoint, platform.accesstokenEndpoint, kid, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), platform.authConfig, (0, _classPrivateFieldGet2.default)(this, _logger), this.Database); // Save platform to db
+    if (!_platform) {
+      if (!platform.name || !platform.authenticationEndpoint || !platform.accesstokenEndpoint || !platform.authConfig) throw new Error('MISSING_PARAMS');
+      if (platform.authConfig.method !== 'RSA_KEY' && platform.authConfig.method !== 'JWK_KEY' && platform.authConfig.method !== 'JWK_SET') throw new Error('INVALID_AUTHCONFIG_METHOD. Details: Valid methods are "RSA_KEY", "JWK_KEY", "JWK_SET".');
+      if (!platform.authConfig.key) throw new Error('MISSING_AUTHCONFIG_KEY');
 
-        provMainDebug('Registering new platform: ' + platform.url);
-        await this.Database.Insert(false, 'platform', {
+      try {
+        kid = await Auth.generatePlatformKeyPair((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), this.Database, platform.url, platform.clientId);
+        const plat = new Platform(platform.name, platform.url, platform.clientId, platform.authenticationEndpoint, platform.accesstokenEndpoint, kid, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), platform.authConfig, this.Database); // Save platform to db
+
+        provMainDebug('Registering new platform');
+        provMainDebug('Platform Url: ' + platform.url);
+        provMainDebug('Platform ClientId: ' + platform.clientId);
+        await this.Database.Replace(false, 'platform', {
+          platformUrl: platform.url,
+          clientId: platform.clientId
+        }, {
           platformName: platform.name,
           platformUrl: platform.url,
           clientId: platform.clientId,
@@ -754,195 +773,131 @@ class Provider {
           authConfig: platform.authConfig
         });
         return plat;
-      } else {
-        provMainDebug('Platform already registered.');
-        await this.Database.Modify(false, 'platform', {
-          platformUrl: platform.url
-        }, {
-          platformName: platform.name || (await _platform.platformName()),
-          clientId: platform.clientId || (await _platform.platformClientId()),
-          authEndpoint: platform.authenticationEndpoint || (await _platform.platformAuthEndpoint()),
-          accesstokenEndpoint: platform.accesstokenEndpoint || (await _platform.platformAccessTokenEndpoint()),
-          authConfig: platform.authConfig || (await _platform.platformAuthConfig())
+      } catch (err) {
+        await this.Database.Delete('publickey', {
+          kid: kid
         });
-        return _platform;
+        await this.Database.Delete('privatekey', {
+          kid: kid
+        });
+        await this.Database.Delete('platform', {
+          platformUrl: platform.url,
+          clientId: platform.clientId
+        });
+        provMainDebug(err.message);
+        throw new Error(err);
       }
-    } catch (err) {
-      await this.Database.Delete('publickey', {
-        kid: kid
+    } else {
+      provMainDebug('Platform already registered');
+      await this.Database.Modify(false, 'platform', {
+        platformUrl: platform.url,
+        clientId: platform.clientId
+      }, {
+        platformName: platform.name || (await _platform.platformName()),
+        authEndpoint: platform.authenticationEndpoint || (await _platform.platformAuthEndpoint()),
+        accesstokenEndpoint: platform.accesstokenEndpoint || (await _platform.platformAccessTokenEndpoint()),
+        authConfig: platform.authConfig || (await _platform.platformAuthConfig())
       });
-      await this.Database.Delete('privatekey', {
-        kid: kid
-      });
-      await this.Database.Delete('platform', {
-        platformUrl: platform.url
-      });
-      provMainDebug(err.message);
-      if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
-        level: 'error',
-        message: 'Message: ' + err.message + '\nStack: ' + err.stack
-      });
-      return false;
+      return this.getPlatform(platform.url, platform.clientId);
     }
   }
   /**
      * @description Gets a platform.
      * @param {String} url - Platform url.
-     * @returns {Promise<Platform | false>}
+     * @param {String} [clientId] - Tool clientId.
+     * @returns {Promise<Array<Platform>, Platform | false>}
      */
 
 
-  async getPlatform(url, ENCRYPTIONKEY, logger, Database) {
-    if (!url) throw new Error('No url provided');
+  async getPlatform(url, clientId, ENCRYPTIONKEY, Database) {
+    if (!url) throw new Error('MISSING_PLATFORM_URL');
 
-    try {
-      const plat = Database !== undefined ? await Database.Get(false, 'platform', {
-        platformUrl: url
-      }) : await this.Database.Get(false, 'platform', {
-        platformUrl: url
-      });
-      if (!plat) return false;
-      const obj = plat[0];
-      if (!obj) return false;
-      const result = new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, ENCRYPTIONKEY !== undefined ? ENCRYPTIONKEY : (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), obj.authConfig, logger !== undefined ? logger : (0, _classPrivateFieldGet2.default)(this, _logger), Database !== undefined ? Database : this.Database);
-      return result;
-    } catch (err) {
-      provAuthDebug(err.message); // If logger is set (Function was called by the Auth or Grade service) and is set to true, or if the scope logger variable is true, print the log
+    const _Database = Database || this.Database;
 
-      if (logger !== undefined && logger || (0, _classPrivateFieldGet2.default)(this, _logger)) logger !== undefined ? logger.log({
-        level: 'error',
-        message: 'Message: ' + err.message + '\nStack: ' + err.stack
-      }) : (0, _classPrivateFieldGet2.default)(this, _logger).log({
-        level: 'error',
-        message: 'Message: ' + err.message + '\nStack: ' + err.stack
+    const _ENCRYPTIONKEY = ENCRYPTIONKEY || (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2);
+
+    if (clientId) {
+      const result = await _Database.Get(false, 'platform', {
+        platformUrl: url,
+        clientId: clientId
       });
-      return false;
+      if (!result) return false;
+      const plat = result[0];
+      const platform = new Platform(plat.platformName, plat.platformUrl, plat.clientId, plat.authEndpoint, plat.accesstokenEndpoint, plat.kid, _ENCRYPTIONKEY, plat.authConfig, _Database);
+      return platform;
     }
+
+    const result = await _Database.Get(false, 'platform', {
+      platformUrl: url
+    });
+    if (!result) return false;
+    const platforms = [];
+
+    for (const plat of result) {
+      const platform = new Platform(plat.platformName, plat.platformUrl, plat.clientId, plat.authEndpoint, plat.accesstokenEndpoint, plat.kid, _ENCRYPTIONKEY, plat.authConfig, _Database);
+      platforms.push(platform);
+    }
+
+    return platforms;
   }
   /**
      * @description Deletes a platform.
      * @param {string} url - Platform url.
-     * @returns {Promise<true | false>}
+     * @param {String} clientId - Tool clientId.
+     * @returns {Promise<true>}
      */
 
 
-  async deletePlatform(url) {
-    if (!url) throw new Error('No url provided');
-    const platform = await this.getPlatform(url);
-    if (platform) return platform.remove();
-    return false;
+  async deletePlatform(url, clientId) {
+    if (!url || !clientId) throw new Error('MISSING_PARAM');
+    const platform = await this.getPlatform(url, clientId);
+    if (platform) await platform.delete();
+    return true;
   }
   /**
      * @description Gets all platforms.
-     * @returns {Promise<Array<Platform>| false>}
+     * @returns {Promise<Array<Platform>>}
      */
 
 
   async getAllPlatforms() {
-    const returnArray = [];
+    const platforms = [];
+    const result = await this.Database.Get(false, 'platform');
 
-    try {
-      const platforms = await this.Database.Get(false, 'platform');
+    if (result) {
+      for (const plat of result) platforms.push(new Platform(plat.platformName, plat.platformUrl, plat.clientId, plat.authEndpoint, plat.accesstokenEndpoint, plat.kid, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), plat.authConfig, this.Database));
 
-      if (platforms) {
-        for (const obj of platforms) returnArray.push(new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), obj.authConfig, (0, _classPrivateFieldGet2.default)(this, _logger), this.Database));
-
-        return returnArray;
-      }
-
-      return [];
-    } catch (err) {
-      provAuthDebug(err.message);
-      if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
-        level: 'error',
-        message: 'Message: ' + err.message + '\nStack: ' + err.stack
-      });
-      return false;
+      return platforms;
     }
+
+    return [];
   }
   /**
-   * @description Redirect to a new location and sets it's cookie if the location represents a separate resource
-   * @param {Object} res - Express response object
-   * @param {String} path - Redirect path
-   * @param {Object} [options] - Redirection options
-   * @param {Boolean} [options.isNewResource = false] - If true creates new resource and its cookie
-   * @param {Boolean} [options.ignoreRoot = false] - If true deletes de main path (/) database tokenb on redirect, this saves storage space and is recommended if you are using your main root only to redirect
-   * @example lti.generatePathCookie(response, '/path', { isNewResource: true })
+   * @description Redirects to a new location. Passes Ltik if present.
+   * @param {Object} res - Express response object.
+   * @param {String} path - Redirect path.
+   * @param {Object} [options] - Redirection options.
+   * @param {Boolean} [options.newResource = false] - If true, changes the path variable on the context token.
+   * @example lti.redirect(response, '/path', { newResource: true })
    */
 
 
   async redirect(res, path, options) {
-    if ((0, _classPrivateFieldGet2.default)(this, _whitelistedUrls).indexOf(path) !== -1) return res.redirect(path);
-    const code = res.locals.token.issuerCode;
-    const courseId = res.locals.token.platformContext.context ? res.locals.token.platformContext.context.id : 'NF';
-    const resourseId = res.locals.token.platformContext.resource ? res.locals.token.platformContext.resource.id : 'NF';
-    const activityId = courseId + '_' + resourseId;
-    const pathParts = url.parse(path);
-    const oldpath = res.locals.token.platformContext.path; // Create new cookie name if isNewResource is set
+    if (!res || !path) throw new Error('MISSING_ARGUMENT');
+    if (!res.locals.token) return res.redirect(path); // If no token is present, just redirects
 
-    const cookiePath = options && options.isNewResource ? url.format({
-      protocol: pathParts.protocol,
-      hostname: pathParts.hostname,
-      pathname: pathParts.pathname,
-      port: pathParts.port,
-      auth: pathParts.auth
-    }) : oldpath;
-    let token = {
-      issuer: code,
-      path: cookiePath,
-      activityId: activityId
-    }; // Signing context token
+    provMainDebug('Redirecting to: ', path);
+    const token = res.locals.token;
+    const pathParts = url.parse(path); // Updates path variable if this is a new resource
 
-    token = jwt.sign(token, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY)); // Checking the type of redirect
-
-    const externalRequest = validUrl.isWebUri(path);
-
-    if (options && options.isNewResource || externalRequest) {
-      provMainDebug('Setting up path cookie for this resource with path: ' + path);
-      const cookieOptions = JSON.parse(JSON.stringify((0, _classPrivateFieldGet2.default)(this, _cookieOptions)));
-
-      if (externalRequest) {
-        try {
-          const domain = tldparser(externalRequest).domain;
-          cookieOptions.sameSite = 'None';
-          cookieOptions.secure = true;
-          cookieOptions.domain = '.' + domain;
-          provMainDebug('External request found for domain: .' + domain);
-        } catch (_unused) {
-          provMainDebug('Could not retrieve tld for external redirect. Proceeding as regular request...');
-        }
-      }
-
-      const contextPath = _path.join(code, cookiePath, activityId);
-
-      const rootPath = _path.join(code, (0, _classPrivateFieldGet2.default)(this, _appUrl), activityId);
-
-      res.cookie(contextPath, res.locals.token.user, cookieOptions);
-      const newContextToken = {
-        resource: res.locals.token.platformContext.resource,
-        custom: res.locals.token.platformContext.custom,
-        context: res.locals.token.platformContext.context,
-        path: contextPath,
-        user: res.locals.token.platformContext.user,
-        deploymentId: res.locals.token.platformContext.deploymentId,
-        targetLinkUri: res.locals.token.platformContext.targetLinkUri,
-        launchPresentation: res.locals.token.platformContext.launchPresentation,
-        messageType: res.locals.token.platformContext.messageType,
-        version: res.locals.token.platformContext.version,
-        deepLinkingSettings: res.locals.token.platformContext.deepLinkingSettings
-      };
-      if (await this.Database.Delete('contexttoken', {
-        path: contextPath,
+    if (options && (options.newResource || options.isNewResource)) {
+      provMainDebug('Changing context token path to: ' + path);
+      await this.Database.Modify(false, 'contexttoken', {
+        contextId: token.platformContext.contextId,
         user: res.locals.token.user
-      })) await this.Database.Insert(false, 'contexttoken', newContextToken);
-
-      if (options && options.ignoreRoot) {
-        this.Database.Delete('contexttoken', {
-          path: rootPath,
-          user: res.locals.token.user
-        });
-        res.clearCookie(rootPath, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
-      }
+      }, {
+        path: path
+      });
     } // Formatting path with queries
 
 
@@ -967,45 +922,70 @@ class Provider {
       pathname: pathParts.pathname,
       port: pathParts.port,
       auth: pathParts.auth,
-      query: _objectSpread({}, queries, {
-        ltik: token
+      query: _objectSpread(_objectSpread({}, queries), {}, {
+        ltik: res.locals.ltik
       })
-    }); // Sets allow credentials header and redirects to path with queries
+    }); // Redirects to path with queries
 
-    res.header('Access-Control-Allow-Credentials', 'true');
     return res.redirect(formattedPath);
+  } // Deprecated methods, these methods will be removed in version 6.0
+
+  /* istanbul ignore next */
+
+  /**
+   * @deprecated
+   */
+
+
+  appUrl() {
+    console.log('Deprecation warning: The appUrl() method is now deprecated and will be removed in the 6.0 release. Use appRoute() instead.');
+    return this.appRoute();
+  }
+  /* istanbul ignore next */
+
+  /**
+   * @deprecated
+   */
+
+
+  loginUrl() {
+    console.log('Deprecation warning: The loginUrl() method is now deprecated and will be removed in the 6.0 release. Use loginRoute() instead.');
+    return this.loginRoute();
+  }
+  /* istanbul ignore next */
+
+  /**
+   * @deprecated
+   */
+
+
+  sessionTimeoutUrl() {
+    console.log('Deprecation warning: The sessionTimeoutUrl() method is now deprecated and will be removed in the 6.0 release. Use sessionTimeoutRoute() instead.');
+    return this.sessionTimeoutRoute();
+  }
+  /* istanbul ignore next */
+
+  /**
+   * @deprecated
+   */
+
+
+  invalidTokenUrl() {
+    console.log('Deprecation warning: The invalidTokenUrl() method is now deprecated and will be removed in the 6.0 release. Use invalidTokenRoute() instead.');
+    return this.invalidTokenRoute();
+  }
+  /* istanbul ignore next */
+
+  /**
+   * @deprecated
+   */
+
+
+  keysetUrl() {
+    console.log('Deprecation warning: The keysetUrl() method is now deprecated and will be removed in the 6.0 release. Use keysetRoute() instead.');
+    return this.keysetRoute();
   }
 
 }
 
-var _loginUrl = new WeakMap();
-
-var _appUrl = new WeakMap();
-
-var _sessionTimeoutUrl = new WeakMap();
-
-var _invalidTokenUrl = new WeakMap();
-
-var _keysetUrl = new WeakMap();
-
-var _whitelistedUrls = new WeakMap();
-
-var _ENCRYPTIONKEY = new WeakMap();
-
-var _logger = new WeakMap();
-
-var _cookieOptions = new WeakMap();
-
-var _connectCallback2 = new WeakMap();
-
-var _deepLinkingCallback2 = new WeakMap();
-
-var _sessionTimedOut = new WeakMap();
-
-var _invalidToken = new WeakMap();
-
-var _keyset = new WeakMap();
-
-var _server = new WeakMap();
-
-module.exports = Provider;
+module.exports = new Provider();

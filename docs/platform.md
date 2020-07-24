@@ -4,13 +4,14 @@
 	<br>
 	<br>
 	<a href="https://cvmcosta.github.io/ltijs"><img width="360" src="logo-300.svg"></img></a>
+  <a href="https://site.imsglobal.org/certifications/coursekey/ltijs"​ target='_blank'><img width="80" src="https://www.imsglobal.org/sites/default/files/IMSconformancelogoREG.png" alt="IMS Global Certified" border="0"></img></a>
 </div>
 
 
 > Platform class
 
 
-[![travisci](https://img.shields.io/travis/cvmcosta/ltijs.svg)](https://travis-ci.org/Cvmcosta/ltijs)
+[![travisci](https://travis-ci.org/Cvmcosta/ltijs.svg?branch=master)](https://travis-ci.org/Cvmcosta/ltijs)
 [![codecov](https://codecov.io/gh/Cvmcosta/ltijs/branch/master/graph/badge.svg)](https://codecov.io/gh/Cvmcosta/ltijs)
 [![Node Version](https://img.shields.io/node/v/ltijs.svg)](https://www.npmjs.com/package/ltijs)
 [![NPM package](https://img.shields.io/npm/v/ltijs.svg)](https://www.npmjs.com/package/ltijs)
@@ -24,7 +25,6 @@
 ## Table of Contents
 
 - [Introduction](#introduction)
-- [Usage](#usage)
 - [Documentation](#documentation)
 - [License](#license)
 
@@ -32,47 +32,68 @@
 
 
 ## Introduction
+
 The ```Platform``` class represents a [LTI Consumer](https://www.imsglobal.org/spec/lti/v1p3/#platforms-and-tools).
 
 
 ---
 
 
-
-## Usage
-
-### Registering platform
-
-The [LTI Provider](provider.md) method `registerPlatform()` returns a Promise that resolves the created `Platform` or `false` if some error occurs.
-
-```javascript
-await lti.registerPlatform({ 
-    url: 'https://platform.url',
-    name: 'Platform Name',
-    clientId: 'TOOLCLIENTID',
-    authenticationEndpoint: 'https://platform.url/auth',
-    accesstokenEndpoint: 'https://platform.url/token',
-    authConfig: { method: 'JWK_SET', key: 'https://platform.url/keyset' }
-})
-
-/*
-.
-.
-.
-*/
-
-let plat = await lti.getPlatform('http://platform/url') 
-
-let key = await plat.platformPublicKey()
-```
-
-
-
----
-
 ## Documentation
 
 
+
+#### async Platform.platformUrl() 
+
+Gets the platform url.
+
+
+##### Returns
+
+- Promise that resolves the `platform url`.
+
+
+#### async Platform.platformClientId() 
+
+Gets the platform client id.
+
+
+##### Returns
+
+- Promise that resolves `tool client id`.
+
+
+
+#### async Platform.platformKid() 
+
+Gets the platform key id.
+
+
+##### Returns
+
+- `String` representing the platform key id.
+
+
+
+#### async  Platform.platformPublicKey() 
+
+Gets the RSA public key assigned to the platform.
+
+##### Returns
+
+- Promise that resolves the `platform public key`.
+
+
+
+
+#### async Platform.platformPrivateKey() 
+
+Gets the RSA private key assigned to the platform.
+
+
+##### Returns
+
+- Promise that resolves the `platform private key`.
 
 
 
@@ -89,116 +110,16 @@ Sets/Gets the platform name.
 | ---- | ---- | ----------- | -------- |
 | name | `String`  | Platform name. | *Optional* |
 
-
-
-
 ##### Returns
 
 
-- Promise that resolves `true` or the `platform name` if it succeeds and `false` if it fails.
-
-
-
-#### async Platform.platformUrl([url]) 
-
-Sets/Gets the platform url.
-
-
-
-
-##### Parameters
-
-| Name | Type | Description |  |
-| ---- | ---- | ----------- | -------- |
-| url | `String`  | Platform url. | *Optional* |
-
-
-
-
-##### Returns
-
-
-- Promise that resolves `true` or the `platform url` if it succeeds and `false` if it fails.
-
-
-
-
-#### async Platform.platformClientId([clientId]) 
-
-Sets/Gets the platform client id.
-
-
-
-
-##### Parameters
-
-| Name | Type | Description |  |
-| ---- | ---- | ----------- | -------- |
-| clientId | `String`  | Platform client id. | *Optional* |
-
-
-
-
-##### Returns
-
-
-- Promise that resolves `true` or the `platform name` if it succeeds and `false` if it fails.
-
-
-
-
-#### Platform.platformKid() 
-
-Gets the platform key_id.
-
-
-
-
-
-
-##### Returns
-
-
-- `String` representing the platform keys id.
-
-
-
-#### async  Platform.platformPublicKey() 
-
-Gets the RSA public key assigned to the platform.
-
-
-
-
-
-
-##### Returns
-
-
-- Promise that resolves the `platform public key` if it succeeds and `false` if it fails.
-
-
-
-
-#### async Platform.platformPrivateKey() 
-
-Gets the RSA private key assigned to the platform.
-
-
-
-
-
-
-##### Returns
-
-- Promise that resolves the `platform private key` if it succeeds and `false` if it fails.
+- Promise that resolves the `platform name`.
 
 
 
 #### async Platform.platformAuthConfig(method, key) 
 
 Sets/Gets the platform authorization configurations used to validate it's messages.
-
 
 
 
@@ -211,12 +132,11 @@ Sets/Gets the platform authorization configurations used to validate it's messag
 
 
 
-
 ##### Returns
 
 
 
-- Promise that resolves `true` or the `platform authentication configuration` if it succeeds and `false` if it fails.
+- Promise that resolves the `platform authentication configuration`.
 
 
 
@@ -224,8 +144,6 @@ Sets/Gets the platform authorization configurations used to validate it's messag
 #### async Platform.platformAuthEndpoint([authEndpoint]) 
 
 Sets/Gets the platform authorization endpoint used to perform the OIDC login.
-
-
 
 
 ##### Parameters
@@ -240,7 +158,7 @@ Sets/Gets the platform authorization endpoint used to perform the OIDC login.
 ##### Returns
 
 
-- Promise that resolves `true` or the `platform authentication endpoint` if it succeeds and `false` if it fails.
+- Promise that resolves the `platform authentication endpoint`.
 
 
 
@@ -248,7 +166,6 @@ Sets/Gets the platform authorization endpoint used to perform the OIDC login.
 #### async Platform.platformAccessTokenEndpoint([accesstokenEndpoint]) 
 
 Sets/Gets the platform access token endpoint used to authenticate messages to the platform.
-
 
 
 
@@ -260,12 +177,11 @@ Sets/Gets the platform access token endpoint used to authenticate messages to th
 
 
 
-
 ##### Returns
 
 
 
-- Promise that resolves `true` or the `platform access token endpoint` if it succeeds and `false` if it fails.
+- Promise that resolves the `platform access token endpoint`.
 
 
 
@@ -287,23 +203,21 @@ Gets the platform access token or attempts to generate a new one.
 ##### Returns
 
 
-- Promise that resolves the `platform access token endpoint` for the given scopes if it succeeds and `false` if it fails.
+- Promise that resolves the `platform access token endpoint` for the given scopes.
 
 
 
 
-#### async Platform.remove() 
+#### async Platform.delete() 
 
-Deletes a registered platform.
-
-
+Deletes the platform and the related keys.
 
 
 
 
 ##### Returns
 
-- Promise that resolves `true` if it succeeds and `false` if it fails.
+- Promise that resolves `true`.
 
 
 ---

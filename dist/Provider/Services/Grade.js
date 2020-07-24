@@ -15,8 +15,14 @@ const got = require('got');
 
 const provGradeServiceDebug = require('debug')('provider:gradeService');
 
+var _getPlatform = new WeakMap();
+
+var _ENCRYPTIONKEY = new WeakMap();
+
+var _Database = new WeakMap();
+
 class Grade {
-  constructor(getPlatform, ENCRYPTIONKEY, logger, Database) {
+  constructor(getPlatform, ENCRYPTIONKEY, Database) {
     _getPlatform.set(this, {
       writable: true,
       value: null
@@ -27,11 +33,6 @@ class Grade {
       value: ''
     });
 
-    _logger.set(this, {
-      writable: true,
-      value: void 0
-    });
-
     _Database.set(this, {
       writable: true,
       value: void 0
@@ -39,66 +40,75 @@ class Grade {
 
     (0, _classPrivateFieldSet2.default)(this, _getPlatform, getPlatform);
     (0, _classPrivateFieldSet2.default)(this, _ENCRYPTIONKEY, ENCRYPTIONKEY);
-    (0, _classPrivateFieldSet2.default)(this, _logger, logger);
     (0, _classPrivateFieldSet2.default)(this, _Database, Database);
   }
   /**
    * @description Gets lineitems from a given platform
    * @param {Object} idtoken - Idtoken for the user
-   * @param {Object} [filters] - Filter options
-   * @param {Boolean} [filters.resourceLinkId = false] - Filters based on the resourceLinkId
-   * @param {String} [filters.resourceId = false] - Filters based on the resourceId
-   * @param {String} [filters.tag = false] - Filters based on the tag
-   * @param {Number} [filters.limit = false] - Sets a maximum number of lineitems to be returned
+   * @param {Object} [options] - Options object
+   * @param {Boolean} [options.resourceLinkId = false] - Filters line items based on the resourceLinkId of the resource that originated the request
+   * @param {String} [options.resourceId = false] - Filters line items based on the resourceId
+   * @param {String} [options.tag = false] - Filters line items based on the tag
+   * @param {Number} [options.limit = false] - Sets a maximum number of line items to be returned
+   * @param {String} [options.id = false] - Filters line items based on the id
+   * @param {String} [options.label = false] - Filters line items based on the label
    */
 
 
-  async getLineItems(idtoken, filters) {
+  async getLineItems(idtoken, options, accessToken) {
     if (!idtoken) {
       provGradeServiceDebug('IdToken object missing.');
-      return false;
+      throw new Error('MISSING_ID_TOKEN');
     }
 
     provGradeServiceDebug('Target platform: ' + idtoken.iss);
-    const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger), (0, _classPrivateFieldGet2.default)(this, _Database));
 
-    if (!platform) {
-      provGradeServiceDebug('Platform not found, returning false');
-      return false;
-    }
+    if (!accessToken) {
+      const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, idtoken.clientId, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database)); // Remove and use DB instead
 
-    provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']');
-
-    try {
-      const tokenRes = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem https://purl.imsglobal.org/spec/lti-ags/scope/score https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly');
-      provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']');
-      const lineitemsEndpoint = idtoken.endpoint.lineitems;
-      let queryParams = [];
-
-      if (filters) {
-        if (filters.resourceLinkId) queryParams.push(['resource_link_id', idtoken.platformContext.resource.id]);
-        if (filters.limit) queryParams.push(['limit', filters.limit]);
-        if (filters.tag) queryParams.push(['tag', filters.tag]);
-        if (filters.resourceId) queryParams.push(['resource_id', filters.resourceId]);
+      if (!platform) {
+        provGradeServiceDebug('Platform not found');
+        throw new Error('PLATFORM_NOT_FOUND');
       }
 
-      queryParams = new URLSearchParams(queryParams);
-      let lineitemRes = await got.get(lineitemsEndpoint, {
-        searchParams: queryParams,
-        headers: {
-          Authorization: tokenRes.token_type + ' ' + tokenRes.access_token
-        }
-      });
-      lineitemRes = JSON.parse(lineitemRes.body);
-      return lineitemRes;
-    } catch (err) {
-      provGradeServiceDebug(err.message);
-      if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
-        level: 'error',
-        message: 'Message: ' + err.message + '\nStack: ' + err.stack
-      });
-      return false;
+      provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']');
+      accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly');
+      provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']');
     }
+
+    let lineitemsEndpoint = idtoken.endpoint.lineitems;
+    let query = [];
+
+    if (lineitemsEndpoint.indexOf('?') !== -1) {
+      query = Array.from(new URLSearchParams(lineitemsEndpoint.split('\?')[1]));
+      lineitemsEndpoint = lineitemsEndpoint.split('\?')[0];
+    }
+
+    let queryParams = [...query];
+
+    if (options) {
+      if (options.resourceLinkId) queryParams.push(['resource_link_id', idtoken.platformContext.resource.id]);
+      if (options.limit) queryParams.push(['limit', options.limit]);
+      if (options.tag) queryParams.push(['tag', options.tag]);
+      if (options.resourceId) queryParams.push(['resource_id', options.resourceId]);
+    }
+
+    queryParams = new URLSearchParams(queryParams);
+    let lineItems = await got.get(lineitemsEndpoint, {
+      searchParams: queryParams,
+      headers: {
+        Authorization: accessToken.token_type + ' ' + accessToken.access_token,
+        Accept: 'application/vnd.ims.lis.v2.lineitemcontainer+json'
+      }
+    }).json(); // Applying special filters
+
+    if (options && options.id) lineItems = lineItems.filter(lineitem => {
+      return lineitem.id === options.id;
+    });
+    if (options && options.label) lineItems = lineItems.filter(lineitem => {
+      return lineitem.label === options.label;
+    });
+    return lineItems;
   }
   /**
    * @description Creates a new lineItem for the given context
@@ -106,446 +116,355 @@ class Grade {
    * @param {Object} lineItem - LineItem Object, following the application/vnd.ims.lis.v2.lineitem+json specification
    * @param {Object} [options] - Aditional configuration for the lineItem
    * @param {Boolean} [options.resourceLinkId = false] - If set to true, binds the created lineItem to the resource that originated the request
-   * @param {String} [options.resourceId = false] - Binds the created lineItem to a specific tool resource
-   * @param {String} [options.tag = false] - Binds the created LineItem to a specific tag
    */
 
 
-  async createLineItem(idtoken, lineItem, options) {
+  async createLineItem(idtoken, lineItem, options, accessToken) {
     // Validating lineItem
     if (!idtoken) {
       provGradeServiceDebug('IdToken object missing.');
-      return false;
+      throw new Error('MISSING_ID_TOKEN');
     }
 
     if (!lineItem) {
-      provGradeServiceDebug('LineItem object missing.');
-      return false;
+      provGradeServiceDebug('Line item object missing.');
+      throw new Error('MISSING_LINE_ITEM');
     }
 
-    if (options) {
-      if (options.resourceLinkId) lineItem.resourceLinkId = idtoken.platformContext.resource.id;
-      if (options.tag) lineItem.tag = options.tag;
-      if (options.resourceId) lineItem.resourceId = options.resourceId;
-    }
-
+    if (options && options.resourceLinkId) lineItem.resourceLinkId = idtoken.platformContext.resource.id;
     provGradeServiceDebug('Target platform: ' + idtoken.iss);
-    const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger), (0, _classPrivateFieldGet2.default)(this, _Database));
 
-    if (!platform) {
-      provGradeServiceDebug('Platform not found, returning false');
-      return false;
-    }
+    if (!accessToken) {
+      const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, idtoken.clientId, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database));
 
-    provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']');
+      if (!platform) {
+        provGradeServiceDebug('Platform not found');
+        throw new Error('PLATFORM_NOT_FOUND');
+      }
 
-    try {
-      const tokenRes = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem https://purl.imsglobal.org/spec/lti-ags/scope/score https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly');
+      provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']');
+      accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem');
       provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']');
-      const lineitemsEndpoint = idtoken.endpoint.lineitems;
-      await got.post(lineitemsEndpoint, {
-        headers: {
-          Authorization: tokenRes.token_type + ' ' + tokenRes.access_token,
-          'Content-Type': 'application/vnd.ims.lis.v2.lineitem+json'
-        },
-        body: JSON.stringify(lineItem)
-      });
-      provGradeServiceDebug('LineItem successfully created');
-      return true;
-    } catch (err) {
-      provGradeServiceDebug(err.message);
-      if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
-        level: 'error',
-        message: 'Message: ' + err.message + '\nStack: ' + err.stack
-      });
-      return false;
     }
+
+    const lineitemsEndpoint = idtoken.endpoint.lineitems;
+    provGradeServiceDebug('Creating Line item: ');
+    provGradeServiceDebug(lineItem);
+    const newLineItem = await got.post(lineitemsEndpoint, {
+      headers: {
+        Authorization: accessToken.token_type + ' ' + accessToken.access_token,
+        'Content-Type': 'application/vnd.ims.lis.v2.lineitem+json'
+      },
+      json: lineItem
+    }).json();
+    provGradeServiceDebug('Line item successfully created');
+    return newLineItem;
   }
   /**
    * @description Deletes lineitems from a given platform
    * @param {Object} idtoken - Idtoken for the user
-   * @param {Object} [filters] - Filter options
-   * @param {Boolean} [filters.resourceLinkId = false] - Filters based on the resourceLinkId
-   * @param {String} [filters.resourceId = false] - Filters based on the resourceId
-   * @param {String} [filters.tag = false] - Filters based on the tag
-   * @param {Number} [filters.limit = false] - Sets a maximum number of lineitems to be returned
+   * @param {Object} [options] - Options object
+   * @param {Boolean} [options.resourceLinkId = false] - Filters line items based on the resourceLinkId of the resource that originated the request
+   * @param {String} [options.resourceId = false] - Filters line items based on the resourceId
+   * @param {String} [options.tag = false] - Filters line items based on the tag
+   * @param {Number} [options.limit = false] - Sets a maximum number of line items to be deleted
+   * @param {String} [options.id = false] - Filters line items based on the id
+   * @param {String} [options.label = false] - Filters line items based on the label
    */
 
 
-  async deleteLineItems(idtoken, filters) {
+  async deleteLineItems(idtoken, options) {
     if (!idtoken) {
       provGradeServiceDebug('IdToken object missing.');
-      return false;
+      throw new Error('MISSING_ID_TOKEN');
     }
 
     provGradeServiceDebug('Target platform: ' + idtoken.iss);
-    const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger), (0, _classPrivateFieldGet2.default)(this, _Database));
+    const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, idtoken.clientId, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database));
 
     if (!platform) {
-      provGradeServiceDebug('Platform not found, returning false');
-      return false;
+      provGradeServiceDebug('Platform not found');
+      throw new Error('PLATFORM_NOT_FOUND');
     }
 
     provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']');
+    const accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem');
+    provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']');
+    const lineItems = await this.getLineItems(idtoken, options, accessToken);
+    const result = {
+      success: [],
+      failure: []
+    };
 
-    try {
-      const tokenRes = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem https://purl.imsglobal.org/spec/lti-ags/scope/score https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly');
-      provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']');
-      const lineitemsEndpoint = idtoken.endpoint.lineitems;
-      let queryParams = [];
-
-      if (filters) {
-        if (filters.resourceLinkId) queryParams.push(['resource_link_id', idtoken.platformContext.resource.id]);
-        if (filters.limit) queryParams.push(['limit', filters.limit]);
-        if (filters.tag) queryParams.push(['tag', filters.tag]);
-        if (filters.resourceId) queryParams.push(['resource_id', filters.resourceId]);
+    for (const lineitem of lineItems) {
+      try {
+        const lineitemUrl = lineitem.id;
+        provGradeServiceDebug('Deleting: ' + lineitemUrl);
+        await got.delete(lineitemUrl, {
+          headers: {
+            Authorization: accessToken.token_type + ' ' + accessToken.access_token
+          }
+        });
+        provGradeServiceDebug('LineItem sucessfully deleted');
+        result.success.push({
+          lineitem: lineitemUrl
+        });
+      } catch (err) {
+        provGradeServiceDebug(err);
+        result.failure.push({
+          lineitem: lineitem.id,
+          error: err.message
+        });
+        continue;
       }
-
-      queryParams = new URLSearchParams(queryParams);
-      let lineitemRes = await got.get(lineitemsEndpoint, {
-        searchParams: queryParams,
-        headers: {
-          Authorization: tokenRes.token_type + ' ' + tokenRes.access_token
-        }
-      });
-      lineitemRes = JSON.parse(lineitemRes.body);
-      let success = true;
-
-      for (const lineitem of lineitemRes) {
-        try {
-          const lineitemUrl = lineitem.id;
-          provGradeServiceDebug('Deleting: ' + lineitemUrl);
-          await got.delete(lineitemUrl, {
-            headers: {
-              Authorization: tokenRes.token_type + ' ' + tokenRes.access_token
-            }
-          });
-          provGradeServiceDebug('LineItem sucessfully deleted');
-        } catch (err) {
-          provGradeServiceDebug(err.message);
-          if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
-            level: 'error',
-            message: 'Message: ' + err.message + '\nStack: ' + err.stack
-          });
-          success = false;
-          continue;
-        }
-      }
-
-      return success;
-    } catch (err) {
-      provGradeServiceDebug(err.message);
-      if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
-        level: 'error',
-        message: 'Message: ' + err.message + '\nStack: ' + err.stack
-      });
-      return false;
     }
+
+    return result;
   }
   /**
      * @description Publishes a score or grade to a platform. Represents the Score Publish service described in the lti 1.3 specification
      * @param {Object} idtoken - Idtoken for the user
      * @param {Object} score - Score/Grade following the Lti Standard application/vnd.ims.lis.v1.score+json
-     * @param {Object} [filters] - Filters for LineItems in case there is more than one
-     * @param {String} [filters.resourceId = false] - Filters based on the resourceId
-     * @param {String} [filters.tag = false] - Filters based on the tag
-     * @param {Number} [filters.limit = false] - Sets a maximum number of lineitems to be reached
+     * @param {Object} [options] - Options object
+     * @param {Object} [options.autoCreate] - Line item that will be created automatically if it does not exist
+     * @param {String} [options.userId = false] - Send score to a specific user. If no userId is provided, the score is sent to the user that initiated the request
+     * @param {Boolean} [options.resourceLinkId = true] - Filters line items based on the resourceLinkId of the resource that originated the request. Defaults to true
+     * @param {String} [options.resourceId = false] - Filters line items based on the resourceId
+     * @param {String} [options.tag = false] - Filters line items based on the tag
+     * @param {Number} [options.limit = false] - Sets a maximum number of line items to be reached
+     * @param {String} [options.id = false] - Filters line items based on the id
+     * @param {String} [options.label = false] - Filters line items based on the label
      */
 
 
-  async scorePublish(idtoken, score, filters) {
+  async scorePublish(idtoken, score, options) {
     if (!idtoken) {
       provGradeServiceDebug('IdToken object missing.');
-      return false;
+      throw new Error('MISSING_ID_TOKEN');
     }
 
     if (!score) {
       provGradeServiceDebug('Score object missing.');
-      return false;
+      throw new Error('MISSING_SCORE');
     }
 
     provGradeServiceDebug('Target platform: ' + idtoken.iss);
-    const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger), (0, _classPrivateFieldGet2.default)(this, _Database));
+    const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, idtoken.clientId, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database));
 
     if (!platform) {
-      provGradeServiceDebug('Platform not found, returning false');
-      return false;
+      provGradeServiceDebug('Platform not found');
+      throw new Error('PLATFORM_NOT_FOUND');
     }
 
     provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']');
+    const accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem https://purl.imsglobal.org/spec/lti-ags/scope/score');
+    provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']');
 
-    try {
-      const tokenRes = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem https://purl.imsglobal.org/spec/lti-ags/scope/score https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly');
-      provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']');
-      if (filters) filters.resourceLinkId = true;else {
-        filters = {
-          resourceLinkId: true
-        };
-      }
-      const lineitemsEndpoint = idtoken.endpoint.lineitems;
-      let queryParams = [];
+    if (options) {
+      if (options.resourceLinkId === false) options.resourceLinkId = false;else options.resourceLinkId = true;
+    } else options = {
+      resourceLinkId: true
+    };
 
-      if (filters) {
-        if (filters.resourceLinkId) queryParams.push(['resource_link_id', idtoken.platformContext.resource.id]);
-        if (filters.limit) queryParams.push(['limit', filters.limit]);
-        if (filters.tag) queryParams.push(['tag', filters.tag]);
-        if (filters.resourceId) queryParams.push(['resource_id', filters.resourceId]);
-      }
+    const lineItems = await this.getLineItems(idtoken, options, accessToken);
+    const result = {
+      success: [],
+      failure: []
+    };
 
-      queryParams = new URLSearchParams(queryParams);
-      let lineitemRes = await got.get(lineitemsEndpoint, {
-        searchParams: queryParams,
-        headers: {
-          Authorization: tokenRes.token_type + ' ' + tokenRes.access_token
-        }
-      });
-      lineitemRes = JSON.parse(lineitemRes.body);
-      let success = true;
-
-      for (const lineitem of lineitemRes) {
-        try {
-          const lineitemUrl = lineitem.id;
-          let scoreUrl = lineitemUrl + '/scores';
-
-          if (lineitemUrl.indexOf('?') !== -1) {
-            const query = lineitemUrl.split('\?')[1];
-            const url = lineitemUrl.split('\?')[0];
-            scoreUrl = url + '/scores?' + query;
-          }
-
-          provGradeServiceDebug('Sending score to: ' + scoreUrl);
-          score.userId = idtoken.user;
-          score.timestamp = new Date(Date.now()).toISOString();
-          score.scoreMaximum = lineitem.scoreMaximum;
-          provGradeServiceDebug(score);
-          await got.post(scoreUrl, {
-            headers: {
-              Authorization: tokenRes.token_type + ' ' + tokenRes.access_token,
-              'Content-Type': 'application/vnd.ims.lis.v1.score+json'
-            },
-            body: JSON.stringify(score)
-          });
-          provGradeServiceDebug('Score successfully sent');
-        } catch (err) {
-          provGradeServiceDebug(err.message);
-          if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
-            level: 'error',
-            message: 'Message: ' + err.message + '\nStack: ' + err.stack
-          });
-          success = false;
-          continue;
-        }
-      }
-
-      return success;
-    } catch (err) {
-      provGradeServiceDebug(err.message);
-      if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
-        level: 'error',
-        message: 'Message: ' + err.message + '\nStack: ' + err.stack
-      });
-      return false;
+    if (lineItems.length === 0) {
+      if (options && options.autoCreate) {
+        provGradeServiceDebug('No line item found, creating new lite item automatically');
+        lineItems.push(await this.createLineItem(idtoken, options.autoCreate, {
+          resourceLinkId: options.resourceLinkId
+        }, accessToken));
+      } else provGradeServiceDebug('No available line item found');
     }
+
+    for (const lineitem of lineItems) {
+      try {
+        const lineitemUrl = lineitem.id;
+        let scoreUrl = lineitemUrl + '/scores';
+
+        if (lineitemUrl.indexOf('?') !== -1) {
+          const query = lineitemUrl.split('\?')[1];
+          const url = lineitemUrl.split('\?')[0];
+          scoreUrl = url + '/scores?' + query;
+        }
+
+        provGradeServiceDebug('Sending score to: ' + scoreUrl);
+        if (options && options.userId) score.userId = options.userId;else score.userId = idtoken.user;
+        score.timestamp = new Date(Date.now()).toISOString();
+        score.scoreMaximum = lineitem.scoreMaximum;
+        provGradeServiceDebug(score);
+        await got.post(scoreUrl, {
+          headers: {
+            Authorization: accessToken.token_type + ' ' + accessToken.access_token,
+            'Content-Type': 'application/vnd.ims.lis.v1.score+json'
+          },
+          json: score
+        });
+        provGradeServiceDebug('Score successfully sent');
+        result.success.push({
+          lineitem: lineitemUrl
+        });
+      } catch (err) {
+        provGradeServiceDebug(err);
+        result.failure.push({
+          lineitem: lineitem.id,
+          error: err.message
+        });
+        continue;
+      }
+    }
+
+    return result;
   }
   /**
    * @description Retrieves a certain lineitem's results. Represents the Result service described in the lti 1.3 specification
    * @param {Object} idtoken - Idtoken for the user
-   * @param {Object} [filters] - Filter options
-   * @param {Boolean} [filters.userId = false] - Filters based on the userId
-   * @param {String} [filters.resourceId = false] - Filters based on the resourceId
-   * @param {String} [filters.tag = false] - Filters based on the tag
-   * @param {Number} [filters.limit = false] - Sets a maximum number of results per lineitem to be returned
+   * @param {Object} [options] - Options object
+   * @param {String} [options.userId = false] - Filters based on the userId
+   * @param {Boolean} [options.resourceLinkId = true] - Filters line items based on the resourceLinkId of the resource that originated the request. Defaults to true
+   * @param {String} [options.resourceId = false] - Filters line items based on the resourceId
+   * @param {String} [options.tag = false] - Filters line items based on the tag
+   * @param {Number} [options.limit = false] - Sets a maximum number of results to be returned per line item
+   * @param {String} [options.id = false] - Filters line items based on the id
+   * @param {String} [options.label = false] - Filters line items based on the label
    */
 
 
-  async result(idtoken, filters) {
+  async result(idtoken, options) {
     if (!idtoken) {
       provGradeServiceDebug('IdToken object missing.');
-      return false;
+      throw new Error('MISSING_ID_TOKEN');
     }
 
     provGradeServiceDebug('Target platform: ' + idtoken.iss);
-    const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _logger), (0, _classPrivateFieldGet2.default)(this, _Database));
+    const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, idtoken.clientId, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database));
 
     if (!platform) {
-      provGradeServiceDebug('Platform not found, returning false');
-      return false;
+      provGradeServiceDebug('Platform not found');
+      throw new Error('PLATFORM_NOT_FOUND');
     }
 
     provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']');
+    const accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly');
+    provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']');
+    let limit = false;
 
-    try {
-      const tokenRes = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem https://purl.imsglobal.org/spec/lti-ags/scope/score https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly');
-      provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']');
-      if (filters) filters.resourceLinkId = true;else {
-        filters = {
-          resourceLinkId: true
-        };
+    if (options) {
+      if (options.resourceLinkId === false) options.resourceLinkId = false;else options.resourceLinkId = true;
+
+      if (options.limit) {
+        limit = options.limit;
+        options.limit = false;
       }
-      const lineitemsEndpoint = idtoken.endpoint.lineitems;
-      let queryParams = [];
+    } else options = {
+      resourceLinkId: true
+    };
 
-      if (filters) {
-        if (filters.resourceLinkId) queryParams.push(['resource_link_id', idtoken.platformContext.resource.id]);
-        if (filters.tag) queryParams.push(['tag', filters.tag]);
-        if (filters.resourceId) queryParams.push(['resource_id', filters.resourceId]);
-      }
+    const lineItems = await this.getLineItems(idtoken, options, accessToken);
+    const queryParams = [];
 
-      queryParams = new URLSearchParams(queryParams);
-      let lineitemRes = await got.get(lineitemsEndpoint, {
-        searchParams: queryParams,
-        headers: {
-          Authorization: tokenRes.token_type + ' ' + tokenRes.access_token
-        }
-      });
-      lineitemRes = JSON.parse(lineitemRes.body);
-      const resultsArray = [];
-
-      for (const lineitem of lineitemRes) {
-        try {
-          const lineitemUrl = lineitem.id;
-          let resultsUrl = lineitemUrl + '/results';
-
-          if (lineitemUrl.indexOf('?') !== -1) {
-            const query = lineitemUrl.split('\?')[1];
-            const url = lineitemUrl.split('\?')[0];
-            resultsUrl = url + '/results?' + query;
-          }
-
-          provGradeServiceDebug('Requesting results from: ' + resultsUrl);
-          let query = '';
-
-          if (filters) {
-            const queryParams = [];
-            if (filters.userId) queryParams.push(['user_id', idtoken.user]);
-            if (filters.limit) queryParams.push(['limit', filters.limit]);
-            query = new URLSearchParams(queryParams);
-          }
-
-          let finalRes = await got.get(resultsUrl, {
-            searchParams: query,
-            headers: {
-              Authorization: tokenRes.token_type + ' ' + tokenRes.access_token
-            }
-          });
-          finalRes = JSON.parse(finalRes.body);
-
-          if (finalRes.length > 0) {
-            for (const result of finalRes) {
-              result.lineItem = lineitem.label;
-              resultsArray.push(result);
-            }
-          }
-        } catch (err) {
-          provGradeServiceDebug(err.message);
-          if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
-            level: 'error',
-            message: 'Message: ' + err.message + '\nStack: ' + err.stack
-          });
-          continue;
-        }
-      }
-
-      return resultsArray;
-    } catch (err) {
-      provGradeServiceDebug(err.message);
-      if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
-        level: 'error',
-        message: 'Message: ' + err.message + '\nStack: ' + err.stack
-      });
-      return false;
+    if (options) {
+      if (options.userId) queryParams.push(['user_id', options.userId]);
+      if (limit) queryParams.push(['limit', limit]);
     }
-  } // Deprecated methods, these methos will be removed in version 5.0
+
+    const resultsArray = [];
+
+    for (const lineitem of lineItems) {
+      try {
+        const lineitemUrl = lineitem.id;
+        let query = [];
+        let resultsUrl = lineitemUrl + '/results';
+
+        if (lineitemUrl.indexOf('?') !== -1) {
+          query = Array.from(new URLSearchParams(lineitemUrl.split('\?')[1]));
+          const url = lineitemUrl.split('\?')[0];
+          resultsUrl = url + '/results';
+        }
+
+        let searchParams = [...queryParams, ...query];
+        searchParams = new URLSearchParams(searchParams);
+        provGradeServiceDebug('Requesting results from: ' + resultsUrl);
+        const results = await got.get(resultsUrl, {
+          searchParams: searchParams,
+          headers: {
+            Authorization: accessToken.token_type + ' ' + accessToken.access_token,
+            Accept: 'application/vnd.ims.lis.v2.resultcontainer+json'
+          }
+        }).json();
+        resultsArray.push({
+          lineItem: lineitem.id,
+          results: results
+        });
+      } catch (err) {
+        provGradeServiceDebug(err.message);
+        continue;
+      }
+    }
+
+    return resultsArray;
+  } // Deprecated methods, these methods will be removed in version 6.0
+
+  /* istanbul ignore next */
 
   /**
-   * @description Gets lineitems from a given platform. This method is deprecated, use getLineItems() instead.
    * @deprecated
-   * @param {Object} idtoken - Idtoken for the user
-   * @param {Object} [filters] - Filter options
-   * @param {Boolean} [filters.resourceLinkId = false] - Filters based on the resourceLinkId
-   * @param {String} [filters.resourceId = false] - Filters based on the resourceId
-   * @param {String} [filters.tag = false] - Filters based on the tag
-   * @param {Number} [filters.limit = false] - Sets a maximum number of lineitems to be returned
    */
 
 
-  async GetLineItems(idtoken, filters) {
-    console.log('Deprecation warning: GetLineItems() is now deprecated, use getLineItems() instead. GetLineItems() will be removed in the 5.0 release.');
-    return this.getLineItems(idtoken, filters);
+  async GetLineItems(idtoken, options, accessToken) {
+    console.log('Deprecation warning: GetLineItems() is now deprecated, use getLineItems() instead. GetLineItems() will be removed in the 6.0 release.');
+    return this.getLineItems(idtoken, options, accessToken);
   }
+  /* istanbul ignore next */
+
   /**
-   * @description Creates a new lineItem for the given context. This method is deprecated, use createLineItem() instead.
    * @deprecated
-   * @param {Object} idtoken - Idtoken for the user
-   * @param {Object} lineItem - LineItem Object, following the application/vnd.ims.lis.v2.lineitem+json specification
-   * @param {Object} [options] - Aditional configuration for the lineItem
-   * @param {Boolean} [options.resourceLinkId = false] - If set to true, binds the created lineItem to the resource that originated the request
-   * @param {String} [options.resourceId = false] - Binds the created lineItem to a specific tool resource
-   * @param {String} [options.tag = false] - Binds the created LineItem to a specific tag
    */
 
 
-  async CreateLineItem(idtoken, lineItem, options) {
-    console.log('Deprecation warning: CreateLineItem() is now deprecated, use createLineItem() instead. CreateLineItem() will be removed in the 5.0 release.');
-    return this.createLineItem(idtoken, lineItem, options);
+  async CreateLineItem(idtoken, lineItem, options, accessToken) {
+    console.log('Deprecation warning: CreateLineItem() is now deprecated, use createLineItem() instead. CreateLineItem() will be removed in the 6.0 release.');
+    return this.createLineItem(idtoken, lineItem, options, accessToken);
   }
+  /* istanbul ignore next */
+
   /**
-   * @description Deletes lineitems from a given platform. This method is deprecated, use createLineItem() instead.
    * @deprecated
-   * @param {Object} idtoken - Idtoken for the user
-   * @param {Object} [filters] - Filter options
-   * @param {Boolean} [filters.resourceLinkId = false] - Filters based on the resourceLinkId
-   * @param {String} [filters.resourceId = false] - Filters based on the resourceId
-   * @param {String} [filters.tag = false] - Filters based on the tag
-   * @param {Number} [filters.limit = false] - Sets a maximum number of lineitems to be returned
    */
 
 
-  async DeleteLineItems(idtoken, filters) {
-    console.log('Deprecation warning: DeleteLineItems() is now deprecated, use deleteLineItems() instead. DeleteLineItems() will be removed in the 5.0 release.');
-    return this.deleteLineItems(idtoken, filters);
+  async DeleteLineItems(idtoken, options) {
+    console.log('Deprecation warning: DeleteLineItems() is now deprecated, use deleteLineItems() instead. DeleteLineItems() will be removed in the 6.0 release.');
+    return this.deleteLineItems(idtoken, options);
   }
+  /* istanbul ignore next */
+
   /**
-   * @description Publishes a score or grade to a platform. Represents the Score Publish service described in the lti 1.3 specification. This method is deprecated, use scorePublish() instead.
    * @deprecated
-   * @param {Object} idtoken - Idtoken for the user
-   * @param {Object} score - Score/Grade following the Lti Standard application/vnd.ims.lis.v1.score+json
-   * @param {Object} [filters] - Filters for LineItems in case there is more than one
-   * @param {String} [filters.resourceId = false] - Filters based on the resourceId
-   * @param {String} [filters.tag = false] - Filters based on the tag
-   * @param {Number} [filters.limit = false] - Sets a maximum number of lineitems to be reached
    */
 
 
-  async ScorePublish(idtoken, score, filters) {
-    console.log('Deprecation warning: ScorePublish() is now deprecated, use scorePublish() instead. ScorePublish() will be removed in the 5.0 release.');
-    return this.scorePublish(idtoken, score, filters);
+  async ScorePublish(idtoken, score, options) {
+    console.log('Deprecation warning: ScorePublish() is now deprecated, use scorePublish() instead. ScorePublish() will be removed in the 6.0 release.');
+    return this.scorePublish(idtoken, score, options);
   }
+  /* istanbul ignore next */
+
   /**
-   * @description Retrieves a certain lineitem's results. Represents the Result service described in the lti 1.3 specification. This method is deprecated, use scorePublish() instead.
    * @deprecated
-   * @param {Object} idtoken - Idtoken for the user
-   * @param {Object} [filters] - Filter options
-   * @param {Boolean} [filters.userId = false] - Filters based on the userId
-   * @param {String} [filters.resourceId = false] - Filters based on the resourceId
-   * @param {String} [filters.tag = false] - Filters based on the tag
-   * @param {Number} [filters.limit = false] - Sets a maximum number of results per lineitem to be returned
    */
 
 
-  async Result(idtoken, filters) {
-    console.log('Deprecation warning: Result() is now deprecated, use result() instead. Result() will be removed in the 5.0 release.');
-    return this.result(idtoken, filters);
+  async Result(idtoken, options) {
+    console.log('Deprecation warning: Result() is now deprecated, use result() instead. Result() will be removed in the 6.0 release.');
+    return this.result(idtoken, options);
   }
 
 }
-
-var _getPlatform = new WeakMap();
-
-var _ENCRYPTIONKEY = new WeakMap();
-
-var _logger = new WeakMap();
-
-var _Database = new WeakMap();
 
 module.exports = Grade;

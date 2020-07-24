@@ -7,7 +7,7 @@ const Server = require('../Utils/Server')
 const Request = require('../Utils/Request')
 const Platform = require('../Utils/Platform')
 const Auth = require('../Utils/Auth')
-const Mongodb = require('../Utils/Database')
+const DB = require('../Utils/Database')
 const Keyset = require('../Utils/Keyset')
 
 const GradeService = require('./Services/Grade')
@@ -15,36 +15,33 @@ const DeepLinkingService = require('./Services/DeepLinking')
 const NamesAndRolesService = require('./Services/NamesAndRoles')
 
 const url = require('fast-url-parser')
-const _path = require('path')
 const jwt = require('jsonwebtoken')
-const winston = require('winston')
-const validUrl = require('valid-url')
-const crypto = require('crypto')
-const tldparser = require('tld-extract')
 
 const provAuthDebug = require('debug')('provider:auth')
 const provMainDebug = require('debug')('provider:main')
 
 /**
- * @descripttion Exposes methods for easy manipulation of the LTI 1.3 standard as a LTI Provider and a "server" object to manipulate the Express instance
+ * @descripttion LTI Provider Class that implements the LTI 1.3 protocol and services.
  */
 class Provider {
   // Pre-initiated variables
-  #loginUrl = '/login'
+  #loginRoute = '/login'
 
-  #appUrl = '/'
+  #appRoute = '/'
 
-  #sessionTimeoutUrl = '/sessionTimeout'
+  #sessionTimeoutRoute = '/sessiontimeout'
 
-  #invalidTokenUrl = '/invalidToken'
+  #invalidTokenRoute = '/invalidtoken'
 
-  #keysetUrl = '/keys'
+  #keysetRoute = '/keys'
 
-  #whitelistedUrls = []
+  #whitelistedRoutes = []
 
   #ENCRYPTIONKEY
 
-  #logger = false
+  #devMode = false
+
+  #tokenMaxAge = 10
 
   #cookieOptions = {
     secure: false,
@@ -52,138 +49,96 @@ class Provider {
     signed: true
   }
 
-  #connectCallback = (connection, req, res, next) => { return res.send('It works!') }
+  // Setup flag
+  #setup = false
 
-  #deepLinkingCallback = (connection, req, res, next) => { return res.send('Deep Linking works!') }
+  #connectCallback = async (token, req, res, next) => { return next() }
 
-  #sessionTimedOut = (req, res) => {
-    return res.status(401).send('Token invalid or expired. Please reinitiate login.')
+  #deepLinkingCallback = async (token, req, res, next) => { return next() }
+
+  #sessionTimeoutCallback = async (req, res) => {
+    return res.status(401).send('SESSION_TIMEOUT. Please reinitiate login.')
   }
 
-  #invalidToken = (req, res) => {
-    return res.status(401).send('Invalid token. Please reinitiate login.')
+  #invalidTokenCallback = async (req, res) => {
+    return res.status(401).send('INVALID_TOKEN. Please reinitiate login.')
   }
 
   // Assembles and sends keyset
   #keyset = async (req, res) => {
     try {
-      const keyset = await Keyset.build(this.Database, this.#ENCRYPTIONKEY, this.#logger)
+      const keyset = await Keyset.build(this.Database, this.#ENCRYPTIONKEY)
       return res.status(200).send(keyset)
     } catch (err) {
-      provMainDebug(err.message)
-      return res.status(500).send(err.message)
+      provMainDebug(err)
+      res.sendStatus(500)
     }
   }
 
   #server
 
   /**
-     * @description Exposes methods for easy manipualtion of the LTI 1.3 standard as a LTI Provider and a "server" object to manipulate the Express instance.
+     * @description Provider configuration method.
      * @param {String} encryptionkey - Secret used to sign cookies and encrypt other info.
-     * @param {Object} database - The Database configurations to open and manage connection, uses MongoDB Driver.
-     * @param {String} [database.url] - Database Url (Ex: mongodb://localhost/applicationdb).
+     * @param {Object} database - Database configuration.
+     * @param {String} database.url - Database Url (Ex: mongodb://localhost/applicationdb).
      * @param {Object} [database.plugin] - If set, must be the Database object of the desired database plugin.
-     * @param {Object} [database.connection] - Database connection options (Ex: user, pass)
+     * @param {Boolean} [database.debug] - If set to true, enables mongoose debug mode.
+     * @param {Object} [database.connection] - MongoDB database connection options (Ex: user, pass)
      * @param {String} [database.connection.user] - Database user for authentication if needed.
      * @param {String} [database.conenction.pass] - Database pass for authentication if needed.
-     * @param {Object} [options] - Lti Provider additional options,.
-     * @param {String} [options.appUrl = '/'] - Lti Provider main url. If no option is set '/' is used.
-     * @param {String} [options.loginUrl = '/login'] - Lti Provider login url. If no option is set '/login' is used.
-     * @param {String} [options.sessionTimeoutUrl = '/sessionTimeout'] - Lti Provider session timeout url. If no option is set '/sessionTimeout' is used.
-     * @param {String} [options.invalidTokenUrl = '/invalidToken'] - Lti Provider invalid token url. If no option is set '/invalidToken' is used.
-     * @param {String} [options.keysetUrl = '/keys'] - Lti Provider public jwk keyset url. If no option is set '/keys' is used.
-     * @param {Boolean} [options.https = false] - Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https and are planning to configure ssl locally. If you set this option as true you can enable the secure flag in the cookies options of the onConnect method.
+     * @param {Object} [options] - Lti Provider options.
+     * @param {String} [options.appRoute = '/'] - Lti Provider main route. If no option is set '/' is used.
+     * @param {String} [options.loginRoute = '/login'] - Lti Provider login route. If no option is set '/login' is used.
+     * @param {String} [options.sessionTimeoutRoute = '/sessiontimeout'] - Lti Provider session timeout route. If no option is set '/sessiontimeout' is used.
+     * @param {String} [options.invalidTokenRoute = '/invalidtoken'] - Lti Provider invalid token route. If no option is set '/invalidtoken' is used.
+     * @param {String} [options.keysetRoute = '/keys'] - Lti Provider public jwk keyset route. If no option is set '/keys' is used.
+     * @param {Boolean} [options.https = false] - Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https and are planning to configure ssl through Express.
      * @param {Object} [options.ssl] - SSL certificate and key if https is enabled.
      * @param {String} [options.ssl.key] - SSL key.
      * @param {String} [options.ssl.cert] - SSL certificate.
      * @param {String} [options.staticPath] - The path for the static files your application might serve (Ex: _dirname+"/public")
-     * @param {Boolean} [options.logger = false] - If true, allows Ltijs to generate logging files for server requests and errors.
-     * @param {Boolean} [options.cors = true] - If false, disables cors.
+     * @param {Boolean} [options.cors = true] - If set to false, disables cors.
      * @param {Function} [options.serverAddon] - Allows the execution of a method inside of the server contructor. Can be used to register middlewares.
      * @param {Object} [options.cookies] - Cookie configuration. Allows you to configure, sameSite and secure parameters.
      * @param {Boolean} [options.cookies.secure = false] - Cookie secure parameter. If true, only allows cookies to be passed over https.
      * @param {String} [options.cookies.sameSite = 'Lax'] - Cookie sameSite parameter. If cookies are going to be set across domains, set this parameter to 'None'.
+     * @param {String} [options.cookies.domain] - Cookie domain parameter. This parameter can be used to specify a domain so that the cookies set by Ltijs can be shared between subdomains.
+     * @param {Boolean} [options.devMode = false] - If true, does not require state and session cookies to be present (If present, they are still validated). This allows ltijs to work on development environments where cookies cannot be set. THIS SHOULD NOT BE USED IN A PRODUCTION ENVIRONMENT.
+     * @param {Number} [options.tokenMaxAge = 10] - Sets the idToken max age allowed in seconds. Defaults to 10 seconds. If false, disables max age validation.
      */
-  constructor (encryptionkey, database, options) {
-    if (options && options.https && (!options.ssl || !options.ssl.key || !options.ssl.cert)) throw new Error('No ssl Key  or Certificate found for local https configuration.')
-    if (!encryptionkey) throw new Error('Encryptionkey parameter missing in options.')
-    if (!database) throw new Error('Missing database configurations.')
+  setup (encryptionkey, database, options) {
+    if (this.#setup) throw new Error('PROVIDER_ALREADY_SETUP')
+    if (options && options.https && (!options.ssl || !options.ssl.key || !options.ssl.cert)) throw new Error('MISSING_SSL_KEY_CERTIFICATE')
+    if (!encryptionkey) throw new Error('MISSING_ENCRYPTION_KEY')
+    if (!database) throw new Error('MISSING_DATABASE_CONFIGURATION')
 
     /**
      * @description Database object.
      */
     this.Database = null
-    if (!database.plugin) this.Database = new Mongodb(database)
+    if (!database.plugin) this.Database = new DB(database)
     else this.Database = database.plugin
 
-    if (options && options.appUrl) this.#appUrl = options.appUrl
-    if (options && options.loginUrl) this.#loginUrl = options.loginUrl
-    if (options && options.sessionTimeoutUrl) this.#sessionTimeoutUrl = options.sessionTimeoutUrl
-    if (options && options.invalidTokenUrl) this.#invalidTokenUrl = options.invalidTokenUrl
-    if (options && options.keysetUrl) this.#keysetUrl = options.keysetUrl
+    if (options && (options.appRoute || options.appUrl)) this.#appRoute = options.appRoute || options.appUrl
+    if (options && (options.loginRoute || options.loginUrl)) this.#loginRoute = options.loginRoute || options.loginUrl
+    if (options && (options.sessionTimeoutRoute || options.sessionTimeoutUrl)) this.#sessionTimeoutRoute = options.sessionTimeoutRoute || options.sessionTimeoutUrl
+    if (options && (options.invalidTokenRoute || options.invalidTokenUrl)) this.#invalidTokenRoute = options.invalidTokenRoute || options.invalidTokenUrl
+    if (options && (options.keysetRoute || options.keysetUrl)) this.#keysetRoute = options.keysetRoute || options.keysetUrl
+
+    if (options && options.devMode === true) this.#devMode = true
+    if (options && options.tokenMaxAge !== undefined) this.#tokenMaxAge = options.tokenMaxAge
 
     // Cookie options
     if (options && options.cookies) {
-      if (options.cookies.sameSite) {
-        this.#cookieOptions.sameSite = options.cookies.sameSite
-        if (options.cookies.sameSite.toLowerCase() === 'none') this.#cookieOptions.secure = true
-      }
       if (options.cookies.secure === true) this.#cookieOptions.secure = true
-    }
-
-    // Setting up logger
-    let loggerServer = false
-    if (options && options.logger) {
-      this.#logger = winston.createLogger({
-        format: winston.format.combine(
-          winston.format.timestamp(),
-          winston.format.json(),
-          winston.format.prettyPrint()
-        ),
-        transports: [
-          new winston.transports.File({
-            filename: 'logs/ltijs_error.log',
-            level: 'error',
-            handleExceptions: true,
-            maxsize: 250000, // 500kb (with two files)
-            maxFiles: 1,
-            colorize: false,
-            tailable: true
-          })
-        ],
-        exitOnError: false
-      })
-
-      // Server logger
-      loggerServer = winston.createLogger({
-        format: winston.format.combine(
-          winston.format.timestamp(),
-          winston.format.prettyPrint()
-        ),
-        transports: [
-          new winston.transports.File({
-            filename: 'logs/ltijs_server.log',
-            handleExceptions: true,
-            json: true,
-            maxsize: 250000, // 500kb (with two files)
-            maxFiles: 1,
-            colorize: false,
-            tailable: true
-          })
-        ],
-        exitOnError: false
-      })
-
-      loggerServer.stream = {
-        write: function (message) {
-          loggerServer.info(message)
-        }
-      }
+      if (options.cookies.sameSite) this.#cookieOptions.sameSite = options.cookies.sameSite
+      if (options.cookies.domain) this.#cookieOptions.domain = options.cookies.domain
     }
 
     this.#ENCRYPTIONKEY = encryptionkey
 
-    this.#server = new Server(options ? options.https : false, options ? options.ssl : false, this.#ENCRYPTIONKEY, loggerServer, options ? options.cors : true, options ? options.serverAddon : false)
+    this.#server = new Server(options ? options.https : false, options ? options.ssl : false, this.#ENCRYPTIONKEY, options ? options.cors : true, options ? options.serverAddon : false)
 
     /**
      * @description Express server object.
@@ -193,17 +148,17 @@ class Provider {
     /**
      * @description Grading service.
      */
-    this.Grade = new GradeService(this.getPlatform, this.#ENCRYPTIONKEY, this.#logger, this.Database)
+    this.Grade = new GradeService(this.getPlatform, this.#ENCRYPTIONKEY, this.Database)
 
     /**
      * @description Deep Linking service.
      */
-    this.DeepLinking = new DeepLinkingService(this.getPlatform, this.#ENCRYPTIONKEY, this.#logger, this.Database)
+    this.DeepLinking = new DeepLinkingService(this.getPlatform, this.#ENCRYPTIONKEY, this.Database)
 
     /**
      * @description Names and Roles service.
      */
-    this.NamesAndRoles = new NamesAndRolesService(this.getPlatform, this.#ENCRYPTIONKEY, this.#logger, this.Database)
+    this.NamesAndRoles = new NamesAndRolesService(this.getPlatform, this.#ENCRYPTIONKEY, this.Database)
 
     if (options && options.staticPath) this.#server.setStaticPath(options.staticPath)
 
@@ -211,7 +166,7 @@ class Provider {
     const sessionValidator = async (req, res, next) => {
       provMainDebug('Receiving request at path: ' + req.baseUrl + req.path)
       // Ckeck if request is attempting to initiate oidc login flow or access reserved or whitelisted routes
-      if (req.path === this.#loginUrl || req.path === this.#sessionTimeoutUrl || req.path === this.#invalidTokenUrl || req.path === this.#keysetUrl) return next()
+      if (req.path === this.#loginRoute || req.path === this.#sessionTimeoutRoute || req.path === this.#invalidTokenRoute || req.path === this.#keysetRoute) return next()
 
       provMainDebug('Path does not match reserved endpoints')
 
@@ -225,42 +180,41 @@ class Provider {
 
         if (!ltik) {
           const idtoken = req.body.id_token
-          if (req.path === this.#appUrl && idtoken) {
+          if (idtoken) {
             // No ltik found but request contains an idtoken
             provMainDebug('Received idtoken for validation')
-            const decoded = jwt.decode(idtoken, { complete: true })
-            if (!decoded) throw new Error('Invalid JWT received')
 
-            // Rettrieves state
+            // Retrieves state
             const state = req.body.state
 
             // Retrieving validation parameters from cookies
-            let validationInfo = await this.Database.Get(false, 'validation', { state: state })
-            validationInfo = validationInfo[0]
+            provAuthDebug('Response state: ' + state)
+            const validationCookie = cookies['state' + state]
+
             const validationParameters = {
-              state: validationInfo ? validationInfo.state : false,
-              iss: validationInfo ? validationInfo.iss : false
+              iss: validationCookie,
+              maxAge: this.#tokenMaxAge
             }
 
-            const valid = await Auth.validateToken(idtoken, decoded, state, validationParameters, this.getPlatform, this.#ENCRYPTIONKEY, this.#logger, this.Database)
+            const valid = await Auth.validateToken(idtoken, this.#devMode, validationParameters, this.getPlatform, this.#ENCRYPTIONKEY, this.Database)
 
-            // Deleting validation info
-            await this.Database.Delete('validation', { state: state })
+            // Deletes state validation cookie
+            res.clearCookie('state' + state, this.#cookieOptions)
 
             provAuthDebug('Successfully validated token!')
 
-            const issuerCode = 'plat' + encodeURIComponent(Buffer.from(valid.iss).toString('base64'))
-
             const courseId = valid['https://purl.imsglobal.org/spec/lti/claim/context'] ? valid['https://purl.imsglobal.org/spec/lti/claim/context'].id : 'NF'
-            const resourseId = valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'] ? valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'].id : 'NF'
-            const activityId = courseId + '_' + resourseId
+            const resourceId = valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'] ? valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'].id : 'NF'
 
-            const contextPath = _path.join(issuerCode, this.#appUrl, activityId)
+            const clientId = valid.clientId
+            const deploymentId = valid['https://purl.imsglobal.org/spec/lti/claim/deployment_id']
+
+            const contextId = encodeURIComponent(valid.iss + clientId + deploymentId + courseId + '_' + resourceId)
+            const platformCode = encodeURIComponent('lti' + Buffer.from(valid.iss + clientId + deploymentId).toString('base64'))
 
             // Mount platform token
             const platformToken = {
               iss: valid.iss,
-              issuerCode: issuerCode,
               user: valid.sub,
               roles: valid['https://purl.imsglobal.org/spec/lti/claim/roles'],
               userInfo: {
@@ -270,19 +224,21 @@ class Provider {
                 email: valid.email
               },
               platformInfo: valid['https://purl.imsglobal.org/spec/lti/claim/tool_platform'],
+              clientId: valid.clientId,
+              deploymentId: valid['https://purl.imsglobal.org/spec/lti/claim/deployment_id'],
               lis: valid['https://purl.imsglobal.org/spec/lti/claim/lis'],
               endpoint: valid['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint'],
               namesRoles: valid['https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice']
             }
 
             // Store idToken in database
-            if (await this.Database.Delete('idtoken', { issuerCode: issuerCode, user: platformToken.user })) await this.Database.Insert(false, 'idtoken', platformToken)
+            await this.Database.Replace(false, 'idtoken', { iss: valid.iss, clientId: clientId, deploymentId: deploymentId, user: valid.sub }, platformToken)
 
             // Mount context token
             const contextToken = {
-              path: contextPath,
+              contextId: contextId,
+              path: req.path,
               user: valid.sub,
-              deploymentId: valid['https://purl.imsglobal.org/spec/lti/claim/deployment_id'],
               targetLinkUri: valid['https://purl.imsglobal.org/spec/lti/claim/target_link_uri'],
               context: valid['https://purl.imsglobal.org/spec/lti/claim/context'],
               resource: valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'],
@@ -294,28 +250,41 @@ class Provider {
             }
 
             // Store contextToken in database
-            if (await this.Database.Delete('contexttoken', { path: contextPath, user: contextToken.user })) await this.Database.Insert(false, 'contexttoken', contextToken)
+            await this.Database.Replace(false, 'contexttoken', { contextId: contextId, user: valid.sub }, contextToken)
 
-            res.cookie(contextPath, platformToken.user, this.#cookieOptions)
+            // Creates platform session cookie
+            res.cookie(platformCode, valid.sub, this.#cookieOptions)
 
-            provMainDebug('Generating LTIK and redirecting to main endpoint')
+            provMainDebug('Generating LTIK and redirecting to endpoint')
             const newLtikObj = {
-              issuer: issuerCode,
-              path: this.#appUrl,
-              activityId: activityId
+              platformUrl: valid.iss,
+              clientId: clientId,
+              deploymentId: deploymentId,
+              platformCode: platformCode,
+              contextId: contextId,
+              user: valid.sub,
+              s: state // Added state to make unique ltiks
             }
             // Signing context token
             const newLtik = jwt.sign(newLtikObj, this.#ENCRYPTIONKEY)
 
-            return res.redirect(307, req.baseUrl + this.#appUrl + '?ltik=' + newLtik)
+            const query = new URLSearchParams(req.query)
+            query.append('ltik', newLtik)
+            const urlSearchParams = query.toString()
+
+            return res.redirect(req.baseUrl + req.path + '?' + urlSearchParams)
           } else {
-            if (this.#whitelistedUrls.indexOf(req.path) !== -1 || this.#whitelistedUrls.indexOf(req.path + '-method-' + req.method.toUpperCase()) !== -1) {
-              provMainDebug('Accessing as whitelisted URL')
+            if (this.#whitelistedRoutes.find(r => {
+              if ((r.route instanceof RegExp && r.route.test(req.path)) || r.route === req.path) return r.method === 'ALL' || r.method === req.method.toUpperCase()
+              return false
+            })) {
+              provMainDebug('Accessing as whitelisted route')
               return next()
             }
             provMainDebug('No LTIK found')
             provMainDebug('Request body: ', req.body)
-            return res.redirect(req.baseUrl + this.#invalidTokenUrl)
+            provMainDebug('Passing request to invalid token handler')
+            return res.redirect(req.baseUrl + this.#invalidTokenRoute)
           }
         }
 
@@ -324,117 +293,125 @@ class Provider {
         try {
           validLtik = jwt.verify(ltik, this.#ENCRYPTIONKEY)
         } catch (err) {
-          if (this.#whitelistedUrls.indexOf(req.path) !== -1 || this.#whitelistedUrls.indexOf(req.path + '-method-' + req.method.toUpperCase()) !== -1) {
-            provMainDebug('Accessing as whitelisted URL')
+          if (this.#whitelistedRoutes.find(r => {
+            if ((r.route instanceof RegExp && r.route.test(req.path)) || r.route === req.path) return r.method === 'ALL' || r.method === req.method.toUpperCase()
+            return false
+          })) {
+            provMainDebug('Accessing as whitelisted route')
             return next()
           }
           throw new Error(err.message)
         }
         provMainDebug('LTIK successfully verified')
 
-        let user = false
+        const platformUrl = validLtik.platformUrl
+        const platformCode = validLtik.platformCode
+        const clientId = validLtik.clientId
+        const deploymentId = validLtik.deploymentId
+        const contextId = validLtik.contextId
+        let user = validLtik.user
 
-        const issuerCode = validLtik.issuer
-        const contextPath = _path.join(issuerCode, validLtik.path, validLtik.activityId)
-
-        // Matches path to cookie
         provMainDebug('Attempting to retrieve matching session cookie')
-        let contextTokenName
-        for (const key of Object.keys(cookies).sort((a, b) => b.length - a.length)) {
-          if (contextPath.indexOf(key) !== -1) {
-            user = cookies[key]
-            contextTokenName = key
-            break
-          }
-        }
+        const cookieUser = cookies[platformCode]
+        if (!cookieUser) {
+          if (!this.#devMode) user = false
+          else { provMainDebug('Dev Mode enabled: Missing session cookies will be ignored') }
+        } else if (user.toString() !== cookieUser.toString()) user = false
 
-        // Check if user already has session cookie stored in its browser
         if (user) {
-          provAuthDebug('Session cookie found')
-          // Gets correspondent id token from database
-          let idToken = await this.Database.Get(false, 'idtoken', { issuerCode: issuerCode, user: user })
-          if (!idToken) throw new Error('No id token found in database')
+          provAuthDebug('Valid session found')
+          // Gets corresponding id token from database
+          let idToken = await this.Database.Get(false, 'idtoken', { iss: platformUrl, clientId: clientId, deploymentId: deploymentId, user: user })
+          if (!idToken) throw new Error('IDTOKEN_NOT_FOUND_DB')
           idToken = idToken[0]
 
           // Gets correspondent context token from database
-          let contextToken = await this.Database.Get(false, 'contexttoken', { path: contextTokenName, user: user })
-          if (!contextToken) throw new Error('No context token found in database')
+          let contextToken = await this.Database.Get(false, 'contexttoken', { contextId: contextId, user: user })
+          if (!contextToken) throw new Error('CONTEXTTOKEN_NOT_FOUND_DB')
           contextToken = contextToken[0]
           idToken.platformContext = contextToken
 
           // Creating local variables
           res.locals.context = contextToken
           res.locals.token = idToken
+          res.locals.ltik = ltik
 
           provMainDebug('Passing request to next handler')
           return next()
         } else {
           provMainDebug('No session cookie found')
           provMainDebug('Request body: ', req.body)
-          if (this.#logger) this.#logger.log({ level: 'error', message: req.body })
           provMainDebug('Passing request to session timeout handler')
-          return res.redirect(req.baseUrl + this.#sessionTimeoutUrl)
+          return res.redirect(req.baseUrl + this.#sessionTimeoutRoute)
         }
       } catch (err) {
-        provAuthDebug(err.message)
-        if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
+        provAuthDebug(err)
         provMainDebug('Passing request to invalid token handler')
-        return res.redirect(req.baseUrl + this.#invalidTokenUrl)
+        return res.redirect(req.baseUrl + this.#invalidTokenRoute)
       }
     }
 
     this.app.use(sessionValidator)
 
-    this.app.all(this.#loginUrl, async (req, res) => {
+    this.app.all(this.#loginRoute, async (req, res) => {
       const params = { ...req.query, ...req.body }
       try {
+        if (!params.iss || !params.login_hint || !params.target_link_uri) return res.status(401).send('MISSING_PARAMETERS')
         const iss = params.iss
         provMainDebug('Receiving a login request from: ' + iss)
-        const platform = await this.getPlatform(iss)
+        let platform
+        if (params.client_id) platform = await this.getPlatform(iss, params.client_id)
+        else platform = (await this.getPlatform(iss))[0]
+
         if (platform) {
           provMainDebug('Redirecting to platform authentication endpoint')
 
           // Create state parameter used to validade authentication response
-          const state = encodeURIComponent(crypto.randomBytes(8).toString('hex'))
+          const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
           provMainDebug('Generated state: ', state)
 
           // Setting up validation info
-          await this.Database.Insert(false, 'validation', { state: state, iss: iss })
+          const cookieOptions = JSON.parse(JSON.stringify(this.#cookieOptions))
+          cookieOptions.maxAge = 60 * 1000 // Adding max age to state cookie = 1min
+          res.cookie('state' + state, iss, cookieOptions)
 
           // Redirect to authentication endpoint
           const query = await Request.ltiAdvantageLogin(params, platform, state)
-          provMainDebug('Login request: ', query)
+          provMainDebug('Login request: ')
+          provMainDebug(query)
           res.redirect(url.format({
             pathname: await platform.platformAuthEndpoint(),
             query: query
           }))
         } else {
           provMainDebug('Unregistered platform attempting connection: ' + iss)
-          return res.status(401).send('Unregistered platform.')
+          return res.status(401).send('UNREGISTERED_PLATFORM')
         }
       } catch (err) {
         provAuthDebug(err)
-        if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
-        return res.status(400).send('Bad Request.')
+        res.sendStatus(400)
       }
     })
 
-    // Session timeout, invalid token and keyset urls
-    this.app.all(this.#sessionTimeoutUrl, async (req, res, next) => {
-      this.#sessionTimedOut(req, res, next)
+    // Session timeout, invalid token and keyset methods
+    this.app.all(this.#sessionTimeoutRoute, async (req, res, next) => {
+      this.#sessionTimeoutCallback(req, res, next)
     })
-    this.app.all(this.#invalidTokenUrl, async (req, res, next) => {
-      this.#invalidToken(req, res, next)
+    this.app.all(this.#invalidTokenRoute, async (req, res, next) => {
+      this.#invalidTokenCallback(req, res, next)
     })
-    this.app.get(this.#keysetUrl, async (req, res, next) => {
+    this.app.get(this.#keysetRoute, async (req, res, next) => {
       this.#keyset(req, res, next)
     })
 
     // Main app
-    this.app.all(this.#appUrl, async (req, res, next) => {
-      if (res.locals.context.messageType === 'LtiDeepLinkingRequest') return this.#deepLinkingCallback(res.locals.token, req, res, next)
+    this.app.all(this.#appRoute, async (req, res, next) => {
+      if (res.locals.context && res.locals.context.messageType === 'LtiDeepLinkingRequest') return this.#deepLinkingCallback(res.locals.token, req, res, next)
       return this.#connectCallback(res.locals.token, req, res, next)
     })
+
+    this.#setup = true
+    return this
   }
 
   /**
@@ -443,9 +420,10 @@ class Provider {
      * @param {Number} [options.port] - Deployment port. 3000 by default.
      * @param {Boolean} [options.silent] - If true, disables initial startup message.
      * @param {Boolean} [options.serverless] - If true, Ltijs does not start an Express server instance. This allows usage as a middleware and with services like AWS. Ignores 'port' parameter.
-     * @returns {Promise<true| false>}
+     * @returns {Promise<true>}
      */
   async deploy (options) {
+    if (!this.#setup) throw new Error('PROVIDER_NOT_SETUP')
     provMainDebug('Attempting to connect to database')
     try {
       await this.Database.setup()
@@ -459,13 +437,13 @@ class Provider {
       if (options && options.silent) conf.silent = options.silent
       // Starts server on given port
 
-      if (options && options.serverless) console.log('Ltijs started in experimental serverless mode!')
+      if (options && options.serverless) console.log('Ltijs started in serverless mode...')
       else {
         await this.#server.listen(conf.port)
         provMainDebug('Ltijs started listening on port: ', conf.port)
 
         // Startup message
-        const message = 'LTI Provider is listening on port ' + conf.port + '!\n\n LTI provider config: \n >App Url: ' + this.#appUrl + '\n >Initiate login URL: ' + this.#loginUrl + '\n >Keyset Url: ' + this.#keysetUrl + '\n >Session Timeout Url: ' + this.#sessionTimeoutUrl + '\n >Invalid Token Url: ' + this.#invalidTokenUrl
+        const message = 'LTI Provider is listening on port ' + conf.port + '!\n\n LTI provider config: \n >App Route: ' + this.#appRoute + '\n >Initiate Login Route: ' + this.#loginRoute + '\n >Keyset Route: ' + this.#keysetRoute + '\n >Session Timeout Route: ' + this.#sessionTimeoutRoute + '\n >Invalid Token Route: ' + this.#invalidTokenRoute
 
         if (!conf.silent) {
           console.log('  _   _______ _____       _  _____\n' +
@@ -476,6 +454,7 @@ class Provider {
                       ' |______|_|  |_____(_)____/|_____/ \n\n', message)
         }
       }
+      if (this.#devMode && !conf.silent) console.log('\nStarting in Dev Mode, state validation and session cookies will not be required. THIS SHOULD NOT BE USED IN A PRODUCTION ENVIRONMENT!')
 
       // Sets up gracefull shutdown
       process.on('SIGINT', async () => {
@@ -485,8 +464,7 @@ class Provider {
 
       return true
     } catch (err) {
-      console.log('Error deploying server:', err.message)
-      if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
+      console.log('Error during deployment: ', err)
       await this.close(options)
       process.exit()
     }
@@ -494,136 +472,145 @@ class Provider {
 
   /**
    * @description Closes connection to database and stops server.
-   * @returns {Promise<true | false>}
+   * @param {Object} [options] - Deployment options.
+   * @param {Boolean} [options.silent] - If true, disables messages.
+   * @returns {Promise<true>}
    */
   async close (options) {
-    try {
-      if (!options || options.silent !== true) console.log('\nClosing server...')
-      await this.#server.close()
-      if (!options || options.silent !== true) console.log('Closing connection to the database...')
-      await this.Database.Close()
-      if (!options || options.silent !== true) console.log('Shutdown complete.')
-      return true
-    } catch (err) {
-      provMainDebug(err.message)
-      if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
-      return false
-    }
+    if (!options || options.silent !== true) console.log('\nClosing server...')
+    await this.#server.close()
+    if (!options || options.silent !== true) console.log('Closing connection to the database...')
+    await this.Database.Close()
+    if (!options || options.silent !== true) console.log('Shutdown complete.')
+    return true
   }
 
   /**
-     * @description Sets the callback function called whenever theres a sucessfull connection, exposing a Conection object containing the id_token decoded parameters.
-     * @param {Function} _connectCallback - Function that is going to be called everytime a platform sucessfully connects to the provider.
-     * @param {Object} [options] - Options configuring the usage of cookies to pass the Id Token data to the client.
-     * @param {Boolean} [options.secure = false] - Secure property of the cookie.
-     * @param {String} [options.sameSite = 'Lax'] - sameSite property of the cookie.
-     * @param {Function} [options.sessionTimeout] - Route function executed everytime the session expires. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}).
-     * @param {Function} [options.invalidToken] - Route function executed everytime the system receives an invalid token or cookie. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}).
-     * @example .onConnect((conection, request, response)=>{response.send(connection)}, {secure: true})
+     * @description Sets the callback function called whenever there's a sucessfull lti 1.3 launch, exposing a "token" object containing the idtoken information.
+     * @param {Function} _connectCallback - Callback function called everytime a platform sucessfully launches to the provider.
+     * @example .onConnect((token, request, response)=>{response.send('OK')})
      * @returns {true}
      */
   onConnect (_connectCallback, options) {
+    /* istanbul ignore next */
     if (options) {
+      if (options.sameSite || options.secure) console.log('Deprecation Warning: The optional parameters of the onConnect() method are now deprecated and will be removed in the 6.0 release. Cookie parameters can be found in the main Ltijs constructor options: ... { cookies: { secure: true, sameSite: \'None\' }.')
+
+      if (options.sessionTimeout || options.invalidToken) console.log('Deprecation Warning: The optional parameters of the onConnect() method are now deprecated and will be removed in the 6.0 release. Invalid token and Session Timeout methods can now be set with the onSessionTimeout() and onInvalidToken() methods.')
+
       if (options.sameSite) {
         this.#cookieOptions.sameSite = options.sameSite
         if (options.sameSite.toLowerCase() === 'none') this.#cookieOptions.secure = true
       }
       if (options.secure === true) this.#cookieOptions.secure = true
-      if (options.sessionTimeout) this.#sessionTimedOut = options.sessionTimeout
-      if (options.invalidToken) this.#invalidToken = options.invalidToken
+      if (options.sessionTimeout) this.#sessionTimeoutCallback = options.sessionTimeout
+      if (options.invalidToken) this.#invalidTokenCallback = options.invalidToken
     }
 
     if (_connectCallback) {
       this.#connectCallback = _connectCallback
       return true
     }
-    throw new Error('Missing callback')
+    throw new Error('MISSING_CALLBACK')
   }
 
   /**
-     * @description Sets the callback function called whenever theres a sucessfull deep linking request, exposing a Conection object containing the id_token decoded parameters.
-     * @param {Function} _deepLinkingCallback - Function that is going to be called everytime a platform sucessfully launches a deep linking request.
-     * @param {Object} [options] - Options configuring the usage of cookies to pass the Id Token data to the client.
-     * @param {Boolean} [options.secure = false] - Secure property of the cookie.
-     * @param {String} [options.sameSite = 'Lax'] - sameSite property of the cookie.
-     * @param {Function} [options.sessionTimeout] - Route function executed everytime the session expires. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}).
-     * @param {Function} [options.invalidToken] - Route function executed everytime the system receives an invalid token or cookie. It must in the end return a 401 status, even if redirects ((req, res, next) => {res.sendStatus(401)}).
-     * @example .onDeepLinking((conection, request, response)=>{response.send(connection)}, {secure: true})
-     * @returns {true}
-     */
-  onDeepLinking (_deepLinkingCallback, options) {
-    if (options) {
-      if (options.sameSite) {
-        this.#cookieOptions.sameSite = options.sameSite
-        if (options.sameSite.toLowerCase() === 'none') this.#cookieOptions.secure = true
-      }
-      if (options.secure === true) this.#cookieOptions.secure = true
-      if (options.sessionTimeout) this.#sessionTimedOut = options.sessionTimeout
-      if (options.invalidToken) this.#invalidToken = options.invalidToken
-    }
-
+   * @description Sets the callback function called whenever there's a sucessfull deep linking launch, exposing a "token" object containing the idtoken information.
+   * @param {Function} _deepLinkingCallback - Callback function called everytime a platform sucessfully launches a deep linking request.
+   * @example .onDeepLinking((token, request, response)=>{response.send('OK')})
+   * @returns {true}
+   */
+  onDeepLinking (_deepLinkingCallback) {
     if (_deepLinkingCallback) {
       this.#deepLinkingCallback = _deepLinkingCallback
       return true
     }
-    throw new Error('Missing callback')
+    throw new Error('MISSING_CALLBACK')
   }
 
   /**
-   * @description Gets the login Url responsible for dealing with the OIDC login flow.
-   * @returns {String}
+   * @description Sets the callback function called when no valid session is found during a request validation.
+   * @param {Function} _sessionTimeoutCallback - Callback method.
+   * @example .onSessionTimeout((request, response)=>{response.send('Session timeout')})
+   * @returns {true}
    */
-  loginUrl () {
-    return this.#loginUrl
-  }
-
-  /**
-   * @description Gets the main application Url that will receive the final decoded Idtoken.
-   * @returns {String}
-   */
-  appUrl () {
-    return this.#appUrl
-  }
-
-  /**
-     * @description Gets the session timeout Url that will be called whenever the system encounters a session timeout.
-     * @returns {String}
-     */
-  sessionTimeoutUrl () {
-    return this.#sessionTimeoutUrl
-  }
-
-  /**
-     * @description Gets the invalid token Url that will be called whenever the system encounters a invalid token or cookie.
-     * @returns {String}
-     */
-  invalidTokenUrl () {
-    return this.#invalidTokenUrl
-  }
-
-  /**
-     * @description Gets the keyset Url that will be used to retrieve a public jwk keyset.
-     * @returns {String}
-     */
-  keysetUrl () {
-    return this.#keysetUrl
-  }
-
-  /**
-   * @description Whitelists Urls to bypass the lti 1.3 authentication protocol. These Url dont have access to a idtoken
-   * @param {String} urls - Urls to be whitelisted
-   */
-  whitelist (...urls) {
-    if (!urls) throw new Error('No url passed.')
-    const formattedUrls = []
-    for (const url of urls) {
-      const isObject = url === Object(url)
-      if (isObject) {
-        if (!url.route || !url.method) throw new Error('Wrong object format on route. Expects string ("/route") or object ({ route: "/route", method: "POST" })')
-        formattedUrls.push(url.route + '-method-' + url.method.toUpperCase())
-      } else formattedUrls.push(url)
+  onSessionTimeout (_sessionTimeoutCallback) {
+    if (_sessionTimeoutCallback) {
+      this.#sessionTimeoutCallback = _sessionTimeoutCallback
+      return true
     }
-    this.#whitelistedUrls = formattedUrls
+    throw new Error('MISSING_CALLBACK')
+  }
+
+  /**
+   * @description Sets the callback function called when the token received fails to be validated.
+   * @param {Function} _invalidTokenCallback - Callback method.
+   * @example .onInvalidToken((request, response)=>{response.send('Invalid token')})
+   * @returns {true}
+   */
+  onInvalidToken (_invalidTokenCallback) {
+    if (_invalidTokenCallback) {
+      this.#invalidTokenCallback = _invalidTokenCallback
+      return true
+    }
+    throw new Error('MISSING_CALLBACK')
+  }
+
+  /**
+   * @description Gets the main application route that will receive the final decoded Idtoken at the end of a successful launch.
+   * @returns {String}
+   */
+  appRoute () {
+    return this.#appRoute
+  }
+
+  /**
+   * @description Gets the login route responsible for dealing with the OIDC login flow.
+   * @returns {String}
+   */
+  loginRoute () {
+    return this.#loginRoute
+  }
+
+  /**
+     * @description Gets the session timeout route that will be called whenever the system encounters a session timeout.
+     * @returns {String}
+     */
+  sessionTimeoutRoute () {
+    return this.#sessionTimeoutRoute
+  }
+
+  /**
+     * @description Gets the invalid token route that will be called whenever the system encounters a invalid token or cookie.
+     * @returns {String}
+     */
+  invalidTokenRoute () {
+    return this.#invalidTokenRoute
+  }
+
+  /**
+     * @description Gets the keyset route that will be used to retrieve a public jwk keyset.
+     * @returns {String}
+     */
+  keysetRoute () {
+    return this.#keysetRoute
+  }
+
+  /**
+   * @description Whitelists routes to bypass the Ltijs authentication protocol. If validation fails, these routes are still accessed but aren't given an idToken.
+   * @param {String} routes - Routes to be whitelisted
+   */
+  whitelist (...routes) {
+    if (!routes) throw new Error('MISSING_ROUTES')
+    const formattedRoutes = []
+    for (const route of routes) {
+      const isObject = (!(route instanceof RegExp) && route === Object(route))
+      if (isObject) {
+        if (!route.route || !route.method) throw new Error('WRONG_FORMAT. Details: Expects string ("/route") or object ({ route: "/route", method: "POST" })')
+        formattedRoutes.push({ route: route.route, method: route.method.toUpperCase() })
+      } else formattedRoutes.push({ route: route, method: 'ALL' })
+    }
+    this.#whitelistedRoutes = formattedRoutes
     return true
   }
 
@@ -638,173 +625,122 @@ class Provider {
      * @param {object} platform.authConfig - Authentication method and key for verifying messages from the platform. {method: "RSA_KEY", key:"PUBLIC KEY..."}
      * @param {String} platform.authConfig.method - Method of authorization "RSA_KEY" or "JWK_KEY" or "JWK_SET".
      * @param {String} platform.authConfig.key - Either the RSA public key provided by the platform, or the JWK key, or the JWK keyset address.
-     * @returns {Promise<Platform|false>}
+     * @returns {Promise<Platform>}
      */
   async registerPlatform (platform) {
-    if (!platform || !platform.url) throw new Error('Error. Missing platform Url.')
+    if (!platform || !platform.url || !platform.clientId) throw new Error('MISSING_PLATFORM_URL_OR_CLIENTID')
     let kid
-    try {
-      const _platform = await this.getPlatform(platform.url)
+    const _platform = await this.getPlatform(platform.url, platform.clientId)
 
-      if (!_platform) {
-        if (!platform.name || !platform.clientId || !platform.authenticationEndpoint || !platform.accesstokenEndpoint || !platform.authConfig) throw new Error('Error registering platform. Missing arguments.')
-        kid = await Auth.generateProviderKeyPair(this.#ENCRYPTIONKEY, this.Database)
-        const plat = new Platform(platform.name, platform.url, platform.clientId, platform.authenticationEndpoint, platform.accesstokenEndpoint, kid, this.#ENCRYPTIONKEY, platform.authConfig, this.#logger, this.Database)
+    if (!_platform) {
+      if (!platform.name || !platform.authenticationEndpoint || !platform.accesstokenEndpoint || !platform.authConfig) throw new Error('MISSING_PARAMS')
+      if (platform.authConfig.method !== 'RSA_KEY' && platform.authConfig.method !== 'JWK_KEY' && platform.authConfig.method !== 'JWK_SET') throw new Error('INVALID_AUTHCONFIG_METHOD. Details: Valid methods are "RSA_KEY", "JWK_KEY", "JWK_SET".')
+      if (!platform.authConfig.key) throw new Error('MISSING_AUTHCONFIG_KEY')
+
+      try {
+        kid = await Auth.generatePlatformKeyPair(this.#ENCRYPTIONKEY, this.Database, platform.url, platform.clientId)
+        const plat = new Platform(platform.name, platform.url, platform.clientId, platform.authenticationEndpoint, platform.accesstokenEndpoint, kid, this.#ENCRYPTIONKEY, platform.authConfig, this.Database)
 
         // Save platform to db
-        provMainDebug('Registering new platform: ' + platform.url)
-        await this.Database.Insert(false, 'platform', { platformName: platform.name, platformUrl: platform.url, clientId: platform.clientId, authEndpoint: platform.authenticationEndpoint, accesstokenEndpoint: platform.accesstokenEndpoint, kid: kid, authConfig: platform.authConfig })
+        provMainDebug('Registering new platform')
+        provMainDebug('Platform Url: ' + platform.url)
+        provMainDebug('Platform ClientId: ' + platform.clientId)
+        await this.Database.Replace(false, 'platform', { platformUrl: platform.url, clientId: platform.clientId }, { platformName: platform.name, platformUrl: platform.url, clientId: platform.clientId, authEndpoint: platform.authenticationEndpoint, accesstokenEndpoint: platform.accesstokenEndpoint, kid: kid, authConfig: platform.authConfig })
 
         return plat
-      } else {
-        provMainDebug('Platform already registered.')
-        await this.Database.Modify(false, 'platform', { platformUrl: platform.url }, { platformName: platform.name || await _platform.platformName(), clientId: platform.clientId || await _platform.platformClientId(), authEndpoint: platform.authenticationEndpoint || await _platform.platformAuthEndpoint(), accesstokenEndpoint: platform.accesstokenEndpoint || await _platform.platformAccessTokenEndpoint(), authConfig: platform.authConfig || await _platform.platformAuthConfig() })
-        return _platform
+      } catch (err) {
+        await this.Database.Delete('publickey', { kid: kid })
+        await this.Database.Delete('privatekey', { kid: kid })
+        await this.Database.Delete('platform', { platformUrl: platform.url, clientId: platform.clientId })
+        provMainDebug(err.message)
+        throw new Error(err)
       }
-    } catch (err) {
-      await this.Database.Delete('publickey', { kid: kid })
-      await this.Database.Delete('privatekey', { kid: kid })
-      await this.Database.Delete('platform', { platformUrl: platform.url })
-      provMainDebug(err.message)
-      if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
-      return false
+    } else {
+      provMainDebug('Platform already registered')
+      await this.Database.Modify(false, 'platform', { platformUrl: platform.url, clientId: platform.clientId }, { platformName: platform.name || await _platform.platformName(), authEndpoint: platform.authenticationEndpoint || await _platform.platformAuthEndpoint(), accesstokenEndpoint: platform.accesstokenEndpoint || await _platform.platformAccessTokenEndpoint(), authConfig: platform.authConfig || await _platform.platformAuthConfig() })
+      return this.getPlatform(platform.url, platform.clientId)
     }
   }
 
   /**
      * @description Gets a platform.
      * @param {String} url - Platform url.
-     * @returns {Promise<Platform | false>}
+     * @param {String} [clientId] - Tool clientId.
+     * @returns {Promise<Array<Platform>, Platform | false>}
      */
-  async getPlatform (url, ENCRYPTIONKEY, logger, Database) {
-    if (!url) throw new Error('No url provided')
-    try {
-      const plat = Database !== undefined ? await Database.Get(false, 'platform', { platformUrl: url }) : await this.Database.Get(false, 'platform', { platformUrl: url })
+  async getPlatform (url, clientId, ENCRYPTIONKEY, Database) {
+    if (!url) throw new Error('MISSING_PLATFORM_URL')
 
-      if (!plat) return false
-      const obj = plat[0]
+    const _Database = Database || this.Database
+    const _ENCRYPTIONKEY = ENCRYPTIONKEY || this.#ENCRYPTIONKEY
 
-      if (!obj) return false
-      const result = new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, ENCRYPTIONKEY !== undefined ? ENCRYPTIONKEY : this.#ENCRYPTIONKEY, obj.authConfig, logger !== undefined ? logger : this.#logger, Database !== undefined ? Database : this.Database)
-
-      return result
-    } catch (err) {
-      provAuthDebug(err.message)
-      // If logger is set (Function was called by the Auth or Grade service) and is set to true, or if the scope logger variable is true, print the log
-      if ((logger !== undefined && logger) || this.#logger) logger !== undefined ? logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack }) : this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
-      return false
+    if (clientId) {
+      const result = await _Database.Get(false, 'platform', { platformUrl: url, clientId: clientId })
+      if (!result) return false
+      const plat = result[0]
+      const platform = new Platform(plat.platformName, plat.platformUrl, plat.clientId, plat.authEndpoint, plat.accesstokenEndpoint, plat.kid, _ENCRYPTIONKEY, plat.authConfig, _Database)
+      return platform
     }
+
+    const result = await _Database.Get(false, 'platform', { platformUrl: url })
+    if (!result) return false
+
+    const platforms = []
+    for (const plat of result) {
+      const platform = new Platform(plat.platformName, plat.platformUrl, plat.clientId, plat.authEndpoint, plat.accesstokenEndpoint, plat.kid, _ENCRYPTIONKEY, plat.authConfig, _Database)
+      platforms.push(platform)
+    }
+
+    return platforms
   }
 
   /**
      * @description Deletes a platform.
      * @param {string} url - Platform url.
-     * @returns {Promise<true | false>}
+     * @param {String} clientId - Tool clientId.
+     * @returns {Promise<true>}
      */
-  async deletePlatform (url) {
-    if (!url) throw new Error('No url provided')
-    const platform = await this.getPlatform(url)
-    if (platform) return platform.remove()
-    return false
+  async deletePlatform (url, clientId) {
+    if (!url || !clientId) throw new Error('MISSING_PARAM')
+    const platform = await this.getPlatform(url, clientId)
+    if (platform) await platform.delete()
+    return true
   }
 
   /**
      * @description Gets all platforms.
-     * @returns {Promise<Array<Platform>| false>}
+     * @returns {Promise<Array<Platform>>}
      */
   async getAllPlatforms () {
-    const returnArray = []
-    try {
-      const platforms = await this.Database.Get(false, 'platform')
+    const platforms = []
+    const result = await this.Database.Get(false, 'platform')
 
-      if (platforms) {
-        for (const obj of platforms) returnArray.push(new Platform(obj.platformName, obj.platformUrl, obj.clientId, obj.authEndpoint, obj.accesstokenEndpoint, obj.kid, this.#ENCRYPTIONKEY, obj.authConfig, this.#logger, this.Database))
-        return returnArray
-      }
-      return []
-    } catch (err) {
-      provAuthDebug(err.message)
-      if (this.#logger) this.#logger.log({ level: 'error', message: 'Message: ' + err.message + '\nStack: ' + err.stack })
-      return false
+    if (result) {
+      for (const plat of result) platforms.push(new Platform(plat.platformName, plat.platformUrl, plat.clientId, plat.authEndpoint, plat.accesstokenEndpoint, plat.kid, this.#ENCRYPTIONKEY, plat.authConfig, this.Database))
+      return platforms
     }
+    return []
   }
 
   /**
-   * @description Redirect to a new location and sets it's cookie if the location represents a separate resource
-   * @param {Object} res - Express response object
-   * @param {String} path - Redirect path
-   * @param {Object} [options] - Redirection options
-   * @param {Boolean} [options.isNewResource = false] - If true creates new resource and its cookie
-   * @param {Boolean} [options.ignoreRoot = false] - If true deletes de main path (/) database tokenb on redirect, this saves storage space and is recommended if you are using your main root only to redirect
-   * @example lti.generatePathCookie(response, '/path', { isNewResource: true })
+   * @description Redirects to a new location. Passes Ltik if present.
+   * @param {Object} res - Express response object.
+   * @param {String} path - Redirect path.
+   * @param {Object} [options] - Redirection options.
+   * @param {Boolean} [options.newResource = false] - If true, changes the path variable on the context token.
+   * @example lti.redirect(response, '/path', { newResource: true })
    */
   async redirect (res, path, options) {
-    if (this.#whitelistedUrls.indexOf(path) !== -1) return res.redirect(path)
-    const code = res.locals.token.issuerCode
-    const courseId = res.locals.token.platformContext.context ? res.locals.token.platformContext.context.id : 'NF'
-    const resourseId = res.locals.token.platformContext.resource ? res.locals.token.platformContext.resource.id : 'NF'
-    const activityId = courseId + '_' + resourseId
+    if (!res || !path) throw new Error('MISSING_ARGUMENT')
+    if (!res.locals.token) return res.redirect(path) // If no token is present, just redirects
+    provMainDebug('Redirecting to: ', path)
+    const token = res.locals.token
     const pathParts = url.parse(path)
-    const oldpath = res.locals.token.platformContext.path
 
-    // Create new cookie name if isNewResource is set
-    const cookiePath = (options && options.isNewResource) ? url.format({
-      protocol: pathParts.protocol,
-      hostname: pathParts.hostname,
-      pathname: pathParts.pathname,
-      port: pathParts.port,
-      auth: pathParts.auth
-    }) : oldpath
-
-    let token = {
-      issuer: code,
-      path: cookiePath,
-      activityId: activityId
-    }
-    // Signing context token
-    token = jwt.sign(token, this.#ENCRYPTIONKEY)
-
-    // Checking the type of redirect
-    const externalRequest = validUrl.isWebUri(path)
-
-    if ((options && options.isNewResource) || externalRequest) {
-      provMainDebug('Setting up path cookie for this resource with path: ' + path)
-      const cookieOptions = JSON.parse(JSON.stringify(this.#cookieOptions))
-      if (externalRequest) {
-        try {
-          const domain = tldparser(externalRequest).domain
-          cookieOptions.sameSite = 'None'
-          cookieOptions.secure = true
-          cookieOptions.domain = '.' + domain
-          provMainDebug('External request found for domain: .' + domain)
-        } catch {
-          provMainDebug('Could not retrieve tld for external redirect. Proceeding as regular request...')
-        }
-      }
-
-      const contextPath = _path.join(code, cookiePath, activityId)
-      const rootPath = _path.join(code, this.#appUrl, activityId)
-      res.cookie(contextPath, res.locals.token.user, cookieOptions)
-
-      const newContextToken = {
-        resource: res.locals.token.platformContext.resource,
-        custom: res.locals.token.platformContext.custom,
-        context: res.locals.token.platformContext.context,
-        path: contextPath,
-        user: res.locals.token.platformContext.user,
-        deploymentId: res.locals.token.platformContext.deploymentId,
-        targetLinkUri: res.locals.token.platformContext.targetLinkUri,
-        launchPresentation: res.locals.token.platformContext.launchPresentation,
-        messageType: res.locals.token.platformContext.messageType,
-        version: res.locals.token.platformContext.version,
-        deepLinkingSettings: res.locals.token.platformContext.deepLinkingSettings
-      }
-
-      if (await this.Database.Delete('contexttoken', { path: contextPath, user: res.locals.token.user })) await this.Database.Insert(false, 'contexttoken', newContextToken)
-      if (options && options.ignoreRoot) {
-        this.Database.Delete('contexttoken', { path: rootPath, user: res.locals.token.user })
-        res.clearCookie(rootPath, this.#cookieOptions)
-      }
+    // Updates path variable if this is a new resource
+    if ((options && (options.newResource || options.isNewResource))) {
+      provMainDebug('Changing context token path to: ' + path)
+      await this.Database.Modify(false, 'contexttoken', { contextId: token.platformContext.contextId, user: res.locals.token.user }, { path: path })
     }
 
     // Formatting path with queries
@@ -826,14 +762,60 @@ class Provider {
       auth: pathParts.auth,
       query: {
         ...queries,
-        ltik: token
+        ltik: res.locals.ltik
       }
     })
 
-    // Sets allow credentials header and redirects to path with queries
-    res.header('Access-Control-Allow-Credentials', 'true')
+    // Redirects to path with queries
     return res.redirect(formattedPath)
+  }
+
+  // Deprecated methods, these methods will be removed in version 6.0
+
+  /* istanbul ignore next */
+  /**
+   * @deprecated
+   */
+  appUrl () {
+    console.log('Deprecation warning: The appUrl() method is now deprecated and will be removed in the 6.0 release. Use appRoute() instead.')
+    return this.appRoute()
+  }
+
+  /* istanbul ignore next */
+  /**
+   * @deprecated
+   */
+  loginUrl () {
+    console.log('Deprecation warning: The loginUrl() method is now deprecated and will be removed in the 6.0 release. Use loginRoute() instead.')
+    return this.loginRoute()
+  }
+
+  /* istanbul ignore next */
+  /**
+   * @deprecated
+   */
+  sessionTimeoutUrl () {
+    console.log('Deprecation warning: The sessionTimeoutUrl() method is now deprecated and will be removed in the 6.0 release. Use sessionTimeoutRoute() instead.')
+    return this.sessionTimeoutRoute()
+  }
+
+  /* istanbul ignore next */
+  /**
+   * @deprecated
+   */
+  invalidTokenUrl () {
+    console.log('Deprecation warning: The invalidTokenUrl() method is now deprecated and will be removed in the 6.0 release. Use invalidTokenRoute() instead.')
+    return this.invalidTokenRoute()
+  }
+
+  /* istanbul ignore next */
+  /**
+   * @deprecated
+   */
+  keysetUrl () {
+    console.log('Deprecation warning: The keysetUrl() method is now deprecated and will be removed in the 6.0 release. Use keysetRoute() instead.')
+    return this.keysetRoute()
   }
 }
 
-module.exports = Provider
+module.exports = new Provider()

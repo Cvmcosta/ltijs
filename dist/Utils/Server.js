@@ -13,23 +13,14 @@ const cookieParser = require('cookie-parser');
 
 const cors = require('cors');
 
-const morgan = require('morgan');
-
 const bearerToken = require('express-bearer-token');
 
 class Server {
-  constructor(https, ssl, ENCRYPTIONKEY, logger, corsOpt, serverAddon) {
+  constructor(https, ssl, ENCRYPTIONKEY, corsOpt, serverAddon) {
     this.app = express();
     this.server = false;
     this.ssl = false;
-    if (https) this.ssl = ssl; // Setting up Logger
-
-    if (logger) {
-      this.app.use(morgan('combined', {
-        stream: logger.stream
-      }));
-    } // Setting up helmet
-
+    if (https) this.ssl = ssl; // Setting up helmet
 
     this.app.use(helmet({
       frameguard: false // Disabling frameguard so that Ltijs can send resources to iframes inside LMS's

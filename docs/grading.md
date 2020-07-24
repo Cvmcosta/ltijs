@@ -4,13 +4,14 @@
 	<br>
 	<br>
 	<a href="https://cvmcosta.github.io/ltijs"><img width="360" src="logo-300.svg"></img></a>
+  <a href="https://site.imsglobal.org/certifications/coursekey/ltijs"​ target='_blank'><img width="80" src="https://www.imsglobal.org/sites/default/files/IMSconformancelogoREG.png" alt="IMS Global Certified" border="0"></img></a>
 </div>
 
 
 > Grading Service class
 
 
-[![travisci](https://img.shields.io/travis/cvmcosta/ltijs.svg)](https://travis-ci.org/Cvmcosta/ltijs)
+[![travisci](https://travis-ci.org/Cvmcosta/ltijs.svg?branch=master)](https://travis-ci.org/Cvmcosta/ltijs)
 [![codecov](https://codecov.io/gh/Cvmcosta/ltijs/branch/master/graph/badge.svg)](https://codecov.io/gh/Cvmcosta/ltijs)
 [![Node Version](https://img.shields.io/node/v/ltijs.svg)](https://www.npmjs.com/package/ltijs)
 [![NPM package](https://img.shields.io/npm/v/ltijs.svg)](https://www.npmjs.com/package/ltijs)
@@ -60,14 +61,17 @@ Ltijs is able to send grades to a platform in the [application/vnd.ims.lis.v1.sc
 Sending the grade: 
 
 ```javascript
-let grade = {
-  scoreGiven: 50,
-  activityProgress: 'Completed',
-  gradingProgress: 'FullyGraded'
-}
+lti.app.post('/grade', async (req, res) => {
+  let grade = {
+    scoreGiven: 50,
+    activityProgress: 'Completed',
+    gradingProgress: 'FullyGraded'
+  }
 
-// Sends a grade to a platform's grade line
-lti.Grade.scorePublish(res.locals.token, grade)
+  // Sends a grade to a platform's grade line
+  await lti.Grade.scorePublish(res.locals.token, grade)
+  return res.sendStatus(201)
+})
 ```
 
 
@@ -77,11 +81,44 @@ lti.Grade.scorePublish(res.locals.token, grade)
 Ltijs is able to retrieve grades from a platform:
 
 ```javascript
-// Retrieves grade from a platform's grade line only for the current user
-let result  = await lti.Grade.result(res.locals.token, { userId: true })
+lti.app.get('/grade', async (req, res) => {
+  // Retrieves grades from a platform, only for the current user
+  const result  = await lti.Grade.result(res.locals.token, { userId: true })
+  return res.send(result)
+})
 ```
 
+##### Line item Creation, Retrieval and Deletion documentation coming soon...
 
+
+```javascript
+// Retrieving lineitems
+lti.app.get('/lineitem', async (req, res) => {
+  // Retrieves lineitems from a platform
+  const result  = await lti.Grade.getLineItems(res.locals.token)
+  return res.send(result)
+})
+
+// Creating lineitem
+lti.app.post('/lineitem', async (req, res) => {
+  const lineItem = {
+          scoreMaximum: 100,
+          label: 'Grade',
+          tag: 'grade'
+        }
+  // Sends lineitem to a platform
+  await lti.Grade.createLineItem(res.locals.token, lineItem)
+  return res.sendSatus(201)
+})
+
+// Deleting lineitem
+lti.app.delete('/lineitem', async (req, res) => {
+  // Deleting lineitem on a platform
+  await lti.Grade.deleteLineItems(res.localstoken, { tag: 'tag' })
+  return res.sendSatus(204)
+})
+
+```
 
 ---
 

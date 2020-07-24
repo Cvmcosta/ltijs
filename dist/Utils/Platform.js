@@ -15,6 +15,24 @@ const provPlatformDebug = require('debug')('provider:platform');
  */
 
 
+var _platformName = new WeakMap();
+
+var _platformUrl = new WeakMap();
+
+var _clientId = new WeakMap();
+
+var _authEndpoint = new WeakMap();
+
+var _authConfig2 = new WeakMap();
+
+var _ENCRYPTIONKEY2 = new WeakMap();
+
+var _accesstokenEndpoint = new WeakMap();
+
+var _kid = new WeakMap();
+
+var _Database = new WeakMap();
+
 class Platform {
   /**
      * @param {string} name - Platform name.
@@ -26,7 +44,7 @@ class Platform {
      * @param {string} _ENCRYPTIONKEY - Encryption key used
      * @param {Object} _authConfig - Authentication configurations for the platform.
      */
-  constructor(name, platformUrl, clientId, authenticationEndpoint, accesstokenEndpoint, kid, _ENCRYPTIONKEY, _authConfig, logger, Database) {
+  constructor(name, platformUrl, clientId, authenticationEndpoint, accesstokenEndpoint, kid, _ENCRYPTIONKEY, _authConfig, Database) {
     _platformName.set(this, {
       writable: true,
       value: void 0
@@ -67,11 +85,6 @@ class Platform {
       value: void 0
     });
 
-    _logger.set(this, {
-      writable: true,
-      value: void 0
-    });
-
     _Database.set(this, {
       writable: true,
       value: void 0
@@ -85,8 +98,23 @@ class Platform {
     (0, _classPrivateFieldSet2.default)(this, _authEndpoint, authenticationEndpoint);
     (0, _classPrivateFieldSet2.default)(this, _accesstokenEndpoint, accesstokenEndpoint);
     (0, _classPrivateFieldSet2.default)(this, _kid, kid);
-    (0, _classPrivateFieldSet2.default)(this, _logger, logger);
     (0, _classPrivateFieldSet2.default)(this, _Database, Database);
+  }
+  /**
+   * @description Gets the platform url.
+   */
+
+
+  async platformUrl() {
+    return (0, _classPrivateFieldGet2.default)(this, _platformUrl);
+  }
+  /**
+   * @description Gets the platform client id.
+   */
+
+
+  async platformClientId() {
+    return (0, _classPrivateFieldGet2.default)(this, _clientId);
   }
   /**
      * @description Sets/Gets the platform name.
@@ -96,85 +124,21 @@ class Platform {
 
   async platformName(name) {
     if (!name) return (0, _classPrivateFieldGet2.default)(this, _platformName);
-
-    try {
-      await (0, _classPrivateFieldGet2.default)(this, _Database).Modify(false, 'platform', {
-        platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl)
-      }, {
-        platformName: name
-      });
-    } catch (err) {
-      provPlatformDebug(err.message);
-      if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
-        level: 'error',
-        message: 'Message: ' + err.message + '\nStack: ' + err.stack
-      });
-      return false;
-    }
-
+    await (0, _classPrivateFieldGet2.default)(this, _Database).Modify(false, 'platform', {
+      platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl),
+      clientId: (0, _classPrivateFieldGet2.default)(this, _clientId)
+    }, {
+      platformName: name
+    });
     (0, _classPrivateFieldSet2.default)(this, _platformName, name);
-    return this;
-  }
-  /**
-     * @description Sets/Gets the platform url.
-     * @param {string} [url] - Platform url.
-     */
-
-
-  async platformUrl(url) {
-    if (!url) return (0, _classPrivateFieldGet2.default)(this, _platformUrl);
-
-    try {
-      await (0, _classPrivateFieldGet2.default)(this, _Database).Modify(false, 'platform', {
-        platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl)
-      }, {
-        platformUrl: url
-      });
-    } catch (err) {
-      provPlatformDebug(err.message);
-      if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
-        level: 'error',
-        message: 'Message: ' + err.message + '\nStack: ' + err.stack
-      });
-      return false;
-    }
-
-    (0, _classPrivateFieldSet2.default)(this, _platformUrl, url);
-    return this;
-  }
-  /**
-     * @description Sets/Gets the platform client id.
-     * @param {string} [clientId] - Platform client id.
-     */
-
-
-  async platformClientId(clientId) {
-    if (!clientId) return (0, _classPrivateFieldGet2.default)(this, _clientId);
-
-    try {
-      await (0, _classPrivateFieldGet2.default)(this, _Database).Modify(false, 'platform', {
-        platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl)
-      }, {
-        clientId: clientId
-      });
-    } catch (err) {
-      provPlatformDebug(err.message);
-      if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
-        level: 'error',
-        message: 'Message: ' + err.message + '\nStack: ' + err.stack
-      });
-      return false;
-    }
-
-    (0, _classPrivateFieldSet2.default)(this, _clientId, clientId);
-    return this;
+    return name;
   }
   /**
      * @description Gets the platform key_id.
      */
 
 
-  platformKid() {
+  async platformKid() {
     return (0, _classPrivateFieldGet2.default)(this, _kid);
   }
   /**
@@ -184,19 +148,10 @@ class Platform {
 
 
   async platformPublicKey() {
-    try {
-      const key = await (0, _classPrivateFieldGet2.default)(this, _Database).Get((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), 'publickey', {
-        kid: (0, _classPrivateFieldGet2.default)(this, _kid)
-      });
-      return key[0].key;
-    } catch (err) {
-      provPlatformDebug(err.message);
-      if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
-        level: 'error',
-        message: 'Message: ' + err.message + '\nStack: ' + err.stack
-      });
-      return false;
-    }
+    const key = await (0, _classPrivateFieldGet2.default)(this, _Database).Get((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), 'publickey', {
+      kid: (0, _classPrivateFieldGet2.default)(this, _kid)
+    });
+    return key[0].key;
   }
   /**
      * @description Gets the RSA private key assigned to the platform.
@@ -205,19 +160,10 @@ class Platform {
 
 
   async platformPrivateKey() {
-    try {
-      const key = await (0, _classPrivateFieldGet2.default)(this, _Database).Get((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), 'privatekey', {
-        kid: (0, _classPrivateFieldGet2.default)(this, _kid)
-      });
-      return key[0].key;
-    } catch (err) {
-      provPlatformDebug(err.message);
-      if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
-        level: 'error',
-        message: 'Message: ' + err.message + '\nStack: ' + err.stack
-      });
-      return false;
-    }
+    const key = await (0, _classPrivateFieldGet2.default)(this, _Database).Get((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), 'privatekey', {
+      kid: (0, _classPrivateFieldGet2.default)(this, _kid)
+    });
+    return key[0].key;
   }
   /**
      * @description Sets/Gets the platform authorization configurations used to validate it's messages.
@@ -228,30 +174,20 @@ class Platform {
 
   async platformAuthConfig(method, key) {
     if (!method && !key) return (0, _classPrivateFieldGet2.default)(this, _authConfig2);
-    if (method !== 'RSA_KEY' && method !== 'JWK_KEY' && method !== 'JWK_SET') throw new Error('Invalid message validation method. Valid methods are "RSA_KEY", "JWK_KEY", "JWK_SET"');
-    if (!key) throw new Error('Missing secong argument key or keyset_url.');
+    if (method !== 'RSA_KEY' && method !== 'JWK_KEY' && method !== 'JWK_SET') throw new Error('INVALID_METHOD. Details: Valid methods are "RSA_KEY", "JWK_KEY", "JWK_SET".');
+    if (!key) throw new Error('MISSING_KEY');
     const authConfig = {
       method: method,
       key: key
     };
-
-    try {
-      await (0, _classPrivateFieldGet2.default)(this, _Database).Modify(false, 'platform', {
-        platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl)
-      }, {
-        authConfig: authConfig
-      });
-    } catch (err) {
-      provPlatformDebug(err.message);
-      if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
-        level: 'error',
-        message: 'Message: ' + err.message + '\nStack: ' + err.stack
-      });
-      return false;
-    }
-
+    await (0, _classPrivateFieldGet2.default)(this, _Database).Modify(false, 'platform', {
+      platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl),
+      clientId: (0, _classPrivateFieldGet2.default)(this, _clientId)
+    }, {
+      authConfig: authConfig
+    });
     (0, _classPrivateFieldSet2.default)(this, _authConfig2, authConfig);
-    return this;
+    return authConfig;
   }
   /**
      * @description Sets/Gets the platform authorization endpoint used to perform the OIDC login.
@@ -261,24 +197,14 @@ class Platform {
 
   async platformAuthEndpoint(authEndpoint) {
     if (!authEndpoint) return (0, _classPrivateFieldGet2.default)(this, _authEndpoint);
-
-    try {
-      await (0, _classPrivateFieldGet2.default)(this, _Database).Modify(false, 'platform', {
-        platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl)
-      }, {
-        authEndpoint: authEndpoint
-      });
-    } catch (err) {
-      provPlatformDebug(err.message);
-      if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
-        level: 'error',
-        message: 'Message: ' + err.message + '\nStack: ' + err.stack
-      });
-      return false;
-    }
-
+    await (0, _classPrivateFieldGet2.default)(this, _Database).Modify(false, 'platform', {
+      platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl),
+      clientId: (0, _classPrivateFieldGet2.default)(this, _clientId)
+    }, {
+      authEndpoint: authEndpoint
+    });
     (0, _classPrivateFieldSet2.default)(this, _authEndpoint, authEndpoint);
-    return this;
+    return authEndpoint;
   }
   /**
      * @description Sets/Gets the platform access token endpoint used to authenticate messages to the platform.
@@ -288,24 +214,14 @@ class Platform {
 
   async platformAccessTokenEndpoint(accesstokenEndpoint) {
     if (!accesstokenEndpoint) return (0, _classPrivateFieldGet2.default)(this, _accesstokenEndpoint);
-
-    try {
-      await (0, _classPrivateFieldGet2.default)(this, _Database).Modify(false, 'platform', {
-        platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl)
-      }, {
-        accesstokenEndpoint: accesstokenEndpoint
-      });
-    } catch (err) {
-      provPlatformDebug(err.message);
-      if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
-        level: 'error',
-        message: 'Message: ' + err.message + '\nStack: ' + err.stack
-      });
-      return false;
-    }
-
+    await (0, _classPrivateFieldGet2.default)(this, _Database).Modify(false, 'platform', {
+      platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl),
+      clientId: (0, _classPrivateFieldGet2.default)(this, _clientId)
+    }, {
+      accesstokenEndpoint: accesstokenEndpoint
+    });
     (0, _classPrivateFieldSet2.default)(this, _accesstokenEndpoint, accesstokenEndpoint);
-    return this;
+    return accesstokenEndpoint;
   }
   /**
      * @description Gets the platform access token or attempts to generate a new one.
@@ -316,6 +232,7 @@ class Platform {
   async platformAccessToken(scopes) {
     const token = await (0, _classPrivateFieldGet2.default)(this, _Database).Get((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), 'accesstoken', {
       platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl),
+      clientId: (0, _classPrivateFieldGet2.default)(this, _clientId),
       scopes: scopes
     });
 
@@ -335,45 +252,29 @@ class Platform {
    */
 
 
+  async delete() {
+    await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('platform', {
+      platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl),
+      clientId: (0, _classPrivateFieldGet2.default)(this, _clientId)
+    });
+    await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('publickey', {
+      kid: (0, _classPrivateFieldGet2.default)(this, _kid)
+    });
+    await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('privatekey', {
+      kid: (0, _classPrivateFieldGet2.default)(this, _kid)
+    });
+    return true;
+  }
+  /**
+   * @deprecated
+   */
+
+
   async remove() {
-    try {
-      return Promise.all([(0, _classPrivateFieldGet2.default)(this, _Database).Delete('platform', {
-        platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl)
-      }), (0, _classPrivateFieldGet2.default)(this, _Database).Delete('publickey', {
-        kid: (0, _classPrivateFieldGet2.default)(this, _kid)
-      }), (0, _classPrivateFieldGet2.default)(this, _Database).Delete('privatekey', {
-        kid: (0, _classPrivateFieldGet2.default)(this, _kid)
-      })]);
-    } catch (err) {
-      provPlatformDebug(err.message);
-      if ((0, _classPrivateFieldGet2.default)(this, _logger)) (0, _classPrivateFieldGet2.default)(this, _logger).log({
-        level: 'error',
-        message: 'Message: ' + err.message + '\nStack: ' + err.stack
-      });
-      return false;
-    }
+    console.log('Deprecation warning: The Platform.remove() method is now deprecated and will be removed in the 6.0 release. Use Platform.delete() instead.');
+    return this.delete();
   }
 
 }
-
-var _platformName = new WeakMap();
-
-var _platformUrl = new WeakMap();
-
-var _clientId = new WeakMap();
-
-var _authEndpoint = new WeakMap();
-
-var _authConfig2 = new WeakMap();
-
-var _ENCRYPTIONKEY2 = new WeakMap();
-
-var _accesstokenEndpoint = new WeakMap();
-
-var _kid = new WeakMap();
-
-var _logger = new WeakMap();
-
-var _Database = new WeakMap();
 
 module.exports = Platform;
