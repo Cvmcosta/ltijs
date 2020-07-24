@@ -239,12 +239,8 @@ class Provider {
     if (options && options.tokenMaxAge !== undefined) (0, _classPrivateFieldSet2.default)(this, _tokenMaxAge, options.tokenMaxAge); // Cookie options
 
     if (options && options.cookies) {
-      if (options.cookies.sameSite) {
-        (0, _classPrivateFieldGet2.default)(this, _cookieOptions).sameSite = options.cookies.sameSite;
-        if (options.cookies.sameSite.toLowerCase() === 'none') (0, _classPrivateFieldGet2.default)(this, _cookieOptions).secure = true;
-      }
-
       if (options.cookies.secure === true) (0, _classPrivateFieldGet2.default)(this, _cookieOptions).secure = true;
+      if (options.cookies.sameSite) (0, _classPrivateFieldGet2.default)(this, _cookieOptions).sameSite = options.cookies.sameSite;
       if (options.cookies.domain) (0, _classPrivateFieldGet2.default)(this, _cookieOptions).domain = options.cookies.domain;
     }
 
@@ -479,7 +475,7 @@ class Provider {
           provMainDebug('Generated state: ', state); // Setting up validation info
 
           const cookieOptions = JSON.parse(JSON.stringify((0, _classPrivateFieldGet2.default)(this, _cookieOptions)));
-          cookieOptions.maxAge = 60 * 5 * 1000; // Adding max age to state cookie = 5min
+          cookieOptions.maxAge = 60 * 1000; // Adding max age to state cookie = 1min
 
           res.cookie('state' + state, iss, cookieOptions); // Redirect to authentication endpoint
 

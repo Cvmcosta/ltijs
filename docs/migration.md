@@ -87,11 +87,16 @@ You can setup Ltijs in file `a.js`:
 // a.js 
 // Require Provider 
 const lti = require('ltijs').Provider
+// Require b.js
+const routes = require('./b')
 
-// Setup provider
-lti.setup('LTIKEY', // Key used to sign cookies and tokens
-         { url: 'mongodb://localhost/database' }, // Database configuration
-         { appRoute: '/', loginRoute: '/login' }) // Optionally, specify some of the reserved routes
+// Setup method can be called only once
+lti.setup('LTIKEY',
+         { url: 'mongodb://localhost/database' },
+         { appRoute: '/', loginRoute: '/login' })
+
+// Setting up routes
+lti.app.use(routes)
 
 lti.deploy()
 ```
@@ -102,19 +107,22 @@ And access the same object in a second file `b.js`:
 // b.js 
 // Require Provider 
 const lti = require('ltijs').Provider
+// Require express router
+const router = require('express').Router()
 
-// Sending grade in a diferent file
-lti.app.post('/grade', async (req, res) => {
+router.post('/grade', async (req, res) => {
   let grade = {
     scoreGiven: 50,
     activityProgress: 'Completed',
     gradingProgress: 'FullyGraded'
   }
 
-  // Sends a grade to a platform's grade line
+  // Using lti object to access Grade Service in another file
   await lti.Grade.scorePublish(res.locals.token, grade)
-  res.sendStatus(201)
+  return res.sendStatus(201)
 })
+
+module.exports = router
 ```
 
 #### Platform registration and retrieval changes

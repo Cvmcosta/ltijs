@@ -109,8 +109,19 @@ const lti = require('ltijs').Provider
 
 // Setup provider
 lti.setup('LTIKEY', // Key used to sign cookies and tokens
-         { url: 'mongodb://localhost/database' }, // Database configuration
-         { appRoute: '/', loginRoute: '/login' }) // Optionally, specify some of the reserved routes
+  { // Database configuration
+    url: 'mongodb://localhost/database',
+    connection: { user: 'user', pass: 'password' }
+  },
+  { // Options
+    appRoute: '/', loginRoute: '/login', // Optionally, specify some of the reserved routes
+    cookies: {
+      secure: false, // Set secure to true if the testing platform is in a different domain and https is being used
+      sameSite: '' // Set sameSite to 'None' if the testing platform is in a different domain and https is being used
+    },
+    devMode: false // Set DevMode to true if the testing platform is in a different domain and https is not being used
+  }
+)
 
 // Set lti launch callback
 lti.onConnect((token, req, res) => {
@@ -123,7 +134,7 @@ const setup = async () => {
   await lti.deploy({ port: 3000 }) // Specifying port. Defaults to 3000
 
   // Register platform
-  await lti.registerPlatform({ 
+  await lti.registerPlatform({
     url: 'https://platform.url',
     name: 'Platform Name',
     clientId: 'TOOLCLIENTID',

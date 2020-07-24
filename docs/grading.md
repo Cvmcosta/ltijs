@@ -61,14 +61,17 @@ Ltijs is able to send grades to a platform in the [application/vnd.ims.lis.v1.sc
 Sending the grade: 
 
 ```javascript
-let grade = {
-  scoreGiven: 50,
-  activityProgress: 'Completed',
-  gradingProgress: 'FullyGraded'
-}
+lti.app.post('/grade', async (req, res) => {
+  let grade = {
+    scoreGiven: 50,
+    activityProgress: 'Completed',
+    gradingProgress: 'FullyGraded'
+  }
 
-// Sends a grade to a platform's grade line
-lti.Grade.scorePublish(res.locals.token, grade)
+  // Sends a grade to a platform's grade line
+  await lti.Grade.scorePublish(res.locals.token, grade)
+  return res.sendStatus(201)
+})
 ```
 
 
@@ -78,8 +81,11 @@ lti.Grade.scorePublish(res.locals.token, grade)
 Ltijs is able to retrieve grades from a platform:
 
 ```javascript
-// Retrieves grade from a platform's grade line only for the current user
-let result  = await lti.Grade.result(res.locals.token, { userId: true })
+lti.app.get('/grade', async (req, res) => {
+  // Retrieves grades from a platform, only for the current user
+  const result  = await lti.Grade.result(res.locals.token, { userId: true })
+  return res.send(result)
+})
 ```
 
 

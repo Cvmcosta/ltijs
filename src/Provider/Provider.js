@@ -131,11 +131,8 @@ class Provider {
 
     // Cookie options
     if (options && options.cookies) {
-      if (options.cookies.sameSite) {
-        this.#cookieOptions.sameSite = options.cookies.sameSite
-        if (options.cookies.sameSite.toLowerCase() === 'none') this.#cookieOptions.secure = true
-      }
       if (options.cookies.secure === true) this.#cookieOptions.secure = true
+      if (options.cookies.sameSite) this.#cookieOptions.sameSite = options.cookies.sameSite
       if (options.cookies.domain) this.#cookieOptions.domain = options.cookies.domain
     }
 
@@ -375,7 +372,7 @@ class Provider {
 
           // Setting up validation info
           const cookieOptions = JSON.parse(JSON.stringify(this.#cookieOptions))
-          cookieOptions.maxAge = 60 * 5 * 1000 // Adding max age to state cookie = 5min
+          cookieOptions.maxAge = 60 * 1000 // Adding max age to state cookie = 1min
           res.cookie('state' + state, iss, cookieOptions)
 
           // Redirect to authentication endpoint

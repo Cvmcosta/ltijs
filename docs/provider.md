@@ -36,21 +36,41 @@ Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps
 - [Feature roadmap](#feature-roadmap)
 - [Installation](#installation)
 - [Quick start](#quick-start)
+  - [Implementation example](#implementation-example)
 - [Documentation](#documentation)
-- [Usage](#usage)
-  - [Setting up provider](#setting-up-provider)
-  - [Using the keyset endpoint](#keyset-endpoint)
-  - [The Provider object](#the-provider-object)
+- [Setting up Ltijs](#setting-up-ltijs)
+  - [Encryption key](#encryption-key)
+  - [Database configuration](#database-configuration)
+  - [Reserved endpoints configuration](#reserved-endpoint-configuration)
+  - [Cookie configuration](#cookie-configuration)
+  - [Development mode](#development-mode)
+  - [Token max age](#token-max-age-allowed)
+  - [Server addon](#server-addon)
   - [Serving static files](#serving-static-files)
-  - [Deploy and the onConnect() Callback](#deploy)
-  - [Keyset Endpoint](#keyset-endpoint)
-  - [Server addon support](#server-addon-support)
-  - [The Platform object](#the-platform-object)
-  - [The idToken object](#the-idtoken-object)
-  - [Routing and Context](#routing-and-context)
-- [Deep Linking with Ltijs](#deep-linking-with-ltijs)
-- [Sending and retrieving grades with Ltijs](#sending-grades-with-ltijs)
-- [Using the Names and Roles service with Ltijs](#the-names-and-roles-provisioning-service)
+  - [Cors](#cors)
+- [Using Ltijs](#using-ltijs)
+  - [App](#app)
+  - [Reserved endpoint routes](#reserved-endpoint-routes)
+  - [OnConnect Callback](#onconnect)
+  - [OnDeepLinking Callback](#ondeeplinking)
+  - [OnInvalidToken Callback](#oninvalidtoken)
+  - [OnSessionTimeout Callback](#onsessiontimeout)
+  - [Deploy](#deploy)
+  - [Registering a Platform](#registering-a-new-platform)
+  - [Retrieving a Platform](#retrieving-a-platform)
+  - [Modifying a Platform](#modifying-a-platform)
+  - [Deleting a Platform](#deleting-a-platform)
+- [Authentication and Routing](#lti-flow)
+  - [Id Token](#idtoken)
+  - [Context Token](#context-token)
+  - [Launch authentication](#authentication)
+  - [Request authentication](#request-authentication)
+  - [Whitelisting routes](#whitelisting-routes)
+  - [Redirecting with Ltijs](#redirecting-with-ltijs)
+- [LTI Advantage Services](#lti-advantage-services)
+  - [Deep Linking](#deep-linking-service-with-ltijs)
+  - [Assignment and Grades](#assignment-and-grades-service-with-ltijs)
+  - [Names and Roles Provisioning](#names-and-roles-provisioning-service-with-ltijs)
 - [Debugging](#debugging)
 - [Contributing](#contributing)
 - [Special thanks](#special-thanks)
@@ -125,8 +145,19 @@ const lti = require('ltijs').Provider
 
 // Setup provider
 lti.setup('LTIKEY', // Key used to sign cookies and tokens
-         { url: 'mongodb://localhost/database' }, // Database configuration
-         { appRoute: '/', loginRoute: '/login' }) // Optionally, specify some of the reserved routes
+  { // Database configuration
+    url: 'mongodb://localhost/database',
+    connection: { user: 'user', pass: 'password' }
+  },
+  { // Options
+    appRoute: '/', loginRoute: '/login', // Optionally, specify some of the reserved routes
+    cookies: {
+      secure: false, // Set secure to true if the testing platform is in a different domain and https is being used
+      sameSite: '' // Set sameSite to 'None' if the testing platform is in a different domain and https is being used
+    },
+    devMode: false // Set DevMode to true if the testing platform is in a different domain and https is not being used
+  }
+)
 
 // Set lti launch callback
 lti.onConnect((token, req, res) => {
@@ -139,7 +170,7 @@ const setup = async () => {
   await lti.deploy({ port: 3000 }) // Specifying port. Defaults to 3000
 
   // Register platform
-  await lti.registerPlatform({ 
+  await lti.registerPlatform({
     url: 'https://platform.url',
     name: 'Platform Name',
     clientId: 'TOOLCLIENTID',
@@ -616,7 +647,7 @@ lti.redirect(res, '/path', { newResource: true })
 
 ## Setting up Ltijs
 
-When using Ltijs, the first step must **always** be to call the `setup` method to configure the LTI provider:
+When using Ltijs, the first step must **always** be to call the `lti.setup()` method to configure the LTI provider:
 
 ```javascript
 // Require Ltijs package
@@ -691,7 +722,7 @@ lti.setup('EXAMPLEKEY',
           })
 ```
 
-#### Cookie configurations:
+#### Cookie configuration:
 
 Ltijs sets session cookies throughout the LTI validation process, how these cookies are set can be configured through the `cookies` field of the **options** parameter:
 
@@ -717,11 +748,11 @@ lti.setup('EXAMPLEKEY',
           })
 ```
 
-***If sameSite is defined as 'None', the secure flag is automatically set to true, that is done because browsers do not accept cookies with sameSite set to 'None' that are not also set as secure.***
+***If the platform and tool are in different domains, some browsers will not allow cookies to be set unless they have the `secure: true` and `sameSite: 'None'` flags. If you are in a development environment and cannot set secure cookies (over https), consider using Ltijs in `Development mode`.***
 
 #### Development mode:
 
-Ltijs relies on the set cookies for part of the validation process, but in some development environments, cookies mught not be able to be set, for instance if you are trying to set cross domain cookies over an insecure http connection. 
+Ltijs relies on cookies for part of the validation process, but in some development environments, cookies might not be able to be set, for instance if you are trying to set cross domain cookies over an insecure http connection. 
 
 In situations like this you can set the `devMode` field as true and Ltijs will stop trying to validate the cookies and will instead use the information obtained through the `Ltik` token to retrieve the correct context information.
 
@@ -737,7 +768,7 @@ lti.setup('EXAMPLEKEY',
           })
 ```
 
-***DevMode should never be used in a production environment, and it should not be necessary, since most of the cookie issues can be solved by using the "secure: true" and "sameSite: None" flags.***
+***DevMode should never be used in a production environment, and it should not be necessary, since most of the cookie issues can be solved by using the `secure: true` and `sameSite: None` flags.***
 
 #### Token max age allowed:
 
@@ -825,7 +856,53 @@ lti.setup('EXAMPLEKEY',
 
 ## Using Ltijs
 
-After the `setup` method is called Ltijs gives you access to objects and methods to help you create your LTI Provider:
+After the `lti.setup()` method is called, the `lti` object gives you access to various functionalities to help you create your LTI Provider. 
+
+The `lti` object is a singleton that can be accessed across multiple files while calling `lti.setup()` only once:
+
+You can setup Ltijs in file `a.js`:
+
+```javascript
+// a.js 
+// Require Provider 
+const lti = require('ltijs').Provider
+// Require b.js
+const routes = require('./b')
+
+// Setup method can be called only once
+lti.setup('LTIKEY',
+         { url: 'mongodb://localhost/database' },
+         { appRoute: '/', loginRoute: '/login' })
+
+// Setting up routes
+lti.app.use(routes)
+
+lti.deploy()
+```
+
+And access the same object in a second file `b.js`:
+
+```javascript
+// b.js 
+// Require Provider 
+const lti = require('ltijs').Provider
+// Require express router
+const router = require('express').Router()
+
+router.post('/grade', async (req, res) => {
+  let grade = {
+    scoreGiven: 50,
+    activityProgress: 'Completed',
+    gradingProgress: 'FullyGraded'
+  }
+
+  // Using lti object to access Grade Service in another file
+  await lti.Grade.scorePublish(res.locals.token, grade)
+  return res.sendStatus(201)
+})
+
+module.exports = router
+```
 
 ### App
 
@@ -896,6 +973,17 @@ lti.onConnect(async (token, req, res, next) => {
 ```javascript
 // Equivalent to onConnect usage above
 lti.app.get(lti.appRoute(), async (req, res, next) => {
+    console.log(res.locals.token)
+    return res.send('User connected!') 
+  }
+)
+```
+
+Launches directed at other endpoints are also valid but **are not handled by the `onConnect` callback**, instead they must be handled by their own `Express` route:
+
+```javascript
+// This route can handle launches to /endpoint
+lti.app.get('/endpoint', async (req, res, next) => {
     console.log(res.locals.token)
     return res.send('User connected!') 
   }
@@ -1132,7 +1220,7 @@ await lti.deletePlatform('http://plat.com', 'CLIENTID') // Deletes a platform
 
 ---
 
-## LTI Flow
+## Authentication and Routing
 
 The LTI 1.3 protocol works in such a way that every successful launch from the platform to the tool generates an **IdToken** that the tool uses to retrieve information about the user and the general context of the launch.
 
@@ -1260,7 +1348,9 @@ The `contexttoken` object consists of:
 
 Ltijs need as way to retrieve the correct `idtoken` and `contexttoken` information whenever a tool makes a request. The authentication protocol is based on two items, a **session cookie** and a **ltik** token.
 
-#### Launch
+#### Launches
+
+A platform can launch to **any of the tool's endpoints**, but only launches targeting the specified `appRoute` will be sent to the [onConnect callback](#onconnect). **Launches to other endpoints must be handled by their specific `Express` routes.**
 
 At the end of a successful launch, Ltijs redirects the request to the desired endpoint, but it also does two other things:
  
@@ -1275,7 +1365,7 @@ At the end of a successful launch, Ltijs redirects the request to the desired en
   </br>
 </div>
 
-> [See more about cookie configuration options](#cookie-configurations)
+> [See more about cookie configuration options](#cookie-configuration)
 
 #### Request authentication
 
@@ -1303,192 +1393,141 @@ If the validation fails, the request is redirected to either the **invalidTokenR
 #### Whitelisting routes
 
 
-Routes can be whitelisted to bypass the Ltijs authentication protocol
+Routes can be whitelisted to bypass the Ltijs authentication protocol **in case of validation failure**, this means that these routes work normally, but if the request sent to them fails validation they are still reached but don't have access to a `idtoken` or `contexttoken`.
 
----
-
-### Routing and context
-
-Your tool can be used with an unlimited amount of platforms, that is the idea behind LTI, so it needs a way to track which platform and resource is currently being accessed and return the correct token information relevant to each context.
-
-In **Ltijs** this is done matching the **ltik** token (passed to the application via a query parameter) with it's corresponding session cookies stored in the user's browser.
-
-- Example application endpoint:
-
-**<center>http://myltiprovider/app?ltik=LTIKTOKEN</center>**
-
-The **ltik** parameter is a signed JWT that contains the platform id and context for the current user.
-
-- Corresponding cookies
-
-**<center>platCONTEXT_ID</center>**
-**<center>platCONTEXT_ID/</center>**
-
-
-
-
-> As you can see there is more than one cookie stored, that is because Ltijs also keeps track of multiple activities linked to the tool within a same platform, so the path specific cookie keeps track of activity specific information, like custom parameters, that might point to a specific resource.
-
-
-The CONTEXT_ID is a url encoded base64 value that represents a platform url combined with the activity id, this value is automatically generated, stored in the ltik JWT and passed to the application when the `redirect()` function is called:
-
+A good way to exemplify this behaviour is by using it to create a landing page, that will be accessed if a request to the whitelisted route fails validation:
 
 ```javascript
-lti.onConnect((connection, request, response) => {
-  // Call redirect function
-  lti.redirect(response, '/main') // Redirects to http://provider/main?ltik=LTIKTOKEN
+// Whitelisting the main app route and /landingpage to create a landing page
+lti.whitelist(lti.appRoute(), { route: '/landingpage', method: 'get' })
+
+// When receiving successful LTI launch redirects to app, otherwise redirects to landing page
+lti.onConnect(async (token, req, res, next) => {
+  // Checking if received idtoken
+  if (token) return res.sendFile(path.join(__dirname, './public/index.html'))
+  else lti.redirect(res, '/landingpage') // Redirects to landing page
 })
 ```
 
+Whitelisted routes are created using the `lti.whitelist()` method that can receive two types of arguments:
 
-The previous call generates the following cookies:
+- **Route strings**
 
-**<center>platCONTEXT_ID</center>**
-**<center>platCONTEXT_ID/</center>**
-
-
-> **But if i redirected to /main why is there no platCONTEXT_ID/main cookie set?**
-
-#### Serving multiple resources
-
-That happens because the call `lti.redirect(response, '/main')`, doesn't specify that the `/main` path is a specific resource inside the provider, so a request to `/main` will work within the context of `platCONTEXT_ID/` as a subroute.
-
-- If you want to specify that the call to `/main` should work within the context of a new resource you just have to set the ```isNewResource``` property of the options parameter of `lti.rediret()` as `true`:
-
+Route strings will be whitelisted for **every method**:
 
 ```javascript
-lti.onConnect((connection, request, response) => {
-  // Call redirect function
-  lti.redirect(response, '/main', { isNewResource: true }) // Redirects to http://provider/main?ltik=LTIKTOKEN within a new context
+lti.whitelist('/route1')
+
+// The lti.whitelist() method can receive multiple arguments
+lti.whitelist('/route1', '/route2', '/route3')
+```
+
+- **Route object**
+
+Route objects let you specify **whitelisted methods**:
+
+```javascript
+lti.whitelist({ route: '/route1', method: 'get' })
+
+// Route objects can also be whitelisted for every method
+lti.whitelist({ route: '/route1', method: 'all' })
+
+// The lti.whitelist() method can receive multiple arguments of different trypes
+lti.whitelist({ route: '/route1', method: 'get' }, { route: '/route2', method: 'post' }, '/route3')
+```
+
+Routes can also be set using Regex which means that you can whitelist a big range of routes:
+
+```javascript
+// Using Regex
+lti.whitelist(new RegExp(/^\/route1/), { route: new RegExp(/^\/route2/), method: 'get' })
+```
+
+The `new RegExp(/^\/route1/)` regex will whitelistd every route that starts with `/route`.
+
+**Be careful when using regex to whitelist routes, you could whitelist routes accidentally and that can have a big impact on your application. It is recommended to use the start-of-string (^) and end-of-string ($) anchors to avoid accidental matches.**
+
+
+#### Redirecting with Ltijs
+
+The Ltijs authentication protocol relies on the `ltik` token being passed to endpoints as query parameters. 
+
+To make this process seamless, the `lti.redirect()` method can be used to redirect to an endpoint passing the `ltik` token automatically:
+
+```javascript
+lti.onConnect(async (token, req, res) => {
+  return lti.redirect(res, '/route') // Redirects to /route with the ltik token
+})
+
+lti.get('/route', async (req, res) => {
+  return lti.redirect(res, '/route/b?test=123') // Redirects to /route/b with the ltik token and additional query parameters
 })
 ```
 
+The `lti.redirect()` method requires two parameter:
 
-The previous call generates the following cookies:
+- **Response** - The `Express` response object, that will be used to perform the redirection and retrieve the `idtoken` and `ltik`.
 
-> Platform context info 
+- **Url** - The redirection target.
 
-**<center>platCONTEXT_ID</center>**
+The `url` parameter can be an internal route ('/route') or a complete URL ('https://domain.com'), but how the redirection works depends on some conditions:
 
-> Most recent request context info
+- If the target is on the same domain and subdomain ('https://domain.com', '/route'), it will have access to the `ltik` and `session cookie` and will pass the Ltijs authentication protocol.
 
-**<center>platCONTEXT_ID/</center>**
+- If the complete URL is on the same domain but on a different subdomain ('https://a.domain.com'), it will have access to the `ltik` but it might require a cookie domain to be set:
 
-> Route specific context info
+  ```javascript
+  // Setup provider example
+  lti.setup('EXAMPLEKEY', 
+    { 
+      url: 'mongodb://localhost/database',// Database url
+      connection:{ user:'user', pass: 'pass'}// Database configuration
+    }, 
+    { 
+      cookies: { // Cookie configuration
+        secure: true,
+        sameSite: 'None',
+        domain: '.domain.com'
+      }
+    }
+  )
+  ```
+  Setting the domain to `.domain.com` allows the `session cookie` to be accessed on every domain.com subdomain (a.domain.com, b.domain.com).
 
-**<center>platCONTEXT_ID/main</center>**
+- If the complete URL is on a different domain, it will have access to the `ltik`, but **it will not have access to a `session cookie`**, and will only be able to make successful requests to whitelisted routes.
+
+- If the route originating the resource does not have access to an `idtoken` (whitelisted route), `lti.redirect()` method will still perform the redirection, but the target will not have access to the `ltik` nor the `session cookie`. 
 
 
-If you don't want to have a cookie representing the ```\``` route (if you are not using the ```\``` route for anything except redirecting, for example), you can set the ```ignoreRoot``` property of the options parameter of `lti.rediret()` as `true`: 
+The `lti.redirect()` method also has a `options` parameter that accepts a field `newResource`, if this field is set to true, the `contexttoken` object has it's `path` field changed to reflect the target route. The `path` field can be used to keep track of the main resource route even after several redirections.
 
 ```javascript
-lti.onConnect((connection, request, response) => {
-  // Call redirect function
-  lti.redirect(response, '/main', { isNewResource: true, ignoreRoot: true }) // Redirects to http://provider/main?ltik=LTIKTOKEN within a new context
+lti.onConnect(async (token, req, res) => {
+  return lti.redirect(res, '/route', { newResource: true })
 })
 ```
 
-Then the cookie representing the ```\``` route wont be generated:
-
-> Platform context info 
-
-**<center>platCONTEXT_ID</center>**
-
-> Route specific context info
-
-**<center>platCONTEXT_ID/main</center>**
-
-
-
-
-And now calls to the `http://provider/main?ltik=LTIKTOKEN` url will get the information from these cookies, assemble a **IdToken** and pass it to the request handler (`lti.app.get('/main')`).
-
-
-
-Everytime a application is launched it is **HIGHLY RECOMMENDED** to store in the session storage the **ltik** query parameter, so that you can later more easely retrieve in the client and pass it back to the provider when requesting or sending information.
-
-#### Serving external resources
-
-Ltijs can serve external resources through the `redirect()` function, doing so **automatically sets the cookie's secure flag to true and the sameSite flag to None, that means that external resources can only be served through https.**
-
-```javascript
-lti.app.get('/redirect', (req, res) => {
-  lti.redirect(res, 'https://example.com') // External resource
-})
-```
-
-Due to cookies limitations, external resources will only have access to the idtoken if they are in **the same domain (they can be in different subdomains).**
-
-
-#### Routes
-
-Routes in Ltijs can be created using the **lti.app object**, in the same way you would do in a regular Express server.
-
-```javascript
-lti.app.get('/getname', (req, res) => {
-  res.send('Working fine!')
-})
-```
-
-But these routes can only be accessed via the `lti.redirect(res, route)` method, that receives a Express response object and the desired route. Or via the ltik token, that can be passed through query and body parameters as well as Bearer authorization header, and is used to make requests from the client.
-
-```javascript
-lti.app.get('/redirect', (req, res) => {
-  lti.redirect(res, '/newroute')
-})
-```
-
-The `lti.redirect` method, automatically adds the **ltik** parameter to the request, giving the route access to the **idtoken**.
-
-
-
-
-#### Making requests from the client
-
-The client can call routes to get or send information to the provider by passing the `ltik` token via query parameters, body parameters or Bearer authorization headers as described above, failing to do so will return a **400 bad request status**.
-
-***OBS: YOU CAN ONLY PASS THE LTIK TOKEN THROUGH ONE OF THE POSSIBLE METHODS AT A TIME, SENDING MORE THAN ONE TOKEN RESULTS IN A 400 ERROR DUE TO THE BEARER TOKEN SPECIFICATION.***
-
-A request to `https://myprovider/gettoken?ltik=LTIKTOKEN` will be handled by `lti.app.get('/gettoken')` and will have access to the idtoken.
-
-***Requests from resources in different domains need to set `mode: cors` and `credentials: include` flags to successfully send a request to the server, doing so tells the browser to pass the session cookies along:***
-
-```javascript
-request.post('https://mylti.com/api/post', { form: data, headers: { Authorization: 'Bearer LTIK' }, mode: 'cors', credentials: 'include' })
-```
-
-
-#### Whitelisting routes
-
-You can whitelist routes to bypass the LTI 1.3 security protocol, but these routes won't have access to an idToken.
-
-
-```javascript
-lti.whitelist('/main', '/home', { route: '/route', method: 'POST' }) // You can add as many as you want lti.whitelist('/main', '/home', '/route')
-```
-
-Now calls to ```/main``` don't require the ltik token to be passed. The requests will be handled by `lti.app.get('/main')` and will not have access to an idToken.
+*If for some reason you want to redirect manually, the `ltik` token can be retrieved, **after a valid request**, through the `res.locals.ltik` variable.*
 
 ___
 
+## LTI Advantage Services
 
-### Deep Linking with Ltijs
+
+### Deep Linking Service with Ltijs
 
 The Deep Linking Service class documentation can be accessed [here](https://cvmcosta.me/ltijs/#/deeplinking).
 
----
 
-### Sending grades with Ltijs
+### Assignment and Grades Service with Ltijs
 
-The Grading Service class documentation can be accessed [here](https://cvmcosta.me/ltijs/#/grading).
+The Assignment and Grades Service class documentation can be accessed [here](https://cvmcosta.me/ltijs/#/grading).
 
 
----
 
-### The Names and Roles Provisioning Service
+### Names and Roles Provisioning Service with Ltijs
 
 The Names and Roles Provisioning Service class documentation can be accessed [here](https://cvmcosta.me/ltijs/#/namesandroles).
-
 
 ---
 
