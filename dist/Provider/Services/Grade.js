@@ -409,6 +409,8 @@ class Grade {
     return resultsArray;
   } // Deprecated methods, these methods will be removed in version 6.0
 
+  /* istanbul ignore next */
+
   /**
    * @deprecated
    */
@@ -418,6 +420,8 @@ class Grade {
     console.log('Deprecation warning: GetLineItems() is now deprecated, use getLineItems() instead. GetLineItems() will be removed in the 6.0 release.');
     return this.getLineItems(idtoken, options, accessToken);
   }
+  /* istanbul ignore next */
+
   /**
    * @deprecated
    */
@@ -427,6 +431,8 @@ class Grade {
     console.log('Deprecation warning: CreateLineItem() is now deprecated, use createLineItem() instead. CreateLineItem() will be removed in the 6.0 release.');
     return this.createLineItem(idtoken, lineItem, options, accessToken);
   }
+  /* istanbul ignore next */
+
   /**
    * @deprecated
    */
@@ -436,6 +442,8 @@ class Grade {
     console.log('Deprecation warning: DeleteLineItems() is now deprecated, use deleteLineItems() instead. DeleteLineItems() will be removed in the 6.0 release.');
     return this.deleteLineItems(idtoken, options);
   }
+  /* istanbul ignore next */
+
   /**
    * @deprecated
    */
@@ -445,6 +453,8 @@ class Grade {
     console.log('Deprecation warning: ScorePublish() is now deprecated, use scorePublish() instead. ScorePublish() will be removed in the 6.0 release.');
     return this.scorePublish(idtoken, score, options);
   }
+  /* istanbul ignore next */
+
   /**
    * @deprecated
    */

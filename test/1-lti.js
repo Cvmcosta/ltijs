@@ -146,6 +146,33 @@ describe('Testing LTI 1.3 flow', function () {
       expect(res).to.redirectTo(new RegExp('.*' + lti.invalidTokenRoute()))
     })
   })
+  it('Provider.whitelist expected to whitelist route to bypass Ltijs authentication protocol', async () => {
+    expect(lti.whitelist('/whitelist1', { route: '/whitelist2', method: 'POST' }, { route: new RegExp(/^\/whitelist3\/.*/), method: 'get' })).to.be.equal(true)
+    lti.app.all('/whitelist1', (req, res) => {
+      return res.sendStatus(200)
+    })
+    lti.app.all('/whitelist2', (req, res) => {
+      return res.sendStatus(200)
+    })
+    lti.app.all('/whitelist3/a', (req, res) => {
+      return res.sendStatus(200)
+    })
+    await chai.request(lti.app).post('/whitelist1').then(res => {
+      expect(res).to.have.status(200)
+    })
+    await chai.request(lti.app).post('/whitelist2').then(res => {
+      expect(res).to.have.status(200)
+    })
+    await chai.request(lti.app).get('/whitelist2').then(res => {
+      expect(res).not.to.have.status(200)
+    })
+    await chai.request(lti.app).get('/whitelist3/a').then(res => {
+      expect(res).to.have.status(200)
+    })
+    await chai.request(lti.app).post('/whitelist3/a').then(res => {
+      expect(res).not.to.have.status(200)
+    })
+  })
   it('BadPayload - Wrong aud claim. Expected to redirect to invalid token route', async () => {
     const token = JSON.parse(JSON.stringify(tokenValid))
     token.aud = 'WRONG_CLIENTID'
@@ -430,7 +457,7 @@ describe('Testing LTI 1.3 flow', function () {
     const url = await lti.appRoute()
 
     lti.onConnect((token, req, res) => {
-      lti.redirect(res, '/finalRoute', { isNewResource: true })
+      lti.redirect(res, '/finalRoute', { newResource: true })
     })
 
     nock('http://localhost/moodle').get('/keyset').reply(200, {

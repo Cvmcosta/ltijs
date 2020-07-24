@@ -152,6 +152,12 @@ const setup = async () => {
 setup()
 ```
 
+### Implementation example
+
+ - [Example Ltijs Server](https://github.com/Cvmcosta/ltijs-demo-server)
+
+ - [Example Client App](https://github.com/Cvmcosta/ltijs-demo-client)
+
 ---
 
 ## Documentation
@@ -449,7 +455,7 @@ lti.keysetRoute()
 ```
 
 #### Provider.whitelist(urls)
-Whitelists routes to bypass the lti 1.3 authentication protocol. If they fail validation, these routes are still accessed but aren't given an idToken.
+Whitelists routes to bypass the Ltijs authentication protocol. If validation fails, these routes are still accessed but aren't given an idToken.
 
 
 
@@ -599,11 +605,11 @@ Redirects to a new location. Passes Ltik if present.
 | response | `Object`  | Espress response object.| &nbsp; |
 | path | `String`  | Redirect path. | &nbsp; |
 | [options] | <code>Object</code> |  Redirection options | *Optional* |
-| [options.isNewResource] | <code>Boolean</code> | If true, changes the path variable on the context token. | *Optional* |
+| [options.newResource] | <code>Boolean</code> | If true, changes the path variable on the context token. | *Optional* |
 
 **Example**  
 ```js
-lti.redirect(res, '/path', { isNewResource: true })
+lti.redirect(res, '/path', { newResource: true })
 ```
 
 ---
@@ -693,6 +699,8 @@ Ltijs sets session cookies throughout the LTI validation process, how these cook
 
 - **sameSite** - Determines if the cookie can be sent cross domain. **Default: Lax**.
 
+- **domain** - Determines the cookie domain. This option can be used to set cookies that can be shared between all subdomains.
+
 ```javascript
 // Setup provider example
 lti.setup('EXAMPLEKEY', 
@@ -703,7 +711,8 @@ lti.setup('EXAMPLEKEY',
           { 
             cookies: { // Cookie configuration
               secure: true,
-              sameSite: 'None'
+              sameSite: 'None',
+              domain: '.domain.com'
             }
           })
 ```
@@ -811,6 +820,8 @@ lti.setup('EXAMPLEKEY',
               cors: false // Disabling cors
             })
 ```
+
+---
 
 ## Using Ltijs
 
@@ -989,15 +1000,15 @@ app.use('/lti', lti.app)
 ```
 
 
----
-
 ### Platform
 
-A LTI tool works in conjunction with an LTI ready platform, so in order for a platform to display your tool's resource, it needs to first be registered in the tool provider.
+*Platform manipulation methods require a connection to the database, so they can only be used after the `lti.deploy()` method.*
 
 > [Check the Platform Class Documentation](platform.md)
 
 #### Registering a new Platform
+
+A LTI tool works in conjunction with an LTI ready platform, so in order for a platform to display your tool's resource, it needs to first be registered in the tool provider.
 
 The`lti.registerPlatform()` method returns a Promise that resolves the created [Platform](platform.md) object.
 
@@ -1121,71 +1132,178 @@ await lti.deletePlatform('http://plat.com', 'CLIENTID') // Deletes a platform
 
 ---
 
-### The IdToken object
+## LTI Flow
 
-When using the LTI 1.3 protocol, every successful login between tool and platform generates an **IdToken** thet the tool uses to identify the user as well as the context in which the login request was realized in.
+The LTI 1.3 protocol works in such a way that every successful launch from the platform to the tool generates an **IdToken** that the tool uses to retrieve information about the user and the general context of the launch.
 
-Everytime a login request or call to route is sucessfully validated, either by validating the idtoken received according to the [LTI 1.3 security specifications](https://www.imsglobal.org/spec/security/v1p0/), or retrieving the session cookie generated when the idtoken validation is completed, a **IdToken** object is passed to the application inside the **res.locals.token** property of the Express route function.
+Whenever a successful launch request is received by Ltijs, the idToken received at the end of the process is validaded according to the [LTI 1.3 security specifications](https://www.imsglobal.org/spec/security/v1p0/).
+
+The valid idtoken is then separated into two parts `idtoken` and `contexttoken`, that are stored in the databased and passed along to the next route handler inside the `response.locals` object:
+
+### Idtoken
+
+The `idtoken` will contain the platform and user information, and will be stored in the `res.locals.token` object, or the `token` parameter if the `onConnect` is being used:
 
 ```javascript
-lti.app.get('/route', (req, res) => {
+onConnect(async (token, req, res) => {
+  // Retrieving idtoken through response object
   console.log(res.locals.token)
+  // Retrieving idtoken through onConnect token parameter
+  console.log(token)
 })
 ```
 
 
-The token consists of: 
+The `idtoken` object consists of: 
 
 ```javascript
+// Example idtoken for a Moodle platform
 {
-  iss: 'http://path/to/platform',
-  issuer_code: 'platformCode',
-  user: '2', // User id
-  roles: [
-    'http://purl.imsglobal.org/vocab/lis/v2/institution/person#Administrator',
-    'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor',
-    'http://purl.imsglobal.org/vocab/lis/v2/system/person#Administrator'
+  "iss": "http://localhost/moodle",
+  "clientId": "CLIENTID",
+  "deploymentId": "1",
+  "platformInfo": {
+    "family_code": "moodle",
+    "version": "2020042400",
+    "guid": "localhost",
+    "name": "moodle",
+    "description": "Local Moodle"
+  },
+  "user": "2",
+  "userInfo": {
+    "given_name": "Admin",
+    "family_name": "User",
+    "name": "Admin User",
+    "email": "local@moodle.com"
+  },
+  "roles": [
+    "http://purl.imsglobal.org/vocab/lis/v2/institution/person#Administrator",
+    "http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor",
+    "http://purl.imsglobal.org/vocab/lis/v2/system/person#Administrator"
   ],
-  userInfo: {
-    given_name: 'User Given Name',
-    family_name: 'Use Family Name',
-    name: 'User Full Name',
-    email: 'user@email.com'
+  "lis": {
+    "person_sourcedid": "",
+    "course_section_sourcedid": ""
   },
-  platformInfo: {
-    family_code: 'platform_type', // ex: Moodle
-    version: 'versionNumber',
-    name: 'LTI',
-    description: 'LTI tool'
-  },
-  endpoint: {
-    scope: [ // List of scopes
-      'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem',
-      'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly',
-      'https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly',
-      'https://purl.imsglobal.org/spec/lti-ags/scope/score'
+  "endpoint": {
+    "scope": [
+      "https://purl.imsglobal.org/spec/lti-ags/scope/lineitem",
+      "https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly",
+      "https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly",
+      "https://purl.imsglobal.org/spec/lti-ags/scope/score"
     ],
-    lineitems: 'http://platform/lineitems/url',
-    lineitem: ''
+    "lineitems": "http://localhost/moodle/mod/lti/services.php/2/lineitems?type_id=1",
+    "lineitem": "http://localhost/moodle/mod/lti/services.php/2/lineitems/26/lineitem?type_id=1"
   },
-  namesRoles: {
-    context_memberships_url: 'http://platform/context/membership/url',
-    service_versions: [ '1.0', '2.0' ]
-  },
-  platformContext: { // Context of connection
-    context: { id: '2', label: 'course label', title: 'course title', type: [Array] },
-    resource: { title: 'Activity name', id: '1' }, // Activity that originated login
-    custom: { // Custom parameter sent by the platform
-      resource: '123456', // Id for a requested resource
-      system_setting_url: 'http:platform/customs/system/setting',
-      context_setting_url: 'http:platform/customs/context/setting',
-      link_setting_url: 'http:platform/customs/link/setting'
-    }
+  "namesRoles": {
+    "context_memberships_url": "http://localhost/moodle/mod/lti/services.php/CourseSection/2/bindings/1/memberships",
+    "service_versions": [
+      "1.0",
+      "2.0"
+    ]
   }
 }
 ```
 
-You can also get direct access to the **platformContext** portion of the token, that contains context specific information such as custom parameters, via the **res.locals.context** variable, accessible in every endpoint reached via the normal authentication flow.
+
+### ContextToken
+
+The `contexttoken` will contain the launch context information, and will be stored in the `res.locals.context` object and as a part of the `idtoken` object as the `platformContext` field:
+
+```javascript
+onConnect(async (token, req, res) => {
+  // Retrieving contexttoken through response object
+  console.log(res.locals.context)
+  // Retrieving contexttoken through idtoken object
+  console.log(token.platformContext)
+})
+```
+
+
+The `contexttoken` object consists of: 
+
+```javascript
+// Example contexttoken for a Moodle platform
+{
+  "contextId": "http%3A%2F%2Flocalhost%2FmoodlewTtQU3zWHvVeCUf12_57",
+  "path": "/",
+  "user": "2",
+  "targetLinkUri": "http://localhost:3000",
+  "context": {
+    "id": "2",
+    "label": "course",
+    "title": "Course",
+    "type": [
+      "CourseSection"
+    ]
+  },
+  "resource": {
+    "title": "Ltijs Demo",
+    "id": "57"
+  },
+  "custom": {
+    "system_setting_url": "http://localhost/moodle/mod/lti/services.php/tool/1/custom",
+    "context_setting_url": "http://localhost/moodle/mod/lti/services.php/CourseSection/2/bindings/tool/1/custom",
+    "link_setting_url": "http://localhost/moodle/mod/lti/services.php/links/{link_id}/custom"
+  },
+  "launchPresentation": {
+    "locale": "en",
+    "document_target": "iframe",
+    "return_url": "http://localhost/moodle/mod/lti/return.php?course=2&launch_container=3&instanceid=57&sesskey=6b5H1MF8yp"
+  },
+  "messageType": "LtiResourceLinkRequest",
+  "version": "1.3.0",
+}
+```
+
+### Authentication
+
+Ltijs need as way to retrieve the correct `idtoken` and `contexttoken` information whenever a tool makes a request. The authentication protocol is based on two items, a **session cookie** and a **ltik** token.
+
+#### Launch
+
+At the end of a successful launch, Ltijs redirects the request to the desired endpoint, but it also does two other things:
+ 
+- Sets a **signed session cookie** containing the `platformCode` and `userId` information; 
+
+- Sends a **ltik** JWT token containing the same platform and user information, with additional context information as a query parameter to the endpoint.
+
+<div align="center">
+  </br>
+	<img width="500" src="launch.png"></img>
+  <div><sub>Launch process</sub></div>
+  </br>
+</div>
+
+> [See more about cookie configuration options](#cookie-configurations)
+
+#### Request authentication
+
+Whenever the tool receives a request **not directed at one of the reserved endpoints** it attempts to validate the request by matching the information received through the cookie with the information contained in the **ltik** token.
+
+**The *ltik* token MUST be passed to the provider through query parameters, body parameters or a Bearer Authorization header.**
+
+*In case of requests coming from different subdomains, usually it is necessary to set `mode: cors` and `credentials: true` flags to include the cookies in the request.*
+
+*If for some reason the cookies could not be set in your development environment, the usage of the **devMode** flag eliminates the validation step that matches the cookie information, instead using only the information contained in the **ltik** token.*
+
+> [See more about development mode]((#development-mode))
+
+If the validation fails, the request is redirected to either the **invalidTokenRoute** or the **sessionTimeoutRoute**.
+
+<div align="center">
+  </br>
+	<img width="500" src="request.png"></img>
+  <div><sub>Request process</sub></div>
+  </br>
+</div>
+
+> [Check implementation examples](#implementation-example)
+
+#### Whitelisting routes
+
+
+Routes can be whitelisted to bypass the Ltijs authentication protocol
 
 ---
 

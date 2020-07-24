@@ -319,6 +319,7 @@ class Grade {
 
   // Deprecated methods, these methods will be removed in version 6.0
 
+  /* istanbul ignore next */
   /**
    * @deprecated
    */
@@ -327,6 +328,7 @@ class Grade {
     return this.getLineItems(idtoken, options, accessToken)
   }
 
+  /* istanbul ignore next */
   /**
    * @deprecated
    */
@@ -335,6 +337,7 @@ class Grade {
     return this.createLineItem(idtoken, lineItem, options, accessToken)
   }
 
+  /* istanbul ignore next */
   /**
    * @deprecated
    */
@@ -343,6 +346,7 @@ class Grade {
     return this.deleteLineItems(idtoken, options)
   }
 
+  /* istanbul ignore next */
   /**
    * @deprecated
    */
@@ -351,6 +355,7 @@ class Grade {
     return this.scorePublish(idtoken, score, options)
   }
 
+  /* istanbul ignore next */
   /**
    * @deprecated
    */

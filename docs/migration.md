@@ -30,10 +30,12 @@
   - [Platform registration and retrieval changes](#platform-registration-and-retrieval-changes)
   - [Removed onConnect optional parameters](#removed-onconnect-optional-parameters)
   - [Changed how reserved endpoints are mentioned](#changed-how-reserved-endpoints-are-mentioned)
-  - [Renamed Platform remove method to delete](#renamed-platform-remove-method-to-delete)
-  - [Bumped required version of Node](#bumped-required-version-of-node)
-  - [Changed error handling policy](#changed-error-handling-policy)
   - [Added development mode](#added-development-mode)
+  - [Renamed Platform remove method to delete](#renamed-platform-remove-method-to-delete)
+  - [Renamed redirect new resource option](#renamed-redirect-new-resource-option)
+  - [No longer sets automatic cookie domain for external redirection](#no-longer-sets-automatic-cookie-domain-for-external-redirection)
+  - [Changed error handling policy](#changed-error-handling-policy)
+  - [Bumped required version of Node](#bumped-required-version-of-node)
 - [License](#license)
 
 ---
@@ -234,33 +236,6 @@ The reserved endpoint used to be called **Urls** (appUrl, loginUrl, ...) and now
 The term **Url** could cause some confusion and users could end up setting `appUrl` as `appUrl: 'http://localhost:3000/app'` instead of `appUrl: '/app'`, **Route** is a more accurate description. I'm hoping this change can help avoid such issues.
 
 
-#### Renamed Platform remove method to delete
-
-> **This:**
-
-``` javascript
-platform.remove()
-```
-
-> **Becomes this:**
-
-``` javascript
-platform.delete()
-```
-
-Changed the platform deletion method from `remove` to `delete` in order to make it more similar to the `lti.deletePlatform()` method.
-
-#### Bumped required version of Node
-
-Required version of node was changed from **8.6.0** to **10.19.0** due to a dependency update.
-
-#### Changed error handling policy
-
-In previous versions, Ltijs would catch errors thrown within methods, log them and then return false. In version 5.0, errors are not caught by the methods themselves, this was done to give developers more freedom on how they choose to handle errors. The logger functionality was also removed, developers can now choose how to log access and error information. 
-
-*(This change does not apply to the LTI authentication flow, errors thrown during the validation process still redirect to the invalid token or session timeout endpoints)*
-
-
 #### Added development mode
 
 Version 5.0 of Ltijs validates login requests using a `state` cookie to prevent cross-site request forgery as recommmended by the IMS specification. This can sometimes cause issues in certain development environments if the browser cannot set the required cookie, for example when trying to set a cross domain cookie without the `secure=true` and `sameSite=none` cookie flags (which don't work without https).
@@ -282,6 +257,68 @@ const lti = new Lti('LTIKEY', // Key used to sign cookies and tokens
          { url: 'mongodb://localhost/database' }, // Database configuration
          { cookies: { secure: false, sameSite: 'None' } }) // Correct cookie configuration set
 ```
+
+
+
+#### Renamed Platform remove method to delete
+
+> **This:**
+
+``` javascript
+platform.remove()
+```
+
+> **Becomes this:**
+
+``` javascript
+platform.delete()
+```
+
+Changed the platform deletion method from `remove` to `delete` in order to make it more similar to the `lti.deletePlatform()` method.
+
+
+#### Renamed redirect new resource option
+
+> **This:**
+
+``` javascript
+lti.redirect(res, '/route', { isNewResource: true })
+```
+
+> **Becomes this:**
+
+``` javascript
+lti.redirect(res, '/route', { newResource: true })
+```
+
+Option was renamed to `newResource` to make it more consistent with the naming patterns.
+
+#### No longer sets automatic cookie domain for external redirection
+
+In previous versions, Ltijs would detect an external redirection and attempt to set a cookie domain matching the redirection target. But having in mind that **this would yield no results on redirections to different domains**, this behaviour was removed and replaced by the option to set the domain of every cookie set by Ltijs. 
+
+This allows the developer to set a domain that would cause cookies to be shared between all subdomains.
+
+``` javascript
+// Require Provider 
+const lti = require('ltijs').Provider
+
+// Setup provider using setup method
+lti.setup('LTIKEY', // Key used to sign cookies and tokens
+         { url: 'mongodb://localhost/database' }, // Database configuration
+         { cookies: { domain: '.domain.com' } }) // Setting cookie domain
+```
+
+
+#### Changed error handling policy
+
+In previous versions, Ltijs would catch errors thrown within methods, log them and then return false. In version 5.0, errors are not caught by the methods themselves, this was done to give developers more freedom on how they choose to handle errors. The logger functionality was also removed, developers can now choose how to log access and error information. 
+
+*(This change does not apply to the LTI authentication flow, errors thrown during the validation process still redirect to the invalid token or session timeout endpoints)*
+
+#### Bumped required version of Node
+
+Required version of node was changed from **8.6.0** to **10.19.0** due to a dependency update.
 
 ---
 

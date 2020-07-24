@@ -136,6 +136,12 @@ const setup = async () => {
 setup()
 ```
 
+### Implementation example
+
+ - [Example Ltijs Server](https://github.com/Cvmcosta/ltijs-demo-server)
+
+ - [Example Client App](https://github.com/Cvmcosta/ltijs-demo-client)
+
 ---
 
 ## Documentation

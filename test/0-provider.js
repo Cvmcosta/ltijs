@@ -89,9 +89,6 @@ describe('Testing Provider', function () {
   it('Provider.keysetRoute expected to return registered route', () => {
     expect(lti.keysetRoute()).to.be.a('string').equal(keysetRoute)
   })
-  it('Provider.whitelist expected to return true', () => {
-    expect(lti.whitelist('/whitelist1', { route: '/whitelist2', method: 'POST' })).to.be.equal(true)
-  })
   it('Provider.deploy expected to resolve true', async () => {
     await expect(lti.deploy({ silent: true, port: 3001 })).to.eventually.become(true)
   })

@@ -103,6 +103,7 @@ class Provider {
      * @param {Object} [options.cookies] - Cookie configuration. Allows you to configure, sameSite and secure parameters.
      * @param {Boolean} [options.cookies.secure = false] - Cookie secure parameter. If true, only allows cookies to be passed over https.
      * @param {String} [options.cookies.sameSite = 'Lax'] - Cookie sameSite parameter. If cookies are going to be set across domains, set this parameter to 'None'.
+     * @param {String} [options.cookies.domain] - Cookie domain parameter. This parameter can be used to specify a domain so that the cookies set by Ltijs can be shared between subdomains.
      * @param {Boolean} [options.devMode = false] - If true, does not require state and session cookies to be present (If present, they are still validated). This allows ltijs to work on development environments where cookies cannot be set. THIS SHOULD NOT BE USED IN A PRODUCTION ENVIRONMENT.
      * @param {Number} [options.tokenMaxAge = 10] - Sets the idToken max age allowed in seconds. Defaults to 10 seconds. If false, disables max age validation.
      */
@@ -135,6 +136,7 @@ class Provider {
         if (options.cookies.sameSite.toLowerCase() === 'none') this.#cookieOptions.secure = true
       }
       if (options.cookies.secure === true) this.#cookieOptions.secure = true
+      if (options.cookies.domain) this.#cookieOptions.domain = options.cookies.domain
     }
 
     this.#ENCRYPTIONKEY = encryptionkey
@@ -275,12 +277,16 @@ class Provider {
 
             return res.redirect(req.baseUrl + req.path + '?' + urlSearchParams)
           } else {
-            if (this.#whitelistedRoutes.indexOf(req.path) !== -1 || this.#whitelistedRoutes.indexOf(req.path + '-method-' + req.method.toUpperCase()) !== -1) {
+            if (this.#whitelistedRoutes.find(r => {
+              if ((r.route instanceof RegExp && r.route.test(req.path)) || r.route === req.path) return r.method === 'ALL' || r.method === req.method.toUpperCase()
+              return false
+            })) {
               provMainDebug('Accessing as whitelisted route')
               return next()
             }
             provMainDebug('No LTIK found')
             provMainDebug('Request body: ', req.body)
+            provMainDebug('Passing request to invalid token handler')
             return res.redirect(req.baseUrl + this.#invalidTokenRoute)
           }
         }
@@ -290,7 +296,10 @@ class Provider {
         try {
           validLtik = jwt.verify(ltik, this.#ENCRYPTIONKEY)
         } catch (err) {
-          if (this.#whitelistedRoutes.indexOf(req.path) !== -1 || this.#whitelistedRoutes.indexOf(req.path + '-method-' + req.method.toUpperCase()) !== -1) {
+          if (this.#whitelistedRoutes.find(r => {
+            if ((r.route instanceof RegExp && r.route.test(req.path)) || r.route === req.path) return r.method === 'ALL' || r.method === req.method.toUpperCase()
+            return false
+          })) {
             provMainDebug('Accessing as whitelisted route')
             return next()
           }
@@ -591,18 +600,18 @@ class Provider {
   }
 
   /**
-   * @description Whitelists routes to bypass the lti 1.3 authentication protocol. If they fail validation, these routes are still accessed but aren't given an idToken.
+   * @description Whitelists routes to bypass the Ltijs authentication protocol. If validation fails, these routes are still accessed but aren't given an idToken.
    * @param {String} routes - Routes to be whitelisted
    */
   whitelist (...routes) {
     if (!routes) throw new Error('MISSING_ROUTES')
     const formattedRoutes = []
     for (const route of routes) {
-      const isObject = route === Object(route)
+      const isObject = (!(route instanceof RegExp) && route === Object(route))
       if (isObject) {
         if (!route.route || !route.method) throw new Error('WRONG_FORMAT. Details: Expects string ("/route") or object ({ route: "/route", method: "POST" })')
-        formattedRoutes.push(route.route + '-method-' + route.method.toUpperCase())
-      } else formattedRoutes.push(route)
+        formattedRoutes.push({ route: route.route, method: route.method.toUpperCase() })
+      } else formattedRoutes.push({ route: route, method: 'ALL' })
     }
     this.#whitelistedRoutes = formattedRoutes
     return true
@@ -721,8 +730,8 @@ class Provider {
    * @param {Object} res - Express response object.
    * @param {String} path - Redirect path.
    * @param {Object} [options] - Redirection options.
-   * @param {Boolean} [options.isNewResource = false] - If true, changes the path variable on the context token.
-   * @example lti.redirect(response, '/path', { isNewResource: true })
+   * @param {Boolean} [options.newResource = false] - If true, changes the path variable on the context token.
+   * @example lti.redirect(response, '/path', { newResource: true })
    */
   async redirect (res, path, options) {
     if (!res || !path) throw new Error('MISSING_ARGUMENT')
@@ -732,7 +741,7 @@ class Provider {
     const pathParts = url.parse(path)
 
     // Updates path variable if this is a new resource
-    if ((options && options.isNewResource)) {
+    if ((options && (options.newResource || options.isNewResource))) {
       provMainDebug('Changing context token path to: ' + path)
       await this.Database.Modify(false, 'contexttoken', { contextId: token.platformContext.contextId, user: res.locals.token.user }, { path: path })
     }
@@ -766,6 +775,7 @@ class Provider {
 
   // Deprecated methods, these methods will be removed in version 6.0
 
+  /* istanbul ignore next */
   /**
    * @deprecated
    */
@@ -774,6 +784,7 @@ class Provider {
     return this.appRoute()
   }
 
+  /* istanbul ignore next */
   /**
    * @deprecated
    */
@@ -782,6 +793,7 @@ class Provider {
     return this.loginRoute()
   }
 
+  /* istanbul ignore next */
   /**
    * @deprecated
    */
@@ -790,6 +802,7 @@ class Provider {
     return this.sessionTimeoutRoute()
   }
 
+  /* istanbul ignore next */
   /**
    * @deprecated
    */
@@ -798,6 +811,7 @@ class Provider {
     return this.invalidTokenRoute()
   }
 
+  /* istanbul ignore next */
   /**
    * @deprecated
    */
