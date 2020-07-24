@@ -125,10 +125,10 @@ describe('Testing Deep Linking Service', function () {
 
   it('Deep Linking Launch expected to return status 200', async () => {
     const token = JSON.parse(JSON.stringify(tokenValid))
-    token.nonce = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    token.nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
 
     const payload = signToken(token, '123456')
-    const state = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     const url = await lti.appRoute()
 
     nock('http://localhost/moodle').get('/keyset').reply(200, {
@@ -147,10 +147,10 @@ describe('Testing Deep Linking Service', function () {
   })
   it('DeepLinking.createDeepLinkingMessage expected to return valid deep linking jwt', async () => {
     const token = JSON.parse(JSON.stringify(tokenValid))
-    token.nonce = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    token.nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
 
     const payload = signToken(token, '123456')
-    const state = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     const url = await lti.appRoute()
 
     const plat = await lti.getPlatform(token.iss, token.aud)
@@ -188,10 +188,10 @@ describe('Testing Deep Linking Service', function () {
   })
   it('DeepLinking.createDeepLinkingForm expected to return valid deep linking form', async () => {
     const token = JSON.parse(JSON.stringify(tokenValid))
-    token.nonce = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    token.nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
 
     const payload = signToken(token, '123456')
-    const state = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     const url = await lti.appRoute()
 
     const plat = await lti.getPlatform(token.iss, token.aud)

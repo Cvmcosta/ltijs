@@ -176,9 +176,9 @@ describe('Testing LTI 1.3 flow', function () {
   it('BadPayload - Wrong aud claim. Expected to redirect to invalid token route', async () => {
     const token = JSON.parse(JSON.stringify(tokenValid))
     token.aud = 'WRONG_CLIENTID'
-    token.nonce = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    token.nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     const payload = signToken(token, '123456')
-    const state = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     const url = await lti.appRoute()
 
     nock('http://localhost/moodle').get('/keyset').reply(200, {
@@ -193,9 +193,9 @@ describe('Testing LTI 1.3 flow', function () {
   it('BadPayload - Wrong multiple aud claim. Expected to redirect to invalid token route', async () => {
     const token = JSON.parse(JSON.stringify(tokenValid))
     token.aud = ['WRONG_CLIENTID', 'ClientId2']
-    token.nonce = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    token.nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     const payload = signToken(token, '123456')
-    const state = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     const url = await lti.appRoute()
 
     nock('http://localhost/moodle').get('/keyset').reply(200, {
@@ -211,9 +211,9 @@ describe('Testing LTI 1.3 flow', function () {
     const token = JSON.parse(JSON.stringify(tokenValid))
     token.aud = ['ClientId1', 'ClientId2']
     token.azp = 'ClientId2'
-    token.nonce = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    token.nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     const payload = signToken(token, '123456')
-    const state = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     const url = await lti.appRoute()
 
     nock('http://localhost/moodle').get('/keyset').reply(200, {
@@ -228,7 +228,7 @@ describe('Testing LTI 1.3 flow', function () {
   // IMS Certification tests
   it('BadPayload - No KID sent in JWT header. Expected to redirect to invalid token route', async () => {
     const payload = signToken(tokenValid)
-    const state = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     const url = await lti.appRoute()
 
     return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
@@ -237,7 +237,7 @@ describe('Testing LTI 1.3 flow', function () {
   })
   it('BadPayload - Incorrect KID in JWT header. Expected to redirect to invalid token route', async () => {
     const payload = signToken(tokenValid, 'WRONGKID')
-    const state = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     const url = await lti.appRoute()
 
     nock('http://localhost/moodle').get('/keyset').reply(200, {
@@ -251,10 +251,10 @@ describe('Testing LTI 1.3 flow', function () {
   })
   it('BadPayload - Wrong LTI Version. Expected to redirect to invalid token route', async () => {
     const token = JSON.parse(JSON.stringify(tokenValid))
-    token.nonce = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    token.nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     token['https://purl.imsglobal.org/spec/lti/claim/version'] = '2.3'
     const payload = signToken(token, '123456')
-    const state = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     const url = await lti.appRoute()
 
     nock('http://localhost/moodle').get('/keyset').reply(200, {
@@ -268,10 +268,10 @@ describe('Testing LTI 1.3 flow', function () {
   })
   it('BadPayload - No LTI Version. Expected to redirect to invalid token route', async () => {
     const token = JSON.parse(JSON.stringify(tokenValid))
-    token.nonce = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    token.nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     delete token['https://purl.imsglobal.org/spec/lti/claim/version']
     const payload = signToken(token, '123456')
-    const state = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     const url = await lti.appRoute()
 
     nock('http://localhost/moodle').get('/keyset').reply(200, {
@@ -287,7 +287,7 @@ describe('Testing LTI 1.3 flow', function () {
     const payload = {
       name: 'badltilaunch'
     }
-    const state = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     const url = await lti.appRoute()
     return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
       expect(res).to.redirectTo(new RegExp('.*' + lti.invalidTokenRoute()))
@@ -295,10 +295,10 @@ describe('Testing LTI 1.3 flow', function () {
   })
   it('BadPayload - Missing LTI Claims. Expected to redirect to invalid token route', async () => {
     const token = JSON.parse(JSON.stringify(tokenValid))
-    token.nonce = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    token.nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     delete token['https://purl.imsglobal.org/spec/lti/claim/message_type']
     const payload = signToken(token, '123456')
-    const state = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     const url = await lti.appRoute()
 
     nock('http://localhost/moodle').get('/keyset').reply(200, {
@@ -312,11 +312,11 @@ describe('Testing LTI 1.3 flow', function () {
   })
   it('BadPayload - Timestamps Incorrect. Expected to redirect to invalid token route', async () => {
     const token = JSON.parse(JSON.stringify(tokenValid))
-    token.nonce = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    token.nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     token.iat = 11111
     token.exp = 22222
     const payload = signToken(token, '123456')
-    const state = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     const url = await lti.appRoute()
 
     nock('http://localhost/moodle').get('/keyset').reply(200, {
@@ -330,10 +330,10 @@ describe('Testing LTI 1.3 flow', function () {
   })
   it('BadPayload - Messsage Type Claim Missing. Expected to redirect to invalid token route', async () => {
     const token = JSON.parse(JSON.stringify(tokenValid))
-    token.nonce = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    token.nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     delete token['https://purl.imsglobal.org/spec/lti/claim/message_type']
     const payload = signToken(token, '123456')
-    const state = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     const url = await lti.appRoute()
 
     nock('http://localhost/moodle').get('/keyset').reply(200, {
@@ -347,10 +347,10 @@ describe('Testing LTI 1.3 flow', function () {
   })
   it('BadPayload - Role Claim Missing. Expected to redirect to invalid token route', async () => {
     const token = JSON.parse(JSON.stringify(tokenValid))
-    token.nonce = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    token.nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     delete token['https://purl.imsglobal.org/spec/lti/claim/roles']
     const payload = signToken(token, '123456')
-    const state = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     const url = await lti.appRoute()
 
     nock('http://localhost/moodle').get('/keyset').reply(200, {
@@ -364,10 +364,10 @@ describe('Testing LTI 1.3 flow', function () {
   })
   it('BadPayload - Deployment Id Claim Missing. Expected to redirect to invalid token route', async () => {
     const token = JSON.parse(JSON.stringify(tokenValid))
-    token.nonce = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    token.nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     delete token['https://purl.imsglobal.org/spec/lti/claim/deployment_id']
     const payload = signToken(token, '123456')
-    const state = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     const url = await lti.appRoute()
 
     nock('http://localhost/moodle').get('/keyset').reply(200, {
@@ -381,10 +381,10 @@ describe('Testing LTI 1.3 flow', function () {
   })
   it('BadPayload - Resource Link Id Claim Missing. Expected to redirect to invalid token route', async () => {
     const token = JSON.parse(JSON.stringify(tokenValid))
-    token.nonce = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    token.nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     delete token['https://purl.imsglobal.org/spec/lti/claim/resource_link'].id
     const payload = signToken(token, '123456')
-    const state = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     const url = await lti.appRoute()
 
     nock('http://localhost/moodle').get('/keyset').reply(200, {
@@ -398,10 +398,10 @@ describe('Testing LTI 1.3 flow', function () {
   })
   it('BadPayload - User Claim Missing. Expected to redirect to invalid token route', async () => {
     const token = JSON.parse(JSON.stringify(tokenValid))
-    token.nonce = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    token.nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     delete token.sub
     const payload = signToken(token, '123456')
-    const state = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     const url = await lti.appRoute()
 
     nock('http://localhost/moodle').get('/keyset').reply(200, {
@@ -415,10 +415,10 @@ describe('Testing LTI 1.3 flow', function () {
   })
   it('ValidPayload. Expected to return status 200', async () => {
     const token = JSON.parse(JSON.stringify(tokenValid))
-    token.nonce = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    token.nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
 
     const payload = signToken(token, '123456')
-    const state = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     const url = await lti.appRoute()
 
     nock('http://localhost/moodle').get('/keyset').reply(200, {
@@ -433,10 +433,10 @@ describe('Testing LTI 1.3 flow', function () {
   it('ValidPayload with multiple aud claims. Expected to return status 200', async () => {
     const token = JSON.parse(JSON.stringify(tokenValid))
     token.aud = ['ClientId1', 'ClientId2', 'ClientId3']
-    token.nonce = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    token.nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
 
     const payload = signToken(token, '123456')
-    const state = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     const url = await lti.appRoute()
 
     nock('http://localhost/moodle').get('/keyset').reply(200, {
@@ -450,10 +450,10 @@ describe('Testing LTI 1.3 flow', function () {
   })
   it('ValidPayload. Expected Provider.redirect to redirect to desired route', async () => {
     const token = JSON.parse(JSON.stringify(tokenValid))
-    token.nonce = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    token.nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
 
     const payload = signToken(token, '123456')
-    const state = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     const url = await lti.appRoute()
 
     lti.onConnect((token, req, res) => {

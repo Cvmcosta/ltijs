@@ -137,10 +137,10 @@ describe('Testing Assignment and Grades Service', function () {
 
   it('Grades.getLineItems() expected to return valid lineitem list', async () => {
     const token = JSON.parse(JSON.stringify(tokenValid))
-    token.nonce = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    token.nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
 
     const payload = signToken(token, '123456')
-    const state = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     const url = await lti.appRoute()
 
     nock('http://localhost/moodle').get('/keyset').reply(200, {
@@ -175,10 +175,10 @@ describe('Testing Assignment and Grades Service', function () {
   })
   it('Grades.createLineItem() expected to return newly created lineItem', async () => {
     const token = JSON.parse(JSON.stringify(tokenValid))
-    token.nonce = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    token.nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
 
     const payload = signToken(token, '123456')
-    const state = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     const url = await lti.appRoute()
 
     nock('http://localhost/moodle').get('/keyset').reply(200, {
@@ -218,10 +218,10 @@ describe('Testing Assignment and Grades Service', function () {
   })
   it('Grades.deleteLineItem() expected to return sucess array', async () => {
     const token = JSON.parse(JSON.stringify(tokenValid))
-    token.nonce = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    token.nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
 
     const payload = signToken(token, '123456')
-    const state = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     const url = await lti.appRoute()
 
     nock('http://localhost/moodle').get('/keyset').reply(200, {
@@ -269,10 +269,10 @@ describe('Testing Assignment and Grades Service', function () {
   })
   it('Grades.scorePublish() expected to return sucess array', async () => {
     const token = JSON.parse(JSON.stringify(tokenValid))
-    token.nonce = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    token.nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
 
     const payload = signToken(token, '123456')
-    const state = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     const url = await lti.appRoute()
 
     nock('http://localhost/moodle').get('/keyset').reply(200, {
@@ -325,10 +325,10 @@ describe('Testing Assignment and Grades Service', function () {
   })
   it('Grades.result() expected to return results array', async () => {
     const token = JSON.parse(JSON.stringify(tokenValid))
-    token.nonce = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    token.nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
 
     const payload = signToken(token, '123456')
-    const state = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     const url = await lti.appRoute()
 
     nock('http://localhost/moodle').get('/keyset').reply(200, {

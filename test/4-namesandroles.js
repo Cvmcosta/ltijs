@@ -105,10 +105,10 @@ describe('Testing Names and Roles Service', function () {
 
   it('NamesAndRoles.getMembers() expected to return valid member list', async () => {
     const token = JSON.parse(JSON.stringify(tokenValid))
-    token.nonce = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    token.nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
 
     const payload = signToken(token, '123456')
-    const state = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     const url = await lti.appRoute()
 
     nock('http://localhost/moodle').get('/keyset').reply(200, {
@@ -143,10 +143,10 @@ describe('Testing Names and Roles Service', function () {
   })
   it('NamesAndRoles.getMembers() expected to return valid member list when using custom url', async () => {
     const token = JSON.parse(JSON.stringify(tokenValid))
-    token.nonce = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    token.nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
 
     const payload = signToken(token, '123456')
-    const state = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     const url = await lti.appRoute()
 
     nock('http://localhost/moodle').get('/keyset').reply(200, {

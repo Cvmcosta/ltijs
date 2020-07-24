@@ -72,7 +72,7 @@ class DeepLinking {
       aud: idtoken.iss,
       iat: Date.now() / 1000,
       exp: Date.now() / 1000 + 60,
-      nonce: encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``),
+      nonce: encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``),
       'https://purl.imsglobal.org/spec/lti/claim/deployment_id': idtoken.deploymentId,
       'https://purl.imsglobal.org/spec/lti/claim/message_type': 'LtiDeepLinkingResponse',
       'https://purl.imsglobal.org/spec/lti/claim/version': '1.3.0'

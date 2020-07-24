@@ -475,7 +475,7 @@ class Provider {
         if (platform) {
           provMainDebug('Redirecting to platform authentication endpoint'); // Create state parameter used to validade authentication response
 
-          const state = encodeURIComponent([...Array(20)].map(_ => (Math.random() * 36 | 0).toString(36)).join``);
+          const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``);
           provMainDebug('Generated state: ', state); // Setting up validation info
 
           const cookieOptions = JSON.parse(JSON.stringify((0, _classPrivateFieldGet2.default)(this, _cookieOptions)));
