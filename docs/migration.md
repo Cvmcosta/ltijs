@@ -53,8 +53,6 @@ ___
 
 #### Removed Ltijs constructor
 
-*OBS: This is the only trully **breaking change** of version 5.0. All the other changes have some form of fallback in place that will keep old code working (Even if showing some deprecation warnings).*
-
 > **This:**
 
 ``` javascript

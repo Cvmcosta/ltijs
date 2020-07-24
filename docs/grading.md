@@ -88,7 +88,37 @@ lti.app.get('/grade', async (req, res) => {
 })
 ```
 
+##### Line item Creation, Retrieval and Deletion documentation coming soon...
 
+
+```javascript
+// Retrieving lineitems
+lti.app.get('/lineitem', async (req, res) => {
+  // Retrieves lineitems from a platform
+  const result  = await lti.Grade.getLineItems(res.locals.token)
+  return res.send(result)
+})
+
+// Creating lineitem
+lti.app.post('/lineitem', async (req, res) => {
+  const lineItem = {
+          scoreMaximum: 100,
+          label: 'Grade',
+          tag: 'grade'
+        }
+  // Sends lineitem to a platform
+  await lti.Grade.createLineItem(res.locals.token, lineItem)
+  return res.sendSatus(201)
+})
+
+// Deleting lineitem
+lti.app.delete('/lineitem', async (req, res) => {
+  // Deleting lineitem on a platform
+  await lti.Grade.deleteLineItems(res.localstoken, { tag: 'tag' })
+  return res.sendSatus(204)
+})
+
+```
 
 ---
 
