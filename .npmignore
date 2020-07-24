@@ -41,6 +41,8 @@ typings/
 # Optional npm cache directory
 .npm
 
+.github
+
 # Optional eslint cache
 .eslintcache
 
