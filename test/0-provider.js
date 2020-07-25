@@ -149,7 +149,7 @@ describe('Testing Provider', function () {
   })
   it('Provider.getAllPlatforms expected to resolve Array containing registered platforms', async () => {
     const plats = await lti.getAllPlatforms()
-    await expect(plats[0].platformUrl()).to.eventually.become('http://localhost/moodle')
+    await expect(plats.length).to.eql(2)
   })
   it('Provider.deletePlatform expected to return true and delete the platform', async () => {
     await lti.registerPlatform({
