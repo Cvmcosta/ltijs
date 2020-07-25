@@ -44,7 +44,7 @@
 ## Introduction
 
 
-Ltijs version 5.0 is a re-release of the project as a Certified LTI library, that comes with many improvements and new functionalities and a few **API changes**, see bellow for a migration guide from version 4.0.
+Ltijs version 5.0 is a re-release of the project as a Certified LTI library, that comes with many improvements, new functionalities and a few **API changes**, see bellow for a migration guide from version 4.
 
 ___
 

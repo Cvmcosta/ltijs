@@ -25,7 +25,7 @@ Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps
 
 > [Ltijs is LTI Advantage Complete Certified by IMS](https://site.imsglobal.org/certifications/coursekey/ltijs)
 
-> Ltijs version 5.0 is a re-release of the project as a Certified LTI library, that comes with many improvements and new functionalities and a few **API changes**, see bellow for a migration guide from version 4.0 and a complete list of the changes made:
+> Ltijs version 5.0 is a re-release of the project as a Certified LTI library, that comes with many improvements, new functionalities and a few **API changes**, see bellow for a migration guide from version 4 and a complete list of the changes made:
 > - [Migrating from version 4](https://cvmcosta.github.io/ltijs/#/migration)
 > - [CHANGELOG](https://cvmcosta.github.io/ltijs/#/changelog)
 
