@@ -15,29 +15,30 @@
 > Got the IMS LTI Advantage Complete Certification!
 
 > BREAKING CHANGES
-> - Provider no longer has a contructor, instead it has a setup() method that takes the exact same arguments.
-> - Provider.getPlatform now takes two arguments (platformUrl and clientId). Using only platformUrl results in a Platform array being returned.
-> - Provider.deletePlatform now takes two arguments (platformUrl and clientId). Using only platformUrl throws an error to avoid accidental deletion of multiple platforms.
-> - Provider now works as a singleton. This allows it to be accessed in multiple files, calling setup only once.
-> - Changed authentication flow, which might cause issues due to cross domain cookie limitations in certain development environments.
-> - Added **devMode** flag to setup options to deal with the possible issues caused by cross domain cookies.
-> - Removed onConnect options and added **onInvalidToken** and **onSessionTimeout** methods.
-> - Changed how reserved endpoints are mentioned in methods and options from Urls to Routes. Ex1: **lti.appUrl() => lti.appRoute()**. Ex2: **... loginUrl: '/app'}) => ... loginRoute: '/app'})**
+> - Provider no longer has a contructor, instead it has a [setup() method](https://cvmcosta.me/ltijs/#/provider?id=setting-up-ltijs) that takes the exact same arguments.
+> - [Provider.getPlatform](https://cvmcosta.me/ltijs/#/provider?id=retrieving-a-platform) now takes two arguments (platformUrl and clientId). Using only platformUrl results in a Platform array being returned.
+> - [Provider.deletePlatform](https://cvmcosta.me/ltijs/#/provider?id=deleting-a-platform) now takes two arguments (platformUrl and clientId). Using only platformUrl throws an error to avoid accidental deletion of multiple platforms.
+> - Provider now works as a singleton. This allows it to be [accessed across multiple files](https://cvmcosta.me/ltijs/#/provider?id=using-ltijs), calling setup only once.
+> - Changed authentication flow to better implement LTI 1.3 security protocol, which might cause issues due to cross domain cookie limitations in certain development environments.
+> - Added [devMode flag](https://cvmcosta.me/ltijs/#/provider?id=development-mode) to setup options to deal with the possible issues caused by cross domain cookies.
+> - Removed onConnect options and [added onInvalidToken and onSessionTimeout methods](https://cvmcosta.me/ltijs/#/provider?id=callbacks).
+> - Changed how [reserved endpoints](https://cvmcosta.me/ltijs/#/provider?id=reserved-endpoint-configuration) are mentioned in methods and options from Urls to Routes. Ex1: **lti.appUrl() => lti.appRoute()**. Ex2: **... loginUrl: '/app'}) => ... loginRoute: '/app'})**
 > - Changed Platform.remove() to Platform.delete().
-> - Renamed redirect method option from **isNewResource** to **newResource**.
-> - No longer sets automatic cookie domain for external redirection. Added a cookie option `domain` that can be used to specify a domain and let cookies be shared between subdomains.
+> - Renamed [redirect method`s](https://cvmcosta.me/ltijs/#/provider?id=redirecting-with-ltijs) option from **isNewResource** to **newResource**.
+> - No longer sets automatic cookie domain for external redirection. Added a [cookie option](https://cvmcosta.me/ltijs/#/provider?id=cookie-configuration) `domain` that can be used to specify a domain and let cookies be shared between subdomains.
 > - Bumped required version of Ltijs to **10.19.0**.
 > - Changed error handling policy, now Ltijs **allows the user to decide how to handle errors** instead of catching them inside the methods, logging them and returning false.
+> - Removed Logger functionality.
 
 > NEW FEATURES
 > - Ltijs now allows multiple entry points to be used for the launch instead of only allowing the main app route.
 > - Redirect method now works with non LTI requests.
-> - Added a maxAge parameter where the developer can choose the idtoken's maximun allowed age. Defaults to 10 seconds and can be turned off entirely by setting the parameter to false.
-> - Added a cookie option `domain` that can be used to specify a domain and let cookies be shared between subdomains.
-> - Provider.whitelist now accepts Regex as input.
+> - Added a [maxAge parameter](https://cvmcosta.me/ltijs/#/provider?id=token-max-age-allowed) to `setup()` method options, where the developer can choose the idtoken's maximun allowed age. Defaults to 10 seconds and can be turned off entirely by setting the parameter to false.
+> - Added a [domain](https://cvmcosta.me/ltijs/#/provider?id=cookie-configuration) field to the cookie options of the 'setup()' method, that can be used to specify a domain and let cookies be shared between subdomains.
+> - [Provider.whitelist](https://cvmcosta.me/ltijs/#/provider?id=whitelisting-routes) now accepts Regex as input.
 > - Added a new Database method Replace().
 > - Added indexes to the MondoDB schemas.
-> - Added debug option to MongoDB options.
+> - Added [debug option](https://cvmcosta.me/ltijs/#/provider?id=database-configuration) to MongoDB options.
 > - Added support for multi tenant by taking the deploymentId into consideration when storing and retrieving information.
 
 > IMPROVEMENTS

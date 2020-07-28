@@ -77,7 +77,7 @@ lti.setup('LTIKEY', // Key used to sign cookies and tokens
          { appRoute: '/', loginRoute: '/login' }) // Optionally, specify some of the reserved routes
 ```
 
-The constructor was replaced with a `setup()` method that **works in the exact same way**. This was done because Ltijs now works as a singleton, which allows it's functionalities to be accessed across multiple files:
+The constructor was replaced with a [setup()](https://cvmcosta.me/ltijs/#/provider?id=setting-up-ltijs) method that **works in the exact same way**. This was done because Ltijs now works as a singleton, which allows it's functionalities to be accessed across multiple files:
 
 You can setup Ltijs in file `a.js`:
 
@@ -135,7 +135,7 @@ const plat = await lti.getPlatform('http://plat.com')
 const plat = await lti.getPlatform('http://plat.com', 'CLIENTID')
 ```
 
-Platform registration now accepts multiple platforms with the same platform Url as long as they have different Client Ids. This was implemented to deal with Canvas's LTI implementation where every instructure hosted Canvas instance sends the same issuer (platform Url) in the login request, so Ltijs needs to be able to register multiple platforms with the same Url.
+[Platform registration](https://cvmcosta.me/ltijs/#/provider?id=registering-a-new-platform) now accepts multiple platforms with the same platform Url as long as they have different Client Ids. This was implemented to deal with Canvas's LTI implementation where every instructure hosted Canvas instance sends the same issuer (platform Url) in the login request, so Ltijs needs to be able to register multiple platforms with the same Url.
 
 To accomodate this change, the registration parameter can now receive an additional parameter `clientId`. **Whenever the method receives only the platformUrl, it will return an Array of Platform objects. Passing the two arguments returns only the desired Platform object.**
 
@@ -155,7 +155,7 @@ Returns Platform
 const plat = await lti.getPlatform('http://plat.com', 'CLIENTID2')
 ```
 
-A new `clientId` field was also added to the IdToken object to help with programmatically retrieving platforms relevant to a specific LTI launch.
+A new `clientId` field was also added to the [IdToken object](https://cvmcosta.me/ltijs/#/provider?id=idtoken) to help with programmatically retrieving platforms relevant to a specific LTI launch.
 
 ```javascript
 lti.onConnect((token, request, response,  next) => {
@@ -164,7 +164,7 @@ lti.onConnect((token, request, response,  next) => {
 )
 ```
 
-To prevent accidental deletions, the `lti.deletePlatform` method **requires both parameters to be passed:**
+To prevent accidental deletions, the [lti.deletePlatform()](https://cvmcosta.me/ltijs/#/provider?id=deleting-a-platform) method **requires both parameters to be passed:**
 
 > **This:**
 ``` javascript
@@ -208,7 +208,7 @@ lti.onSessionTimeout((req, res) => {
 )
 ```
 
-The onConnect optional parameters that allowed you to specify how to handle Invalid tokens or Session timeouts were removed and turned into their own standalone methods.
+The onConnect optional parameters that allowed you to specify how to handle Invalid tokens or Session timeouts were removed and turned into their own [standalone methods](https://cvmcosta.me/ltijs/#/provider?id=callbacks).
 
 #### Changed how reserved endpoints are mentioned
 
@@ -246,7 +246,7 @@ The term **Url** could cause some confusion and users could end up setting `appU
 
 Version 5.0 of Ltijs validates login requests using a `state` cookie to prevent cross-site request forgery as recommmended by the IMS specification. This can sometimes cause issues in certain development environments if the browser cannot set the required cookie, for example when trying to set a cross domain cookie without the `secure=true` and `sameSite=none` cookie flags (which don't work without https).
 
-The **devMode** flag tells Ltijs to bypass cookie validation, which allows the application to run properly even without being able to set cookies. ***This flag should never be used in a production environment, instead developers should set the secure and sameSite cookie flags that will allow browser to set cross domain cookies.***
+The [devMode flag](https://cvmcosta.me/ltijs/#/provider?id=development-mode) tells Ltijs to bypass cookie validation, which allows the application to run properly even without being able to set cookies. ***This flag should never be used in a production environment, instead developers should set the secure and sameSite cookie flags that will allow browser to set cross domain cookies.***
 
 > In a development environment, without https, not being able to set cross domain cookies:
 
@@ -301,7 +301,7 @@ Option was renamed to `newResource` to make it more consistent with the naming p
 
 #### No longer sets automatic cookie domain for external redirection
 
-In previous versions, Ltijs would detect an external redirection and attempt to set a cookie domain matching the redirection target. But having in mind that **this would yield no results on redirections to different domains**, this behaviour was removed and replaced by the option to set the domain of every cookie set by Ltijs. 
+In previous versions, Ltijs would detect an external redirection and attempt to set a cookie domain matching the redirection target. But having in mind that **this would yield no results on redirections to different domains**, this behaviour was removed and replaced by the [option to set the domain of every cookie](https://cvmcosta.me/ltijs/#/provider?id=cookie-configuration) set by Ltijs. 
 
 This allows the developer to set a domain that would cause cookies to be shared between all subdomains.
 
@@ -318,9 +318,11 @@ lti.setup('LTIKEY', // Key used to sign cookies and tokens
 
 #### Changed error handling policy
 
-In previous versions, Ltijs would catch errors thrown within methods, log them and then return false. In version 5.0, errors are not caught by the methods themselves, this was done to give developers more freedom on how they choose to handle errors. The logger functionality was also removed, developers can now choose how to log access and error information. 
+In previous versions, Ltijs would catch errors thrown within methods, log them and then return false. In version 5.0, errors are not caught by the methods themselves, this was done to give developers more freedom on how they choose to handle errors. 
 
-*(This change does not apply to the LTI authentication flow, errors thrown during the validation process still redirect to the invalid token or session timeout endpoints)*
+**The Logger functionality was also removed, developers can now choose how to log access and error information.**
+
+*(This change does not apply to the LTI authentication flow, errors thrown during the validation process still redirect to the invalid token or session timeout endpoint.)*
 
 #### Bumped required version of Node
 
