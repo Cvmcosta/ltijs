@@ -61,28 +61,28 @@ Ex standard response:
 
 ```javascript
 {
-"id" : "https://lms.example.com/sections/2923/memberships",
-"context": {
-  "id": "2923-abc",
-  "label": "CPS 435",
-  "title": "CPS 435 Learning Analytics",
-},
-"members" : [
-  {
-    "status" : "Active",
-    "name": "Jane Q. Public",
-    "picture" : "https://platform.example.edu/jane.jpg",
-    "given_name" : "Jane",
-    "family_name" : "Doe",
-    "middle_name" : "Marie",
-    "email": "jane@platform.example.edu",
-    "user_id" : "0ae836b9-7fc9-4060-006f-27b2066ac545",
-    "lis_person_sourcedid": "59254-6782-12ab",
-    "roles": [
-      "http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor"
-    ]
-  }
-]
+  "id" : "https://lms.example.com/sections/2923/memberships",
+  "context": {
+    "id": "2923-abc",
+    "label": "CPS 435",
+    "title": "CPS 435 Learning Analytics",
+  },
+  "members" : [
+    {
+      "status" : "Active",
+      "name": "Jane Q. Public",
+      "picture" : "https://platform.example.edu/jane.jpg",
+      "given_name" : "Jane",
+      "family_name" : "Doe",
+      "middle_name" : "Marie",
+      "email": "jane@platform.example.edu",
+      "user_id" : "0ae836b9-7fc9-4060-006f-27b2066ac545",
+      "lis_person_sourcedid": "59254-6782-12ab",
+      "roles": [
+        "http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor"
+      ]
+    }
+  ]
 }
 ```
 
@@ -123,7 +123,7 @@ The `getMembers()` method allows us to apply filters to the request, and these f
   Ex:
 
   ```javascript
-    {
+  {
     "id" : "https://lms.example.com/sections/2923/memberships",
     "context": {
       "id": "2923-abc",
@@ -134,7 +134,7 @@ The `getMembers()` method allows us to apply filters to the request, and these f
       ...
     ],
     "next": "https://lms.example.com/sections/2923/memberships/page/2"
-    }
+  }
   ```
 
   ```javascript
@@ -143,6 +143,30 @@ The `getMembers()` method allows us to apply filters to the request, and these f
   const remaining = await lti.NamesAndRoles.getMembers(res.locals.token, { pages: 2, url: next }) // This request will maintain the "limit" and "role" parameters of the initial request
   ```
 
+  The same behaviour can be applied to the [differences url](https://www.imsglobal.org/spec/lti-nrps/v2p0#membership-differences), if it is present in the response:
+
+   Ex:
+
+  ```javascript
+  {
+    "id" : "https://lms.example.com/sections/2923/memberships",
+    "context": {
+      "id": "2923-abc",
+      "label": "CPS 435",
+      "title": "CPS 435 Learning Analytics",
+    },
+    "members" : [
+      ...
+    ],
+    "differences": "https://lms.example.com/sections/2923/memberships?since=672638723"
+  }
+  ```
+
+  ```javascript
+  const result = await lti.NamesAndRoles.getMembers(res.locals.token, { role: 'Learner', limit: 10, pages: 2 })
+  const differencesUrl = result.differences
+  const differences = await lti.NamesAndRoles.getMembers(res.locals.token, { url: differencesUrl })
+  ```
 
 
 --- 

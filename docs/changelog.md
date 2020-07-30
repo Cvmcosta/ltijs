@@ -9,6 +9,12 @@
 
 ### CHANGELOG
 
+#### V5.0.2
+> 2020-07-29
+> FIXES
+> - Fixed issue where Names and Roles service would not parse the link header correctly if there were more than one link.
+> - Names and Roles `getMembers()` method now returns the `differences` link in the `result` object if it is present in the response headers.
+
 #### V5.0.0
 > 2020-07-17
 

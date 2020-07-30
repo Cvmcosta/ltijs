@@ -9,6 +9,8 @@ var _classPrivateFieldSet2 = _interopRequireDefault(require("@babel/runtime/help
 /* Names and Roles Provisioning Service */
 const got = require('got');
 
+const parseLink = require('parse-link-header');
+
 const provNamesAndRolesServiceDebug = require('debug')('provider:namesAndRolesService');
 
 var _getPlatform = new WeakMap();
@@ -83,6 +85,7 @@ class NamesAndRoles {
     if (query.length > 0) query = new URLSearchParams(query);else query = false;
     let next = idtoken.namesRoles.context_memberships_url;
     if (options && options.url) next = options.url;
+    let differences;
     let result;
     let curPage = 1;
 
@@ -94,6 +97,7 @@ class NamesAndRoles {
 
       let response;
       provNamesAndRolesServiceDebug('Member pages found: ', curPage);
+      provNamesAndRolesServiceDebug('Current member page: ', next);
       if (query && curPage === 1) response = await got.get(next, {
         searchParams: query,
         headers: {
@@ -110,12 +114,16 @@ class NamesAndRoles {
       const body = JSON.parse(response.body);
       if (!result) result = JSON.parse(JSON.stringify(body));else {
         result.members = [...result.members, ...body.members];
-      } // Trying to find "rel=next" header, indicating additional pages
+      }
+      const parsedLinks = parseLink(headers.link); // Trying to find "rel=differences" header
 
-      if (headers.link && headers.link.search(/rel=.*next/)) next = headers.link.split(';rel=next')[0];else next = false;
+      if (parsedLinks && parsedLinks.differences) differences = parsedLinks.differences.url; // Trying to find "rel=next" header, indicating additional pages
+
+      if (parsedLinks && parsedLinks.next) next = parsedLinks.next.url;else next = false;
       curPage++;
     } while (next);
 
+    if (differences) result.differences = differences;
     provNamesAndRolesServiceDebug('Memberships retrieved');
     return result;
   }

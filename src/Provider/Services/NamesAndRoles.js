@@ -1,6 +1,7 @@
 /* Names and Roles Provisioning Service */
 
 const got = require('got')
+const parseLink = require('parse-link-header')
 const provNamesAndRolesServiceDebug = require('debug')('provider:namesAndRolesService')
 
 class NamesAndRoles {
@@ -57,6 +58,7 @@ class NamesAndRoles {
 
     let next = idtoken.namesRoles.context_memberships_url
     if (options && options.url) next = options.url
+    let differences
     let result
     let curPage = 1
 
@@ -67,6 +69,7 @@ class NamesAndRoles {
       }
       let response
       provNamesAndRolesServiceDebug('Member pages found: ', curPage)
+      provNamesAndRolesServiceDebug('Current member page: ', next)
 
       if (query && curPage === 1) response = await got.get(next, { searchParams: query, headers: { Authorization: tokenRes.token_type + ' ' + tokenRes.access_token, Accept: 'application/vnd.ims.lti-nrps.v2.membershipcontainer+json' } })
       else response = await got.get(next, { headers: { Authorization: tokenRes.token_type + ' ' + tokenRes.access_token, Accept: 'application/vnd.ims.lti-nrps.v2.membershipcontainer+json' } })
@@ -81,12 +84,17 @@ class NamesAndRoles {
           ...body.members
         ]
       }
+
+      const parsedLinks = parseLink(headers.link)
+      // Trying to find "rel=differences" header
+      if (parsedLinks && parsedLinks.differences) differences = parsedLinks.differences.url
       // Trying to find "rel=next" header, indicating additional pages
-      if (headers.link && headers.link.search(/rel=.*next/)) next = headers.link.split(';rel=next')[0]
+      if (parsedLinks && parsedLinks.next) next = parsedLinks.next.url
       else next = false
       curPage++
     } while (next)
 
+    if (differences) result.differences = differences
     provNamesAndRolesServiceDebug('Memberships retrieved')
     return result
   }
