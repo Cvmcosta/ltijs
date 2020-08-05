@@ -23,8 +23,9 @@ class Server {
     if (https) this.ssl = ssl; // Setting up helmet
 
     this.app.use(helmet({
-      frameguard: false // Disabling frameguard so that Ltijs can send resources to iframes inside LMS's
-
+      frameguard: false,
+      // Disabling frameguard so that Ltijs can send resources to iframes inside LMS's
+      contentSecurityPolicy: false
     })); // Controlling cors, having in mind that resources in another domain need to be explicitly allowed, and that ltijs controls origin blocking unregistered platforms
     // This block of code allows cors specifying the host instead of just returnin '*'. And then ltijs blocks requests from unregistered platforms. (Except for whitelisted routes)
 
