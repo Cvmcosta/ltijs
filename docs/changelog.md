@@ -9,6 +9,11 @@
 
 ### CHANGELOG
 
+#### V5.0.3
+> 2020-08-08
+> UPDATE
+> - Updated Helmet dependency. Tweaked `Server.js` to deal with new security policies introduced.
+
 #### V5.0.2
 > 2020-07-29
 > FIXES
