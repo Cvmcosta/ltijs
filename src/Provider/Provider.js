@@ -40,6 +40,7 @@ class Provider {
   #ENCRYPTIONKEY
 
   #devMode = false
+  #ltiaas = false
 
   #tokenMaxAge = 10
 
@@ -127,6 +128,7 @@ class Provider {
     if (options && (options.keysetRoute || options.keysetUrl)) this.#keysetRoute = options.keysetRoute || options.keysetUrl
 
     if (options && options.devMode === true) this.#devMode = true
+    if (options && options.ltiaas === true) this.#ltiaas = true
     if (options && options.tokenMaxAge !== undefined) this.#tokenMaxAge = options.tokenMaxAge
 
     // Cookie options
@@ -253,7 +255,7 @@ class Provider {
             await this.Database.Replace(false, 'contexttoken', { contextId: contextId, user: valid.sub }, contextToken)
 
             // Creates platform session cookie
-            res.cookie(platformCode, valid.sub, this.#cookieOptions)
+            if (!this.#ltiaas) res.cookie(platformCode, valid.sub, this.#cookieOptions)
 
             provMainDebug('Generating LTIK and redirecting to endpoint')
             const newLtikObj = {
@@ -311,12 +313,14 @@ class Provider {
         const contextId = validLtik.contextId
         let user = validLtik.user
 
-        provMainDebug('Attempting to retrieve matching session cookie')
-        const cookieUser = cookies[platformCode]
-        if (!cookieUser) {
-          if (!this.#devMode) user = false
-          else { provMainDebug('Dev Mode enabled: Missing session cookies will be ignored') }
-        } else if (user.toString() !== cookieUser.toString()) user = false
+        if (!this.#ltiaas) {
+          provMainDebug('Attempting to retrieve matching session cookie')
+          const cookieUser = cookies[platformCode]
+          if (!cookieUser) {
+            if (!this.#devMode) user = false
+            else { provMainDebug('Dev Mode enabled: Missing session cookies will be ignored') }
+          } else if (user.toString() !== cookieUser.toString()) user = false
+        }
 
         if (user) {
           provAuthDebug('Valid session found')

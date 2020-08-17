@@ -63,6 +63,8 @@ var _ENCRYPTIONKEY2 = new WeakMap();
 
 var _devMode = new WeakMap();
 
+var _ltiaas = new WeakMap();
+
 var _tokenMaxAge = new WeakMap();
 
 var _cookieOptions = new WeakMap();
@@ -119,6 +121,11 @@ class Provider {
     });
 
     _devMode.set(this, {
+      writable: true,
+      value: false
+    });
+
+    _ltiaas.set(this, {
       writable: true,
       value: false
     });
@@ -236,6 +243,7 @@ class Provider {
     if (options && (options.invalidTokenRoute || options.invalidTokenUrl)) (0, _classPrivateFieldSet2.default)(this, _invalidTokenRoute, options.invalidTokenRoute || options.invalidTokenUrl);
     if (options && (options.keysetRoute || options.keysetUrl)) (0, _classPrivateFieldSet2.default)(this, _keysetRoute, options.keysetRoute || options.keysetUrl);
     if (options && options.devMode === true) (0, _classPrivateFieldSet2.default)(this, _devMode, true);
+    if (options && options.ltiaas === true) (0, _classPrivateFieldSet2.default)(this, _ltiaas, true);
     if (options && options.tokenMaxAge !== undefined) (0, _classPrivateFieldSet2.default)(this, _tokenMaxAge, options.tokenMaxAge); // Cookie options
 
     if (options && options.cookies) {
@@ -352,7 +360,7 @@ class Provider {
               user: valid.sub
             }, contextToken); // Creates platform session cookie
 
-            res.cookie(platformCode, valid.sub, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
+            if (!(0, _classPrivateFieldGet2.default)(this, _ltiaas)) res.cookie(platformCode, valid.sub, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
             provMainDebug('Generating LTIK and redirecting to endpoint');
             const newLtikObj = {
               platformUrl: valid.iss,
@@ -410,14 +418,17 @@ class Provider {
         const deploymentId = validLtik.deploymentId;
         const contextId = validLtik.contextId;
         let user = validLtik.user;
-        provMainDebug('Attempting to retrieve matching session cookie');
-        const cookieUser = cookies[platformCode];
 
-        if (!cookieUser) {
-          if (!(0, _classPrivateFieldGet2.default)(this, _devMode)) user = false;else {
-            provMainDebug('Dev Mode enabled: Missing session cookies will be ignored');
-          }
-        } else if (user.toString() !== cookieUser.toString()) user = false;
+        if (!(0, _classPrivateFieldGet2.default)(this, _ltiaas)) {
+          provMainDebug('Attempting to retrieve matching session cookie');
+          const cookieUser = cookies[platformCode];
+
+          if (!cookieUser) {
+            if (!(0, _classPrivateFieldGet2.default)(this, _devMode)) user = false;else {
+              provMainDebug('Dev Mode enabled: Missing session cookies will be ignored');
+            }
+          } else if (user.toString() !== cookieUser.toString()) user = false;
+        }
 
         if (user) {
           provAuthDebug('Valid session found'); // Gets corresponding id token from database
