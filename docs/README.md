@@ -159,7 +159,7 @@ setup()
 
 See bellow for the complete documentation:
 
-### [Ltijs Documentation](https://cvmcosta.github.io/ltijs/#/provider)
+[Ltijs Documentation](https://cvmcosta.github.io/ltijs/#/provider)
 
 Service documentations:
    - [Deep Linking Service documentation](https://cvmcosta.github.io/ltijs/#/deeplinking)
