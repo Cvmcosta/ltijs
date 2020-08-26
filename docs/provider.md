@@ -1340,7 +1340,7 @@ The `contexttoken` object consists of:
     "return_url": "http://localhost/moodle/mod/lti/return.php?course=2&launch_container=3&instanceid=57&sesskey=6b5H1MF8yp"
   },
   "messageType": "LtiResourceLinkRequest",
-  "version": "1.3.0",
+  "version": "1.3.0"
 }
 ```
 
