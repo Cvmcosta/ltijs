@@ -9,6 +9,11 @@
 
 ### CHANGELOG
 
+#### V5.1.0
+> 2020-08-29
+> IMPROVEMENTS
+> - Improved error logging for the launch and authentication flow. Now the invalidToken and sessionTimeout routes have access to a `res.locals.err` object containing information about the error. The default callback methods return this object as a reponse.
+
 #### V5.0.3
 > 2020-08-08
 > UPDATE

@@ -166,14 +166,14 @@ class Provider {
     _sessionTimeoutCallback2.set(this, {
       writable: true,
       value: async (req, res) => {
-        return res.status(401).send('SESSION_TIMEOUT. Please reinitiate login.');
+        return res.status(401).send(res.locals.err);
       }
     });
 
     _invalidTokenCallback2.set(this, {
       writable: true,
       value: async (req, res) => {
-        return res.status(401).send('INVALID_TOKEN. Please reinitiate login.');
+        return res.status(401).send(res.locals.err);
       }
     });
 
@@ -390,7 +390,11 @@ class Provider {
             provMainDebug('No LTIK found');
             provMainDebug('Request body: ', req.body);
             provMainDebug('Passing request to invalid token handler');
-            return res.redirect(req.baseUrl + (0, _classPrivateFieldGet2.default)(this, _invalidTokenRoute));
+            const errObj = {
+              message: 'No LTIK or IdToken found.',
+              bodyReceived: req.body
+            };
+            return res.redirect(req.baseUrl + (0, _classPrivateFieldGet2.default)(this, _invalidTokenRoute) + '?err=' + encodeURIComponent(JSON.stringify(errObj)));
           }
         }
 
@@ -464,7 +468,11 @@ class Provider {
       } catch (err) {
         provAuthDebug(err);
         provMainDebug('Passing request to invalid token handler');
-        return res.redirect(req.baseUrl + (0, _classPrivateFieldGet2.default)(this, _invalidTokenRoute));
+        const errObj = {
+          message: 'Error validating LTIK or IdToken',
+          errorLog: err.message
+        };
+        return res.redirect(req.baseUrl + (0, _classPrivateFieldGet2.default)(this, _invalidTokenRoute) + '?err=' + encodeURIComponent(JSON.stringify(errObj)));
       }
     };
 
@@ -508,9 +516,22 @@ class Provider {
     }); // Session timeout, invalid token and keyset methods
 
     this.app.all((0, _classPrivateFieldGet2.default)(this, _sessionTimeoutRoute), async (req, res, next) => {
+      res.locals.err = {
+        status: 401,
+        error: 'Unauthorized',
+        details: {
+          message: 'Session cookie not found.'
+        }
+      };
       (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutCallback2).call(this, req, res, next);
     });
     this.app.all((0, _classPrivateFieldGet2.default)(this, _invalidTokenRoute), async (req, res, next) => {
+      const errObj = JSON.parse(decodeURIComponent(req.query.err));
+      res.locals.err = {
+        status: 401,
+        error: 'Unauthorized',
+        details: errObj
+      };
       (0, _classPrivateFieldGet2.default)(this, _invalidTokenCallback2).call(this, req, res, next);
     });
     this.app.get((0, _classPrivateFieldGet2.default)(this, _keysetRoute), async (req, res, next) => {

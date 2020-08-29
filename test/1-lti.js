@@ -146,6 +146,15 @@ describe('Testing LTI 1.3 flow', function () {
       expect(res).to.redirectTo(new RegExp('.*' + lti.invalidTokenRoute()))
     })
   })
+  it('Idtoken route is expected to have access to error message', async () => {
+    const url = lti.appRoute()
+    lti.onInvalidToken((req, res) => { res.status(401).send(res.locals.err) })
+
+    return chai.request(lti.app).post(url).then(res => {
+      expect(res).to.redirectTo(new RegExp('.*' + lti.invalidTokenRoute()))
+      expect(res.body).to.not.deep.equal({})
+    })
+  })
   it('Provider.whitelist expected to whitelist route to bypass Ltijs authentication protocol', async () => {
     expect(lti.whitelist('/whitelist1', { route: '/whitelist2', method: 'POST' }, { route: new RegExp(/^\/whitelist3\/.*/), method: 'get' })).to.be.equal(true)
     lti.app.all('/whitelist1', (req, res) => {

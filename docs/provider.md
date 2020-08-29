@@ -375,7 +375,7 @@ Sets the callback method called when no valid session is found during a request 
 ##### Examples
 
 ```javascript
-lti.onSessionTimeout(async (req, res, next) => { return res.status(401).send('SESSION_TIMEOUT. Please reinitiate login.') })
+lti.onSessionTimeout(async (req, res, next) => { return res.status(401).send(res.locals.err) })
 ```
 
 *Ltijs provides a default method for this callback.*
@@ -392,7 +392,7 @@ Sets the callback method called when the token received fails the validation pro
 
 | Name | Type | Description |  |
 | ---- | ---- | ----------- | -------- |
-| invalidTokenCallback | `Function`  |  Callback method called when the token received fails the validation process. | &nbsp; |
+| invalidTokenCallback | `Function`  |  Callback method called when the ltik or idtoken received fails the validation process. | &nbsp; |
 
 
 
@@ -401,7 +401,7 @@ Sets the callback method called when the token received fails the validation pro
 ##### Examples
 
 ```javascript
-lti.onInvalidToken(async (req, res, next) => { return res.status(401).send('INVALID_TOKEN. Please reinitiate login.') })
+lti.onInvalidToken(async (req, res, next) => { return res.status(401).send(res.locals.err) })
 ```
 
 *Ltijs provides a default method for this callback.*
@@ -1012,33 +1012,33 @@ lti.onDeepLinking(async (token, req, res, next) => {
 
 The `onInvalidToken` callback is called whenever the idtoken received fails the LTI® validation process. This callback can be set through the `lti.onInvalidToken()` method.
 
-The callback route will be given the three Express route parameters (request, response and next).
+The callback route will be given the three Express route parameters (request, response and next). And will also have **access to a `res.locals.err` object**, containing information about the error.
 
 > *This callback should be used to display your **invalid token error screen**.*
 
 ```javascript
 lti.onInvalidToken(async (req, res, next) => { 
-    return res.status(401).send('INVALID_TOKEN. Please reinitiate login.') 
+    return res.status(401).send(res.locals.err)
   }
 )
 ```
-*Ltijs provides a default method for this callback that returns a 401 error code with a simple error message.*
+*Ltijs provides a default method for this callback that returns a 401 error code with the `res.locals.err` object.*
 
 #### onSessionTimeout
 
 The `onSessionTimeout` callback is called whenever no valid session is found during a request validation. This callback can be set through the `lti.onSessionTimeout()` method.
 
-The callback route will be given the three Express route parameters (request, response and next).
+The callback route will be given the three Express route parameters (request, response and next). And will also have **access to a `res.locals.err` object**, containing information about the error.
 
 > *This callback should be used to display your **session timeout error screen**.*
 
 ```javascript
 lti.onSessionTimeout(async (req, res, next) => { 
-    return res.status(401).send('SESSION_TIMEOUT. Please reinitiate login.') 
+    return res.status(401).send(res.locals.err) 
   }
 )
 ```
-*Ltijs provides a default method for this callback that returns a 401 error code with a simple error message.*
+*Ltijs provides a default method for this callback that returns a 401 error code with the `res.locals.err` object.
 
 
 

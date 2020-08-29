@@ -58,11 +58,11 @@ class Provider {
   #deepLinkingCallback = async (token, req, res, next) => { return next() }
 
   #sessionTimeoutCallback = async (req, res) => {
-    return res.status(401).send('SESSION_TIMEOUT. Please reinitiate login.')
+    return res.status(401).send(res.locals.err)
   }
 
   #invalidTokenCallback = async (req, res) => {
-    return res.status(401).send('INVALID_TOKEN. Please reinitiate login.')
+    return res.status(401).send(res.locals.err)
   }
 
   // Assembles and sends keyset
@@ -286,7 +286,11 @@ class Provider {
             provMainDebug('No LTIK found')
             provMainDebug('Request body: ', req.body)
             provMainDebug('Passing request to invalid token handler')
-            return res.redirect(req.baseUrl + this.#invalidTokenRoute)
+            const errObj = {
+              message: 'No LTIK or IdToken found.',
+              bodyReceived: req.body
+            }
+            return res.redirect(req.baseUrl + this.#invalidTokenRoute + '?err=' + encodeURIComponent(JSON.stringify(errObj)))
           }
         }
 
@@ -351,7 +355,11 @@ class Provider {
       } catch (err) {
         provAuthDebug(err)
         provMainDebug('Passing request to invalid token handler')
-        return res.redirect(req.baseUrl + this.#invalidTokenRoute)
+        const errObj = {
+          message: 'Error validating LTIK or IdToken',
+          errorLog: err.message
+        }
+        return res.redirect(req.baseUrl + this.#invalidTokenRoute + '?err=' + encodeURIComponent(JSON.stringify(errObj)))
       }
     }
 
@@ -399,9 +407,22 @@ class Provider {
 
     // Session timeout, invalid token and keyset methods
     this.app.all(this.#sessionTimeoutRoute, async (req, res, next) => {
+      res.locals.err = {
+        status: 401,
+        error: 'Unauthorized',
+        details: {
+          message: 'Session cookie not found.'
+        }
+      }
       this.#sessionTimeoutCallback(req, res, next)
     })
     this.app.all(this.#invalidTokenRoute, async (req, res, next) => {
+      const errObj = JSON.parse(decodeURIComponent(req.query.err))
+      res.locals.err = {
+        status: 401,
+        error: 'Unauthorized',
+        details: errObj
+      }
       this.#invalidTokenCallback(req, res, next)
     })
     this.app.get(this.#keysetRoute, async (req, res, next) => {
