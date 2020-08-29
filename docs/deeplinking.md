@@ -33,9 +33,9 @@
 
 
 ## Introduction
-Ltijs implements the [LTI 1.3 Deep Linking Service Specification](https://www.imsglobal.org/spec/lti-dl/v2p0/) in the form of the **DeepLinking Class**.
+Ltijs implements the [LTI® 1.3 Deep Linking Service Specification](https://www.imsglobal.org/spec/lti-dl/v2p0/) in the form of the **DeepLinking Class**.
 
-Deep Linking consists of using a LTI launch to select specific resources within a tool to be displayed to the user.
+Deep Linking consists of using a LTI® launch to select specific resources within a tool to be displayed to the user.
 
 This class provides two methods for generating the deep linking messages, and a callback method called whenever there is a successfull deep linking launch.
 
@@ -148,7 +148,7 @@ const message = await lti.DeepLinking.createDeepLinkingMessage(token, items, { m
 
 #### contentItems parameter
 
-The contentItems parameter is either an content item object or a array of content item objects, following the [LTI 1.3 content item specification](https://www.imsglobal.org/spec/lti-dl/v2p0/#content-item-types). 
+The contentItems parameter is either an content item object or a array of content item objects, following the [LTI® 1.3 content item specification](https://www.imsglobal.org/spec/lti-dl/v2p0/#content-item-types). 
 
 Passing the parameter **does not guarantee that all content items will be sent in the request**, to avoid errors, Ltijs only sends content items that fit within the platform's accepted item types and allowed quantity .
 

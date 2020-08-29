@@ -44,7 +44,7 @@
 ## Introduction
 
 
-Ltijs version 5.0 is a re-release of the project as a Certified LTI library, that comes with many improvements, new functionalities and a few **API changes**, see bellow for a migration guide from version 4.
+Ltijs version 5.0 is a re-release of the project as a Certified LTI® library, that comes with many improvements, new functionalities and a few **API changes**, see bellow for a migration guide from version 4.
 
 ___
 
@@ -135,7 +135,7 @@ const plat = await lti.getPlatform('http://plat.com')
 const plat = await lti.getPlatform('http://plat.com', 'CLIENTID')
 ```
 
-[Platform registration](https://cvmcosta.me/ltijs/#/provider?id=registering-a-new-platform) now accepts multiple platforms with the same platform Url as long as they have different Client Ids. This was implemented to deal with Canvas's LTI implementation where every instructure hosted Canvas instance sends the same issuer (platform Url) in the login request, so Ltijs needs to be able to register multiple platforms with the same Url.
+[Platform registration](https://cvmcosta.me/ltijs/#/provider?id=registering-a-new-platform) now accepts multiple platforms with the same platform Url as long as they have different Client Ids. This was implemented to deal with Canvas's LTI® implementation where every instructure hosted Canvas instance sends the same issuer (platform Url) in the login request, so Ltijs needs to be able to register multiple platforms with the same Url.
 
 To accomodate this change, the registration parameter can now receive an additional parameter `clientId`. **Whenever the method receives only the platformUrl, it will return an Array of Platform objects. Passing the two arguments returns only the desired Platform object.**
 
@@ -155,7 +155,7 @@ Returns Platform
 const plat = await lti.getPlatform('http://plat.com', 'CLIENTID2')
 ```
 
-A new `clientId` field was also added to the [IdToken object](https://cvmcosta.me/ltijs/#/provider?id=idtoken) to help with programmatically retrieving platforms relevant to a specific LTI launch.
+A new `clientId` field was also added to the [IdToken object](https://cvmcosta.me/ltijs/#/provider?id=idtoken) to help with programmatically retrieving platforms relevant to a specific LTI® launch.
 
 ```javascript
 lti.onConnect((token, request, response,  next) => {
@@ -322,7 +322,7 @@ In previous versions, Ltijs would catch errors thrown within methods, log them a
 
 **The Logger functionality was also removed, developers can now choose how to log access and error information.**
 
-*(This change does not apply to the LTI authentication flow, errors thrown during the validation process still redirect to the invalid token or session timeout endpoint.)*
+*(This change does not apply to the LTI® authentication flow, errors thrown during the validation process still redirect to the invalid token or session timeout endpoint.)*
 
 #### Bumped required version of Node
 

@@ -7,7 +7,7 @@
 
 
 
-> Easily turn your web application into into a LTI 1.3 Learning Tool.
+> Easily turn your web application into into a LTI® 1.3 Learning Tool.
 
 [![travisci](https://travis-ci.org/Cvmcosta/ltijs.svg?branch=master)](https://travis-ci.org/Cvmcosta/ltijs)
 [![codecov](https://codecov.io/gh/Cvmcosta/ltijs/branch/master/graph/badge.svg)](https://codecov.io/gh/Cvmcosta/ltijs)
@@ -23,12 +23,13 @@
 
 Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps!
 
-> [Ltijs is LTI Advantage Complete Certified by IMS](https://site.imsglobal.org/certifications/coursekey/ltijs)
+> [Ltijs is LTI® Advantage Complete Certified by IMS](https://site.imsglobal.org/certifications/coursekey/ltijs)
 
-> Ltijs version 5.0 is a re-release of the project as a Certified LTI library, that comes with many improvements, new functionalities and a few **API changes**, see bellow for a migration guide from version 4 and a complete list of the changes made:
+> Ltijs version 5.0 is a re-release of the project as a Certified LTI® library, that comes with many improvements, new functionalities and a few **API changes**, see bellow for a migration guide from version 4 and a complete list of the changes made:
 > - [Migrating from version 4](https://cvmcosta.github.io/ltijs/#/migration)
 > - [CHANGELOG](https://cvmcosta.github.io/ltijs/#/changelog)
 
+> *Learning Tools Interoperability® (LTI®) is a trademark of the IMS Global Learning Consortium, Inc. (https://www.imsglo*bal.org)*
 
 ## Table of Contents
 
@@ -45,10 +46,10 @@ Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps
 ---
 ## Introduction
 
-The Learning Tools Interoperability (LTI) protocol is a standard for integration of rich learning applications within educational environments. <sup>[ref](https://www.imsglobal.org/spec/lti/v1p3/)</sup>
+The Learning Tools Interoperability (LTI®) protocol is a standard for integration of rich learning applications within educational environments. <sup>[ref](https://www.imsglobal.org/spec/lti/v1p3/)</sup>
 
 
-This library implements a tool provider as an [Express](https://expressjs.com/) server, with preconfigured routes and methods that manage the [LTI 1.3](https://www.imsglobal.org/spec/lti/v1p3/) protocol for you. Making it fast and simple to create a working learning tool with access to every LTI service, without having to worry about manually implementing any of the security and validation required to do so. 
+This library implements a tool provider as an [Express](https://expressjs.com/) server, with preconfigured routes and methods that manage the [LTI® 1.3](https://www.imsglobal.org/spec/lti/v1p3/) protocol for you. Making it fast and simple to create a working learning tool with access to every LTI® service, without having to worry about manually implementing any of the security and validation required to do so. 
 
 
 ---

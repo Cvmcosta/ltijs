@@ -33,7 +33,7 @@
 
 ## Introduction
 
-The ```Platform``` class represents a [LTI Consumer](https://www.imsglobal.org/spec/lti/v1p3/#platforms-and-tools).
+The ```Platform``` class represents a [LTI® Consumer](https://www.imsglobal.org/spec/lti/v1p3/#platforms-and-tools).
 
 
 ---

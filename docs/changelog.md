@@ -23,14 +23,14 @@
 #### V5.0.0
 > 2020-07-17
 
-> Got the IMS LTI Advantage Complete Certification!
+> Got the IMS LTI® Advantage Complete Certification!
 
 > BREAKING CHANGES
 > - Provider no longer has a contructor, instead it has a [setup() method](https://cvmcosta.me/ltijs/#/provider?id=setting-up-ltijs) that takes the exact same arguments.
 > - [Provider.getPlatform](https://cvmcosta.me/ltijs/#/provider?id=retrieving-a-platform) now takes two arguments (platformUrl and clientId). Using only platformUrl results in a Platform array being returned.
 > - [Provider.deletePlatform](https://cvmcosta.me/ltijs/#/provider?id=deleting-a-platform) now takes two arguments (platformUrl and clientId). Using only platformUrl throws an error to avoid accidental deletion of multiple platforms.
 > - Provider now works as a singleton. This allows it to be [accessed across multiple files](https://cvmcosta.me/ltijs/#/provider?id=using-ltijs), calling setup only once.
-> - Changed authentication flow to better implement LTI 1.3 security protocol, which might cause issues due to cross domain cookie limitations in certain development environments.
+> - Changed authentication flow to better implement LTI® 1.3 security protocol, which might cause issues due to cross domain cookie limitations in certain development environments.
 > - Added [devMode flag](https://cvmcosta.me/ltijs/#/provider?id=development-mode) to setup options to deal with the possible issues caused by cross domain cookies.
 > - Removed onConnect options and [added onInvalidToken and onSessionTimeout methods](https://cvmcosta.me/ltijs/#/provider?id=callbacks).
 > - Changed how [reserved endpoints](https://cvmcosta.me/ltijs/#/provider?id=reserved-endpoint-configuration) are mentioned in methods and options from Urls to Routes. Ex1: **lti.appUrl() => lti.appRoute()**. Ex2: **... loginUrl: '/app'}) => ... loginRoute: '/app'})**
@@ -43,7 +43,7 @@
 
 > NEW FEATURES
 > - Ltijs now allows multiple entry points to be used for the launch instead of only allowing the main app route.
-> - Redirect method now works with non LTI requests.
+> - Redirect method now works with non LTI® requests.
 > - Added a [maxAge parameter](https://cvmcosta.me/ltijs/#/provider?id=token-max-age-allowed) to `setup()` method options, where the developer can choose the idtoken's maximun allowed age. Defaults to 10 seconds and can be turned off entirely by setting the parameter to false.
 > - Added a [domain](https://cvmcosta.me/ltijs/#/provider?id=cookie-configuration) field to the cookie options of the 'setup()' method, that can be used to specify a domain and let cookies be shared between subdomains.
 > - [Provider.whitelist](https://cvmcosta.me/ltijs/#/provider?id=whitelisting-routes) now accepts Regex as input.
@@ -76,7 +76,7 @@
 > - Separated generated access tokens based on their scope.
 > - Improved Access token generation method with the ability to specify the scope.
 > - Changed Grade Service methods names to improve code consistency, old method names are deprecated and will keep working until the 5.0 release.
-> - Started process of certifying Ltijs with the IMS's LTI Advantage Conformance Certificate.
+> - Started process of certifying Ltijs with the IMS's LTI® Advantage Conformance Certificate.
 
 #### V3.6.2
 > 2020-04-15
@@ -212,7 +212,7 @@
 #### V1.1.0 
 
 > 2019-08-13
-> - Changed Request builder to include some optional LTI launch parameters.
+> - Changed Request builder to include some optional LTI® launch parameters.
 > - Changed the login route handler to deal with multiple HTTP methods.
 > - Added figlet on deploy.
 > - Added update notifier.

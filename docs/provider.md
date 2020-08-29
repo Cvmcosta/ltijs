@@ -7,7 +7,7 @@
 
 
 
-> Easily turn your web application into into a LTI 1.3 Learning Tool.
+> Easily turn your web application into into a LTI® 1.3 Learning Tool.
 
 
 [![travisci](https://travis-ci.org/Cvmcosta/ltijs.svg?branch=master)](https://travis-ci.org/Cvmcosta/ltijs)
@@ -24,9 +24,9 @@
 
 Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps! 
 
-> [Ltijs is LTI Advantage Complete Certified by IMS](https://site.imsglobal.org/certifications/coursekey/ltijs)
+> [Ltijs is LTI® Advantage Complete Certified by IMS](https://site.imsglobal.org/certifications/coursekey/ltijs)
 
-> Ltijs version 5.0 is a re-release of the project as a Certified LTI library, that comes with many improvements, new functionalities and a few **API changes**, see bellow for a migration guide from version 4 and a complete list of the changes made:
+> Ltijs version 5.0 is a re-release of the project as a Certified LTI® library, that comes with many improvements, new functionalities and a few **API changes**, see bellow for a migration guide from version 4 and a complete list of the changes made:
 > - [Migrating from version 4](https://cvmcosta.github.io/ltijs/#/migration)
 > - [CHANGELOG](https://cvmcosta.github.io/ltijs/#/changelog)
 
@@ -67,7 +67,7 @@ Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps
   - [Request authentication](#request-authentication)
   - [Whitelisting routes](#whitelisting-routes)
   - [Redirecting with Ltijs](#redirecting-with-ltijs)
-- [LTI Advantage Services](#lti-advantage-services)
+- [LTI® Advantage Services](#lti-advantage-services)
   - [Deep Linking](#deep-linking-service-with-ltijs)
   - [Assignment and Grades](#assignment-and-grades-service-with-ltijs)
   - [Names and Roles Provisioning](#names-and-roles-provisioning-service-with-ltijs)
@@ -80,10 +80,10 @@ Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps
 
 ## Introduction
 
-The Learning Tools Interoperability (LTI) protocol is a standard for integration of rich learning applications within educational environments. <sup>[ref](https://www.imsglobal.org/spec/lti/v1p3/)</sup>
+The Learning Tools Interoperability (LTI®) protocol is a standard for integration of rich learning applications within educational environments. <sup>[ref](https://www.imsglobal.org/spec/lti/v1p3/)</sup>
 
 
-This library implements a tool provider as an [Express](https://expressjs.com/) server, with preconfigured routes and methods that manage the [LTI 1.3](https://www.imsglobal.org/spec/lti/v1p3/) protocol for you. Making it fast and simple to create a working learning tool with access to every LTI service, without having to worry about manually implementing any of the security and validation required to do so. 
+This library implements a tool provider as an [Express](https://expressjs.com/) server, with preconfigured routes and methods that manage the [LTI® 1.3](https://www.imsglobal.org/spec/lti/v1p3/) protocol for you. Making it fast and simple to create a working learning tool with access to every LTI® service, without having to worry about manually implementing any of the security and validation required to do so. 
 
 ---
 
@@ -194,7 +194,7 @@ setup()
 ## Documentation
 
 ### Provider
->The Ltijs Provider Class implements the LTI 1.3 protocol and services.
+>The Ltijs Provider Class implements the LTI® 1.3 protocol and services.
 
 
 #### Provider.app
@@ -210,23 +210,23 @@ Database object. Allows you to perform the database operations using the same me
 
 
 #### Provider.Grade
-[Grade Class](https://cvmcosta.github.io/ltijs/#/grading), implementing the Assignment and Grade service of the LTI 1.3 protocol.
+[Grade Class](https://cvmcosta.github.io/ltijs/#/grading), implementing the Assignment and Grade service of the LTI® 1.3 protocol.
 
 **Type**: ```Grade```
 
 #### Provider.DeepLinking
-[DeepLinking Class](https://cvmcosta.github.io/ltijs/#/deeplinking), implementing the Deep Linking service of the LTI 1.3 protocol.
+[DeepLinking Class](https://cvmcosta.github.io/ltijs/#/deeplinking), implementing the Deep Linking service of the LTI® 1.3 protocol.
 
 **Type**: ```DeepLinking```
 
 #### Provider.NamesAndRoles
-[NamesAndRoles Class](https://cvmcosta.github.io/ltijs/#/namesandroles), implementing the Names and Roles Provisioning service of the LTI 1.3 protocol.
+[NamesAndRoles Class](https://cvmcosta.github.io/ltijs/#/namesandroles), implementing the Names and Roles Provisioning service of the LTI® 1.3 protocol.
 
 **Type**: ```NamesAndRoles```
 
 #### Provider.setup(encryptionkey, database [, options]) 
 
-Method used to setup and configure the LTI provider.
+Method used to setup and configure the LTI® provider.
 
 
 
@@ -264,7 +264,7 @@ Method used to setup and configure the LTI provider.
 
 #### async Provider.deploy(options) 
 
-Starts listening to a given port for LTI requests and opens connection to the configured database.
+Starts listening to a given port for LTI® requests and opens connection to the configured database.
 
 
 ##### Parameters
@@ -647,7 +647,7 @@ lti.redirect(res, '/path', { newResource: true })
 
 ## Setting up Ltijs
 
-When using Ltijs, the first step must **always** be to call the `lti.setup()` method to configure the LTI provider:
+When using Ltijs, the first step must **always** be to call the `lti.setup()` method to configure the LTI® provider:
 
 ```javascript
 // Require Ltijs package
@@ -724,7 +724,7 @@ lti.setup('EXAMPLEKEY',
 
 #### Cookie configuration:
 
-Ltijs sets session cookies throughout the LTI validation process, how these cookies are set can be configured through the `cookies` field of the **options** parameter:
+Ltijs sets session cookies throughout the LTI® validation process, how these cookies are set can be configured through the `cookies` field of the **options** parameter:
 
 - **secure** - Determines if the cookie can only be sent through **https**. **Default: false**.
 
@@ -772,7 +772,7 @@ lti.setup('EXAMPLEKEY',
 
 #### Token max age allowed:
 
-As part of the LTI 1.3 protocol validation steps, Ltijs checks the idtoken's `iat` claim and flags the token as invalid if it is older than **10 seconds**. 
+As part of the LTI® 1.3 protocol validation steps, Ltijs checks the idtoken's `iat` claim and flags the token as invalid if it is older than **10 seconds**. 
 
 This limit can be configured (or removed) through the `tokenMaxAge` field:
 
@@ -856,7 +856,7 @@ lti.setup('EXAMPLEKEY',
 
 ## Using Ltijs
 
-After the `lti.setup()` method is called, the `lti` object gives you access to various functionalities to help you create your LTI Provider. 
+After the `lti.setup()` method is called, the `lti` object gives you access to various functionalities to help you create your LTI® Provider. 
 
 The `lti` object is a singleton that can be accessed across multiple files while calling `lti.setup()` only once:
 
@@ -996,7 +996,7 @@ The `onDeepLinking` callback is called whenever a successfull deep linking reque
 
 The callback route will be given a first parameter `token`, that is the user's validated [idtoken](#idtoken), and the three Express route parameters (request, response and next).
 
-> *This callback should be used to display your **LTI provider's deep linking UI**.*
+> *This callback should be used to display your **LTI® provider's deep linking UI**.*
 
 ```javascript
 lti.onDeepLinking(async (token, req, res, next) => {
@@ -1010,7 +1010,7 @@ lti.onDeepLinking(async (token, req, res, next) => {
 
 #### onInvalidToken
 
-The `onInvalidToken` callback is called whenever the idtoken received fails the LTI validation process. This callback can be set through the `lti.onInvalidToken()` method.
+The `onInvalidToken` callback is called whenever the idtoken received fails the LTI® validation process. This callback can be set through the `lti.onInvalidToken()` method.
 
 The callback route will be given the three Express route parameters (request, response and next).
 
@@ -1096,7 +1096,7 @@ app.use('/lti', lti.app)
 
 #### Registering a new Platform
 
-A LTI tool works in conjunction with an LTI ready platform, so in order for a platform to display your tool's resource, it needs to first be registered in the tool provider.
+A LTI® tool works in conjunction with an LTI® ready platform, so in order for a platform to display your tool's resource, it needs to first be registered in the tool provider.
 
 The`lti.registerPlatform()` method returns a Promise that resolves the created [Platform](platform.md) object.
 
@@ -1222,9 +1222,9 @@ await lti.deletePlatform('http://plat.com', 'CLIENTID') // Deletes a platform
 
 ## Authentication and Routing
 
-The LTI 1.3 protocol works in such a way that every successful launch from the platform to the tool generates an **IdToken** that the tool uses to retrieve information about the user and the general context of the launch.
+The LTI® 1.3 protocol works in such a way that every successful launch from the platform to the tool generates an **IdToken** that the tool uses to retrieve information about the user and the general context of the launch.
 
-Whenever a successful launch request is received by Ltijs, the idToken received at the end of the process is validaded according to the [LTI 1.3 security specifications](https://www.imsglobal.org/spec/security/v1p0/).
+Whenever a successful launch request is received by Ltijs, the idToken received at the end of the process is validaded according to the [LTI® 1.3 security specifications](https://www.imsglobal.org/spec/security/v1p0/).
 
 The valid idtoken is then separated into two parts `idtoken` and `contexttoken`, that are stored in the databased and passed along to the next route handler inside the `response.locals` object:
 
@@ -1401,7 +1401,7 @@ A good way to exemplify this behaviour is by using it to create a landing page, 
 // Whitelisting the main app route and /landingpage to create a landing page
 lti.whitelist(lti.appRoute(), { route: '/landingpage', method: 'get' })
 
-// When receiving successful LTI launch redirects to app, otherwise redirects to landing page
+// When receiving successful LTI® launch redirects to app, otherwise redirects to landing page
 lti.onConnect(async (token, req, res, next) => {
   // Checking if received idtoken
   if (token) return res.sendFile(path.join(__dirname, './public/index.html'))
@@ -1511,7 +1511,7 @@ lti.onConnect(async (token, req, res) => {
 
 ___
 
-## LTI Advantage Services
+## LTI® Advantage Services
 
 
 ### Deep Linking Service with Ltijs

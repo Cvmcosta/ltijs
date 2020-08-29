@@ -34,7 +34,7 @@
 ## Introduction
 
 
-Ltijs implements the [LTI 1.3 Assignment and Grading Service Specification](https://www.imsglobal.org/spec/lti-ags/v2p0/) in the form of the **Grade Class**.
+Ltijs implements the [LTI® 1.3 Assignment and Grading Service Specification](https://www.imsglobal.org/spec/lti-ags/v2p0/) in the form of the **Grade Class**.
 
 ___
 
@@ -44,7 +44,7 @@ ___
 
 ##### Sending grades to a platform
 
-Ltijs is able to send grades to a platform in the [application/vnd.ims.lis.v1.score+json](https://www.imsglobal.org/spec/lti-ags/v2p0/#score-publish-service) LTI standard:
+Ltijs is able to send grades to a platform in the [application/vnd.ims.lis.v1.score+json](https://www.imsglobal.org/spec/lti-ags/v2p0/#score-publish-service) LTI® standard:
 
 ```javascript
 {

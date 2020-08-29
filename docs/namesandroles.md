@@ -33,7 +33,7 @@
 
 
 ## Introduction
-Ltijs implements the [LTI 1.3 Names and Roles Provisioning Service](https://www.imsglobal.org/spec/lti-nrps/v2p0) in the form of the **NamesAndRoles Class**.
+Ltijs implements the [LTI® 1.3 Names and Roles Provisioning Service](https://www.imsglobal.org/spec/lti-nrps/v2p0) in the form of the **NamesAndRoles Class**.
 
 The Names And Roles Provisioning Service can be used by a tool to access a list of platform's users (referred to as members) and their roles within the context of a course, program or other grouping.
 
