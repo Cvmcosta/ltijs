@@ -134,6 +134,14 @@ class Platform {
     return name;
   }
   /**
+     * @description Gets the platform Id.
+     */
+
+
+  async platformId() {
+    return (0, _classPrivateFieldGet2.default)(this, _kid);
+  }
+  /**
      * @description Gets the platform key_id.
      */
 

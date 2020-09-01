@@ -127,6 +127,8 @@ class Database {
     });
     platformSchema.index({
       kid: 1
+    }, {
+      unique: true
     });
     platformSchema.index({
       platformUrl: 1,

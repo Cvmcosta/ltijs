@@ -721,6 +721,21 @@ class Provider {
   }
 
   /**
+   * @description Gets a platform by the platformId.
+   * @param {String} platformId - Platform Id.
+   * @returns {Promise<Array<Platform>, Platform | false>}
+   */
+  async getPlatformById (platformId) {
+    if (!platformId) throw new Error('MISSING_PLATFORM_ID')
+
+    const result = await this.Database.Get(false, 'platform', { kid: platformId })
+    if (!result) return false
+    const plat = result[0]
+    const platform = new Platform(plat.platformName, plat.platformUrl, plat.clientId, plat.authEndpoint, plat.accesstokenEndpoint, plat.kid, this.#ENCRYPTIONKEY, plat.authConfig, this.Database)
+    return platform
+  }
+
+  /**
      * @description Deletes a platform.
      * @param {string} url - Platform url.
      * @param {String} clientId - Tool clientId.
@@ -729,6 +744,18 @@ class Provider {
   async deletePlatform (url, clientId) {
     if (!url || !clientId) throw new Error('MISSING_PARAM')
     const platform = await this.getPlatform(url, clientId)
+    if (platform) await platform.delete()
+    return true
+  }
+
+  /**
+   * @description Deletes a platform by the platform Id.
+   * @param {string} platformId - Platform Id.
+   * @returns {Promise<true>}
+   */
+  async deletePlatformById (platformId) {
+    if (!platformId) throw new Error('MISSING_PLATFORM_ID')
+    const platform = await this.getPlatformById(platformId)
     if (platform) await platform.delete()
     return true
   }

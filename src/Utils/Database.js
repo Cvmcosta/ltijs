@@ -82,7 +82,7 @@ class Database {
       }
     })
     platformSchema.index({ platformUrl: 1 })
-    platformSchema.index({ kid: 1 })
+    platformSchema.index({ kid: 1 }, { unique: true })
     platformSchema.index({ platformUrl: 1, clientId: 1 }, { unique: true })
 
     const keySchema = new Schema({

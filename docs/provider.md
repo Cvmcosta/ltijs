@@ -32,6 +32,7 @@ Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps
 > - Some fields were moved from the `idtoken` to the `contexttoken`, The `roles`, `endpoint`, `lis` and `namesRoles` fields change with the launch context, and cannot be treated as static values. They can now be found inside the `contexttoken` object along with all the other context specific information.
 > - A field `platformId` was added to the `idtoken` object. Represents the platform id inside the LTI provider.
 > - Changed Grades and NamesAndRoles services accordingly.
+> - Added the `lti.getPlatformById()` and `lti.deletePlatformById()` methods. As well as the `Platform.platformId()` method.
 > - Released a new version of [ltijs-sequelize](https://github.com/Cvmcosta/ltijs-sequelize) that accomodates the changes. It is recommended to delete the `idtoken` and `contexttoken` tables of your preexisting database when updating, the schema changes can cause errors on relational databases. These tables are repopulated on every launch, so no relevant information will be lost.
 
 
@@ -592,8 +593,38 @@ Retrieves a [Platform](platform.md).
 const plat = await lti.getPlatform('https://platform.url', 'TOOLCLIENTID')
 ```
 
+#### async Provider.getPlatformById(platformId) 
 
-#### async Provider.deletePlatform(url) 
+Retrieves a [Platform](platform.md).
+
+
+
+
+##### Parameters
+
+| Name | Type | Description |  |
+| ---- | ---- | ----------- | -------- |
+| platformId | `String`  | Platform Id. | &nbsp; |
+
+
+
+
+
+##### Returns
+
+
+- Promise that resolves a [Platform](platform.md).
+
+
+##### Example
+
+```javascript
+const plat = await lti.getPlatformById('asdih1k12poihalkja52')
+```
+
+
+
+#### async Provider.deletePlatform(url, clientId) 
 
 Deletes a [Platform](platform.md).
 
@@ -615,6 +646,29 @@ Deletes a [Platform](platform.md).
 
 ```javascript
 await lti.deletePlatform('https://platform.url', 'TOOLCLIENTID')
+```
+
+#### async Provider.deletePlatformById(paltformId) 
+
+Deletes a [Platform](platform.md).
+
+
+
+##### Parameters
+
+| Name | Type | Description |  |
+| ---- | ---- | ----------- | -------- |
+| platformId | `String`  | Platform Id. | &nbsp; |
+
+
+##### Returns
+
+- Promise that resolves ```true```.
+
+##### Example
+
+```javascript
+await lti.deletePlatformById('60b1fce753c875193d71b')
 ```
 
 
@@ -1189,6 +1243,16 @@ const plat = await lti.getPlatform('http://plat.com', 'CLIENTID') // Returns Pla
 const plats = await lti.getPlatform('http://plat.com') // Returns Platform Array
 ```
 
+**lti.getPlatformById:**
+
+The `lti.getPlatformById()` method receives the `platformId` and returns a Promise that resolves a [Platform](platform.md) object.
+
+``` javascript
+const plat = await lti.getPlatformById('60b1fce753c875193d71') // Returns Platform object
+```
+
+The platform Id can be found through the `Platform.platformId()` emthod or in the platformId field of the `idtoken` object after a successful launch.
+
 **lti.getAllPlatforms:**
 
 The `lti.getAllPlatforms()` method returns a Promise that resolves an Array containing every registered [Platform](platform.md).
@@ -1199,7 +1263,7 @@ const platforms = await lti.getAllPlatforms() // Returns every registered platfo
 
 #### Modifying a Platform
 
-After a platform is registered, it's **authenticationEndpoint**, **accesstokenEndpoint** and **authConfig** parameter can still be modified in two ways:
+After a platform is registered, it's **name**, **authenticationEndpoint**, **accesstokenEndpoint** and **authConfig** parameters can still be modified in two ways:
 
 **Using Platform object:**
 
@@ -1224,13 +1288,20 @@ let plat = await lti.registerPlatform({
 
 #### Deleting a Platform
 
-Registered platforms can be deleted using the `lti.deletePlatform()` method. 
+Registered platforms can be deleted using the `lti.deletePlatform()` and `lti.deletePlatformById()` methods. 
 
-This method receives two arguments, `platformUrl` and `clientId`:
+The `lti.deletePlatform()` method receives two arguments, `platformUrl` and `clientId`:
 
 ``` javascript
 await lti.deletePlatform('http://plat.com', 'CLIENTID') // Deletes a platform
 ```
+
+The `lti.deletePlatformById()` method receives the argument `platformId`:
+
+``` javascript
+await lti.deletePlatformById('60b1fce753c875193d71b') // Deletes a platform
+```
+
 
 ---
 
@@ -1264,6 +1335,7 @@ The `idtoken` object consists of:
   "iss": "http://localhost/moodle",
   "clientId": "CLIENTID",
   "deploymentId": "1",
+  "platformId": "60b1fce753c875193d71b611e895f03d"
   "platformInfo": {
     "family_code": "moodle",
     "version": "2020042400",

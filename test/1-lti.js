@@ -479,4 +479,27 @@ describe('Testing LTI 1.3 flow', function () {
       expect(res).to.redirectTo(/\/finalRoute/)
     })
   })
+  it('ValidPayload. Expected token to contain platformId', async () => {
+    const token = JSON.parse(JSON.stringify(tokenValid))
+    token.nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+
+    const payload = signToken(token, '123456')
+    const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const url = await lti.appRoute()
+
+    lti.onConnect((token, req, res) => {
+      return res.send(token.platformId)
+    })
+
+    nock('http://localhost/moodle').get('/keyset').reply(200, {
+      keys: [
+        { kty: 'RSA', e: 'AQAB', kid: '123456', n: 'VrJSr-xli8NfuAdk_Wem5BARmmW4BpJvXBx3MbFY_0grH9Cd7OxBwVYSwI4P4yhL27upa1_FCRwLi3raOPSJOkHEDvFwtyYZMvdYcpDYTv6JRVqbgEyZtHa-vjL1wBqqW75yPDRoyZdnA8MWrfyRUOak53ZVWHRKgBnP53oXm7M' }
+      ]
+    })
+    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;', 'ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(async res => {
+      const platform = await lti.getPlatform(tokenValid.iss, tokenValid.aud)
+      const platformId = await platform.platformId()
+      return expect(res.text).to.equal(platformId)
+    })
+  })
 })

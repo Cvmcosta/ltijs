@@ -147,9 +147,15 @@ describe('Testing Provider', function () {
     await expect(lti.getPlatform('http://localhost/moodle', 'ClientId1')).to.eventually.be.instanceOf(Platform)
     return expect(lti.getPlatform('http://localhost/moodle', 'ClientId2')).to.eventually.be.instanceOf(Platform)
   })
+  it('Provider.getPlatformById expected to resolve Platform object', async () => {
+    const platform = await lti.getPlatform('http://localhost/moodle', 'ClientId1')
+    const platformId = await platform.platformId()
+    await expect(lti.getPlatformById(platformId)).to.eventually.be.instanceOf(Platform)
+  })
   it('Provider.getAllPlatforms expected to resolve Array containing registered platforms', async () => {
     const plats = await lti.getAllPlatforms()
-    await expect(plats.length).to.eql(2)
+    await expect(plats).to.not.be.empty
+    await expect(plats[0]).to.be.instanceOf(Platform)
   })
   it('Provider.deletePlatform expected to return true and delete the platform', async () => {
     await lti.registerPlatform({
@@ -169,31 +175,48 @@ describe('Testing Provider', function () {
     await expect(lti.deletePlatform('http://localhost/moodle', 'ClientId2')).to.eventually.become(true)
     await expect(lti.getPlatform('http://localhost/moodle', 'ClientId2')).to.eventually.become(false)
   })
-
+  it('Provider.deletePlatformById expected to return true and delete the platform', async () => {
+    const platform = await lti.registerPlatform({
+      url: 'http://localhost/moodle3',
+      name: 'Platform Name 3',
+      clientId: 'ClientId3',
+      authenticationEndpoint: 'http://localhost/moodle/AuthorizationUrl2',
+      accesstokenEndpoint: 'http://localhost/moodle/AccessTokenUrl2',
+      authConfig: { method: 'JWK_SET', key: 'http://localhost/moodle/keyset2' }
+    })
+    const platformId = await platform.platformId()
+    await expect(lti.getPlatformById(platformId)).to.eventually.be.instanceOf(Platform)
+    await expect(lti.deletePlatformById(platformId)).to.eventually.become(true)
+    await expect(lti.getPlatformById(platformId)).to.eventually.become(false)
+  })
   it('Platform.platformUrl expected to return platform url', async () => {
     const plat = await lti.getPlatform('http://localhost/moodle', 'ClientId1')
     return expect(plat.platformUrl()).to.eventually.become('http://localhost/moodle')
   })
+  it('Platform.platformId expected to return platformId string', async () => {
+    const plat = await lti.getPlatform('http://localhost/moodle', 'ClientId1')
+    return expect(plat.platformId()).to.eventually.be.a('string')
+  })
   it('Platform.platformKid expected to return platform kid string', async () => {
-    const plat = await await lti.getPlatform('http://localhost/moodle', 'ClientId1')
+    const plat = await lti.getPlatform('http://localhost/moodle', 'ClientId1')
     return expect(plat.platformKid()).to.eventually.be.a('string')
   })
   it('Platform.platformPublicKey expected to return publickey string', async () => {
-    const plat = await await lti.getPlatform('http://localhost/moodle', 'ClientId1')
+    const plat = await lti.getPlatform('http://localhost/moodle', 'ClientId1')
     return expect(plat.platformPublicKey()).to.eventually.be.a('string')
   })
   it('Platform.platformPrivateKey expected to return privatekey string', async () => {
-    const plat = await await lti.getPlatform('http://localhost/moodle', 'ClientId1')
+    const plat = await lti.getPlatform('http://localhost/moodle', 'ClientId1')
     return expect(plat.platformPrivateKey()).to.eventually.be.a('string')
   })
   it('Platform.platformName expected to alter platform name', async () => {
     const value = 'Platform name'
-    const plat = await await lti.getPlatform('http://localhost/moodle', 'ClientId1')
+    const plat = await lti.getPlatform('http://localhost/moodle', 'ClientId1')
     await plat.platformName(value)
     return expect(plat.platformName()).to.eventually.become(value)
   })
   it('Platform.platformClientId expected to return platform client id', async () => {
-    const plat = await await lti.getPlatform('http://localhost/moodle', 'ClientId1')
+    const plat = await lti.getPlatform('http://localhost/moodle', 'ClientId1')
     return expect(plat.platformClientId()).to.eventually.become('ClientId1')
   })
   it('Platform.platformAuthConfig expected to alter platform auth configuration', async () => {
@@ -201,19 +224,19 @@ describe('Testing Provider', function () {
       method: 'JWK_SET',
       key: 'http://localhost/moodle/keyset'
     }
-    const plat = await await lti.getPlatform('http://localhost/moodle', 'ClientId1')
+    const plat = await lti.getPlatform('http://localhost/moodle', 'ClientId1')
     await plat.platformAuthConfig(value.method, value.key)
     return expect(plat.platformAuthConfig()).to.eventually.become(value)
   })
   it('Platform.platformAuthEndpoint expected to alter platform authentication endpoint', async () => {
     const value = 'http://localhost/moodle/AuthorizationUrl'
-    const plat = await await lti.getPlatform('http://localhost/moodle', 'ClientId1')
+    const plat = await lti.getPlatform('http://localhost/moodle', 'ClientId1')
     await plat.platformAuthEndpoint(value)
     return expect(plat.platformAuthEndpoint()).to.eventually.become(value)
   })
   it('Platform.platformAccessTokenEndpoint expected to alter platform authentication endpoint', async () => {
     const value = 'http://localhost/moodle/AccessTokenUrl'
-    const plat = await await lti.getPlatform('http://localhost/moodle', 'ClientId1')
+    const plat = await lti.getPlatform('http://localhost/moodle', 'ClientId1')
     await plat.platformAccessTokenEndpoint(value)
     return expect(plat.platformAccessTokenEndpoint()).to.eventually.become(value)
   })

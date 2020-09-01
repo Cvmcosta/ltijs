@@ -74,6 +74,13 @@ class Platform {
   }
 
   /**
+     * @description Gets the platform Id.
+     */
+  async platformId () {
+    return this.#kid
+  }
+
+  /**
      * @description Gets the platform key_id.
      */
   async platformKid () {

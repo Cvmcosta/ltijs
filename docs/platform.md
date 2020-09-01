@@ -63,6 +63,15 @@ Gets the platform client id.
 - Promise that resolves `tool client id`.
 
 
+#### async Platform.platformId() 
+
+Gets the platform Id.
+
+
+##### Returns
+
+- `String` representing the platform Id.
+
 
 #### async Platform.platformKid() 
 
