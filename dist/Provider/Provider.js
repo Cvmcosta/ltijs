@@ -327,6 +327,7 @@ class Provider {
               },
               platformInfo: valid['https://purl.imsglobal.org/spec/lti/claim/tool_platform'],
               clientId: valid.clientId,
+              platformId: valid.platformId,
               deploymentId: valid['https://purl.imsglobal.org/spec/lti/claim/deployment_id']
             }; // Store idToken in database
 

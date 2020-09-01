@@ -9,10 +9,11 @@
 
 ### CHANGELOG
 
-#### V5.2.0
+#### V5.2.1
 > 2020-08-31
 > BREAKING CHANGES
-> - Some fields were moved from the `idtoken` to the `contexttoken`, The `roles`, `endpoint`, `lis` and `namesRoles` fields change with the launch context, and cannot be treated as static values. They can now be found inside the `token.platformContext` field along with all the other context specific information.
+> - Some fields were moved from the `idtoken` to the `contexttoken`, The `roles`, `endpoint`, `lis` and `namesRoles` fields change with the launch context, and cannot be treated as static values. They can now be found inside the `contexttoken` object along with all the other context specific information.
+> - A field `platformId` was added to the `idtoken` object. Represents the platform id inside the LTI provider.
 > - Changed Grades and NamesAndRoles services accordingly.
 > - Released a new version of [ltijs-sequelize](https://github.com/Cvmcosta/ltijs-sequelize) that accomodates the changes. It is recommended to delete the `idtoken` and `contexttoken` tables of your preexisting database when updating, the schema changes can cause errors on relational databases. These tables are repopulated on every launch, so no relevant information will be lost.
 

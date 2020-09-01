@@ -43,6 +43,7 @@ class Database {
       userInfo: JSON,
       platformInfo: JSON,
       clientId: String,
+      platformId: String,
       deploymentId: String,
       createdAt: { type: Date, expires: 3600 * 24, default: Date.now }
     })
@@ -81,6 +82,7 @@ class Database {
       }
     })
     platformSchema.index({ platformUrl: 1 })
+    platformSchema.index({ kid: 1 })
     platformSchema.index({ platformUrl: 1, clientId: 1 }, { unique: true })
 
     const keySchema = new Schema({

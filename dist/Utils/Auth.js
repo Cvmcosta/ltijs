@@ -171,8 +171,10 @@ class Auth {
       algorithms: [validationParameters.alg]
     });
     await this.oidcValidation(verified, platform, validationParameters, Database);
-    await this.claimValidation(verified);
+    await this.claimValidation(verified); // Adding clientId and platformId information to token
+
     verified.clientId = await platform.platformClientId();
+    verified.platformId = await platform.platformKid();
     return verified;
   }
   /**
