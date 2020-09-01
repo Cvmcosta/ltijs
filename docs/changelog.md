@@ -9,6 +9,12 @@
 
 ### CHANGELOG
 
+#### V5.2.0
+> 2020-08-31
+> BREAKING CHANGES
+> - Some fields were moved from the `idtoken` to the `contexttoken`, The `roles`, `endpoint`, `lis` and `namesRoles` fields change with the launch context, and cannot be treated as static values. They can now be found inside the `token.platformContext` field along with all the other context specific information.
+> - Changed Grades and NamesAndRoles services accordingly.
+
 #### V5.1.0
 > 2020-08-29
 > IMPROVEMENTS

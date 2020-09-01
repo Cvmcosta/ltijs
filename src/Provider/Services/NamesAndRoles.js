@@ -56,7 +56,7 @@ class NamesAndRoles {
     if (query.length > 0) query = new URLSearchParams(query)
     else query = false
 
-    let next = idtoken.namesRoles.context_memberships_url
+    let next = idtoken.platformContext.namesRoles.context_memberships_url
     if (options && options.url) next = options.url
     let differences
     let result

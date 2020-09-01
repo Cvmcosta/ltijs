@@ -218,7 +218,6 @@ class Provider {
             const platformToken = {
               iss: valid.iss,
               user: valid.sub,
-              roles: valid['https://purl.imsglobal.org/spec/lti/claim/roles'],
               userInfo: {
                 given_name: valid.given_name,
                 family_name: valid.family_name,
@@ -227,10 +226,7 @@ class Provider {
               },
               platformInfo: valid['https://purl.imsglobal.org/spec/lti/claim/tool_platform'],
               clientId: valid.clientId,
-              deploymentId: valid['https://purl.imsglobal.org/spec/lti/claim/deployment_id'],
-              lis: valid['https://purl.imsglobal.org/spec/lti/claim/lis'],
-              endpoint: valid['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint'],
-              namesRoles: valid['https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice']
+              deploymentId: valid['https://purl.imsglobal.org/spec/lti/claim/deployment_id']
             }
 
             // Store idToken in database
@@ -241,6 +237,7 @@ class Provider {
               contextId: contextId,
               path: req.path,
               user: valid.sub,
+              roles: valid['https://purl.imsglobal.org/spec/lti/claim/roles'],
               targetLinkUri: valid['https://purl.imsglobal.org/spec/lti/claim/target_link_uri'],
               context: valid['https://purl.imsglobal.org/spec/lti/claim/context'],
               resource: valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'],
@@ -248,7 +245,10 @@ class Provider {
               launchPresentation: valid['https://purl.imsglobal.org/spec/lti/claim/launch_presentation'],
               messageType: valid['https://purl.imsglobal.org/spec/lti/claim/message_type'],
               version: valid['https://purl.imsglobal.org/spec/lti/claim/version'],
-              deepLinkingSettings: valid['https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings']
+              deepLinkingSettings: valid['https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings'],
+              lis: valid['https://purl.imsglobal.org/spec/lti/claim/lis'],
+              endpoint: valid['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint'],
+              namesRoles: valid['https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice']
             }
 
             // Store contextToken in database

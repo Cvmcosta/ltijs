@@ -67,14 +67,10 @@ class Database {
     const idTokenSchema = new Schema({
       iss: String,
       user: String,
-      roles: [String],
       userInfo: JSON,
       platformInfo: JSON,
       clientId: String,
       deploymentId: String,
-      lis: JSON,
-      endpoint: JSON,
-      namesRoles: JSON,
       createdAt: {
         type: Date,
         expires: 3600 * 24,
@@ -90,6 +86,7 @@ class Database {
     const contextTokenSchema = new Schema({
       contextId: String,
       user: String,
+      roles: [String],
       path: String,
       targetLinkUri: String,
       context: JSON,
@@ -99,6 +96,9 @@ class Database {
       messageType: String,
       version: String,
       deepLinkingSettings: JSON,
+      lis: JSON,
+      endpoint: JSON,
+      namesRoles: JSON,
       createdAt: {
         type: Date,
         expires: 3600 * 24,

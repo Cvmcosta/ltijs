@@ -25,6 +25,14 @@ Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps
 
 > [Ltijs is LTI® Advantage Complete Certified by IMS](https://site.imsglobal.org/certifications/coursekey/ltijs)
 
+
+> V5.2.0
+> BREAKING CHANGES / FIX
+> - Some fields were moved from the `idtoken` to the `contexttoken`, The `roles`, `endpoint`, `lis` and `namesRoles` fields change with the launch context, and cannot be treated as static values. They can now be found inside the `token.platformContext` field along with all the other context specific information.
+> - Changed Grades and NamesAndRoles services accordingly.
+> - No actual API changes were made.
+
+
 > Ltijs version 5.0 is a re-release of the project as a Certified LTI® library, that comes with many improvements, new functionalities and a few **API changes**, see bellow for a migration guide from version 4 and a complete list of the changes made:
 > - [Migrating from version 4](https://cvmcosta.github.io/ltijs/#/migration)
 > - [CHANGELOG](https://cvmcosta.github.io/ltijs/#/changelog)

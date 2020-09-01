@@ -48,7 +48,7 @@ class Grade {
       provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']')
     }
 
-    let lineitemsEndpoint = idtoken.endpoint.lineitems
+    let lineitemsEndpoint = idtoken.platformContext.endpoint.lineitems
     let query = []
     if (lineitemsEndpoint.indexOf('?') !== -1) {
       query = Array.from(new URLSearchParams(lineitemsEndpoint.split('\?')[1]))
@@ -102,7 +102,7 @@ class Grade {
       accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem')
       provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']')
     }
-    const lineitemsEndpoint = idtoken.endpoint.lineitems
+    const lineitemsEndpoint = idtoken.platformContext.endpoint.lineitems
 
     provGradeServiceDebug('Creating Line item: ')
     provGradeServiceDebug(lineItem)

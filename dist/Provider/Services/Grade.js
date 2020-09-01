@@ -76,7 +76,7 @@ class Grade {
       provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']');
     }
 
-    let lineitemsEndpoint = idtoken.endpoint.lineitems;
+    let lineitemsEndpoint = idtoken.platformContext.endpoint.lineitems;
     let query = [];
 
     if (lineitemsEndpoint.indexOf('?') !== -1) {
@@ -147,7 +147,7 @@ class Grade {
       provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']');
     }
 
-    const lineitemsEndpoint = idtoken.endpoint.lineitems;
+    const lineitemsEndpoint = idtoken.platformContext.endpoint.lineitems;
     provGradeServiceDebug('Creating Line item: ');
     provGradeServiceDebug(lineItem);
     const newLineItem = await got.post(lineitemsEndpoint, {

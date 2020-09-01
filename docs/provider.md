@@ -26,6 +26,14 @@ Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps
 
 > [Ltijs is LTI® Advantage Complete Certified by IMS](https://site.imsglobal.org/certifications/coursekey/ltijs)
 
+
+> V5.2.0
+> BREAKING CHANGES / FIX
+> - Some fields were moved from the `idtoken` to the `contexttoken`, The `roles`, `endpoint`, `lis` and `namesRoles` fields change with the launch context, and cannot be treated as static values. They can now be found inside the `token.platformContext` field along with all the other context specific information.
+> - Changed Grades and NamesAndRoles services accordingly.
+> - No actual API changes were made.
+
+
 > Ltijs version 5.0 is a re-release of the project as a Certified LTI® library, that comes with many improvements, new functionalities and a few **API changes**, see bellow for a migration guide from version 4 and a complete list of the changes made:
 > - [Migrating from version 4](https://cvmcosta.github.io/ltijs/#/migration)
 > - [CHANGELOG](https://cvmcosta.github.io/ltijs/#/changelog)
@@ -1230,7 +1238,7 @@ The valid idtoken is then separated into two parts `idtoken` and `contexttoken`,
 
 ### Idtoken
 
-The `idtoken` will contain the platform and user information, and will be stored in the `res.locals.token` object, or the `token` parameter if the `onConnect` is being used:
+The `idtoken` will contain the platform and user information that is context independent, and will be stored in the `res.locals.token` object, or the `token` parameter if the `onConnect` is being used:
 
 ```javascript
 onConnect(async (token, req, res) => {
@@ -1263,12 +1271,56 @@ The `idtoken` object consists of:
     "family_name": "User",
     "name": "Admin User",
     "email": "local@moodle.com"
-  },
+  }
+}
+```
+
+
+### ContextToken
+
+The `contexttoken` will contain the context specific information, and will be stored in the `res.locals.context` object and as a part of the `idtoken` object as the `platformContext` field:
+
+```javascript
+onConnect(async (token, req, res) => {
+  // Retrieving contexttoken through response object
+  console.log(res.locals.context)
+  // Retrieving contexttoken through idtoken object
+  console.log(token.platformContext)
+})
+```
+
+
+The `contexttoken` object consists of: 
+
+```javascript
+// Example contexttoken for a Moodle platform
+{
+  "contextId": "http%3A%2F%2Flocalhost%2FmoodlewTtQU3zWHvVeCUf12_57",
+  "path": "/",
+  "user": "2",
   "roles": [
     "http://purl.imsglobal.org/vocab/lis/v2/institution/person#Administrator",
     "http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor",
     "http://purl.imsglobal.org/vocab/lis/v2/system/person#Administrator"
   ],
+  "targetLinkUri": "http://localhost:3000",
+  "context": {
+    "id": "2",
+    "label": "course",
+    "title": "Course",
+    "type": [
+      "CourseSection"
+    ]
+  },
+  "resource": {
+    "title": "Ltijs Demo",
+    "id": "57"
+  },
+  "custom": {
+    "system_setting_url": "http://localhost/moodle/mod/lti/services.php/tool/1/custom",
+    "context_setting_url": "http://localhost/moodle/mod/lti/services.php/CourseSection/2/bindings/tool/1/custom",
+    "link_setting_url": "http://localhost/moodle/mod/lti/services.php/links/{link_id}/custom"
+  },
   "lis": {
     "person_sourcedid": "",
     "course_section_sourcedid": ""
@@ -1289,50 +1341,6 @@ The `idtoken` object consists of:
       "1.0",
       "2.0"
     ]
-  }
-}
-```
-
-
-### ContextToken
-
-The `contexttoken` will contain the launch context information, and will be stored in the `res.locals.context` object and as a part of the `idtoken` object as the `platformContext` field:
-
-```javascript
-onConnect(async (token, req, res) => {
-  // Retrieving contexttoken through response object
-  console.log(res.locals.context)
-  // Retrieving contexttoken through idtoken object
-  console.log(token.platformContext)
-})
-```
-
-
-The `contexttoken` object consists of: 
-
-```javascript
-// Example contexttoken for a Moodle platform
-{
-  "contextId": "http%3A%2F%2Flocalhost%2FmoodlewTtQU3zWHvVeCUf12_57",
-  "path": "/",
-  "user": "2",
-  "targetLinkUri": "http://localhost:3000",
-  "context": {
-    "id": "2",
-    "label": "course",
-    "title": "Course",
-    "type": [
-      "CourseSection"
-    ]
-  },
-  "resource": {
-    "title": "Ltijs Demo",
-    "id": "57"
-  },
-  "custom": {
-    "system_setting_url": "http://localhost/moodle/mod/lti/services.php/tool/1/custom",
-    "context_setting_url": "http://localhost/moodle/mod/lti/services.php/CourseSection/2/bindings/tool/1/custom",
-    "link_setting_url": "http://localhost/moodle/mod/lti/services.php/links/{link_id}/custom"
   },
   "launchPresentation": {
     "locale": "en",
