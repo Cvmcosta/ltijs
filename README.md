@@ -29,7 +29,7 @@ Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps
 > BREAKING CHANGES / FIX
 > - Some fields were moved from the `idtoken` to the `contexttoken`, The `roles`, `endpoint`, `lis` and `namesRoles` fields change with the launch context, and cannot be treated as static values. They can now be found inside the `token.platformContext` field along with all the other context specific information.
 > - Changed Grades and NamesAndRoles services accordingly.
-> - No actual API changes were made.
+> - Released a new version of [ltijs-sequelize](https://github.com/Cvmcosta/ltijs-sequelize) that accomodates the changes. It is recommended to delete the `idtoken` and `contexttoken` tables of your preexisting database when updating, the schema changes can cause errors on relational databases. These tables are repopulated on every launch, so no relevant information will be lost.
 
 
 > Ltijs version 5.0 is a re-release of the project as a Certified LTI® library, that comes with many improvements, new functionalities and a few **API changes**, see bellow for a migration guide from version 4 and a complete list of the changes made:
@@ -99,6 +99,11 @@ This package natively uses mongoDB by default to store and manage the server dat
 Ltijs can also be used with other databases through database plugins that use the same structure as the main database class.
 
   -  [Sequelize Plugin](https://github.com/Cvmcosta/ltijs-sequelize)(MySQL, PostgreSQL)
+
+| Ltijs-sequelize version | Compatible Ltijs version |
+| --------- | --------- |
+| 2.0 | ^5.2 |
+| 1.0 | 5.0 |
 
 
 ---
