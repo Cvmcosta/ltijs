@@ -72,7 +72,7 @@ Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps
   - [Deleting a Platform](#deleting-a-platform)
 - [Authentication and Routing](#lti-flow)
   - [Id Token](#idtoken)
-  - [Context Token](#context-token)
+  - [Context Token](#contexttoken)
   - [Launch authentication](#authentication)
   - [Request authentication](#request-authentication)
   - [Whitelisting routes](#whitelisting-routes)
