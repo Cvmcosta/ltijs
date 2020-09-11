@@ -942,6 +942,7 @@ class Provider {
    * @param {String} path - Redirect path.
    * @param {Object} [options] - Redirection options.
    * @param {Boolean} [options.newResource = false] - If true, changes the path variable on the context token.
+   * @param {Object} [options.query] - Query parameters that will be added to the URL.
    * @example lti.redirect(response, '/path', { newResource: true })
    */
 
@@ -952,7 +953,8 @@ class Provider {
 
     provMainDebug('Redirecting to: ', path);
     const token = res.locals.token;
-    const pathParts = url.parse(path); // Updates path variable if this is a new resource
+    const pathParts = url.parse(path);
+    const additionalQueries = options && options.query ? options.query : {}; // Updates path variable if this is a new resource
 
     if (options && (options.newResource || options.isNewResource)) {
       provMainDebug('Changing context token path to: ' + path);
@@ -986,7 +988,7 @@ class Provider {
       pathname: pathParts.pathname,
       port: pathParts.port,
       auth: pathParts.auth,
-      query: _objectSpread(_objectSpread({}, queries), {}, {
+      query: _objectSpread(_objectSpread(_objectSpread({}, queries), additionalQueries), {}, {
         ltik: res.locals.ltik
       })
     }); // Redirects to path with queries
