@@ -248,7 +248,7 @@ class Database {
     if (!(0, _classPrivateFieldGet2.default)(this, _deploy)) throw new Error('PROVIDER_NOT_DEPLOYED');
     if (!collection) throw new Error('MISSING_COLLECTION');
     const Model = mongoose.model(collection);
-    const result = await Model.find(query);
+    const result = await Model.find(query).select('-__v -_id');
 
     if (ENCRYPTIONKEY) {
       for (const i in result) {

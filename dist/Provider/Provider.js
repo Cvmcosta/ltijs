@@ -438,14 +438,15 @@ class Provider {
         if (user) {
           provAuthDebug('Valid session found'); // Gets corresponding id token from database
 
-          let idToken = await this.Database.Get(false, 'idtoken', {
+          let idTokenRes = await this.Database.Get(false, 'idtoken', {
             iss: platformUrl,
             clientId: clientId,
             deploymentId: deploymentId,
             user: user
           });
-          if (!idToken) throw new Error('IDTOKEN_NOT_FOUND_DB');
-          idToken = idToken[0]; // Gets correspondent context token from database
+          if (!idTokenRes) throw new Error('IDTOKEN_NOT_FOUND_DB');
+          idTokenRes = idTokenRes[0];
+          const idToken = JSON.parse(JSON.stringify(idTokenRes)); // Gets correspondent context token from database
 
           let contextToken = await this.Database.Get(false, 'contexttoken', {
             contextId: contextId,
@@ -453,9 +454,9 @@ class Provider {
           });
           if (!contextToken) throw new Error('CONTEXTTOKEN_NOT_FOUND_DB');
           contextToken = contextToken[0];
-          idToken.platformContext = contextToken; // Creating local variables
+          idToken.platformContext = JSON.parse(JSON.stringify(contextToken)); // Creating local variables
 
-          res.locals.context = contextToken;
+          res.locals.context = idToken.platformContext;
           res.locals.token = idToken;
           res.locals.ltik = ltik;
           provMainDebug('Passing request to next handler');

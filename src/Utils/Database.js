@@ -179,7 +179,7 @@ class Database {
     if (!collection) throw new Error('MISSING_COLLECTION')
 
     const Model = mongoose.model(collection)
-    const result = await Model.find(query)
+    const result = await Model.find(query).select('-__v -_id')
 
     if (ENCRYPTIONKEY) {
       for (const i in result) {
