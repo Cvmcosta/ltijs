@@ -526,9 +526,9 @@ class Provider {
       const params = _objectSpread(_objectSpread({}, req.query), req.body);
 
       try {
-        if (!params.iss || !params.login_hint || !params.target_link_uri) return res.status(401).send({
-          status: 401,
-          error: 'Unauthorized',
+        if (!params.iss || !params.login_hint || !params.target_link_uri) return res.status(400).send({
+          status: 400,
+          error: 'Bad request',
           details: {
             errLog: 'MISSING_PARAMETERS'
           }
@@ -585,9 +585,9 @@ class Provider {
           }));
         } else {
           provMainDebug('Unregistered platform attempting connection: ' + iss);
-          return res.status(401).send({
-            status: 401,
-            error: 'Unauthorized',
+          return res.status(400).send({
+            status: 400,
+            error: 'Bad request',
             details: {
               errLog: 'UNREGISTERED_PLATFORM'
             }

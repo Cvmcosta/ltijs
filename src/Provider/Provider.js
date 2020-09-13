@@ -396,7 +396,7 @@ class Provider {
     this.app.all(this.#loginRoute, async (req, res) => {
       const params = { ...req.query, ...req.body }
       try {
-        if (!params.iss || !params.login_hint || !params.target_link_uri) return res.status(401).send({ status: 401, error: 'Unauthorized', details: { errLog: 'MISSING_PARAMETERS' } })
+        if (!params.iss || !params.login_hint || !params.target_link_uri) return res.status(400).send({ status: 400, error: 'Bad request', details: { errLog: 'MISSING_PARAMETERS' } })
         const iss = params.iss
         provMainDebug('Receiving a login request from: ' + iss)
         let platform
@@ -442,7 +442,7 @@ class Provider {
           }))
         } else {
           provMainDebug('Unregistered platform attempting connection: ' + iss)
-          return res.status(401).send({ status: 401, error: 'Unauthorized', details: { errLog: 'UNREGISTERED_PLATFORM' } })
+          return res.status(400).send({ status: 400, error: 'Bad request', details: { errLog: 'UNREGISTERED_PLATFORM' } })
         }
       } catch (err) {
         provMainDebug(err)
