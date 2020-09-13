@@ -101,10 +101,10 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
 describe('Testing LTI 1.3 flow', function () {
   this.timeout(10000)
 
-  it('Login route with unregistered platform is expected to return 401 error', async () => {
+  it('Login route with unregistered platform is expected to return 400 error', async () => {
     const url = lti.loginRoute()
     return chai.request(lti.app).post(url).send({ iss: 'https://unregisteredPlatform.com' }).then(res => {
-      expect(res).to.have.status(401)
+      expect(res).to.have.status(400)
     })
   })
 
