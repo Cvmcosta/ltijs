@@ -9,6 +9,15 @@
 
 ### CHANGELOG
 
+#### V5.3.0
+> 2020-09-11
+> - Fixed bug where `contextToken` would not show up when `console.log()` was used to log the `idtoken`.
+> - Added `query` option to `lti.redirect()` to easely add query parameters to the redirection target.
+> - Added a target endpoint cleanup functionality to the login flow to deal with LMSs restrictive URL matching that prevents deep linking created urls to have query parameter. A more in depth explanation can be found here: [The issue with Redirection URIs](https://cvmcosta.github.io/ltijs/#/redirectionuris).
+> - Added a new `state` table to the database to store launch specific query parameters (Addressed in the document cited above).
+> - Released a new version of [ltijs-sequelize](https://github.com/Cvmcosta/ltijs-sequelize) that accomodates the changes. The new version also added indexes to improve performance.
+> - Applied error message pattern to errors thrown within the registration route.
+
 #### V5.2.1
 > 2020-08-31
 > BREAKING CHANGES

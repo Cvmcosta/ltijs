@@ -26,6 +26,13 @@ Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps
 
 > [Ltijs is LTI® Advantage Complete Certified by IMS](https://site.imsglobal.org/certifications/coursekey/ltijs)
 
+> V5.3.0
+> - Fixed bug where `contextToken` would not show up when `console.log()` was used to log the `idtoken`.
+> - Added `query` option to `lti.redirect()` to easely add query parameters to the redirection target.
+> - Added a target endpoint cleanup functionality to the login flow to deal with LMSs restrictive URL matching that prevents deep linking created urls to have query parameter. A more in depth explanation can be found here: [The issue with Redirection URIs](https://cvmcosta.github.io/ltijs/#/redirectionuris).
+> - Added a new `state` table to the database to store launch specific query parameters (Addressed in the document cited above).
+> - Released a new version of [ltijs-sequelize](https://github.com/Cvmcosta/ltijs-sequelize) that accomodates the changes. The new version also added indexes to improve performance.
+> - Applied error message pattern to errors thrown within the registration route.
 
 > V5.2.1
 > BREAKING CHANGES / FIX
@@ -139,7 +146,8 @@ Ltijs can also be used with other databases through database plugins that use th
 
 | Ltijs-sequelize version | Ltijs version |
 | --------- | --------- |
-| 2.1.0 | ^5.2.0 |
+| 2.2.0 | ^5.3.0 |
+| 2.1.0 | 5.2.1 |
 | 1.0.0 | 5.1.0 |
 
 
@@ -705,10 +713,12 @@ Redirects to a new location. Passes Ltik if present.
 | path | `String`  | Redirect path. | &nbsp; |
 | [options] | <code>Object</code> |  Redirection options | *Optional* |
 | [options.newResource] | <code>Boolean</code> | If true, changes the path variable on the context token. | *Optional* |
+| [options.query] | <code>Object</code> | Query parameters that should be added to the redirection URL. | *Optional* |
 
 **Example**  
 ```js
-lti.redirect(res, '/path', { newResource: true })
+lti.redirect(res, '/path', { newResource: true, query: { param: 'value' } })
+// Redirects to /path?param=value
 ```
 
 ---
@@ -1585,13 +1595,24 @@ The `url` parameter can be an internal route ('/route') or a complete URL ('http
 - If the route originating the resource does not have access to an `idtoken` (whitelisted route), `lti.redirect()` method will still perform the redirection, but the target will not have access to the `ltik` nor the `session cookie`. 
 
 
-The `lti.redirect()` method also has a `options` parameter that accepts a field `newResource`, if this field is set to true, the `contexttoken` object has it's `path` field changed to reflect the target route. The `path` field can be used to keep track of the main resource route even after several redirections.
+The `lti.redirect()` method also has an `options` parameter that accepts two fields:
+
+-  ***newResource***: If this field is set to true, the `contexttoken` object has it's `path` field changed to reflect the target route. The `path` field can be used to keep track of the main resource route even after several redirections.
 
 ```javascript
 lti.onConnect(async (token, req, res) => {
   return lti.redirect(res, '/route', { newResource: true })
 })
 ```
+
+- ***query***: This field can be used to easely add query parameter to target URL.
+```javascript
+lti.onConnect(async (token, req, res) => {
+  return lti.redirect(res, '/path', { newResource: true, query: { param: 'value' } })
+  // Redirects to /path?param=value
+})
+```
+
 
 *If for some reason you want to redirect manually, the `ltik` token can be retrieved, **after a valid request**, through the `res.locals.ltik` variable.*
 

@@ -39,6 +39,8 @@ const url = require('fast-url-parser');
 
 const jwt = require('jsonwebtoken');
 
+const crypto = require('crypto');
+
 const provAuthDebug = require('debug')('provider:auth');
 
 const provMainDebug = require('debug')('provider:main');
@@ -305,9 +307,16 @@ class Provider {
               iss: validationCookie,
               maxAge: (0, _classPrivateFieldGet2.default)(this, _tokenMaxAge)
             };
-            const valid = await Auth.validateToken(idtoken, (0, _classPrivateFieldGet2.default)(this, _devMode), validationParameters, this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), this.Database); // Deletes state validation cookie
+            const valid = await Auth.validateToken(idtoken, (0, _classPrivateFieldGet2.default)(this, _devMode), validationParameters, this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), this.Database); // Retrieve State object from Database
+
+            const savedState = await this.Database.Get(false, 'state', {
+              state: state
+            }); // Deletes state validation cookie and Database entry
 
             res.clearCookie('state' + state, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
+            if (savedState) this.Database.Delete('state', {
+              state: state
+            });
             provAuthDebug('Successfully validated token!');
             const courseId = valid['https://purl.imsglobal.org/spec/lti/claim/context'] ? valid['https://purl.imsglobal.org/spec/lti/claim/context'].id : 'NF';
             const resourceId = valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'] ? valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'].id : 'NF';
@@ -374,12 +383,33 @@ class Provider {
 
             }; // Signing context token
 
-            const newLtik = jwt.sign(newLtikObj, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2));
+            const newLtik = jwt.sign(newLtikObj, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2)); // Appending query parameters
+
             const query = new URLSearchParams(req.query);
+
+            if (savedState) {
+              for (const [key, value] of Object.entries(savedState[0].query)) {
+                query.append(key, value);
+              }
+            }
+
             query.append('ltik', newLtik);
             const urlSearchParams = query.toString();
             return res.redirect(req.baseUrl + req.path + '?' + urlSearchParams);
           } else {
+            const state = req.body.state;
+
+            if (state) {
+              provMainDebug('Deleting state cookie and Database entry');
+              const savedState = await this.Database.Get(false, 'state', {
+                state: state
+              });
+              res.clearCookie('state' + state, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
+              if (savedState) this.Database.Delete('state', {
+                state: state
+              });
+            }
+
             if ((0, _classPrivateFieldGet2.default)(this, _whitelistedRoutes).find(r => {
               if (r.route instanceof RegExp && r.route.test(req.path) || r.route === req.path) return r.method === 'ALL' || r.method === req.method.toUpperCase();
               return false;
@@ -468,6 +498,19 @@ class Provider {
           return res.redirect(req.baseUrl + (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutRoute));
         }
       } catch (err) {
+        const state = req.body.state;
+
+        if (state) {
+          provMainDebug('Deleting state cookie and Database entry');
+          const savedState = await this.Database.Get(false, 'state', {
+            state: state
+          });
+          res.clearCookie('state' + state, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
+          if (savedState) this.Database.Delete('state', {
+            state: state
+          });
+        }
+
         provAuthDebug(err);
         provMainDebug('Passing request to invalid token handler');
         const errObj = {
@@ -483,7 +526,13 @@ class Provider {
       const params = _objectSpread(_objectSpread({}, req.query), req.body);
 
       try {
-        if (!params.iss || !params.login_hint || !params.target_link_uri) return res.status(401).send('MISSING_PARAMETERS');
+        if (!params.iss || !params.login_hint || !params.target_link_uri) return res.status(401).send({
+          status: 401,
+          error: 'Unauthorized',
+          details: {
+            errLog: 'MISSING_PARAMETERS'
+          }
+        });
         const iss = params.iss;
         provMainDebug('Receiving a login request from: ' + iss);
         let platform;
@@ -492,8 +541,35 @@ class Provider {
         if (platform) {
           provMainDebug('Redirecting to platform authentication endpoint'); // Create state parameter used to validade authentication response
 
-          const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``);
-          provMainDebug('Generated state: ', state); // Setting up validation info
+          let state = encodeURIComponent(crypto.randomBytes(25).toString('hex'));
+          provMainDebug('Target Link URI: ', params.target_link_uri); // Cleaning up target link uri and retrieving query parameters
+
+          if (params.target_link_uri.includes('?')) {
+            // Retrieve raw queries
+            const rawQueries = new URLSearchParams('?' + params.target_link_uri.split('?')[1]); // Check if state is unique
+
+            while (await this.Database.Get(false, 'state', {
+              state: state
+            })) state = encodeURIComponent(crypto.randomBytes(25).toString('hex'));
+
+            provMainDebug('Generated state: ', state); // Assemble queries object
+
+            const queries = {};
+
+            for (const [key, value] of rawQueries) {
+              queries[key] = value;
+            }
+
+            params.target_link_uri = params.target_link_uri.split('?')[0];
+            provMainDebug('Query parameters found: ', queries);
+            provMainDebug('Final Redirect URI: ', params.target_link_uri); // Store state and query parameters on database
+
+            await this.Database.Insert(false, 'state', {
+              state: state,
+              query: queries
+            });
+          } // Setting up validation info
+
 
           const cookieOptions = JSON.parse(JSON.stringify((0, _classPrivateFieldGet2.default)(this, _cookieOptions)));
           cookieOptions.maxAge = 60 * 1000; // Adding max age to state cookie = 1min
@@ -509,11 +585,23 @@ class Provider {
           }));
         } else {
           provMainDebug('Unregistered platform attempting connection: ' + iss);
-          return res.status(401).send('UNREGISTERED_PLATFORM');
+          return res.status(401).send({
+            status: 401,
+            error: 'Unauthorized',
+            details: {
+              errLog: 'UNREGISTERED_PLATFORM'
+            }
+          });
         }
       } catch (err) {
-        provAuthDebug(err);
-        res.sendStatus(400);
+        provMainDebug(err);
+        return res.status(500).send({
+          status: 500,
+          error: 'Internal Server Error',
+          details: {
+            errLog: err.message
+          }
+        });
       }
     }); // Session timeout, invalid token and keyset methods
 

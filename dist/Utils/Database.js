@@ -178,6 +178,20 @@ class Database {
     nonceSchema.index({
       nonce: 1
     });
+    const stateSchema = new Schema({
+      state: String,
+      query: JSON,
+      createdAt: {
+        type: Date,
+        expires: 600,
+        default: Date.now
+      }
+    });
+    stateSchema.index({
+      state: 1
+    }, {
+      unique: true
+    });
 
     try {
       mongoose.model('idtoken', idTokenSchema);
@@ -187,6 +201,7 @@ class Database {
       mongoose.model('publickey', keySchema);
       mongoose.model('accesstoken', accessTokenSchema);
       mongoose.model('nonce', nonceSchema);
+      mongoose.model('state', stateSchema);
     } catch (err) {
       provDatabaseDebug('Model already registered. Continuing');
     }

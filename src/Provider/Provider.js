@@ -16,6 +16,7 @@ const NamesAndRolesService = require('./Services/NamesAndRoles')
 
 const url = require('fast-url-parser')
 const jwt = require('jsonwebtoken')
+const crypto = require('crypto')
 
 const provAuthDebug = require('debug')('provider:auth')
 const provMainDebug = require('debug')('provider:main')
@@ -200,8 +201,12 @@ class Provider {
 
             const valid = await Auth.validateToken(idtoken, this.#devMode, validationParameters, this.getPlatform, this.#ENCRYPTIONKEY, this.Database)
 
-            // Deletes state validation cookie
+            // Retrieve State object from Database
+            const savedState = await this.Database.Get(false, 'state', { state: state })
+
+            // Deletes state validation cookie and Database entry
             res.clearCookie('state' + state, this.#cookieOptions)
+            if (savedState) this.Database.Delete('state', { state: state })
 
             provAuthDebug('Successfully validated token!')
 
@@ -270,13 +275,26 @@ class Provider {
             }
             // Signing context token
             const newLtik = jwt.sign(newLtikObj, this.#ENCRYPTIONKEY)
-
+            // Appending query parameters
             const query = new URLSearchParams(req.query)
+            if (savedState) {
+              for (const [key, value] of Object.entries(savedState[0].query)) {
+                query.append(key, value)
+              }
+            }
             query.append('ltik', newLtik)
             const urlSearchParams = query.toString()
 
             return res.redirect(req.baseUrl + req.path + '?' + urlSearchParams)
           } else {
+            const state = req.body.state
+            if (state) {
+              provMainDebug('Deleting state cookie and Database entry')
+              const savedState = await this.Database.Get(false, 'state', { state: state })
+              res.clearCookie('state' + state, this.#cookieOptions)
+              if (savedState) this.Database.Delete('state', { state: state })
+            }
+
             if (this.#whitelistedRoutes.find(r => {
               if ((r.route instanceof RegExp && r.route.test(req.path)) || r.route === req.path) return r.method === 'ALL' || r.method === req.method.toUpperCase()
               return false
@@ -355,6 +373,14 @@ class Provider {
           return res.redirect(req.baseUrl + this.#sessionTimeoutRoute)
         }
       } catch (err) {
+        const state = req.body.state
+        if (state) {
+          provMainDebug('Deleting state cookie and Database entry')
+          const savedState = await this.Database.Get(false, 'state', { state: state })
+          res.clearCookie('state' + state, this.#cookieOptions)
+          if (savedState) this.Database.Delete('state', { state: state })
+        }
+
         provAuthDebug(err)
         provMainDebug('Passing request to invalid token handler')
         const errObj = {
@@ -370,7 +396,7 @@ class Provider {
     this.app.all(this.#loginRoute, async (req, res) => {
       const params = { ...req.query, ...req.body }
       try {
-        if (!params.iss || !params.login_hint || !params.target_link_uri) return res.status(401).send('MISSING_PARAMETERS')
+        if (!params.iss || !params.login_hint || !params.target_link_uri) return res.status(401).send({ status: 401, error: 'Unauthorized', details: { errLog: 'MISSING_PARAMETERS' } })
         const iss = params.iss
         provMainDebug('Receiving a login request from: ' + iss)
         let platform
@@ -381,8 +407,25 @@ class Provider {
           provMainDebug('Redirecting to platform authentication endpoint')
 
           // Create state parameter used to validade authentication response
-          const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
-          provMainDebug('Generated state: ', state)
+          let state = encodeURIComponent(crypto.randomBytes(25).toString('hex'))
+
+          provMainDebug('Target Link URI: ', params.target_link_uri)
+          // Cleaning up target link uri and retrieving query parameters
+          if (params.target_link_uri.includes('?')) {
+            // Retrieve raw queries
+            const rawQueries = new URLSearchParams('?' + params.target_link_uri.split('?')[1])
+            // Check if state is unique
+            while (await this.Database.Get(false, 'state', { state: state })) state = encodeURIComponent(crypto.randomBytes(25).toString('hex'))
+            provMainDebug('Generated state: ', state)
+            // Assemble queries object
+            const queries = {}
+            for (const [key, value] of rawQueries) { queries[key] = value }
+            params.target_link_uri = params.target_link_uri.split('?')[0]
+            provMainDebug('Query parameters found: ', queries)
+            provMainDebug('Final Redirect URI: ', params.target_link_uri)
+            // Store state and query parameters on database
+            await this.Database.Insert(false, 'state', { state: state, query: queries })
+          }
 
           // Setting up validation info
           const cookieOptions = JSON.parse(JSON.stringify(this.#cookieOptions))
@@ -399,11 +442,11 @@ class Provider {
           }))
         } else {
           provMainDebug('Unregistered platform attempting connection: ' + iss)
-          return res.status(401).send('UNREGISTERED_PLATFORM')
+          return res.status(401).send({ status: 401, error: 'Unauthorized', details: { errLog: 'UNREGISTERED_PLATFORM' } })
         }
       } catch (err) {
-        provAuthDebug(err)
-        res.sendStatus(400)
+        provMainDebug(err)
+        return res.status(500).send({ status: 500, error: 'Internal Server Error', details: { errLog: err.message } })
       }
     })
 
