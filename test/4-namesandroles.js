@@ -205,7 +205,7 @@ describe('Testing Names and Roles Service', function () {
       scope: 'https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly'
     })
 
-    nock('http://localhost/moodle').get('/members/1?role=Learner&limit=2').reply(200, membersResult)
+    nock('http://localhost/moodle').get('/members/1').reply(200, membersResult)
 
     lti.onConnect(async (token, req, res) => {
       try {
