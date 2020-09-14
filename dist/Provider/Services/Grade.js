@@ -88,7 +88,7 @@ class Grade {
 
     if (options) {
       if (options.resourceLinkId) queryParams.push(['resource_link_id', idtoken.platformContext.resource.id]);
-      if (options.limit) queryParams.push(['limit', options.limit]);
+      if (options.limit && !options.id && !options.label) queryParams.push(['limit', options.limit]);
       if (options.tag) queryParams.push(['tag', options.tag]);
       if (options.resourceId) queryParams.push(['resource_id', options.resourceId]);
     }
@@ -108,6 +108,7 @@ class Grade {
     if (options && options.label) lineItems = lineItems.filter(lineitem => {
       return lineitem.label === options.label;
     });
+    if (options && options.limit && (options.id || options.label) && options.limit < lineItems.length) lineItems = lineItems.slice(0, options.limit);
     return lineItems;
   }
   /**
@@ -397,11 +398,15 @@ class Grade {
           }
         }).json();
         resultsArray.push({
-          lineItem: lineitem.id,
+          lineitem: lineitem.id,
           results: results
         });
       } catch (err) {
         provGradeServiceDebug(err.message);
+        resultsArray.push({
+          lineitem: lineitem.id,
+          error: err.message
+        });
         continue;
       }
     }

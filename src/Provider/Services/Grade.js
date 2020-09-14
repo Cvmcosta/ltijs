@@ -58,7 +58,7 @@ class Grade {
     let queryParams = [...query]
     if (options) {
       if (options.resourceLinkId) queryParams.push(['resource_link_id', idtoken.platformContext.resource.id])
-      if (options.limit) queryParams.push(['limit', options.limit])
+      if (options.limit && !options.id && !options.label) queryParams.push(['limit', options.limit])
       if (options.tag) queryParams.push(['tag', options.tag])
       if (options.resourceId) queryParams.push(['resource_id', options.resourceId])
     }
@@ -69,6 +69,7 @@ class Grade {
     // Applying special filters
     if (options && options.id) lineItems = lineItems.filter(lineitem => { return lineitem.id === options.id })
     if (options && options.label) lineItems = lineItems.filter(lineitem => { return lineitem.label === options.label })
+    if (options && options.limit && (options.id || options.label) && options.limit < lineItems.length) lineItems = lineItems.slice(0, options.limit)
 
     return lineItems
   }
@@ -306,11 +307,15 @@ class Grade {
         const results = await got.get(resultsUrl, { searchParams: searchParams, headers: { Authorization: accessToken.token_type + ' ' + accessToken.access_token, Accept: 'application/vnd.ims.lis.v2.resultcontainer+json' } }).json()
 
         resultsArray.push({
-          lineItem: lineitem.id,
+          lineitem: lineitem.id,
           results: results
         })
       } catch (err) {
         provGradeServiceDebug(err.message)
+        resultsArray.push({
+          lineitem: lineitem.id,
+          error: err.message
+        })
         continue
       }
     }

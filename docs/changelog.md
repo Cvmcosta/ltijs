@@ -9,10 +9,15 @@
 
 ### CHANGELOG
 
+#### V5.3.3
+> 2020-09-14
+> - Fixed bug in Grades Service where limit would be applied before special filters `id` and `label`, causing the query to return an empty array.
+> - Added error response to the `result` Grades method, instead of just ignoring errors and only returning successfull requests.
+> - Changed `result` response field `lineItem` to `lineitem`, in order to maintain consistency.
+
 #### V5.3.2
 > 2020-09-13
 > - Fixed bug in Names and Roles Service where url parameter wouldnt work if the limit parameter was also set.
-
 
 #### V5.3.0
 > 2020-09-11

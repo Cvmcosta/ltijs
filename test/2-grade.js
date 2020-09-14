@@ -23,7 +23,7 @@ const newLineItem = {
 
 const resultsResponse = [
   {
-    lineItem: 'http://localhost/moodle/mod/lti/services.php/2/lineitems/2/lineitem?type_id=1',
+    lineitem: 'http://localhost/moodle/mod/lti/services.php/2/lineitems/2/lineitem?type_id=1',
     results: [
       {
         id: 'http://localhost/moodle/mod/lti/services.php/2/lineitems/2/lineitem/results?type_id=1&user_id=2',
@@ -32,7 +32,7 @@ const resultsResponse = [
     ]
   },
   {
-    lineItem: 'http://localhost/moodle/mod/lti/services.php/2/lineitems/16/lineitem?type_id=1',
+    lineitem: 'http://localhost/moodle/mod/lti/services.php/2/lineitems/16/lineitem?type_id=1',
     results: [
       {
         id: 'http://localhost/moodle/mod/lti/services.php/2/lineitems/16/lineitem/results?type_id=1&user_id=2',
