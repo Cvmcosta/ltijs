@@ -9,6 +9,11 @@
 
 ### CHANGELOG
 
+#### V5.3.2
+> 2020-09-13
+> - Fixed bug in Names and Roles Service where url parameter wouldnt work if the limit parameter was also set.
+
+
 #### V5.3.0
 > 2020-09-11
 > - Fixed bug where `contextToken` would not show up when `console.log()` was used to log the `idtoken`.
