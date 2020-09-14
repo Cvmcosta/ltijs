@@ -57,7 +57,10 @@ class NamesAndRoles {
     else query = false
 
     let next = idtoken.platformContext.namesRoles.context_memberships_url
-    if (options && options.url) next = options.url
+    if (options && options.url) {
+      next = options.url
+      query = false
+    }
     let differences
     let result
     let curPage = 1
