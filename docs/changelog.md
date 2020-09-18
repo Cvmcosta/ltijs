@@ -9,6 +9,13 @@
 
 ### CHANGELOG
 
+#### V5.3.4
+> 2020-09-18
+> - Created new methods on Grades Service: getLineItemById(), updateLineItemById() and deleteLineItemById. Pending documentation.
+> - Passing the id field on the scorePublish() and result() methods now use the getLineItemById internally instead of getLineItems().
+> - Added tests for the new methods.
+> - Altered some error messages to improve consistency.
+
 #### V5.3.3
 > 2020-09-14
 > - Fixed bug in Grades Service where limit would be applied before special filters `id` and `label`, causing the query to return an empty array.

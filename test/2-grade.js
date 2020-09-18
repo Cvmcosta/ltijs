@@ -173,6 +173,118 @@ describe('Testing Assignment and Grades Service', function () {
       expect(lineItems).to.deep.equal(lineItemsResponse)
     })
   })
+  it('Grades.getLineItemById() expected to return valid lineitem', async () => {
+    const token = JSON.parse(JSON.stringify(tokenValid))
+    token.nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+
+    const payload = signToken(token, '123456')
+    const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const url = await lti.appRoute()
+
+    nock('http://localhost/moodle').get('/keyset').reply(200, {
+      keys: [
+        { kty: 'RSA', e: 'AQAB', kid: '123456', n: 'VrJSr-xli8NfuAdk_Wem5BARmmW4BpJvXBx3MbFY_0grH9Cd7OxBwVYSwI4P4yhL27upa1_FCRwLi3raOPSJOkHEDvFwtyYZMvdYcpDYTv6JRVqbgEyZtHa-vjL1wBqqW75yPDRoyZdnA8MWrfyRUOak53ZVWHRKgBnP53oXm7M' }
+      ]
+    })
+
+    nock('http://localhost/moodle').post('/AccessTokenUrl').reply(200, {
+      access_token: 'dkj4985kjaIAJDJ89kl8rkn5',
+      token_type: 'bearer',
+      expires_in: 3600,
+      scope: 'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly'
+    })
+
+    nock('http://localhost/moodle').get('/mod/lti/services.php/2/lineitems/16/lineitem?type_id=1').reply(200, lineItemsResponse[1])
+
+    lti.onConnect(async (token, req, res) => {
+      try {
+        return res.send(await lti.Grade.getLineItemById(token, 'http://localhost/moodle/mod/lti/services.php/2/lineitems/16/lineitem?type_id=1'))
+      } catch (err) {
+        console.log(err)
+        res.sendStatus(500)
+      }
+    })
+
+    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;', 'ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
+      expect(res).to.have.status(200)
+      const lineItems = JSON.parse(res.text)
+      expect(lineItems).to.deep.equal(lineItemsResponse[1])
+    })
+  })
+  it('Grades.updateLineItemById() expected to return valid updated lineitem', async () => {
+    const token = JSON.parse(JSON.stringify(tokenValid))
+    token.nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+
+    const payload = signToken(token, '123456')
+    const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const url = await lti.appRoute()
+
+    nock('http://localhost/moodle').get('/keyset').reply(200, {
+      keys: [
+        { kty: 'RSA', e: 'AQAB', kid: '123456', n: 'VrJSr-xli8NfuAdk_Wem5BARmmW4BpJvXBx3MbFY_0grH9Cd7OxBwVYSwI4P4yhL27upa1_FCRwLi3raOPSJOkHEDvFwtyYZMvdYcpDYTv6JRVqbgEyZtHa-vjL1wBqqW75yPDRoyZdnA8MWrfyRUOak53ZVWHRKgBnP53oXm7M' }
+      ]
+    })
+
+    nock('http://localhost/moodle').post('/AccessTokenUrl').reply(200, {
+      access_token: 'dkj4985kjaIAJDJ89kl8rkn5',
+      token_type: 'bearer',
+      expires_in: 3600,
+      scope: 'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem'
+    })
+
+    nock('http://localhost/moodle').put('/mod/lti/services.php/2/lineitems/16/lineitem?type_id=1').reply(200, lineItemsResponse[1])
+
+    lti.onConnect(async (token, req, res) => {
+      try {
+        return res.send(await lti.Grade.updateLineItemById(token, 'http://localhost/moodle/mod/lti/services.php/2/lineitems/16/lineitem?type_id=1', lineItemsResponse[1]))
+      } catch (err) {
+        console.log(err)
+        res.sendStatus(500)
+      }
+    })
+
+    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;', 'ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
+      expect(res).to.have.status(200)
+      const lineItems = JSON.parse(res.text)
+      expect(lineItems).to.deep.equal(lineItemsResponse[1])
+    })
+  })
+  it('Grades.deleteLineItemById() expected to return valid updated lineitem', async () => {
+    const token = JSON.parse(JSON.stringify(tokenValid))
+    token.nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+
+    const payload = signToken(token, '123456')
+    const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const url = await lti.appRoute()
+
+    nock('http://localhost/moodle').get('/keyset').reply(200, {
+      keys: [
+        { kty: 'RSA', e: 'AQAB', kid: '123456', n: 'VrJSr-xli8NfuAdk_Wem5BARmmW4BpJvXBx3MbFY_0grH9Cd7OxBwVYSwI4P4yhL27upa1_FCRwLi3raOPSJOkHEDvFwtyYZMvdYcpDYTv6JRVqbgEyZtHa-vjL1wBqqW75yPDRoyZdnA8MWrfyRUOak53ZVWHRKgBnP53oXm7M' }
+      ]
+    })
+
+    nock('http://localhost/moodle').post('/AccessTokenUrl').reply(200, {
+      access_token: 'dkj4985kjaIAJDJ89kl8rkn5',
+      token_type: 'bearer',
+      expires_in: 3600,
+      scope: 'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem'
+    })
+
+    nock('http://localhost/moodle').delete('/mod/lti/services.php/2/lineitems/16/lineitem?type_id=1').reply(204)
+
+    lti.onConnect(async (token, req, res) => {
+      try {
+        return res.status(204).send(await lti.Grade.deleteLineItemById(token, 'http://localhost/moodle/mod/lti/services.php/2/lineitems/16/lineitem?type_id=1'))
+      } catch (err) {
+        console.log(err)
+        res.sendStatus(500)
+      }
+    })
+
+    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;', 'ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
+      expect(res).to.have.status(204)
+    })
+  })
   it('Grades.createLineItem() expected to return newly created lineItem', async () => {
     const token = JSON.parse(JSON.stringify(tokenValid))
     token.nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
@@ -323,6 +435,58 @@ describe('Testing Assignment and Grades Service', function () {
       expect(scoreLineItems).to.deep.equal(response)
     })
   })
+  it('Grades.scorePublish() with id field expected to return sucess array', async () => {
+    const token = JSON.parse(JSON.stringify(tokenValid))
+    token.nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+
+    const payload = signToken(token, '123456')
+    const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const url = await lti.appRoute()
+
+    nock('http://localhost/moodle').get('/keyset').reply(200, {
+      keys: [
+        { kty: 'RSA', e: 'AQAB', kid: '123456', n: 'VrJSr-xli8NfuAdk_Wem5BARmmW4BpJvXBx3MbFY_0grH9Cd7OxBwVYSwI4P4yhL27upa1_FCRwLi3raOPSJOkHEDvFwtyYZMvdYcpDYTv6JRVqbgEyZtHa-vjL1wBqqW75yPDRoyZdnA8MWrfyRUOak53ZVWHRKgBnP53oXm7M' }
+      ]
+    })
+
+    nock('http://localhost/moodle').post('/AccessTokenUrl').reply(200, {
+      access_token: 'dkj4985kjaIAJDJ89kl8rkn5',
+      token_type: 'bearer',
+      expires_in: 3600,
+      scope: 'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly'
+    })
+
+    nock('http://localhost/moodle').post('/mod/lti/services.php/2/lineitems/16/lineitem/scores?type_id=1').reply(200)
+    nock('http://localhost/moodle').get('/mod/lti/services.php/2/lineitems/16/lineitem?type_id=1').reply(200, lineItemsResponse[1])
+
+    lti.onConnect(async (token, req, res) => {
+      try {
+        const grade = {
+          scoreGiven: 90,
+          activityProgress: 'Completed',
+          gradingProgress: 'FullyGraded'
+        }
+        return res.send(await lti.Grade.scorePublish(token, grade, { id: 'http://localhost/moodle/mod/lti/services.php/2/lineitems/16/lineitem?type_id=1' }))
+      } catch (err) {
+        console.log(err)
+        res.sendStatus(500)
+      }
+    })
+
+    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;', 'ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
+      expect(res).to.have.status(200)
+      const scoreLineItems = JSON.parse(res.text)
+      const response = {
+        failure: [],
+        success: [
+          {
+            lineitem: 'http://localhost/moodle/mod/lti/services.php/2/lineitems/16/lineitem?type_id=1'
+          }
+        ]
+      }
+      expect(scoreLineItems).to.deep.equal(response)
+    })
+  })
   it('Grades.result() expected to return results array', async () => {
     const token = JSON.parse(JSON.stringify(tokenValid))
     token.nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
@@ -370,6 +534,70 @@ describe('Testing Assignment and Grades Service', function () {
         res.sendStatus(500)
       }
     })
+
+    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;', 'ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
+      expect(res).to.have.status(200)
+      const results = JSON.parse(res.text)
+      expect(results).to.deep.equal(resultsResponse)
+    })
+  })
+  it('Grades.result() with id field expected to return results array', async () => {
+    const token = JSON.parse(JSON.stringify(tokenValid))
+    token.nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+
+    const payload = signToken(token, '123456')
+    const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const url = await lti.appRoute()
+
+    nock('http://localhost/moodle').get('/keyset').reply(200, {
+      keys: [
+        { kty: 'RSA', e: 'AQAB', kid: '123456', n: 'VrJSr-xli8NfuAdk_Wem5BARmmW4BpJvXBx3MbFY_0grH9Cd7OxBwVYSwI4P4yhL27upa1_FCRwLi3raOPSJOkHEDvFwtyYZMvdYcpDYTv6JRVqbgEyZtHa-vjL1wBqqW75yPDRoyZdnA8MWrfyRUOak53ZVWHRKgBnP53oXm7M' }
+      ]
+    })
+
+    nock('http://localhost/moodle').post('/AccessTokenUrl').reply(200, {
+      access_token: 'dkj4985kjaIAJDJ89kl8rkn5',
+      token_type: 'bearer',
+      expires_in: 3600,
+      scope: 'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly'
+    })
+
+    nock('http://localhost/moodle').get('/mod/lti/services.php/2/lineitems/16/lineitem/results?type_id=1').reply(200, [
+      {
+        id: 'http://localhost/moodle/mod/lti/services.php/2/lineitems/16/lineitem/results?type_id=1&user_id=2',
+        resultMaximum: 100,
+        resultScore: 100,
+        scoreOf: 'http://localhost/moodle/mod/lti/services.php/2/lineitems/16/lineitem?type_id=1',
+        timestamp: '2020-06-02T10:51:08-03:00',
+        userId: '2'
+      }
+    ])
+    nock('http://localhost/moodle').get('/mod/lti/services.php/2/lineitems/16/lineitem?type_id=1').reply(200, lineItemsResponse[1])
+
+    lti.onConnect(async (token, req, res) => {
+      try {
+        return res.send(await lti.Grade.result(token, { id: 'http://localhost/moodle/mod/lti/services.php/2/lineitems/16/lineitem?type_id=1' }))
+      } catch (err) {
+        console.log(err)
+        res.sendStatus(500)
+      }
+    })
+
+    const resultsResponse = [
+      {
+        lineitem: 'http://localhost/moodle/mod/lti/services.php/2/lineitems/16/lineitem?type_id=1',
+        results: [
+          {
+            id: 'http://localhost/moodle/mod/lti/services.php/2/lineitems/16/lineitem/results?type_id=1&user_id=2',
+            userId: '2',
+            resultScore: 100,
+            resultMaximum: 100,
+            scoreOf: 'http://localhost/moodle/mod/lti/services.php/2/lineitems/16/lineitem?type_id=1',
+            timestamp: '2020-06-02T10:51:08-03:00'
+          }
+        ]
+      }
+    ]
 
     return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;', 'ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
       expect(res).to.have.status(200)

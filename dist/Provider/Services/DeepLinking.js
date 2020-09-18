@@ -72,7 +72,7 @@ class DeepLinking {
     provDeepLinkingDebug('Starting deep linking process');
 
     if (!idtoken) {
-      provDeepLinkingDebug('IdToken object missing.');
+      provDeepLinkingDebug('Missing IdToken object.');
       throw new Error('MISSING_ID_TOKEN');
     }
 

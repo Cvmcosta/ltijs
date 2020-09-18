@@ -53,7 +53,7 @@ class NamesAndRoles {
 
   async getMembers(idtoken, options) {
     if (!idtoken) {
-      provNamesAndRolesServiceDebug('IdToken object missing.');
+      provNamesAndRolesServiceDebug('Missing IdToken object.');
       throw new Error('MISSING_ID_TOKEN');
     }
 

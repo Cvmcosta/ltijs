@@ -27,7 +27,7 @@ class NamesAndRoles {
    * @param {String} [options.url] - Specifies the initial members endpoint, usually retrieved from a previous incomplete request.
    */
   async getMembers (idtoken, options) {
-    if (!idtoken) { provNamesAndRolesServiceDebug('IdToken object missing.'); throw new Error('MISSING_ID_TOKEN') }
+    if (!idtoken) { provNamesAndRolesServiceDebug('Missing IdToken object.'); throw new Error('MISSING_ID_TOKEN') }
     provNamesAndRolesServiceDebug('Attempting to retrieve memberships')
     provNamesAndRolesServiceDebug('Target platform: ' + idtoken.iss)
 

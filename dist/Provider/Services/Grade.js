@@ -57,7 +57,7 @@ class Grade {
 
   async getLineItems(idtoken, options, accessToken) {
     if (!idtoken) {
-      provGradeServiceDebug('IdToken object missing.');
+      provGradeServiceDebug('Missing IdToken object.');
       throw new Error('MISSING_ID_TOKEN');
     }
 
@@ -123,7 +123,7 @@ class Grade {
   async createLineItem(idtoken, lineItem, options, accessToken) {
     // Validating lineItem
     if (!idtoken) {
-      provGradeServiceDebug('IdToken object missing.');
+      provGradeServiceDebug('Missing IdToken object.');
       throw new Error('MISSING_ID_TOKEN');
     }
 
@@ -176,7 +176,7 @@ class Grade {
 
   async deleteLineItems(idtoken, options) {
     if (!idtoken) {
-      provGradeServiceDebug('IdToken object missing.');
+      provGradeServiceDebug('Missing IdToken object.');
       throw new Error('MISSING_ID_TOKEN');
     }
 
@@ -223,6 +223,136 @@ class Grade {
     return result;
   }
   /**
+   * @description Gets LineItem by the ID
+   * @param {Object} idtoken - Idtoken for the user
+   * @param {String} lineItemId - LineItem ID.
+   */
+
+
+  async getLineItemById(idtoken, lineItemId, accessToken) {
+    if (!idtoken) {
+      provGradeServiceDebug('Missing IdToken object.');
+      throw new Error('MISSING_ID_TOKEN');
+    }
+
+    if (!lineItemId) {
+      provGradeServiceDebug('Missing lineItemID.');
+      throw new Error('MISSING_LINEITEM_ID');
+    }
+
+    provGradeServiceDebug('Target platform: ' + idtoken.iss);
+
+    if (!accessToken) {
+      const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, idtoken.clientId, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database)); // Remove and use DB instead
+
+      if (!platform) {
+        provGradeServiceDebug('Platform not found');
+        throw new Error('PLATFORM_NOT_FOUND');
+      }
+
+      provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']');
+      accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly');
+      provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']');
+    }
+
+    const lineitemUrl = lineItemId;
+    provGradeServiceDebug('Retrieving: ' + lineitemUrl);
+    let response = await got.get(lineitemUrl, {
+      headers: {
+        Authorization: accessToken.token_type + ' ' + accessToken.access_token
+      }
+    });
+    response = JSON.parse(response.body);
+    provGradeServiceDebug('LineItem sucessfully retrieved');
+    return response;
+  }
+  /**
+   * @description Updates LineItem by the ID
+   * @param {Object} idtoken - Idtoken for the user
+   * @param {String} lineItemId - LineItem ID.
+   * @param {Object} lineItem - Updated fields.
+   */
+
+
+  async updateLineItemById(idtoken, lineItemId, lineItem) {
+    if (!idtoken) {
+      provGradeServiceDebug('Missing IdToken object.');
+      throw new Error('MISSING_ID_TOKEN');
+    }
+
+    if (!lineItemId) {
+      provGradeServiceDebug('Missing lineItemID.');
+      throw new Error('MISSING_LINEITEM_ID');
+    }
+
+    if (!lineItem) {
+      provGradeServiceDebug('Missing lineItem object.');
+      throw new Error('MISSING_LINEITEM');
+    }
+
+    provGradeServiceDebug('Target platform: ' + idtoken.iss);
+    const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, idtoken.clientId, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database));
+
+    if (!platform) {
+      provGradeServiceDebug('Platform not found');
+      throw new Error('PLATFORM_NOT_FOUND');
+    }
+
+    provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']');
+    const accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem');
+    provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']');
+    const lineitemUrl = lineItemId;
+    provGradeServiceDebug('Updating: ' + lineitemUrl);
+    let response = await got.put(lineitemUrl, {
+      json: lineItem,
+      headers: {
+        Authorization: accessToken.token_type + ' ' + accessToken.access_token
+      }
+    });
+    response = JSON.parse(response.body);
+    provGradeServiceDebug('LineItem sucessfully updated');
+    return response;
+  }
+  /**
+   * @description Deletes LineItem by the ID
+   * @param {Object} idtoken - Idtoken for the user
+   * @param {String} lineItemId - LineItem ID.
+   */
+
+
+  async deleteLineItemById(idtoken, lineItemId) {
+    if (!idtoken) {
+      provGradeServiceDebug('Missing IdToken object.');
+      throw new Error('MISSING_ID_TOKEN');
+    }
+
+    if (!lineItemId) {
+      provGradeServiceDebug('Missing lineItemID.');
+      throw new Error('MISSING_LINEITEM_ID');
+    }
+
+    provGradeServiceDebug('Target platform: ' + idtoken.iss);
+    const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, idtoken.clientId, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database));
+
+    if (!platform) {
+      provGradeServiceDebug('Platform not found');
+      throw new Error('PLATFORM_NOT_FOUND');
+    }
+
+    provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']');
+    const accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem');
+    provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']');
+    const lineitemUrl = lineItemId;
+    provGradeServiceDebug('Deleting: ' + lineitemUrl);
+    await got.delete(lineitemUrl, {
+      headers: {
+        Authorization: accessToken.token_type + ' ' + accessToken.access_token
+      }
+    });
+    provGradeServiceDebug('LineItem sucessfully deleted');
+    return true;
+  }
+  /**
      * @description Publishes a score or grade to a platform. Represents the Score Publish service described in the lti 1.3 specification
      * @param {Object} idtoken - Idtoken for the user
      * @param {Object} score - Score/Grade following the Lti Standard application/vnd.ims.lis.v1.score+json
@@ -240,7 +370,7 @@ class Grade {
 
   async scorePublish(idtoken, score, options) {
     if (!idtoken) {
-      provGradeServiceDebug('IdToken object missing.');
+      provGradeServiceDebug('Missing IdToken object.');
       throw new Error('MISSING_ID_TOKEN');
     }
 
@@ -267,7 +397,16 @@ class Grade {
       resourceLinkId: true
     };
 
-    const lineItems = await this.getLineItems(idtoken, options, accessToken);
+    let lineItems;
+
+    if (options && options.id) {
+      try {
+        lineItems = [await this.getLineItemById(idtoken, options.id, accessToken)];
+      } catch (_unused) {
+        lineItems = [];
+      }
+    } else lineItems = await this.getLineItems(idtoken, options, accessToken);
+
     const result = {
       success: [],
       failure: []
@@ -337,7 +476,7 @@ class Grade {
 
   async result(idtoken, options) {
     if (!idtoken) {
-      provGradeServiceDebug('IdToken object missing.');
+      provGradeServiceDebug('Missing IdToken object.');
       throw new Error('MISSING_ID_TOKEN');
     }
 
@@ -365,7 +504,16 @@ class Grade {
       resourceLinkId: true
     };
 
-    const lineItems = await this.getLineItems(idtoken, options, accessToken);
+    let lineItems;
+
+    if (options && options.id) {
+      try {
+        lineItems = [await this.getLineItemById(idtoken, options.id, accessToken)];
+      } catch (_unused2) {
+        lineItems = [];
+      }
+    } else lineItems = await this.getLineItems(idtoken, options, accessToken);
+
     const queryParams = [];
 
     if (options) {

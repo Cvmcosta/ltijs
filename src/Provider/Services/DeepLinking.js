@@ -51,7 +51,7 @@ class DeepLinking {
    */
   async createDeepLinkingMessage (idtoken, contentItems, options) {
     provDeepLinkingDebug('Starting deep linking process')
-    if (!idtoken) { provDeepLinkingDebug('IdToken object missing.'); throw new Error('MISSING_ID_TOKEN') }
+    if (!idtoken) { provDeepLinkingDebug('Missing IdToken object.'); throw new Error('MISSING_ID_TOKEN') }
     if (!idtoken.platformContext.deepLinkingSettings) { provDeepLinkingDebug('DeepLinkingSettings object missing.'); throw new Error('MISSING_DEEP_LINK_SETTINGS') }
     if (!contentItems) { provDeepLinkingDebug('No content item passed.'); throw new Error('MISSING_CONTENT_ITEMS') }
 

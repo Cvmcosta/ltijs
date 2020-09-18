@@ -31,7 +31,7 @@ class Grade {
    * @param {String} [options.label = false] - Filters line items based on the label
    */
   async getLineItems (idtoken, options, accessToken) {
-    if (!idtoken) { provGradeServiceDebug('IdToken object missing.'); throw new Error('MISSING_ID_TOKEN') }
+    if (!idtoken) { provGradeServiceDebug('Missing IdToken object.'); throw new Error('MISSING_ID_TOKEN') }
     provGradeServiceDebug('Target platform: ' + idtoken.iss)
 
     if (!accessToken) {
@@ -83,7 +83,7 @@ class Grade {
    */
   async createLineItem (idtoken, lineItem, options, accessToken) {
     // Validating lineItem
-    if (!idtoken) { provGradeServiceDebug('IdToken object missing.'); throw new Error('MISSING_ID_TOKEN') }
+    if (!idtoken) { provGradeServiceDebug('Missing IdToken object.'); throw new Error('MISSING_ID_TOKEN') }
     if (!lineItem) { provGradeServiceDebug('Line item object missing.'); throw new Error('MISSING_LINE_ITEM') }
 
     if (options && options.resourceLinkId) lineItem.resourceLinkId = idtoken.platformContext.resource.id
@@ -126,7 +126,7 @@ class Grade {
    * @param {String} [options.label = false] - Filters line items based on the label
    */
   async deleteLineItems (idtoken, options) {
-    if (!idtoken) { provGradeServiceDebug('IdToken object missing.'); throw new Error('MISSING_ID_TOKEN') }
+    if (!idtoken) { provGradeServiceDebug('Missing IdToken object.'); throw new Error('MISSING_ID_TOKEN') }
 
     provGradeServiceDebug('Target platform: ' + idtoken.iss)
 
@@ -162,6 +162,100 @@ class Grade {
   }
 
   /**
+   * @description Gets LineItem by the ID
+   * @param {Object} idtoken - Idtoken for the user
+   * @param {String} lineItemId - LineItem ID.
+   */
+  async getLineItemById (idtoken, lineItemId, accessToken) {
+    if (!idtoken) { provGradeServiceDebug('Missing IdToken object.'); throw new Error('MISSING_ID_TOKEN') }
+    if (!lineItemId) { provGradeServiceDebug('Missing lineItemID.'); throw new Error('MISSING_LINEITEM_ID') }
+
+    provGradeServiceDebug('Target platform: ' + idtoken.iss)
+
+    if (!accessToken) {
+      const platform = await this.#getPlatform(idtoken.iss, idtoken.clientId, this.#ENCRYPTIONKEY, this.#Database) // Remove and use DB instead
+
+      if (!platform) {
+        provGradeServiceDebug('Platform not found')
+        throw new Error('PLATFORM_NOT_FOUND')
+      }
+
+      provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']')
+
+      accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly')
+      provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']')
+    }
+
+    const lineitemUrl = lineItemId
+    provGradeServiceDebug('Retrieving: ' + lineitemUrl)
+    let response = await got.get(lineitemUrl, { headers: { Authorization: accessToken.token_type + ' ' + accessToken.access_token } })
+    response = JSON.parse(response.body)
+    provGradeServiceDebug('LineItem sucessfully retrieved')
+    return response
+  }
+
+  /**
+   * @description Updates LineItem by the ID
+   * @param {Object} idtoken - Idtoken for the user
+   * @param {String} lineItemId - LineItem ID.
+   * @param {Object} lineItem - Updated fields.
+   */
+  async updateLineItemById (idtoken, lineItemId, lineItem) {
+    if (!idtoken) { provGradeServiceDebug('Missing IdToken object.'); throw new Error('MISSING_ID_TOKEN') }
+    if (!lineItemId) { provGradeServiceDebug('Missing lineItemID.'); throw new Error('MISSING_LINEITEM_ID') }
+    if (!lineItem) { provGradeServiceDebug('Missing lineItem object.'); throw new Error('MISSING_LINEITEM') }
+
+    provGradeServiceDebug('Target platform: ' + idtoken.iss)
+
+    const platform = await this.#getPlatform(idtoken.iss, idtoken.clientId, this.#ENCRYPTIONKEY, this.#Database)
+
+    if (!platform) {
+      provGradeServiceDebug('Platform not found')
+      throw new Error('PLATFORM_NOT_FOUND')
+    }
+
+    provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']')
+    const accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem')
+    provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']')
+
+    const lineitemUrl = lineItemId
+    provGradeServiceDebug('Updating: ' + lineitemUrl)
+    let response = await got.put(lineitemUrl, { json: lineItem, headers: { Authorization: accessToken.token_type + ' ' + accessToken.access_token } })
+    response = JSON.parse(response.body)
+    provGradeServiceDebug('LineItem sucessfully updated')
+    return response
+  }
+
+  /**
+   * @description Deletes LineItem by the ID
+   * @param {Object} idtoken - Idtoken for the user
+   * @param {String} lineItemId - LineItem ID.
+   */
+  async deleteLineItemById (idtoken, lineItemId) {
+    if (!idtoken) { provGradeServiceDebug('Missing IdToken object.'); throw new Error('MISSING_ID_TOKEN') }
+    if (!lineItemId) { provGradeServiceDebug('Missing lineItemID.'); throw new Error('MISSING_LINEITEM_ID') }
+
+    provGradeServiceDebug('Target platform: ' + idtoken.iss)
+
+    const platform = await this.#getPlatform(idtoken.iss, idtoken.clientId, this.#ENCRYPTIONKEY, this.#Database)
+
+    if (!platform) {
+      provGradeServiceDebug('Platform not found')
+      throw new Error('PLATFORM_NOT_FOUND')
+    }
+
+    provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']')
+    const accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem')
+    provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']')
+
+    const lineitemUrl = lineItemId
+    provGradeServiceDebug('Deleting: ' + lineitemUrl)
+    await got.delete(lineitemUrl, { headers: { Authorization: accessToken.token_type + ' ' + accessToken.access_token } })
+    provGradeServiceDebug('LineItem sucessfully deleted')
+    return true
+  }
+
+  /**
      * @description Publishes a score or grade to a platform. Represents the Score Publish service described in the lti 1.3 specification
      * @param {Object} idtoken - Idtoken for the user
      * @param {Object} score - Score/Grade following the Lti Standard application/vnd.ims.lis.v1.score+json
@@ -176,7 +270,7 @@ class Grade {
      * @param {String} [options.label = false] - Filters line items based on the label
      */
   async scorePublish (idtoken, score, options) {
-    if (!idtoken) { provGradeServiceDebug('IdToken object missing.'); throw new Error('MISSING_ID_TOKEN') }
+    if (!idtoken) { provGradeServiceDebug('Missing IdToken object.'); throw new Error('MISSING_ID_TOKEN') }
     if (!score) { provGradeServiceDebug('Score object missing.'); throw new Error('MISSING_SCORE') }
     provGradeServiceDebug('Target platform: ' + idtoken.iss)
 
@@ -197,7 +291,14 @@ class Grade {
       else options.resourceLinkId = true
     } else options = { resourceLinkId: true }
 
-    const lineItems = await this.getLineItems(idtoken, options, accessToken)
+    let lineItems
+    if (options && options.id) {
+      try {
+        lineItems = [await this.getLineItemById(idtoken, options.id, accessToken)]
+      } catch {
+        lineItems = []
+      }
+    } else lineItems = await this.getLineItems(idtoken, options, accessToken)
 
     const result = { success: [], failure: [] }
 
@@ -253,7 +354,7 @@ class Grade {
    * @param {String} [options.label = false] - Filters line items based on the label
    */
   async result (idtoken, options) {
-    if (!idtoken) { provGradeServiceDebug('IdToken object missing.'); throw new Error('MISSING_ID_TOKEN') }
+    if (!idtoken) { provGradeServiceDebug('Missing IdToken object.'); throw new Error('MISSING_ID_TOKEN') }
 
     provGradeServiceDebug('Target platform: ' + idtoken.iss)
 
@@ -280,7 +381,14 @@ class Grade {
       }
     } else options = { resourceLinkId: true }
 
-    const lineItems = await this.getLineItems(idtoken, options, accessToken)
+    let lineItems
+    if (options && options.id) {
+      try {
+        lineItems = [await this.getLineItemById(idtoken, options.id, accessToken)]
+      } catch {
+        lineItems = []
+      }
+    } else lineItems = await this.getLineItems(idtoken, options, accessToken)
 
     const queryParams = []
     if (options) {
