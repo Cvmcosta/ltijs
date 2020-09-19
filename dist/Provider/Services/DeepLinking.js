@@ -109,10 +109,10 @@ class DeepLinking {
       'https://purl.imsglobal.org/spec/lti/claim/version': '1.3.0'
     }; // Adding messaging options
 
-    if (options.message) jwtBody['https://purl.imsglobal.org/spec/lti-dl/claim/msg'] = options.message;
-    if (options.errmessage) jwtBody['https://purl.imsglobal.org/spec/lti-dl/claim/errormsg '] = options.errmessage;
-    if (options.log) jwtBody['https://purl.imsglobal.org/spec/lti-dl/claim/log'] = options.log;
-    if (options.errlog) jwtBody['https://purl.imsglobal.org/spec/lti-dl/claim/errorlog'] = options.errlog; // Adding Data claim if it exists in initial request
+    if (options && options.message) jwtBody['https://purl.imsglobal.org/spec/lti-dl/claim/msg'] = options.message;
+    if (options && options.errmessage) jwtBody['https://purl.imsglobal.org/spec/lti-dl/claim/errormsg '] = options.errmessage;
+    if (options && options.log) jwtBody['https://purl.imsglobal.org/spec/lti-dl/claim/log'] = options.log;
+    if (options && options.errlog) jwtBody['https://purl.imsglobal.org/spec/lti-dl/claim/errorlog'] = options.errlog; // Adding Data claim if it exists in initial request
 
     if (idtoken.platformContext.deepLinkingSettings.data) jwtBody['https://purl.imsglobal.org/spec/lti-dl/claim/data'] = idtoken.platformContext.deepLinkingSettings.data;
     provDeepLinkingDebug('Sanitizing content item array based on the platform\'s requirements:');

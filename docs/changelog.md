@@ -9,6 +9,10 @@
 
 ### CHANGELOG
 
+#### V5.3.5
+> 2020-09-19
+> - Fixes Deep Linking bug where it would return an error if no option was passed. Added option parameter validation.
+
 #### V5.3.4
 > 2020-09-18
 > - Created new methods on Grades Service: getLineItemById(), updateLineItemById() and deleteLineItemById. Pending documentation.
