@@ -9,6 +9,10 @@
 
 ### CHANGELOG
 
+#### V5.3.6
+> 2020-09-20
+> - Minor change to error messages to improve consistency.
+
 #### V5.3.5
 > 2020-09-19
 > - Fixes Deep Linking bug where it would return an error if no option was passed. Added option parameter validation.

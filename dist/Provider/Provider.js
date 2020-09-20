@@ -422,7 +422,7 @@ class Provider {
             provMainDebug('Request body: ', req.body);
             provMainDebug('Passing request to invalid token handler');
             const errObj = {
-              message: 'No LTIK or IdToken found.',
+              message: 'NO_LTIK_OR_IDTOKEN_FOUND',
               bodyReceived: req.body
             };
             return res.redirect(req.baseUrl + (0, _classPrivateFieldGet2.default)(this, _invalidTokenRoute) + '?err=' + encodeURIComponent(JSON.stringify(errObj)));
@@ -514,8 +514,8 @@ class Provider {
         provAuthDebug(err);
         provMainDebug('Passing request to invalid token handler');
         const errObj = {
-          message: 'Error validating LTIK or IdToken',
-          errorLog: err.message
+          description: 'Error validating LTIK or IdToken',
+          message: err.message
         };
         return res.redirect(req.baseUrl + (0, _classPrivateFieldGet2.default)(this, _invalidTokenRoute) + '?err=' + encodeURIComponent(JSON.stringify(errObj)));
       }
@@ -528,9 +528,9 @@ class Provider {
       try {
         if (!params.iss || !params.login_hint || !params.target_link_uri) return res.status(400).send({
           status: 400,
-          error: 'Bad request',
+          error: 'Bad Request',
           details: {
-            errLog: 'MISSING_PARAMETERS'
+            message: 'MISSING_PARAMETERS'
           }
         });
         const iss = params.iss;
@@ -587,9 +587,9 @@ class Provider {
           provMainDebug('Unregistered platform attempting connection: ' + iss);
           return res.status(400).send({
             status: 400,
-            error: 'Bad request',
+            error: 'Bad Request',
             details: {
-              errLog: 'UNREGISTERED_PLATFORM'
+              message: 'UNREGISTERED_PLATFORM'
             }
           });
         }
@@ -599,7 +599,7 @@ class Provider {
           status: 500,
           error: 'Internal Server Error',
           details: {
-            errLog: err.message
+            message: err.message
           }
         });
       }

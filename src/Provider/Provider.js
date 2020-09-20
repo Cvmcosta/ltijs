@@ -306,7 +306,7 @@ class Provider {
             provMainDebug('Request body: ', req.body)
             provMainDebug('Passing request to invalid token handler')
             const errObj = {
-              message: 'No LTIK or IdToken found.',
+              message: 'NO_LTIK_OR_IDTOKEN_FOUND',
               bodyReceived: req.body
             }
             return res.redirect(req.baseUrl + this.#invalidTokenRoute + '?err=' + encodeURIComponent(JSON.stringify(errObj)))
@@ -384,8 +384,8 @@ class Provider {
         provAuthDebug(err)
         provMainDebug('Passing request to invalid token handler')
         const errObj = {
-          message: 'Error validating LTIK or IdToken',
-          errorLog: err.message
+          description: 'Error validating LTIK or IdToken',
+          message: err.message
         }
         return res.redirect(req.baseUrl + this.#invalidTokenRoute + '?err=' + encodeURIComponent(JSON.stringify(errObj)))
       }
@@ -396,7 +396,7 @@ class Provider {
     this.app.all(this.#loginRoute, async (req, res) => {
       const params = { ...req.query, ...req.body }
       try {
-        if (!params.iss || !params.login_hint || !params.target_link_uri) return res.status(400).send({ status: 400, error: 'Bad request', details: { errLog: 'MISSING_PARAMETERS' } })
+        if (!params.iss || !params.login_hint || !params.target_link_uri) return res.status(400).send({ status: 400, error: 'Bad Request', details: { message: 'MISSING_PARAMETERS' } })
         const iss = params.iss
         provMainDebug('Receiving a login request from: ' + iss)
         let platform
@@ -442,11 +442,11 @@ class Provider {
           }))
         } else {
           provMainDebug('Unregistered platform attempting connection: ' + iss)
-          return res.status(400).send({ status: 400, error: 'Bad request', details: { errLog: 'UNREGISTERED_PLATFORM' } })
+          return res.status(400).send({ status: 400, error: 'Bad Request', details: { message: 'UNREGISTERED_PLATFORM' } })
         }
       } catch (err) {
         provMainDebug(err)
-        return res.status(500).send({ status: 500, error: 'Internal Server Error', details: { errLog: err.message } })
+        return res.status(500).send({ status: 500, error: 'Internal Server Error', details: { message: err.message } })
       }
     })
 
