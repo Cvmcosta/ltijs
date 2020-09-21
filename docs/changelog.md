@@ -9,6 +9,12 @@
 
 ### CHANGELOG
 
+#### V5.3.7
+> 2020-09-21
+> - Changes to `platform.platformAuthConfig()` method, now accepts alterations to only one of the values.
+> - ScoreMaximum of grades is now only passed when scoreGiven is present.
+> - Created `resourceLinkId` option for names and roles service, representing the `rlid` option. 
+
 #### V5.3.6
 > 2020-09-20
 > - Minor change to error messages to improve consistency.

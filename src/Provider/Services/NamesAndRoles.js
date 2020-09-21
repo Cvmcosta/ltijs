@@ -25,6 +25,7 @@ class NamesAndRoles {
    * @param {Number} [options.limit] - Specifies maximum number of members per page.
    * @param {Number} [options.pages] - Specifies maximum number of pages returned.
    * @param {String} [options.url] - Specifies the initial members endpoint, usually retrieved from a previous incomplete request.
+   * @param {Boolean} [options.resourceLinkId = false] - Retrieve resource Link level memberships.
    */
   async getMembers (idtoken, options) {
     if (!idtoken) { provNamesAndRolesServiceDebug('Missing IdToken object.'); throw new Error('MISSING_ID_TOKEN') }
@@ -50,6 +51,10 @@ class NamesAndRoles {
     if (options && options.limit) {
       provNamesAndRolesServiceDebug('Adding limit parameter with value: ' + options.limit)
       query.push(['limit', options.limit])
+    }
+    if (options && options.resourceLinkId) {
+      provNamesAndRolesServiceDebug('Adding rlid parameter with value: ' + idtoken.platformContext.resource.id)
+      query.push(['rlid', idtoken.platformContext.resource.id])
     }
     if (options && options.pages) provNamesAndRolesServiceDebug('Maximum number of pages retrieved: ' + options.pages)
 

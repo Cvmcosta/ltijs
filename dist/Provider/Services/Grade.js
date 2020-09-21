@@ -306,7 +306,8 @@ class Grade {
     let response = await got.put(lineitemUrl, {
       json: lineItem,
       headers: {
-        Authorization: accessToken.token_type + ' ' + accessToken.access_token
+        Authorization: accessToken.token_type + ' ' + accessToken.access_token,
+        'Content-Type': 'application/vnd.ims.lis.v2.lineitem+json'
       }
     });
     response = JSON.parse(response.body);
@@ -435,7 +436,7 @@ class Grade {
         provGradeServiceDebug('Sending score to: ' + scoreUrl);
         if (options && options.userId) score.userId = options.userId;else score.userId = idtoken.user;
         score.timestamp = new Date(Date.now()).toISOString();
-        score.scoreMaximum = lineitem.scoreMaximum;
+        if (score.scoreGiven) score.scoreMaximum = lineitem.scoreMaximum;
         provGradeServiceDebug(score);
         await got.post(scoreUrl, {
           headers: {

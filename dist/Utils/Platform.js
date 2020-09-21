@@ -182,11 +182,10 @@ class Platform {
 
   async platformAuthConfig(method, key) {
     if (!method && !key) return (0, _classPrivateFieldGet2.default)(this, _authConfig2);
-    if (method !== 'RSA_KEY' && method !== 'JWK_KEY' && method !== 'JWK_SET') throw new Error('INVALID_METHOD. Details: Valid methods are "RSA_KEY", "JWK_KEY", "JWK_SET".');
-    if (!key) throw new Error('MISSING_KEY');
+    if (method && method !== 'RSA_KEY' && method !== 'JWK_KEY' && method !== 'JWK_SET') throw new Error('INVALID_METHOD. Details: Valid methods are "RSA_KEY", "JWK_KEY", "JWK_SET".');
     const authConfig = {
-      method: method,
-      key: key
+      method: method || (0, _classPrivateFieldGet2.default)(this, _authConfig2).method,
+      key: key || (0, _classPrivateFieldGet2.default)(this, _authConfig2).key
     };
     await (0, _classPrivateFieldGet2.default)(this, _Database).Modify(false, 'platform', {
       platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl),

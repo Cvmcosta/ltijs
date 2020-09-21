@@ -113,13 +113,11 @@ class Platform {
   async platformAuthConfig (method, key) {
     if (!method && !key) return this.#authConfig
 
-    if (method !== 'RSA_KEY' && method !== 'JWK_KEY' && method !== 'JWK_SET') throw new Error('INVALID_METHOD. Details: Valid methods are "RSA_KEY", "JWK_KEY", "JWK_SET".')
-
-    if (!key) throw new Error('MISSING_KEY')
+    if (method && method !== 'RSA_KEY' && method !== 'JWK_KEY' && method !== 'JWK_SET') throw new Error('INVALID_METHOD. Details: Valid methods are "RSA_KEY", "JWK_KEY", "JWK_SET".')
 
     const authConfig = {
-      method: method,
-      key: key
+      method: method || this.#authConfig.method,
+      key: key || this.#authConfig.key
     }
 
     await this.#Database.Modify(false, 'platform', { platformUrl: this.#platformUrl, clientId: this.#clientId }, { authConfig: authConfig })
