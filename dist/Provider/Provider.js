@@ -907,7 +907,7 @@ class Provider {
           clientId: platform.clientId
         });
         provMainDebug(err.message);
-        throw new Error(err);
+        throw new Error(err.message);
       }
     } else {
       provMainDebug('Platform already registered');
@@ -978,6 +978,103 @@ class Provider {
     const plat = result[0];
     const platform = new Platform(plat.platformName, plat.platformUrl, plat.clientId, plat.authEndpoint, plat.accesstokenEndpoint, plat.kid, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), plat.authConfig, this.Database);
     return platform;
+  }
+  /**
+   * @description Updates a platform by the platformId.
+   * @param {String} platformId - Platform Id.
+   * @param {Object} platformInfo - Update Information.
+   * @param {String} platformInfo.url - Platform url.
+   * @param {String} platformInfo.clientId - Platform clientId.
+   * @param {String} platformInfo.name - Platform nickname.
+   * @param {String} platformInfo.authenticationEndpoint - Authentication endpoint that the tool will use to authenticate within the platform.
+   * @param {String} platformInfo.accesstokenEndpoint - Access token endpoint that the tool will use to get an access token for the platform.
+   * @param {object} platformInfo.authConfig - Authentication method and key for verifying messages from the platform. {method: "RSA_KEY", key:"PUBLIC KEY..."}
+   * @param {String} platformInfo.authConfig.method - Method of authorization "RSA_KEY" or "JWK_KEY" or "JWK_SET".
+   * @param {String} platformInfo.authConfig.key - Either the RSA public key provided by the platform, or the JWK key, or the JWK keyset address.
+   * @returns {Promise<Array<Platform>, Platform | false>}
+   */
+
+
+  async updatePlatformById(platformId, platformInfo) {
+    const platform = await this.getPlatformById(platformId);
+    if (!platform) return false;
+    const oldURL = await platform.platformUrl();
+    const oldClientId = await platform.platformClientId();
+    const update = {
+      url: platformInfo.url || oldURL,
+      clientId: platformInfo.clientId || oldClientId,
+      name: platformInfo.name || (await platform.platformName()),
+      authenticationEndpoint: platformInfo.authenticationEndpoint || (await platform.platformAuthEndpoint()),
+      accesstokenEndpoint: platformInfo.accesstokenEndpoint || (await platform.platformAccessTokenEndpoint())
+    };
+    const authConfig = await platform.platformAuthConfig();
+    update.authConfig = authConfig;
+
+    if (platformInfo.authConfig) {
+      if (platformInfo.authConfig.method) update.authConfig.method = platformInfo.authConfig.method;
+      if (platformInfo.authConfig.key) update.authConfig.key = platformInfo.authConfig.key;
+    }
+
+    let alteredUrlClientIdFlag = false;
+
+    if (platformInfo.url || platformInfo.clientId) {
+      if (platformInfo.url !== oldURL || platformInfo.clientId !== oldClientId) alteredUrlClientIdFlag = true;
+    }
+
+    if (alteredUrlClientIdFlag) {
+      if (await this.Database.Get(false, 'platform', {
+        platformUrl: update.url,
+        clientId: update.clientId
+      })) throw new Error('URL_CLIENT_ID_COMBINATION_ALREADY_EXISTS');
+    }
+
+    try {
+      if (alteredUrlClientIdFlag) {
+        await this.Database.Modify(false, 'publickey', {
+          kid: platformId
+        }, {
+          platformUrl: update.url,
+          clientId: update.clientId
+        });
+        await this.Database.Modify(false, 'privatekey', {
+          kid: platformId
+        }, {
+          platformUrl: update.url,
+          clientId: update.clientId
+        });
+      }
+
+      await this.Database.Modify(false, 'platform', {
+        kid: platformId
+      }, {
+        platformUrl: update.url,
+        clientId: update.clientId,
+        platformName: update.name,
+        authEndpoint: update.authenticationEndpoint,
+        accesstokenEndpoint: update.accesstokenEndpoint,
+        authConfig: update.authConfig
+      });
+      const platform = new Platform(update.name, update.url, update.clientId, update.authenticationEndpoint, update.accesstokenEndpoint, platformId, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), update.authConfig, this.Database);
+      return platform;
+    } catch (err) {
+      if (alteredUrlClientIdFlag) {
+        await this.Database.Modify(false, 'publickey', {
+          kid: platformId
+        }, {
+          platformUrl: oldURL,
+          clientId: oldClientId
+        });
+        await this.Database.Modify(false, 'privatekey', {
+          kid: platformId
+        }, {
+          platformUrl: oldURL,
+          clientId: oldClientId
+        });
+      }
+
+      provMainDebug(err.message);
+      throw new Error(err.message);
+    }
   }
   /**
      * @description Deletes a platform.

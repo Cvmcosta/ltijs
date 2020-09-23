@@ -9,6 +9,10 @@
 
 ### CHANGELOG
 
+#### V5.3.8
+> 2020-09-23
+> - Added lti.updatePlatformById() method. Documentation pending.
+
 #### V5.3.7
 > 2020-09-21
 > - Changes to `platform.platformAuthConfig()` method, now accepts alterations to only one of the values.
