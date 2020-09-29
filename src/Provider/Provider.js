@@ -174,7 +174,7 @@ class Provider {
       provMainDebug('Path does not match reserved endpoints')
 
       try {
-        // Retrieving LTIK token
+        // Retrieving ltik token
         const ltik = req.token
         // Retrieving cookies
         const cookies = req.signedCookies
@@ -263,7 +263,7 @@ class Provider {
             // Creates platform session cookie
             if (!this.#ltiaas) res.cookie(platformCode, valid.sub, this.#cookieOptions)
 
-            provMainDebug('Generating LTIK and redirecting to endpoint')
+            provMainDebug('Generating ltik')
             const newLtikObj = {
               platformUrl: valid.iss,
               clientId: clientId,
@@ -275,6 +275,24 @@ class Provider {
             }
             // Signing context token
             const newLtik = jwt.sign(newLtikObj, this.#ENCRYPTIONKEY)
+
+            if (this.#ltiaas) {
+              // Appending query parameters
+              if (savedState) {
+                for (const [key, value] of Object.entries(savedState[0].query)) {
+                  req.query[key] = value
+                }
+              }
+
+              // Creating local variables
+              res.locals.context = JSON.parse(JSON.stringify(contextToken))
+              res.locals.token = JSON.parse(JSON.stringify(platformToken))
+              res.locals.token.platformContext = res.locals.context
+              res.locals.ltik = newLtik
+              provMainDebug('Forwarding request to next handler')
+              return next()
+            }
+
             // Appending query parameters
             const query = new URLSearchParams(req.query)
             if (savedState) {
@@ -284,7 +302,7 @@ class Provider {
             }
             query.append('ltik', newLtik)
             const urlSearchParams = query.toString()
-
+            provMainDebug('Redirecting to endpoint with ltik')
             return res.redirect(req.baseUrl + req.path + '?' + urlSearchParams)
           } else {
             const state = req.body.state
@@ -302,7 +320,7 @@ class Provider {
               provMainDebug('Accessing as whitelisted route')
               return next()
             }
-            provMainDebug('No LTIK found')
+            provMainDebug('No ltik found')
             provMainDebug('Request body: ', req.body)
             provMainDebug('Passing request to invalid token handler')
             const errObj = {
@@ -313,7 +331,7 @@ class Provider {
           }
         }
 
-        provMainDebug('LTIK found')
+        provMainDebug('Ltik found')
         let validLtik
         try {
           validLtik = jwt.verify(ltik, this.#ENCRYPTIONKEY)
@@ -327,7 +345,7 @@ class Provider {
           }
           throw new Error(err.message)
         }
-        provMainDebug('LTIK successfully verified')
+        provMainDebug('Ltik successfully verified')
 
         const platformUrl = validLtik.platformUrl
         const platformCode = validLtik.platformCode
@@ -384,7 +402,7 @@ class Provider {
         provAuthDebug(err)
         provMainDebug('Passing request to invalid token handler')
         const errObj = {
-          description: 'Error validating LTIK or IdToken',
+          description: 'Error validating ltik or IdToken',
           message: err.message
         }
         return res.redirect(req.baseUrl + this.#invalidTokenRoute + '?err=' + encodeURIComponent(JSON.stringify(errObj)))
