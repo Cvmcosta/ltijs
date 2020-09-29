@@ -46,7 +46,7 @@ class NamesAndRoles {
    * @param {Object} options - Request options.
    * @param {String} [options.role] - Specific role to be returned.
    * @param {Number} [options.limit] - Specifies maximum number of members per page.
-   * @param {Number} [options.pages] - Specifies maximum number of pages returned.
+   * @param {Number} [options.pages = 1] - Specifies maximum number of pages returned. Defaults to 1.
    * @param {String} [options.url] - Specifies the initial members endpoint, usually retrieved from a previous incomplete request.
    * @param {Boolean} [options.resourceLinkId = false] - Retrieve resource Link level memberships.
    */
@@ -70,6 +70,8 @@ class NamesAndRoles {
     provNamesAndRolesServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']');
     const tokenRes = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly');
     provNamesAndRolesServiceDebug('Access_token retrieved for [' + idtoken.iss + ']');
+    let pages = 1; // Page limit
+
     let query = [];
 
     if (options && options.role) {
@@ -87,7 +89,11 @@ class NamesAndRoles {
       query.push(['rlid', idtoken.platformContext.resource.id]);
     }
 
-    if (options && options.pages) provNamesAndRolesServiceDebug('Maximum number of pages retrieved: ' + options.pages);
+    if (options && options.pages) {
+      provNamesAndRolesServiceDebug('Maximum number of pages retrieved: ' + options.pages);
+      pages = options.pages;
+    }
+
     if (query.length > 0) query = new URLSearchParams(query);else query = false;
     let next = idtoken.platformContext.namesRoles.context_memberships_url;
 
@@ -101,7 +107,7 @@ class NamesAndRoles {
     let curPage = 1;
 
     do {
-      if (options && options.pages && curPage > options.pages) {
+      if (curPage > pages) {
         if (next) result.next = next;
         break;
       }

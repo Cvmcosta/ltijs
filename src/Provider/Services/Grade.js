@@ -115,53 +115,6 @@ class Grade {
   }
 
   /**
-   * @description Deletes lineitems from a given platform
-   * @param {Object} idtoken - Idtoken for the user
-   * @param {Object} [options] - Options object
-   * @param {Boolean} [options.resourceLinkId = false] - Filters line items based on the resourceLinkId of the resource that originated the request
-   * @param {String} [options.resourceId = false] - Filters line items based on the resourceId
-   * @param {String} [options.tag = false] - Filters line items based on the tag
-   * @param {Number} [options.limit = false] - Sets a maximum number of line items to be deleted
-   * @param {String} [options.id = false] - Filters line items based on the id
-   * @param {String} [options.label = false] - Filters line items based on the label
-   */
-  async deleteLineItems (idtoken, options) {
-    if (!idtoken) { provGradeServiceDebug('Missing IdToken object.'); throw new Error('MISSING_ID_TOKEN') }
-
-    provGradeServiceDebug('Target platform: ' + idtoken.iss)
-
-    const platform = await this.#getPlatform(idtoken.iss, idtoken.clientId, this.#ENCRYPTIONKEY, this.#Database)
-
-    if (!platform) {
-      provGradeServiceDebug('Platform not found')
-      throw new Error('PLATFORM_NOT_FOUND')
-    }
-
-    provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']')
-    const accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem')
-    provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']')
-
-    const lineItems = await this.getLineItems(idtoken, options, accessToken)
-
-    const result = { success: [], failure: [] }
-    for (const lineitem of lineItems) {
-      try {
-        const lineitemUrl = lineitem.id
-
-        provGradeServiceDebug('Deleting: ' + lineitemUrl)
-        await got.delete(lineitemUrl, { headers: { Authorization: accessToken.token_type + ' ' + accessToken.access_token } })
-        provGradeServiceDebug('LineItem sucessfully deleted')
-        result.success.push({ lineitem: lineitemUrl })
-      } catch (err) {
-        provGradeServiceDebug(err)
-        result.failure.push({ lineitem: lineitem.id, error: err.message })
-        continue
-      }
-    }
-    return result
-  }
-
-  /**
    * @description Gets LineItem by the ID
    * @param {Object} idtoken - Idtoken for the user
    * @param {String} lineItemId - LineItem ID.
@@ -256,19 +209,171 @@ class Grade {
   }
 
   /**
-     * @description Publishes a score or grade to a platform. Represents the Score Publish service described in the lti 1.3 specification
-     * @param {Object} idtoken - Idtoken for the user
-     * @param {Object} score - Score/Grade following the Lti Standard application/vnd.ims.lis.v1.score+json
-     * @param {Object} [options] - Options object
-     * @param {Object} [options.autoCreate] - Line item that will be created automatically if it does not exist
-     * @param {String} [options.userId = false] - Send score to a specific user. If no userId is provided, the score is sent to the user that initiated the request
-     * @param {Boolean} [options.resourceLinkId = true] - Filters line items based on the resourceLinkId of the resource that originated the request. Defaults to true
-     * @param {String} [options.resourceId = false] - Filters line items based on the resourceId
-     * @param {String} [options.tag = false] - Filters line items based on the tag
-     * @param {Number} [options.limit = false] - Sets a maximum number of line items to be reached
-     * @param {String} [options.id = false] - Filters line items based on the id
-     * @param {String} [options.label = false] - Filters line items based on the label
-     */
+   * @description Publishes a score or grade to a lineItem. Represents the Score Publish service described in the lti 1.3 specification.
+   * @param {Object} idtoken - Idtoken for the user.
+   * @param {String} lineItemId - LineItem ID.
+   * @param {Object} score - Score/Grade following the LTI Standard application/vnd.ims.lis.v1.score+json.
+   */
+  async submitScore (idtoken, lineItemId, score) {
+    if (!idtoken) { provGradeServiceDebug('Missing IdToken object.'); throw new Error('MISSING_ID_TOKEN') }
+    if (!lineItemId) { provGradeServiceDebug('Missing lineItemID.'); throw new Error('MISSING_LINEITEM_ID') }
+    if (!score) { provGradeServiceDebug('Score object missing.'); throw new Error('MISSING_SCORE') }
+    provGradeServiceDebug('Target platform: ' + idtoken.iss)
+
+    const platform = await this.#getPlatform(idtoken.iss, idtoken.clientId, this.#ENCRYPTIONKEY, this.#Database)
+
+    if (!platform) {
+      provGradeServiceDebug('Platform not found')
+      throw new Error('PLATFORM_NOT_FOUND')
+    }
+
+    provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']')
+    const accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem https://purl.imsglobal.org/spec/lti-ags/scope/score')
+    provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']')
+
+    // Creating scores URL
+    const lineitemUrl = lineItemId
+    let scoreUrl = lineitemUrl + '/scores'
+    if (lineitemUrl.indexOf('?') !== -1) {
+      const query = lineitemUrl.split('\?')[1]
+      const url = lineitemUrl.split('\?')[0]
+      scoreUrl = url + '/scores?' + query
+    }
+
+    // Creating scoreMaximum if it is not present and scoreGiven exists
+    if (score.scoreGiven !== undefined && score.scoreMaximum === undefined) {
+      const lineItem = await this.getLineItemById(idtoken, lineItemId, accessToken)
+      score.scoreMaximum = lineItem.scoreMaximum
+    }
+    // If no user is specified, sends the score to the user that originated request
+    if (score.userId === undefined) score.userId = idtoken.user
+    // Creating timestamp
+    score.timestamp = new Date(Date.now()).toISOString()
+
+    provGradeServiceDebug('Sending score to: ' + scoreUrl)
+    provGradeServiceDebug(score)
+
+    await got.post(scoreUrl, { headers: { Authorization: accessToken.token_type + ' ' + accessToken.access_token, 'Content-Type': 'application/vnd.ims.lis.v1.score+json' }, json: score })
+    provGradeServiceDebug('Score successfully sent')
+    return score
+  }
+
+  /**
+   * @description Retrieves scores from a lineItem. Represents the Result service described in the lti 1.3 specification.
+   * @param {Object} idtoken - Idtoken for the user.
+   * @param {String} lineItemId - LineItem ID.
+   * @param {Object} [options] - Options object.
+   * @param {String} [options.userId = false] - Filters based on the userId.
+   * @param {Number} [options.limit = false] - Sets a maximum number of results to be returned.
+   */
+  async getScores (idtoken, lineItemId, options) {
+    if (!idtoken) { provGradeServiceDebug('Missing IdToken object.'); throw new Error('MISSING_ID_TOKEN') }
+    if (!lineItemId) { provGradeServiceDebug('Missing lineItemID.'); throw new Error('MISSING_LINEITEM_ID') }
+
+    provGradeServiceDebug('Target platform: ' + idtoken.iss)
+
+    const platform = await this.#getPlatform(idtoken.iss, idtoken.clientId, this.#ENCRYPTIONKEY, this.#Database)
+
+    if (!platform) {
+      provGradeServiceDebug('Platform not found')
+      throw new Error('PLATFORM_NOT_FOUND')
+    }
+
+    provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']')
+    const accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly')
+    provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']')
+
+    // Creating results URL
+    const lineitemUrl = lineItemId
+    let query = []
+    let resultsUrl = lineitemUrl + '/results'
+    if (lineitemUrl.indexOf('?') !== -1) {
+      query = Array.from(new URLSearchParams(lineitemUrl.split('\?')[1]))
+      const url = lineitemUrl.split('\?')[0]
+      resultsUrl = url + '/results'
+    }
+
+    // Creating query parameters
+    const queryParams = []
+    if (options) {
+      if (options.userId) queryParams.push(['user_id', options.userId])
+      if (options.limit) queryParams.push(['limit', options.limit])
+    }
+    let searchParams = [...queryParams, ...query]
+    searchParams = new URLSearchParams(searchParams)
+
+    provGradeServiceDebug('Requesting results from: ' + resultsUrl)
+    const results = await got.get(resultsUrl, { searchParams: searchParams, headers: { Authorization: accessToken.token_type + ' ' + accessToken.access_token, Accept: 'application/vnd.ims.lis.v2.resultcontainer+json' } }).json()
+    return results
+  }
+
+  // Deprecated methods, these methods will be removed in version 6.0
+
+  /* istanbul ignore next */
+  /**
+   * @deprecated
+   * @description Deletes lineitems from a given platform. Deprecated in favor of deleteLineItemById.
+   * @param {Object} idtoken - Idtoken for the user
+   * @param {Object} [options] - Options object
+   * @param {Boolean} [options.resourceLinkId = false] - Filters line items based on the resourceLinkId of the resource that originated the request
+   * @param {String} [options.resourceId = false] - Filters line items based on the resourceId
+   * @param {String} [options.tag = false] - Filters line items based on the tag
+   * @param {Number} [options.limit = false] - Sets a maximum number of line items to be deleted
+   * @param {String} [options.id = false] - Filters line items based on the id
+   * @param {String} [options.label = false] - Filters line items based on the label
+   */
+  async deleteLineItems (idtoken, options) {
+    if (!idtoken) { provGradeServiceDebug('Missing IdToken object.'); throw new Error('MISSING_ID_TOKEN') }
+
+    provGradeServiceDebug('Target platform: ' + idtoken.iss)
+
+    const platform = await this.#getPlatform(idtoken.iss, idtoken.clientId, this.#ENCRYPTIONKEY, this.#Database)
+
+    if (!platform) {
+      provGradeServiceDebug('Platform not found')
+      throw new Error('PLATFORM_NOT_FOUND')
+    }
+
+    provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']')
+    const accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem')
+    provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']')
+
+    const lineItems = await this.getLineItems(idtoken, options, accessToken)
+
+    const result = { success: [], failure: [] }
+    for (const lineitem of lineItems) {
+      try {
+        const lineitemUrl = lineitem.id
+
+        provGradeServiceDebug('Deleting: ' + lineitemUrl)
+        await got.delete(lineitemUrl, { headers: { Authorization: accessToken.token_type + ' ' + accessToken.access_token } })
+        provGradeServiceDebug('LineItem sucessfully deleted')
+        result.success.push({ lineitem: lineitemUrl })
+      } catch (err) {
+        provGradeServiceDebug(err)
+        result.failure.push({ lineitem: lineitem.id, error: err.message })
+        continue
+      }
+    }
+    return result
+  }
+
+  /* istanbul ignore next */
+  /**
+   * @deprecated
+   * @description Publishes a score or grade to a platform. Deprecated in favor of sendScores, that send scores to a specific lineItem.
+   * @param {Object} idtoken - Idtoken for the user
+   * @param {Object} score - Score/Grade following the Lti Standard application/vnd.ims.lis.v1.score+json
+   * @param {Object} [options] - Options object
+   * @param {Object} [options.autoCreate] - Line item that will be created automatically if it does not exist
+   * @param {String} [options.userId = false] - Send score to a specific user. If no userId is provided, the score is sent to the user that initiated the request
+   * @param {Boolean} [options.resourceLinkId = true] - Filters line items based on the resourceLinkId of the resource that originated the request. Defaults to true
+   * @param {String} [options.resourceId = false] - Filters line items based on the resourceId
+   * @param {String} [options.tag = false] - Filters line items based on the tag
+   * @param {Number} [options.limit = false] - Sets a maximum number of line items to be reached
+   * @param {String} [options.id = false] - Filters line items based on the id
+   * @param {String} [options.label = false] - Filters line items based on the label
+   */
   async scorePublish (idtoken, score, options) {
     if (!idtoken) { provGradeServiceDebug('Missing IdToken object.'); throw new Error('MISSING_ID_TOKEN') }
     if (!score) { provGradeServiceDebug('Score object missing.'); throw new Error('MISSING_SCORE') }
@@ -341,8 +446,10 @@ class Grade {
     return result
   }
 
+  /* istanbul ignore next */
   /**
-   * @description Retrieves a certain lineitem's results. Represents the Result service described in the lti 1.3 specification
+   * @deprecated
+   * @description Retrieves a certain lineitem's results. Deprecated in favor of getScores that retrieves scores from a specific lineItem.
    * @param {Object} idtoken - Idtoken for the user
    * @param {Object} [options] - Options object
    * @param {String} [options.userId = false] - Filters based on the userId
@@ -429,8 +536,6 @@ class Grade {
     }
     return resultsArray
   }
-
-  // Deprecated methods, these methods will be removed in version 6.0
 
   /* istanbul ignore next */
   /**
