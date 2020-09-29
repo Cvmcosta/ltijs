@@ -561,7 +561,9 @@ class Provider {
           provMainDebug('Redirecting to platform authentication endpoint'); // Create state parameter used to validade authentication response
 
           let state = encodeURIComponent(crypto.randomBytes(25).toString('hex'));
-          provMainDebug('Target Link URI: ', params.target_link_uri); // Cleaning up target link uri and retrieving query parameters
+          provMainDebug('Target Link URI: ', params.target_link_uri);
+          /* istanbul ignore next */
+          // Cleaning up target link uri and retrieving query parameters
 
           if (params.target_link_uri.includes('?')) {
             // Retrieve raw queries
@@ -622,7 +624,9 @@ class Provider {
           }
         });
       }
-    }); // Session timeout, invalid token and keyset methods
+    });
+    /* istanbul ignore next */
+    // Session timeout, invalid token and keyset methods
 
     this.app.all((0, _classPrivateFieldGet2.default)(this, _sessionTimeoutRoute), async (req, res, next) => {
       res.locals.err = {

@@ -18,6 +18,7 @@ class Auth {
     let kid = crypto.randomBytes(16).toString('hex')
 
     while (await Database.Get(false, 'publickey', { kid: kid })) {
+      /* istanbul ignore next */
       kid = crypto.randomBytes(16).toString('hex')
     }
 
@@ -86,7 +87,7 @@ class Auth {
     if (!platform) throw new Error('UNREGISTERED_PLATFORM')
 
     const authConfig = await platform.platformAuthConfig()
-
+    /* istanbul ignore next */
     switch (authConfig.method) {
       case 'JWK_SET': {
         provAuthDebug('Retrieving key from jwk_set')

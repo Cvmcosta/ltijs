@@ -37,6 +37,7 @@ class Grade {
     if (!accessToken) {
       const platform = await this.#getPlatform(idtoken.iss, idtoken.clientId, this.#ENCRYPTIONKEY, this.#Database) // Remove and use DB instead
 
+      /* istanbul ignore next */
       if (!platform) {
         provGradeServiceDebug('Platform not found')
         throw new Error('PLATFORM_NOT_FOUND')
@@ -93,6 +94,7 @@ class Grade {
     if (!accessToken) {
       const platform = await this.#getPlatform(idtoken.iss, idtoken.clientId, this.#ENCRYPTIONKEY, this.#Database)
 
+      /* istanbul ignore next */
       if (!platform) {
         provGradeServiceDebug('Platform not found')
         throw new Error('PLATFORM_NOT_FOUND')
@@ -128,6 +130,7 @@ class Grade {
     if (!accessToken) {
       const platform = await this.#getPlatform(idtoken.iss, idtoken.clientId, this.#ENCRYPTIONKEY, this.#Database) // Remove and use DB instead
 
+      /* istanbul ignore next */
       if (!platform) {
         provGradeServiceDebug('Platform not found')
         throw new Error('PLATFORM_NOT_FOUND')
@@ -162,6 +165,7 @@ class Grade {
 
     const platform = await this.#getPlatform(idtoken.iss, idtoken.clientId, this.#ENCRYPTIONKEY, this.#Database)
 
+    /* istanbul ignore next */
     if (!platform) {
       provGradeServiceDebug('Platform not found')
       throw new Error('PLATFORM_NOT_FOUND')
@@ -192,6 +196,7 @@ class Grade {
 
     const platform = await this.#getPlatform(idtoken.iss, idtoken.clientId, this.#ENCRYPTIONKEY, this.#Database)
 
+    /* istanbul ignore next */
     if (!platform) {
       provGradeServiceDebug('Platform not found')
       throw new Error('PLATFORM_NOT_FOUND')
@@ -222,6 +227,7 @@ class Grade {
 
     const platform = await this.#getPlatform(idtoken.iss, idtoken.clientId, this.#ENCRYPTIONKEY, this.#Database)
 
+    /* istanbul ignore next */
     if (!platform) {
       provGradeServiceDebug('Platform not found')
       throw new Error('PLATFORM_NOT_FOUND')
@@ -274,6 +280,7 @@ class Grade {
 
     const platform = await this.#getPlatform(idtoken.iss, idtoken.clientId, this.#ENCRYPTIONKEY, this.#Database)
 
+    /* istanbul ignore next */
     if (!platform) {
       provGradeServiceDebug('Platform not found')
       throw new Error('PLATFORM_NOT_FOUND')

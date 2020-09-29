@@ -428,6 +428,7 @@ class Provider {
           let state = encodeURIComponent(crypto.randomBytes(25).toString('hex'))
 
           provMainDebug('Target Link URI: ', params.target_link_uri)
+          /* istanbul ignore next */
           // Cleaning up target link uri and retrieving query parameters
           if (params.target_link_uri.includes('?')) {
             // Retrieve raw queries
@@ -467,7 +468,7 @@ class Provider {
         return res.status(500).send({ status: 500, error: 'Internal Server Error', details: { message: err.message } })
       }
     })
-
+    /* istanbul ignore next */
     // Session timeout, invalid token and keyset methods
     this.app.all(this.#sessionTimeoutRoute, async (req, res, next) => {
       res.locals.err = {
