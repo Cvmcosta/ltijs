@@ -9,6 +9,12 @@
 
 ### CHANGELOG
 
+#### V5.3.9
+> 2020-09-29
+> - Added new methods `submitScore` and `getScores` to Grades service that target one specific lineitem receiving the lineItemId as parameter. The `scorePublish` and `result` methods will be deprecated in favor of a less error prone way of accessing the Grades service.
+> - Memberships method `getMembers` now has the `pages` parameter set to 1 by default.
+> - Update Ltijs logo figlet.
+
 #### V5.3.8
 > 2020-09-23
 > - Added lti.updatePlatformById() method. Documentation pending.
