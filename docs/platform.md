@@ -150,9 +150,9 @@ Sets/Gets the platform authorization configurations used to validate it's messag
 
 
 
-#### async Platform.platformAuthEndpoint([authEndpoint]) 
+#### async Platform.platformAuthenticationEndpoint([authenticationEndpoint]) 
 
-Sets/Gets the platform authorization endpoint used to perform the OIDC login.
+Sets/Gets the platform authentication endpoint used to perform the OIDC login.
 
 
 ##### Parameters
@@ -214,6 +214,16 @@ Gets the platform access token or attempts to generate a new one.
 
 - Promise that resolves the `platform access token endpoint` for the given scopes.
 
+
+#### async Platform.platformJSON() 
+
+Retrieves the platform information as a JSON object.
+
+
+##### Returns
+
+
+- JSON object containing the platform information.
 
 
 

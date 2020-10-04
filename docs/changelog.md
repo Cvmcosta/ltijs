@@ -9,6 +9,13 @@
 
 ### CHANGELOG
 
+#### V5.4.0
+> 2020-10-02
+> - Created new `Platform.platformJSON()` that returns the platform information as a JSON object.
+> - Deprecated `Platform.platformAuthEndpoint()` in favor of `Platform.platformAuthenticationEndpoint()` to improve overall consistency.
+> - Added catch block to invalidTokenCallback handler in order to prevent errors when receiving invalid JSON as error message.
+
+
 #### V5.3.9
 > 2020-09-29
 > - Added new methods `submitScore` and `getScores` to Grades service that target one specific lineitem receiving the lineItemId as parameter. The `scorePublish` and `result` methods will be deprecated in favor of a less error prone way of accessing the Grades service.

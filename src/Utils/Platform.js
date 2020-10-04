@@ -13,7 +13,7 @@ class Platform {
 
   #clientId
 
-  #authEndpoint
+  #authenticationEndpoint
 
   #authConfig
 
@@ -42,7 +42,7 @@ class Platform {
     this.#platformName = name
     this.#platformUrl = platformUrl
     this.#clientId = clientId
-    this.#authEndpoint = authenticationEndpoint
+    this.#authenticationEndpoint = authenticationEndpoint
     this.#accesstokenEndpoint = accesstokenEndpoint
     this.#kid = kid
     this.#Database = Database
@@ -126,14 +126,14 @@ class Platform {
   }
 
   /**
-     * @description Sets/Gets the platform authorization endpoint used to perform the OIDC login.
-     * @param {string} [authEndpoint] - Platform authorization endpoint.
-     */
-  async platformAuthEndpoint (authEndpoint) {
-    if (!authEndpoint) return this.#authEndpoint
-    await this.#Database.Modify(false, 'platform', { platformUrl: this.#platformUrl, clientId: this.#clientId }, { authEndpoint: authEndpoint })
-    this.#authEndpoint = authEndpoint
-    return authEndpoint
+   * @description Sets/Gets the platform authorization endpoint used to perform the OIDC login.
+   * @param {string} [authenticationEndpoint - Platform authentication endpoint.
+   */
+  async platformAuthenticationEndpoint (authenticationEndpoint) {
+    if (!authenticationEndpoint) return this.#authenticationEndpoint
+    await this.#Database.Modify(false, 'platform', { platformUrl: this.#platformUrl, clientId: this.#clientId }, { authEndpoint: authenticationEndpoint })
+    this.#authenticationEndpoint = authenticationEndpoint
+    return authenticationEndpoint
   }
 
   /**
@@ -168,6 +168,23 @@ class Platform {
   }
 
   /**
+   * @description Retrieves the platform information as a JSON object.
+   */
+  async platformJSON () {
+    const platformJSON = {
+      id: this.#kid,
+      url: this.#platformUrl,
+      clientId: this.#clientId,
+      name: this.#platformName,
+      authenticationEndpoint: this.#authenticationEndpoint,
+      accesstokenEndpoint: this.#accesstokenEndpoint,
+      authConfig: this.#authConfig,
+      publicKey: await this.platformPublicKey()
+    }
+    return platformJSON
+  }
+
+  /**
    * @description Deletes a registered platform.
    */
   async delete () {
@@ -177,12 +194,23 @@ class Platform {
     return true
   }
 
+  /* istanbul ignore next */
   /**
    * @deprecated
    */
   async remove () {
     console.log('Deprecation warning: The Platform.remove() method is now deprecated and will be removed in the 6.0 release. Use Platform.delete() instead.')
     return this.delete()
+  }
+
+  /* istanbul ignore next */
+  /**
+   * @description Sets/Gets the platform authorization endpoint used to perform the OIDC login.
+   * @param {string} [authenticationEndpoint] - Platform authentication endpoint.
+   * @deprecated
+   */
+  async platformAuthEndpoint (authenticationEndpoint) {
+    return this.platformAuthenticationEndpoint(authenticationEndpoint)
   }
 }
 

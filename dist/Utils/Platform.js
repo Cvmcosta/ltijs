@@ -21,7 +21,7 @@ var _platformUrl = new WeakMap();
 
 var _clientId = new WeakMap();
 
-var _authEndpoint = new WeakMap();
+var _authenticationEndpoint = new WeakMap();
 
 var _authConfig2 = new WeakMap();
 
@@ -60,7 +60,7 @@ class Platform {
       value: void 0
     });
 
-    _authEndpoint.set(this, {
+    _authenticationEndpoint.set(this, {
       writable: true,
       value: void 0
     });
@@ -95,7 +95,7 @@ class Platform {
     (0, _classPrivateFieldSet2.default)(this, _platformName, name);
     (0, _classPrivateFieldSet2.default)(this, _platformUrl, platformUrl);
     (0, _classPrivateFieldSet2.default)(this, _clientId, clientId);
-    (0, _classPrivateFieldSet2.default)(this, _authEndpoint, authenticationEndpoint);
+    (0, _classPrivateFieldSet2.default)(this, _authenticationEndpoint, authenticationEndpoint);
     (0, _classPrivateFieldSet2.default)(this, _accesstokenEndpoint, accesstokenEndpoint);
     (0, _classPrivateFieldSet2.default)(this, _kid, kid);
     (0, _classPrivateFieldSet2.default)(this, _Database, Database);
@@ -197,21 +197,21 @@ class Platform {
     return authConfig;
   }
   /**
-     * @description Sets/Gets the platform authorization endpoint used to perform the OIDC login.
-     * @param {string} [authEndpoint] - Platform authorization endpoint.
-     */
+   * @description Sets/Gets the platform authorization endpoint used to perform the OIDC login.
+   * @param {string} [authenticationEndpoint - Platform authentication endpoint.
+   */
 
 
-  async platformAuthEndpoint(authEndpoint) {
-    if (!authEndpoint) return (0, _classPrivateFieldGet2.default)(this, _authEndpoint);
+  async platformAuthenticationEndpoint(authenticationEndpoint) {
+    if (!authenticationEndpoint) return (0, _classPrivateFieldGet2.default)(this, _authenticationEndpoint);
     await (0, _classPrivateFieldGet2.default)(this, _Database).Modify(false, 'platform', {
       platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl),
       clientId: (0, _classPrivateFieldGet2.default)(this, _clientId)
     }, {
-      authEndpoint: authEndpoint
+      authEndpoint: authenticationEndpoint
     });
-    (0, _classPrivateFieldSet2.default)(this, _authEndpoint, authEndpoint);
-    return authEndpoint;
+    (0, _classPrivateFieldSet2.default)(this, _authenticationEndpoint, authenticationEndpoint);
+    return authenticationEndpoint;
   }
   /**
      * @description Sets/Gets the platform access token endpoint used to authenticate messages to the platform.
@@ -255,6 +255,24 @@ class Platform {
     }
   }
   /**
+   * @description Retrieves the platform information as a JSON object.
+   */
+
+
+  async platformJSON() {
+    const platformJSON = {
+      id: (0, _classPrivateFieldGet2.default)(this, _kid),
+      url: (0, _classPrivateFieldGet2.default)(this, _platformUrl),
+      clientId: (0, _classPrivateFieldGet2.default)(this, _clientId),
+      name: (0, _classPrivateFieldGet2.default)(this, _platformName),
+      authenticationEndpoint: (0, _classPrivateFieldGet2.default)(this, _authenticationEndpoint),
+      accesstokenEndpoint: (0, _classPrivateFieldGet2.default)(this, _accesstokenEndpoint),
+      authConfig: (0, _classPrivateFieldGet2.default)(this, _authConfig2),
+      publicKey: await this.platformPublicKey()
+    };
+    return platformJSON;
+  }
+  /**
    * @description Deletes a registered platform.
    */
 
@@ -272,6 +290,8 @@ class Platform {
     });
     return true;
   }
+  /* istanbul ignore next */
+
   /**
    * @deprecated
    */
@@ -280,6 +300,18 @@ class Platform {
   async remove() {
     console.log('Deprecation warning: The Platform.remove() method is now deprecated and will be removed in the 6.0 release. Use Platform.delete() instead.');
     return this.delete();
+  }
+  /* istanbul ignore next */
+
+  /**
+   * @description Sets/Gets the platform authorization endpoint used to perform the OIDC login.
+   * @param {string} [authenticationEndpoint] - Platform authentication endpoint.
+   * @deprecated
+   */
+
+
+  async platformAuthEndpoint(authenticationEndpoint) {
+    return this.platformAuthenticationEndpoint(authenticationEndpoint);
   }
 
 }

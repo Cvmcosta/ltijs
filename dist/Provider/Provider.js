@@ -639,7 +639,17 @@ class Provider {
       (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutCallback2).call(this, req, res, next);
     });
     this.app.all((0, _classPrivateFieldGet2.default)(this, _invalidTokenRoute), async (req, res, next) => {
-      const errObj = JSON.parse(decodeURIComponent(req.query.err));
+      let errObj;
+      /* istanbul ignore next */
+
+      try {
+        errObj = JSON.parse(decodeURIComponent(req.query.err));
+      } catch (err) {
+        errObj = {
+          message: 'Failed idToken validation.'
+        };
+      }
+
       res.locals.err = {
         status: 401,
         error: 'Unauthorized',
