@@ -116,9 +116,17 @@ The `getMembers()` method allows us to apply filters to the request, and these f
   const result = await lti.NamesAndRoles.getMembers(res.locals.token, { role: 'Learner', limit: 10, pages: 2 })
   ```
 
+ - **options.resourceLinkId**
+
+ Accesses the Platform's Resource Link level membership service. This parameter will only take effect if the current context has a `resourceLinkId`.
+
+   ```javascript
+  const result = await lti.NamesAndRoles.getMembers(res.locals.token, { resourceLinkId: true, role: 'Learner', limit: 10, pages: 2 })
+  ```
+
 - **options.url** 
 
-  In case not all members were retrieved when the page limit was reached, the returned object will contain a `next` field holding an url that can be used to retrieve the remaining members. This url can be passed through the `options.url` parameter. (**If the `options.url` parameter is present, the `limit` and `role` filters are ignored, instead, the filters applied on the initial request will be maintained**)
+  In case not all members were retrieved when the page limit was reached, the returned object will contain a `next` field holding an url that can be used to retrieve the remaining members. This url can be passed through the `options.url` parameter. (**If the `options.url` parameter is present, the `limit`, `role` and `resourceLinkId` filters are ignored, instead, the filters applied on the initial request will be maintained**)
 
   Ex:
 
@@ -168,14 +176,6 @@ The `getMembers()` method allows us to apply filters to the request, and these f
   const differences = await lti.NamesAndRoles.getMembers(res.locals.token, { url: differencesUrl })
   ```
 
- - **options.resourceLinkId**
-
- Accesses the Platform's Resource Link level membership service. Works together with all the other options (except url). The parameter will only take effect if the current context has a `resourceLinkId`.
-
-   ```javascript
-  const result = await lti.NamesAndRoles.getMembers(res.locals.token, { resourceLinkId: true, role: 'Learner', limit: 10, pages: 2 })
-  ```
-
 --- 
 
 ### Example basic usage: 
@@ -214,7 +214,7 @@ Retrieves members from platform.
 | options.limit | `Number`  | Specifies maximum number of members per page. |
 | options.pages | `Number`  | Specifies maximum number of pages returned. Defaults to 1. |
 | options.url | `String` | Specifies the initial members endpoint, usually retrieved from a previous incomplete request. |
-
+| options.resourceLinkId | `Boolean` | If set to true, retrieves resource Link level memberships. |
 
 
 

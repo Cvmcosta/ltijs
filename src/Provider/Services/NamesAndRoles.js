@@ -25,7 +25,7 @@ class NamesAndRoles {
    * @param {Number} [options.limit] - Specifies maximum number of members per page.
    * @param {Number} [options.pages = 1] - Specifies maximum number of pages returned. Defaults to 1.
    * @param {String} [options.url] - Specifies the initial members endpoint, usually retrieved from a previous incomplete request.
-   * @param {Boolean} [options.resourceLinkId = false] - Retrieve resource Link level memberships.
+   * @param {Boolean} [options.resourceLinkId = false] - If set to true, retrieves resource Link level memberships.
    */
   async getMembers (idtoken, options) {
     if (!idtoken) { provNamesAndRolesServiceDebug('Missing IdToken object.'); throw new Error('MISSING_ID_TOKEN') }
