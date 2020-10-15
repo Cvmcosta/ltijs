@@ -106,7 +106,7 @@ The `getMembers()` method allows us to apply filters to the request, and these f
   Specifies the number of members per page that should be returned per members page **(By default only one members page is returned.)**.
 
 - **options.pages**
-  Specifies the number of pages that should be returned.
+  Specifies the number of pages that should be returned. *Defaults to 1*.
 
   Ex: 
 
