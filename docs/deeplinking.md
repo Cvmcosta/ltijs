@@ -184,7 +184,7 @@ The [Deep Linking specification](https://www.imsglobal.org/spec/lti-dl/v2p0) all
 
 ex: 'Successfully registered the resources!'
 
-- options.errmessage 
+- options.errMessage 
 
 ex: 'Resource registration failed!'
 
@@ -194,7 +194,7 @@ We can also set the messages that the platform will log in their systems in case
 
 ex: 'registered_lti_resource'
 
-- options.errlog
+- options.errLog
 
 ex: 'resource_registration_failed'
 
@@ -255,9 +255,9 @@ Creates a self submitting form containing the signed JWT message of the deep lin
 | contentItems | `Object` | Array<Object>`  | One or more contentItem Objects. |
 | options | `Object`  | Options object. |
 | options.message | `String`  | Message the platform may show to the end user upon return to the platform. |
-| options.errmessage | `String`  | Message the platform may show to the end user upon return to the platform if some error has occurred. |
+| options.errMessage | `String`  | Message the platform may show to the end user upon return to the platform if some error has occurred. |
 | options.log | `String`  | Message the platform may log in it's system upon return to the platform. |
-| options.errlog | `String`  | Message the platform may log in it's system upon return to the platform if some error has occurred. |
+| options.errLog | `String`  | Message the platform may log in it's system upon return to the platform if some error has occurred. |
 
 
 
@@ -285,9 +285,9 @@ Creates a signed JWT message of the deep linking request.
 | contentItems | `Object` | Array<Object>`  | One or more contentItem Objects. |
 | options | `Object`  | Options object. |
 | options.message | `String`  | Message the platform may show to the end user upon return to the platform. |
-| options.errmessage | `String`  | Message the platform may show to the end user upon return to the platform if some error has occurred. |
+| options.errMessage | `String`  | Message the platform may show to the end user upon return to the platform if some error has occurred. |
 | options.log | `String`  | Message the platform may log in it's system upon return to the platform. |
-| options.errlog | `String`  | Message the platform may log in it's system upon return to the platform if some error has occurred. |
+| options.errLog | `String`  | Message the platform may log in it's system upon return to the platform if some error has occurred. |
 
 
 

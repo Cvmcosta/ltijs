@@ -9,6 +9,11 @@
 
 ### CHANGELOG
 
+
+#### V5.4.1
+> 2020-10-14
+> - Updated deep linking parameters to receive `errMessage` and `errLog` instead of `errmessage` and `errlog` to make API more consistent. Kept old parameters to ensure compatibility.
+
 #### V5.4.0
 > 2020-10-02
 > - Created new `Platform.platformJSON()` that returns the platform information as a JSON object.
@@ -60,7 +65,7 @@
 #### V5.3.0
 > 2020-09-11
 > - Fixed bug where `contextToken` would not show up when `console.log()` was used to log the `idtoken`.
-> - Added `query` option to `lti.redirect()` to easely add query parameters to the redirection target.
+> - Added `query` option to `lti.redirect()` to easily add query parameters to the redirection target.
 > - Added a target endpoint cleanup functionality to the login flow to deal with LMSs restrictive URL matching that prevents deep linking created urls to have query parameter. A more in depth explanation can be found here: [The issue with Redirection URIs](https://cvmcosta.github.io/ltijs/#/redirectionuris).
 > - Added a new `state` table to the database to store launch specific query parameters (Addressed in the document cited above).
 > - Released a new version of [ltijs-sequelize](https://github.com/Cvmcosta/ltijs-sequelize) that accomodates the changes. The new version also added indexes to improve performance.
@@ -73,12 +78,12 @@
 > - A field `platformId` was added to the `idtoken` object. Represents the platform id inside the LTI provider.
 > - Changed Grades and NamesAndRoles services accordingly.
 > - Added the `lti.getPlatformById()` and `lti.deletePlatformById()` methods. As well as the `Platform.platformId()` method.
-> - Released a new version of [ltijs-sequelize](https://github.com/Cvmcosta/ltijs-sequelize) that accomodates the changes. It is recommended to delete the `idtoken` and `contexttoken` tables of your preexisting database when updating, the schema changes can cause errors on relational databases. These tables are repopulated on every launch, so no relevant information will be lost.
+> - Released a new version of [ltijs-sequelize](https://github.com/Cvmcosta/ltijs-sequelize) that accommodates the changes. It is recommended to delete the `idtoken` and `contexttoken` tables of your preexisting database when updating, the schema changes can cause errors on relational databases. These tables are repopulated on every launch, so no relevant information will be lost.
 
 #### V5.1.0
 > 2020-08-29
 > IMPROVEMENTS
-> - Improved error logging for the launch and authentication flow. Now the invalidToken and sessionTimeout routes have access to a `res.locals.err` object containing information about the error. The default callback methods return this object as a reponse.
+> - Improved error logging for the launch and authentication flow. Now the invalidToken and sessionTimeout routes have access to a `res.locals.err` object containing information about the error. The default callback methods return this object as a response.
 
 #### V5.0.3
 > 2020-08-08
@@ -201,7 +206,7 @@
 > - Added a new callback, onDeepLinking that tells Ltijs what to display when receiving a deep linking request.
 > - Ltik token can now be passed through body parameters, Bearer token authorization header and query parameters.
 > - Fixed Database type issue, where some json fields were declared with a `type` key, that changed the type of the entire field.
-> - Added the `unique` parameter to the platformUrl field, that deals with the bug that occured when using ltijs in cluster mode with pm2, where platforms would registered more than one time.
+> - Added the `unique` parameter to the platformUrl field, that deals with the bug that occurred when using ltijs in cluster mode with pm2, where platforms would registered more than one time.
 > - Added error handling to the registration method. Now it deletes the previously generated key pair kid.
 
 #### V2.5.3
@@ -267,7 +272,7 @@
 >BREAKING CHANGES
 > - New authentication system, now uses a query parameter 'ltik', to pass the ltijs key to the application instead of embedding it into the path.
 > - As a result, simplified routing, without needing to account for the context path.
-> - Silent option added to the deploy method, that supresses the initial console logs.
+> - Silent option added to the deploy method, that suppresses the initial console logs.
 > - Ltijs now works with Postgresql database via the ltijs-postgresql plugin.
 > - Fixed staticPath option where it used to disable the invalidToken route if some index.html was present in the given path.
 > - Graceful shutdown added, closing connection to databases.

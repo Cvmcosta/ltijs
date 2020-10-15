@@ -22,9 +22,9 @@ class DeepLinking {
    * @param {Array} contentItems - Array of contentItems to be linked.
    * @param {Object} options - Object containing extra options that mus be sent along the content items.
    * @param {String} options.message - Message the platform may show to the end user upon return to the platform.
-   * @param {String} options.errmessage - Message the platform may show to the end user upon return to the platform if some error has occurred.
+   * @param {String} options.errMessage - Message the platform may show to the end user upon return to the platform if some error has occurred.
    * @param {String} options.log - Message the platform may log in it's system upon return to the platform.
-   * @param {String} options.errlog - Message the platform may log in it's system upon return to the platform if some error has occurred.
+   * @param {String} options.errLog - Message the platform may log in it's system upon return to the platform if some error has occurred.
    */
   async createDeepLinkingForm (idtoken, contentItems, options) {
     const message = await this.createDeepLinkingMessage(idtoken, contentItems, options)
@@ -45,9 +45,9 @@ class DeepLinking {
    * @param {Array} contentItems - Array of contentItems to be linked.
    * @param {Object} options - Object containing extra options that mus be sent along the content items.
    * @param {String} options.message - Message the platform may show to the end user upon return to the platform.
-   * @param {String} options.errmessage - Message the platform may show to the end user upon return to the platform if some error has occurred.
+   * @param {String} options.errMessage - Message the platform may show to the end user upon return to the platform if some error has occurred.
    * @param {String} options.log - Message the platform may log in it's system upon return to the platform.
-   * @param {String} options.errlog - Message the platform may log in it's system upon return to the platform if some error has occurred.
+   * @param {String} options.errLog - Message the platform may log in it's system upon return to the platform if some error has occurred.
    */
   async createDeepLinkingMessage (idtoken, contentItems, options) {
     provDeepLinkingDebug('Starting deep linking process')
@@ -80,9 +80,9 @@ class DeepLinking {
 
     // Adding messaging options
     if (options && options.message) jwtBody['https://purl.imsglobal.org/spec/lti-dl/claim/msg'] = options.message
-    if (options && options.errmessage) jwtBody['https://purl.imsglobal.org/spec/lti-dl/claim/errormsg '] = options.errmessage
+    if (options && (options.errMessage || options.errmessage)) jwtBody['https://purl.imsglobal.org/spec/lti-dl/claim/errormsg '] = options.errMessage || options.errmessage
     if (options && options.log) jwtBody['https://purl.imsglobal.org/spec/lti-dl/claim/log'] = options.log
-    if (options && options.errlog) jwtBody['https://purl.imsglobal.org/spec/lti-dl/claim/errorlog'] = options.errlog
+    if (options && (options.errLog || options.errlog)) jwtBody['https://purl.imsglobal.org/spec/lti-dl/claim/errorlog'] = options.errLog || options.errlog
 
     // Adding Data claim if it exists in initial request
     if (idtoken.platformContext.deepLinkingSettings.data) jwtBody['https://purl.imsglobal.org/spec/lti-dl/claim/data'] = idtoken.platformContext.deepLinkingSettings.data
