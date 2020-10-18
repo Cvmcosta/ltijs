@@ -156,7 +156,10 @@ describe('Testing LTI 1.3 flow', function () {
     })
   })
   it('Provider.whitelist expected to whitelist route to bypass Ltijs authentication protocol', async () => {
-    expect(lti.whitelist('/whitelist1', { route: '/whitelist2', method: 'POST' }, { route: new RegExp(/^\/whitelist3\/.*/), method: 'get' })).to.be.equal(true)
+    expect(lti.whitelist('/whitelist1')).to.be.instanceOf(Array)
+    lti.whitelist({ route: '/whitelist2', method: 'POST' })
+    lti.whitelist({ route: new RegExp(/^\/whitelist3\/.*/), method: 'get' })
+    expect(lti.whitelist().length).to.equal(3)
     lti.app.all('/whitelist1', (req, res) => {
       return res.sendStatus(200)
     })

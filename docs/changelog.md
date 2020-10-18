@@ -9,6 +9,9 @@
 
 ### CHANGELOG
 
+#### V5.4.2
+> 2020-10-18
+> - Updated `lti.whitelist()` method, now appends routes to array when called multiple times, instead of replacing.
 
 #### V5.4.1
 > 2020-10-14

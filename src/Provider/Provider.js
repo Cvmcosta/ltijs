@@ -168,7 +168,7 @@ class Provider {
     // Registers main athentication and routing middleware
     const sessionValidator = async (req, res, next) => {
       provMainDebug('Receiving request at path: ' + req.baseUrl + req.path)
-      // Ckeck if request is attempting to initiate oidc login flow or access reserved or whitelisted routes
+      // Ckeck if request is attempting to initiate oidc login flow or access reserved routes
       if (req.path === this.#loginRoute || req.path === this.#sessionTimeoutRoute || req.path === this.#invalidTokenRoute || req.path === this.#keysetRoute) return next()
 
       provMainDebug('Path does not match reserved endpoints')
@@ -475,7 +475,7 @@ class Provider {
         status: 401,
         error: 'Unauthorized',
         details: {
-          message: 'Session cookie not found.'
+          message: 'Session not found.'
         }
       }
       this.#sessionTimeoutCallback(req, res, next)
@@ -698,7 +698,7 @@ class Provider {
    * @param {String} routes - Routes to be whitelisted
    */
   whitelist (...routes) {
-    if (!routes) throw new Error('MISSING_ROUTES')
+    if (!routes) return this.#whitelistedRoutes
     const formattedRoutes = []
     for (const route of routes) {
       const isObject = (!(route instanceof RegExp) && route === Object(route))
@@ -707,8 +707,12 @@ class Provider {
         formattedRoutes.push({ route: route.route, method: route.method.toUpperCase() })
       } else formattedRoutes.push({ route: route, method: 'ALL' })
     }
-    this.#whitelistedRoutes = formattedRoutes
-    return true
+    this.#whitelistedRoutes = [
+      ...this.#whitelistedRoutes,
+      ...formattedRoutes
+    ]
+
+    return this.#whitelistedRoutes
   }
 
   /**

@@ -279,7 +279,7 @@ class Provider {
     if (options && options.staticPath) (0, _classPrivateFieldGet2.default)(this, _server).setStaticPath(options.staticPath); // Registers main athentication and routing middleware
 
     const sessionValidator = async (req, res, next) => {
-      provMainDebug('Receiving request at path: ' + req.baseUrl + req.path); // Ckeck if request is attempting to initiate oidc login flow or access reserved or whitelisted routes
+      provMainDebug('Receiving request at path: ' + req.baseUrl + req.path); // Ckeck if request is attempting to initiate oidc login flow or access reserved routes
 
       if (req.path === (0, _classPrivateFieldGet2.default)(this, _loginRoute) || req.path === (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutRoute) || req.path === (0, _classPrivateFieldGet2.default)(this, _invalidTokenRoute) || req.path === (0, _classPrivateFieldGet2.default)(this, _keysetRoute)) return next();
       provMainDebug('Path does not match reserved endpoints');
@@ -633,7 +633,7 @@ class Provider {
         status: 401,
         error: 'Unauthorized',
         details: {
-          message: 'Session cookie not found.'
+          message: 'Session not found.'
         }
       };
       (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutCallback2).call(this, req, res, next);
@@ -861,7 +861,7 @@ class Provider {
 
 
   whitelist(...routes) {
-    if (!routes) throw new Error('MISSING_ROUTES');
+    if (!routes) return (0, _classPrivateFieldGet2.default)(this, _whitelistedRoutes);
     const formattedRoutes = [];
 
     for (const route of routes) {
@@ -879,8 +879,8 @@ class Provider {
       });
     }
 
-    (0, _classPrivateFieldSet2.default)(this, _whitelistedRoutes, formattedRoutes);
-    return true;
+    (0, _classPrivateFieldSet2.default)(this, _whitelistedRoutes, [...(0, _classPrivateFieldGet2.default)(this, _whitelistedRoutes), ...formattedRoutes]);
+    return (0, _classPrivateFieldGet2.default)(this, _whitelistedRoutes);
   }
   /**
      * @description Registers a platform.
