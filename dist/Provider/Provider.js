@@ -1029,6 +1029,14 @@ class Provider {
 
 
   async updatePlatformById(platformId, platformInfo) {
+    if (!platformId) {
+      throw new Error('MISSING_PLATFORM_ID');
+    }
+
+    if (!platformInfo) {
+      throw new Error('MISSING_PLATFORM_INFO');
+    }
+
     const platform = await this.getPlatformById(platformId);
     if (!platform) return false;
     const oldURL = await platform.platformUrl();
