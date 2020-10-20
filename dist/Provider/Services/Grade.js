@@ -54,7 +54,7 @@ class Grade {
    * @param {Number} [options.limit = false] - Sets a maximum number of line items to be returned
    * @param {String} [options.id = false] - Filters line items based on the id
    * @param {String} [options.label = false] - Filters line items based on the label
-   * @param {String} [options.url = false] - Retrieve line items from a specific URL. Usually retrieved from the `next` link header of a previous request.
+   * @param {String} [options.url = false] - Retrieves line items from a specific URL. Usually retrieved from the `next` link header of a previous request.
    */
 
 
@@ -405,7 +405,7 @@ class Grade {
    * @param {Object} [options] - Options object.
    * @param {String} [options.userId = false] - Filters based on the userId.
    * @param {Number} [options.limit = false] - Sets a maximum number of scores to be returned.
-   * @param {String} [options.url = false] - Retrieve scores from a specific URL. Usually retrieved from the `next` link header of a previous request.
+   * @param {String} [options.url = false] - Retrieves scores from a specific URL. Usually retrieved from the `next` link header of a previous request.
    */
 
 
