@@ -26,23 +26,6 @@ Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps
 
 > [Ltijs is LTI® Advantage Complete Certified by IMS](https://site.imsglobal.org/certifications/coursekey/ltijs)
 
-> V5.3.0
-> - Fixed bug where `contextToken` would not show up when `console.log()` was used to log the `idtoken`.
-> - Added `query` option to `lti.redirect()` to easely add query parameters to the redirection target.
-> - Added a target endpoint cleanup functionality to the login flow to deal with LMSs restrictive URL matching that prevents deep linking created urls to have query parameter. A more in depth explanation can be found here: [The issue with Redirection URIs](https://cvmcosta.github.io/ltijs/#/redirectionuris).
-> - Added a new `state` table to the database to store launch specific query parameters (Addressed in the document cited above).
-> - Released a new version of [ltijs-sequelize](https://github.com/Cvmcosta/ltijs-sequelize) that accomodates the changes. The new version also added indexes to improve performance.
-> - Applied error message pattern to errors thrown within the registration route.
-
-> V5.2.1
-> BREAKING CHANGES / FIX
-> - Some fields were moved from the `idtoken` to the `contexttoken`, The `roles`, `endpoint`, `lis` and `namesRoles` fields change with the launch context, and cannot be treated as static values. They can now be found inside the `contexttoken` object along with all the other context specific information.
-> - A field `platformId` was added to the `idtoken` object. Represents the platform id inside the LTI provider.
-> - Changed Grades and NamesAndRoles services accordingly.
-> - Added the `lti.getPlatformById()` and `lti.deletePlatformById()` methods. As well as the `Platform.platformId()` method.
-> - Released a new version of [ltijs-sequelize](https://github.com/Cvmcosta/ltijs-sequelize) that accomodates the changes. It is recommended to delete the `idtoken` and `contexttoken` tables of your preexisting database when updating, the schema changes can cause errors on relational databases. These tables are repopulated on every launch, so no relevant information will be lost.
-
-
 > Ltijs version 5.0 is a re-release of the project as a Certified LTI® library, that comes with many improvements, new functionalities and a few **API changes**, see bellow for a migration guide from version 4 and a complete list of the changes made:
 > - [Migrating from version 4](https://cvmcosta.github.io/ltijs/#/migration)
 > - [CHANGELOG](https://cvmcosta.github.io/ltijs/#/changelog)
