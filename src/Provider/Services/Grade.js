@@ -4,6 +4,7 @@
 /* Provider Assignment and Grade Service */
 
 const got = require('got')
+const parseLink = require('parse-link-header')
 const provGradeServiceDebug = require('debug')('provider:gradeService')
 
 class Grade {
@@ -29,6 +30,7 @@ class Grade {
    * @param {Number} [options.limit = false] - Sets a maximum number of line items to be returned
    * @param {String} [options.id = false] - Filters line items based on the id
    * @param {String} [options.label = false] - Filters line items based on the label
+   * @param {String} [options.url = false] - Retrieves line items from a specific URL. Usually retrieved from the `next` link header of a previous request.
    */
   async getLineItems (idtoken, options, accessToken) {
     if (!idtoken) { provGradeServiceDebug('Missing IdToken object.'); throw new Error('MISSING_ID_TOKEN') }
@@ -49,30 +51,52 @@ class Grade {
       provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']')
     }
 
-    let lineitemsEndpoint = idtoken.platformContext.endpoint.lineitems
-    let query = []
-    if (lineitemsEndpoint.indexOf('?') !== -1) {
-      query = Array.from(new URLSearchParams(lineitemsEndpoint.split('\?')[1]))
-      lineitemsEndpoint = lineitemsEndpoint.split('\?')[0]
+    const result = {}
+    let response
+
+    if (options && options.url) {
+      provGradeServiceDebug('Requesting line items from: ' + options.url)
+      response = await got.get(options.url, { headers: { Authorization: accessToken.token_type + ' ' + accessToken.access_token, Accept: 'application/vnd.ims.lis.v2.lineitemcontainer+json' } })
+    } else {
+      let lineitemsEndpoint = idtoken.platformContext.endpoint.lineitems
+      let query = []
+      if (lineitemsEndpoint.indexOf('?') !== -1) {
+        query = Array.from(new URLSearchParams(lineitemsEndpoint.split('\?')[1]))
+        lineitemsEndpoint = lineitemsEndpoint.split('\?')[0]
+      }
+
+      let queryParams = [...query]
+      if (options) {
+        if (options.resourceLinkId) queryParams.push(['resource_link_id', idtoken.platformContext.resource.id])
+        if (options.limit && !options.id && !options.label) queryParams.push(['limit', options.limit])
+        if (options.tag) queryParams.push(['tag', options.tag])
+        if (options.resourceId) queryParams.push(['resource_id', options.resourceId])
+      }
+      queryParams = new URLSearchParams(queryParams)
+      provGradeServiceDebug('Requesting line items from: ' + lineitemsEndpoint)
+      response = await got.get(lineitemsEndpoint, { searchParams: queryParams, headers: { Authorization: accessToken.token_type + ' ' + accessToken.access_token, Accept: 'application/vnd.ims.lis.v2.lineitemcontainer+json' } })
     }
 
-    let queryParams = [...query]
-    if (options) {
-      if (options.resourceLinkId) queryParams.push(['resource_link_id', idtoken.platformContext.resource.id])
-      if (options.limit && !options.id && !options.label) queryParams.push(['limit', options.limit])
-      if (options.tag) queryParams.push(['tag', options.tag])
-      if (options.resourceId) queryParams.push(['resource_id', options.resourceId])
-    }
-    queryParams = new URLSearchParams(queryParams)
+    const headers = response.headers
+    let lineItems = JSON.parse(response.body)
 
-    let lineItems = await got.get(lineitemsEndpoint, { searchParams: queryParams, headers: { Authorization: accessToken.token_type + ' ' + accessToken.access_token, Accept: 'application/vnd.ims.lis.v2.lineitemcontainer+json' } }).json()
+    // Parsing link headers
+    const parsedLinks = parseLink(headers.link)
+
+    if (parsedLinks) {
+      if (parsedLinks.next) result.next = parsedLinks.next.url
+      if (parsedLinks.prev) result.prev = parsedLinks.prev.url
+      if (parsedLinks.first) result.first = parsedLinks.first.url
+      if (parsedLinks.last) result.last = parsedLinks.last.url
+    }
 
     // Applying special filters
     if (options && options.id) lineItems = lineItems.filter(lineitem => { return lineitem.id === options.id })
     if (options && options.label) lineItems = lineItems.filter(lineitem => { return lineitem.label === options.label })
     if (options && options.limit && (options.id || options.label) && options.limit < lineItems.length) lineItems = lineItems.slice(0, options.limit)
 
-    return lineItems
+    result.lineItems = lineItems
+    return result
   }
 
   /**
@@ -270,7 +294,8 @@ class Grade {
    * @param {String} lineItemId - LineItem ID.
    * @param {Object} [options] - Options object.
    * @param {String} [options.userId = false] - Filters based on the userId.
-   * @param {Number} [options.limit = false] - Sets a maximum number of results to be returned.
+   * @param {Number} [options.limit = false] - Sets a maximum number of scores to be returned.
+   * @param {String} [options.url = false] - Retrieves scores from a specific URL. Usually retrieved from the `next` link header of a previous request.
    */
   async getScores (idtoken, lineItemId, options) {
     if (!idtoken) { provGradeServiceDebug('Missing IdToken object.'); throw new Error('MISSING_ID_TOKEN') }
@@ -290,28 +315,50 @@ class Grade {
     const accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly')
     provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']')
 
-    // Creating results URL
-    const lineitemUrl = lineItemId
-    let query = []
-    let resultsUrl = lineitemUrl + '/results'
-    if (lineitemUrl.indexOf('?') !== -1) {
-      query = Array.from(new URLSearchParams(lineitemUrl.split('\?')[1]))
-      const url = lineitemUrl.split('\?')[0]
-      resultsUrl = url + '/results'
+    const result = {}
+    let response
+
+    if (options && options.url) {
+      provGradeServiceDebug('Requesting scores from: ' + options.url)
+      response = await got.get(options.url, { headers: { Authorization: accessToken.token_type + ' ' + accessToken.access_token, Accept: 'application/vnd.ims.lis.v2.resultcontainer+json' } })
+    } else {
+      // Creating results URL
+      const lineitemUrl = lineItemId
+      let query = []
+      let resultsUrl = lineitemUrl + '/results'
+      if (lineitemUrl.indexOf('?') !== -1) {
+        query = Array.from(new URLSearchParams(lineitemUrl.split('\?')[1]))
+        const url = lineitemUrl.split('\?')[0]
+        resultsUrl = url + '/results'
+      }
+
+      // Creating query parameters
+      const queryParams = []
+      if (options) {
+        if (options.userId) queryParams.push(['user_id', options.userId])
+        if (options.limit) queryParams.push(['limit', options.limit])
+      }
+      let searchParams = [...queryParams, ...query]
+      searchParams = new URLSearchParams(searchParams)
+
+      provGradeServiceDebug('Requesting scores from: ' + resultsUrl)
+      response = await got.get(resultsUrl, { searchParams: searchParams, headers: { Authorization: accessToken.token_type + ' ' + accessToken.access_token, Accept: 'application/vnd.ims.lis.v2.resultcontainer+json' } })
     }
 
-    // Creating query parameters
-    const queryParams = []
-    if (options) {
-      if (options.userId) queryParams.push(['user_id', options.userId])
-      if (options.limit) queryParams.push(['limit', options.limit])
-    }
-    let searchParams = [...queryParams, ...query]
-    searchParams = new URLSearchParams(searchParams)
+    const headers = response.headers
+    result.scores = JSON.parse(response.body)
 
-    provGradeServiceDebug('Requesting results from: ' + resultsUrl)
-    const results = await got.get(resultsUrl, { searchParams: searchParams, headers: { Authorization: accessToken.token_type + ' ' + accessToken.access_token, Accept: 'application/vnd.ims.lis.v2.resultcontainer+json' } }).json()
-    return results
+    // Parsing link headers
+    const parsedLinks = parseLink(headers.link)
+
+    if (parsedLinks) {
+      if (parsedLinks.next) result.next = parsedLinks.next.url
+      if (parsedLinks.prev) result.prev = parsedLinks.prev.url
+      if (parsedLinks.first) result.first = parsedLinks.first.url
+      if (parsedLinks.last) result.last = parsedLinks.last.url
+    }
+
+    return result
   }
 
   // Deprecated methods, these methods will be removed in version 6.0
@@ -345,7 +392,8 @@ class Grade {
     const accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem')
     provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']')
 
-    const lineItems = await this.getLineItems(idtoken, options, accessToken)
+    const response = await this.getLineItems(idtoken, options, accessToken)
+    const lineItems = response.lineItems
 
     const result = { success: [], failure: [] }
     for (const lineitem of lineItems) {
@@ -410,7 +458,10 @@ class Grade {
       } catch {
         lineItems = []
       }
-    } else lineItems = await this.getLineItems(idtoken, options, accessToken)
+    } else {
+      const response = await this.getLineItems(idtoken, options, accessToken)
+      lineItems = response.lineItems
+    }
 
     const result = { success: [], failure: [] }
 
@@ -502,7 +553,10 @@ class Grade {
       } catch {
         lineItems = []
       }
-    } else lineItems = await this.getLineItems(idtoken, options, accessToken)
+    } else {
+      const response = await this.getLineItems(idtoken, options, accessToken)
+      lineItems = response.lineItems
+    }
 
     const queryParams = []
     if (options) {

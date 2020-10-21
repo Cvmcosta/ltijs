@@ -9,6 +9,10 @@
 
 ### CHANGELOG
 
+#### V5.4.3
+> 2020-10-20
+> - Improved `limit` functionality implementation on the Grades service. `getScores` and `getLineItems` now return an object containing the `scores` and `lineItems` fields respectively. Added support for `url` parameter, used alongside the `next` field returned on incomplete list requests.
+
 #### V5.4.2
 > 2020-10-18
 > - Updated `lti.whitelist()` method, now appends routes to array when called multiple times, instead of replacing.
