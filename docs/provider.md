@@ -1244,7 +1244,7 @@ The `lti.getPlatformById()` method receives the `platformId` and returns a Promi
 const plat = await lti.getPlatformById('60b1fce753c875193d71') // Returns Platform object
 ```
 
-The platform Id can be found through the `Platform.platformId()` emthod or in the platformId field of the `idtoken` object after a successful launch.
+The platform Id can be found through the `Platform.platformId()` method or in the platformId field of the `idtoken` object after a successful launch.
 
 **lti.getAllPlatforms:**
 
