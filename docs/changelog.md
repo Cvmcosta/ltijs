@@ -9,6 +9,10 @@
 
 ### CHANGELOG
 
+#### V5.4.4
+> 2020-10-21
+> - Improved error handling. Now rethrows errors instead of creating new ones, keeping the stack intact.
+
 #### V5.4.3
 > 2020-10-20
 > - Improved `limit` functionality implementation on the Grades service. `getScores` and `getLineItems` now return an object containing the `scores` and `lineItems` fields respectively. Added support for `url` parameter, used alongside the `next` field returned on incomplete list requests.

@@ -462,7 +462,7 @@ class Provider {
             return next();
           }
 
-          throw new Error(err.message);
+          throw err;
         }
 
         provMainDebug('Ltik successfully verified');
@@ -940,7 +940,7 @@ class Provider {
           clientId: platform.clientId
         });
         provMainDebug(err.message);
-        throw new Error(err.message);
+        throw err;
       }
     } else {
       provMainDebug('Platform already registered');
@@ -1114,7 +1114,7 @@ class Provider {
       }
 
       provMainDebug(err.message);
-      throw new Error(err.message);
+      throw err;
     }
   }
   /**

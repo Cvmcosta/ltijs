@@ -343,7 +343,7 @@ class Provider {
             provMainDebug('Accessing as whitelisted route')
             return next()
           }
-          throw new Error(err.message)
+          throw (err)
         }
         provMainDebug('Ltik successfully verified')
 
@@ -754,7 +754,7 @@ class Provider {
         await this.Database.Delete('privatekey', { kid: kid })
         await this.Database.Delete('platform', { platformUrl: platform.url, clientId: platform.clientId })
         provMainDebug(err.message)
-        throw new Error(err.message)
+        throw (err)
       }
     } else {
       provMainDebug('Platform already registered')
@@ -874,7 +874,7 @@ class Provider {
         await this.Database.Modify(false, 'privatekey', { kid: platformId }, { platformUrl: oldURL, clientId: oldClientId })
       }
       provMainDebug(err.message)
-      throw new Error(err.message)
+      throw (err)
     }
   }
 
