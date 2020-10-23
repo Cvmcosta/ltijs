@@ -9,6 +9,10 @@
 
 ### CHANGELOG
 
+#### V5.4.5
+> 2020-10-23
+> - New optional authorization model `LTIK-AUTH-V1`. Pending documentation.
+
 #### V5.4.4
 > 2020-10-21
 > - Improved error handling. Now rethrows errors instead of creating new ones, keeping the stack intact.
