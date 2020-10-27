@@ -1450,7 +1450,72 @@ At the end of a successful launch, Ltijs redirects the request to the desired en
 
 Whenever the tool receives a request **not directed at one of the reserved endpoints** it attempts to validate the request by matching the information received through the cookie with the information contained in the **ltik** token.
 
-**The *ltik* token MUST be passed to the provider through query parameters, body parameters or a Bearer Authorization header.**
+The `ltik` token **MUST** be passed to the provider through query parameters, body parameters or an Authorization header (Bearer or LTIK-AUTH-V1).
+
+##### Ltik in the query parameters:
+
+The `ltik` token can be passed through the URL query parameters:
+
+> https://tool.com?ltik=\<ltik\>
+
+Example:
+
+> https://tool.com?ltik=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+
+##### Ltik in the request body:
+
+The `ltik` token can be passed through the request body:
+
+```javascript
+{
+  ltik: <ltik>
+}
+```
+
+Example:
+
+```javascript
+{
+  ltik: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+}
+```
+
+##### Bearer Authorization header:
+
+The `ltik` parameter can be passed through a Bearer Authorization header:
+
+> Authorization: Bearer \<ltik\>
+
+
+Example:
+
+> Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+
+##### LTIK-AUTH-V1 Authorization header:
+
+If there is need for an additional Authorization header, **Ltijs** implements it's own authorization schema `LTIK-AUTH-V1` with support for multiple authorization methods:
+
+> Authorization: LTIK-AUTH-V1 Token=\<ltik\>, Additional=\<additional\>
+
+- **Token** - Ltik authentication token.
+- **Additional** - Additional authorization schema.
+
+Example:
+
+> Authorization: LTIK-AUTH-V1 Token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c, Additional=Bearer KxwRJSMeKKF2QT4fwpM
+
+When using the `LTIK-AUTH-V1` authorization schema, `req.headers.authorization` will only include the `Additional` portion of the header. The `ltik` token can be found in `req.token`.
+
+##### Ltik order of priority:
+
+**Ltijs** will look for the `ltik` in the following order:
+
+- LTIK-AUTH-V1 Authorization 
+- query 
+- body 
+- Bearer Authorization
+
+##### Cookies
 
 *In case of requests coming from different subdomains, usually it is necessary to set `mode: cors` and `credentials: true` flags to include the cookies in the request.*
 
