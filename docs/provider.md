@@ -1517,7 +1517,7 @@ When using the `LTIK-AUTH-V1` authorization schema, `req.headers.authorization` 
 
 ##### Cookies
 
-*In case of requests coming from different subdomains, usually it is necessary to set `mode: cors` and `credentials: true` flags to include the cookies in the request.*
+*In case of requests coming from different subdomains, usually it is necessary to set `mode: cors` and `credentials: 'include'` flags to include the cookies in the request.*
 
 *If for some reason the cookies could not be set in your development environment, the usage of the **devMode** flag eliminates the validation step that matches the cookie information, instead using only the information contained in the **ltik** token.*
 
