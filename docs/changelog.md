@@ -9,6 +9,10 @@
 
 ### CHANGELOG
 
+#### V5.4.6
+> 2020-10-30
+> - Adding support for URL hashes to lti.redirect().
+
 #### V5.4.5
 > 2020-10-23
 > - New optional authorization model `LTIK-AUTH-V1`. Pending documentation.

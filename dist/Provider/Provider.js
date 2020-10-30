@@ -1214,6 +1214,7 @@ class Provider {
       pathname: pathParts.pathname,
       port: pathParts.port,
       auth: pathParts.auth,
+      hash: pathParts.hash,
       query: _objectSpread(_objectSpread(_objectSpread({}, queries), additionalQueries), {}, {
         ltik: res.locals.ltik
       })

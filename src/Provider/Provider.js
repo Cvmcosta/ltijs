@@ -958,6 +958,7 @@ class Provider {
       pathname: pathParts.pathname,
       port: pathParts.port,
       auth: pathParts.auth,
+      hash: pathParts.hash,
       query: {
         ...queries,
         ...additionalQueries,
