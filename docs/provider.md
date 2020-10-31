@@ -265,8 +265,9 @@ Method used to setup and configure the LTI® provider.
 | options.cookies | `Object` | Cookie configuration. Allows you to configure, sameSite and secure parameters. | *Optional* |
 | options.cookies.secure | `Boolean` | Cookie secure parameter. If true, only allows cookies to be passed over https. **Default: false**. | *Optional* |
 | options.cookies.sameSite | `String` | Cookie sameSite parameter. If cookies are going to be set across domains, set this parameter to 'None'. **Default: Lax**. | *Optional* |
-| options.devMode | `Boolean` | If true, does not require state and session cookies to be present (If present, they are still validated). This allows Ltijs to work on development environments where cookies cannot be set. **Default: false**. ***THIS SHOULD NOT BE USED IN A PRODUCTION ENVIRONMENT.*** | *Optional* |
 | options.tokenMaxAge | `String` | Sets the idToken max age allowed in seconds. If false, disables max age validation. **Default: 10**. | *Optional* |
+| options.devMode | `Boolean` | If true, does not require state and session cookies to be present (If present, they are still validated). This allows Ltijs to work on development environments where cookies cannot be set. **Default: false**. ***THIS SHOULD NOT BE USED IN A PRODUCTION ENVIRONMENT.*** | *Optional* |
+| options.ltiaas | `Boolean` | If set to true, disables the creation and validation of the session cookies. Login state cookies are still created, since they are a part of the LTI specification. **Default: false** | *Optional* |
 
 #### async Provider.deploy(options) 
 
@@ -815,7 +816,7 @@ lti.setup('EXAMPLEKEY',
 
 Ltijs relies on cookies for part of the validation process, but in some development environments, cookies might not be able to be set, for instance if you are trying to set cross domain cookies over an insecure http connection. 
 
-In situations like this you can set the `devMode` field as true and Ltijs will stop trying to validate the cookies and will instead use the information obtained through the `Ltik` token to retrieve the correct context information.
+In situations like this you can set the `devMode` field as true and Ltijs will stop trying to validate the cookies and will instead use the information obtained through the `ltik` token to retrieve the correct context information.
 
 ```javascript
 // Setup provider example
@@ -830,6 +831,25 @@ lti.setup('EXAMPLEKEY',
 ```
 
 ***DevMode should never be used in a production environment, and it should not be necessary, since most of the cookie issues can be solved by using the `secure: true` and `sameSite: None` flags.***
+
+#### Ltiaas mode:
+
+Ltijs can remove the session cookie request authentication step by using `ltiaas` (lti as a service) mode. If this option is set to true, Ltijs will no longer create or validade the session cookies, all the request validation will be done through the `ltik` token. Ltiaas mode differs from development mode because it still creates and validates login state cookies.
+
+```javascript
+// Setup provider example
+lti.setup('EXAMPLEKEY', 
+          { 
+            url: 'mongodb://localhost/database',// Database url
+            connection:{ user:'user', pass: 'pass'}// Database configuration
+          }, 
+          { 
+            ltiaas: true // Using ltiaas mode
+          })
+```
+
+[See more about request authentication.](#request-authentication)
+
 
 #### Token max age allowed:
 
@@ -1448,7 +1468,7 @@ At the end of a successful launch, Ltijs redirects the request to the desired en
 
 #### Request authentication
 
-Whenever the tool receives a request **not directed at one of the reserved endpoints** it attempts to validate the request by matching the information received through the cookie with the information contained in the **ltik** token.
+Whenever the tool receives a request **not directed at one of the reserved endpoints** it attempts to validate the request by matching the information received through the [session cookie](#cookies) with the information contained in the **ltik** token.
 
 The `ltik` token **MUST** be passed to the provider through query parameters, body parameters or an Authorization header (Bearer or LTIK-AUTH-V1).
 
@@ -1517,7 +1537,7 @@ When using the `LTIK-AUTH-V1` authorization schema, `req.headers.authorization` 
 
 ##### Cookies
 
-*In case of requests coming from different subdomains, usually it is necessary to set `mode: cors` and `credentials: 'include'` flags to include the cookies in the request.*
+*In the case of requests coming from different subdomains, usually it is necessary to set `mode: cors` and `credentials: 'include'` flags to include the cookies in the request.*
 
 *If for some reason the cookies could not be set in your development environment, the usage of the **devMode** flag eliminates the validation step that matches the cookie information, instead using only the information contained in the **ltik** token.*
 
@@ -1533,6 +1553,24 @@ If the validation fails, the request is redirected to either the **invalidTokenR
 </div>
 
 > [Check implementation examples](#implementation-example)
+
+
+**Cookie creation and validation can be disabled by setting `ltiaas: true` in the [setup options](#ltiaas-mode):**
+
+```javascript
+// Setup provider example
+lti.setup('EXAMPLEKEY', 
+          { 
+            url: 'mongodb://localhost/database',// Database url
+            connection:{ user:'user', pass: 'pass'}// Database configuration
+          }, 
+          { 
+            ltiaas: true // Using ltiaas mode
+          })
+```
+
+Request validation will be done only through the `ltik` token similarly to the development mode, but maintaining the creation and validation of login state cookies. This allows Ltijs to be used as a service, receiving requests from other backend servers.
+
 
 #### Whitelisting routes
 
