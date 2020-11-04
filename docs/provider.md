@@ -917,6 +917,51 @@ lti.setup('EXAMPLEKEY',
             })
 ```
 
+The specified path is internally bound to the root route:
+
+```javascript
+app.use('/', express.static(SPECIFIED_PATH, { index: '_' }))
+```
+Accessing the files:
+
+```
+http://localhost:3000/images/kitten.jpg
+http://localhost:3000/css/style.css
+http://localhost:3000/js/app.js
+http://localhost:3000/images/bg.png
+http://localhost:3000/hello.html
+```
+
+This can also be achieved and further customized by using [server addons](#server-addon):
+
+
+```javascript
+// Creating middleware registration
+const middleware = (app) => {
+  app.use('/static', express.static(__dirname + '/public'));
+}
+
+//Configure provider
+lti.setup('EXAMPLEKEY', 
+            { url: 'mongodb://localhost/database', 
+              connection:{ user:'user',
+                          pass: 'pass'} 
+            }, 
+            {  
+              serverAddon: middleware // Setting addon method
+            }) 
+```
+And then accessing the files through the specified `/static` route:
+
+```
+http://localhost:3000/static/images/kitten.jpg
+http://localhost:3000/static/css/style.css
+http://localhost:3000/static/js/app.js
+http://localhost:3000/static/images/bg.png
+http://localhost:3000/static/hello.html
+```
+
+
 #### Cors:
 
 Ltijs `Express` instance is configured to accept cross origin requests by default, this can be disabled by setting the `cors` field to **false**:
