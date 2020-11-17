@@ -9,6 +9,10 @@
 
 ### CHANGELOG
 
+#### V5.4.8
+> 2020-11-17
+> - Fixing vulnerability related to URI component decoding.
+
 #### V5.4.6
 > 2020-10-30
 > - Adding support for URL hashes to lti.redirect().

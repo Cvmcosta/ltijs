@@ -16,6 +16,16 @@ class Server {
     this.ssl = false
     if (https) this.ssl = ssl
 
+    // Handling URI decode vulnerability
+    this.app.use((req, res, next) => {
+      try {
+        decodeURIComponent(req.path)
+        next()
+      } catch (err) {
+        return res.status(400).send({ status: 400, error: 'Bad Request', details: { message: 'URIError: Failed to decode param' } })
+      }
+    })
+
     // Setting up helmet
     this.app.use(helmet({
       frameguard: false, // Disabling frameguard so that Ltijs can send resources to iframes inside LMS's

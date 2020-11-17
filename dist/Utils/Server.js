@@ -20,7 +20,22 @@ class Server {
     this.app = express();
     this.server = false;
     this.ssl = false;
-    if (https) this.ssl = ssl; // Setting up helmet
+    if (https) this.ssl = ssl; // Handling URI decode vulnerability
+
+    this.app.use((req, res, next) => {
+      try {
+        decodeURIComponent(req.path);
+        next();
+      } catch (err) {
+        return res.status(400).send({
+          status: 400,
+          error: 'Bad Request',
+          details: {
+            message: 'URIError: Failed to decode param'
+          }
+        });
+      }
+    }); // Setting up helmet
 
     this.app.use(helmet({
       frameguard: false,
