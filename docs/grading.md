@@ -36,6 +36,8 @@
 
 Ltijs implements the [LTI® 1.3 Assignment and Grading Service Specification](https://www.imsglobal.org/spec/lti-ags/v2p0/) in the form of the **Grade Class**.
 
+#### **This documentation is incomplete. The full Assignment and Grades documentation is being written and will come out soon...**
+
 ___
 
 
@@ -88,7 +90,7 @@ lti.app.get('/grade', async (req, res) => {
 })
 ```
 
-##### Line item Creation, Retrieval and Deletion documentation coming soon...
+##### Line item Creation, Retrieval and Deletion documentation
 
 
 ```javascript
