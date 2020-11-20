@@ -278,9 +278,11 @@ class Provider {
 
             if (this.#ltiaas) {
               // Appending query parameters
+              res.locals.query = {}
               if (savedState) {
                 for (const [key, value] of Object.entries(savedState[0].query)) {
                   req.query[key] = value
+                  res.locals.query[key] = value
                 }
               }
 

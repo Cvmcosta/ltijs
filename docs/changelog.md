@@ -9,6 +9,10 @@
 
 ### CHANGELOG
 
+#### V5.4.9
+> 2020-11-19
+> - Added req.query alterantive for Typescript ltiaas users.
+
 #### V5.4.8
 > 2020-11-17
 > - Fixing vulnerability related to URI component decoding.

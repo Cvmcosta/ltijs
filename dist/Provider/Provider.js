@@ -387,9 +387,12 @@ class Provider {
 
             if ((0, _classPrivateFieldGet2.default)(this, _ltiaas)) {
               // Appending query parameters
+              res.locals.query = {};
+
               if (savedState) {
                 for (const [key, value] of Object.entries(savedState[0].query)) {
                   req.query[key] = value;
+                  res.locals.query[key] = value;
                 }
               } // Creating local variables
 
