@@ -1395,7 +1395,7 @@ The `idtoken` object consists of:
   "deploymentId": "1",
   "platformId": "60b1fce753c875193d71b611e895f03d"
   "platformInfo": {
-    "family_code": "moodle",
+    "product_family_code": "moodle",
     "version": "2020042400",
     "guid": "localhost",
     "name": "moodle",
