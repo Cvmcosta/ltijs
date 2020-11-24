@@ -96,6 +96,8 @@ class DeepLinking {
       throw new Error('PLATFORM_NOT_FOUND');
     }
 
+    const platformActive = await platform.platformActive();
+    if (!platformActive) throw new Error('PLATFORM_NOT_ACTIVATED');
     provDeepLinkingDebug('Building basic JWT body'); // Builds basic jwt body
 
     const jwtBody = {

@@ -85,6 +85,8 @@ class Auth {
       }
     }
     if (!platform) throw new Error('UNREGISTERED_PLATFORM')
+    const platformActive = await platform.platformActive()
+    if (!platformActive) throw new Error('PLATFORM_NOT_ACTIVATED')
 
     const authConfig = await platform.platformAuthConfig()
     /* istanbul ignore next */

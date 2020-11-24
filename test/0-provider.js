@@ -41,7 +41,8 @@ describe('Testing Provider', function () {
           invalidTokenRoute: invalidTokenRoute,
           keysetRoute: keysetRoute,
           staticPath: path.join(__dirname, '/views/'),
-          devMode: false
+          devMode: false,
+          dynReg: { url: 'https://tool.example.com', name: 'Tool Name', customParameters: { a: 'b' }, redirectUris: ['https://tool.example.com/launch'] }
         })
       return lti
     }

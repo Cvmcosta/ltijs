@@ -44,6 +44,8 @@ class Grade {
         provGradeServiceDebug('Platform not found')
         throw new Error('PLATFORM_NOT_FOUND')
       }
+      const platformActive = await platform.platformActive()
+      if (!platformActive) throw new Error('PLATFORM_NOT_ACTIVATED')
 
       provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']')
 
@@ -123,6 +125,8 @@ class Grade {
         provGradeServiceDebug('Platform not found')
         throw new Error('PLATFORM_NOT_FOUND')
       }
+      const platformActive = await platform.platformActive()
+      if (!platformActive) throw new Error('PLATFORM_NOT_ACTIVATED')
 
       provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']')
 
@@ -159,6 +163,8 @@ class Grade {
         provGradeServiceDebug('Platform not found')
         throw new Error('PLATFORM_NOT_FOUND')
       }
+      const platformActive = await platform.platformActive()
+      if (!platformActive) throw new Error('PLATFORM_NOT_ACTIVATED')
 
       provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']')
 
@@ -194,6 +200,8 @@ class Grade {
       provGradeServiceDebug('Platform not found')
       throw new Error('PLATFORM_NOT_FOUND')
     }
+    const platformActive = await platform.platformActive()
+    if (!platformActive) throw new Error('PLATFORM_NOT_ACTIVATED')
 
     provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']')
     const accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem')
@@ -225,6 +233,8 @@ class Grade {
       provGradeServiceDebug('Platform not found')
       throw new Error('PLATFORM_NOT_FOUND')
     }
+    const platformActive = await platform.platformActive()
+    if (!platformActive) throw new Error('PLATFORM_NOT_ACTIVATED')
 
     provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']')
     const accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem')
@@ -256,6 +266,8 @@ class Grade {
       provGradeServiceDebug('Platform not found')
       throw new Error('PLATFORM_NOT_FOUND')
     }
+    const platformActive = await platform.platformActive()
+    if (!platformActive) throw new Error('PLATFORM_NOT_ACTIVATED')
 
     provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']')
     const accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem https://purl.imsglobal.org/spec/lti-ags/scope/score')
@@ -310,6 +322,8 @@ class Grade {
       provGradeServiceDebug('Platform not found')
       throw new Error('PLATFORM_NOT_FOUND')
     }
+    const platformActive = await platform.platformActive()
+    if (!platformActive) throw new Error('PLATFORM_NOT_ACTIVATED')
 
     provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']')
     const accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly')
@@ -387,6 +401,8 @@ class Grade {
       provGradeServiceDebug('Platform not found')
       throw new Error('PLATFORM_NOT_FOUND')
     }
+    const platformActive = await platform.platformActive()
+    if (!platformActive) throw new Error('PLATFORM_NOT_ACTIVATED')
 
     provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']')
     const accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem')
@@ -440,6 +456,8 @@ class Grade {
       provGradeServiceDebug('Platform not found')
       throw new Error('PLATFORM_NOT_FOUND')
     }
+    const platformActive = await platform.platformActive()
+    if (!platformActive) throw new Error('PLATFORM_NOT_ACTIVATED')
 
     provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']')
 
@@ -529,6 +547,8 @@ class Grade {
       provGradeServiceDebug('Platform not found')
       throw new Error('PLATFORM_NOT_FOUND')
     }
+    const platformActive = await platform.platformActive()
+    if (!platformActive) throw new Error('PLATFORM_NOT_ACTIVATED')
 
     provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']')
     const accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly')

@@ -67,6 +67,8 @@ class NamesAndRoles {
       throw new Error('PLATFORM_NOT_FOUND');
     }
 
+    const platformActive = await platform.platformActive();
+    if (!platformActive) throw new Error('PLATFORM_NOT_ACTIVATED');
     provNamesAndRolesServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']');
     const tokenRes = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly');
     provNamesAndRolesServiceDebug('Access_token retrieved for [' + idtoken.iss + ']');

@@ -76,6 +76,8 @@ class Grade {
         throw new Error('PLATFORM_NOT_FOUND');
       }
 
+      const platformActive = await platform.platformActive();
+      if (!platformActive) throw new Error('PLATFORM_NOT_ACTIVATED');
       provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']');
       accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly');
       provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']');
@@ -177,6 +179,8 @@ class Grade {
         throw new Error('PLATFORM_NOT_FOUND');
       }
 
+      const platformActive = await platform.platformActive();
+      if (!platformActive) throw new Error('PLATFORM_NOT_ACTIVATED');
       provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']');
       accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem');
       provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']');
@@ -225,6 +229,8 @@ class Grade {
         throw new Error('PLATFORM_NOT_FOUND');
       }
 
+      const platformActive = await platform.platformActive();
+      if (!platformActive) throw new Error('PLATFORM_NOT_ACTIVATED');
       provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']');
       accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly');
       provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']');
@@ -274,6 +280,8 @@ class Grade {
       throw new Error('PLATFORM_NOT_FOUND');
     }
 
+    const platformActive = await platform.platformActive();
+    if (!platformActive) throw new Error('PLATFORM_NOT_ACTIVATED');
     provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']');
     const accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem');
     provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']');
@@ -317,6 +325,8 @@ class Grade {
       throw new Error('PLATFORM_NOT_FOUND');
     }
 
+    const platformActive = await platform.platformActive();
+    if (!platformActive) throw new Error('PLATFORM_NOT_ACTIVATED');
     provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']');
     const accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem');
     provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']');
@@ -363,6 +373,8 @@ class Grade {
       throw new Error('PLATFORM_NOT_FOUND');
     }
 
+    const platformActive = await platform.platformActive();
+    if (!platformActive) throw new Error('PLATFORM_NOT_ACTIVATED');
     provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']');
     const accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem https://purl.imsglobal.org/spec/lti-ags/scope/score');
     provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']'); // Creating scores URL
@@ -429,6 +441,8 @@ class Grade {
       throw new Error('PLATFORM_NOT_FOUND');
     }
 
+    const platformActive = await platform.platformActive();
+    if (!platformActive) throw new Error('PLATFORM_NOT_ACTIVATED');
     provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']');
     const accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly');
     provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']');
@@ -520,6 +534,8 @@ class Grade {
       throw new Error('PLATFORM_NOT_FOUND');
     }
 
+    const platformActive = await platform.platformActive();
+    if (!platformActive) throw new Error('PLATFORM_NOT_ACTIVATED');
     provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']');
     const accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem');
     provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']');
@@ -593,6 +609,8 @@ class Grade {
       throw new Error('PLATFORM_NOT_FOUND');
     }
 
+    const platformActive = await platform.platformActive();
+    if (!platformActive) throw new Error('PLATFORM_NOT_ACTIVATED');
     provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']');
     const accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem https://purl.imsglobal.org/spec/lti-ags/scope/score');
     provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']');
@@ -700,6 +718,8 @@ class Grade {
       throw new Error('PLATFORM_NOT_FOUND');
     }
 
+    const platformActive = await platform.platformActive();
+    if (!platformActive) throw new Error('PLATFORM_NOT_ACTIVATED');
     provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']');
     const accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly');
     provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']');

@@ -81,10 +81,25 @@ class Platform {
   }
 
   /**
-     * @description Gets the platform key_id.
-     */
+   * @description Gets the platform key_id.
+   */
   async platformKid () {
     return this.#kid
+  }
+
+  /**
+   * @description Sets/Gets the platform status.
+   * @param {Boolean} active - Wether the Platform is active or not.
+   */
+  async platformActive (active) {
+    if (!active) {
+      // Get platform status
+      const platformStatus = await this.#Database.Get(false, 'platformStatus', { id: this.#kid })
+      if (!platformStatus || platformStatus[0].active) return true
+      else return false
+    }
+    await this.#Database.Replace(false, 'platformStatus', { id: this.#kid }, { id: this.#kid, active: active })
+    return active
   }
 
   /**
@@ -179,7 +194,8 @@ class Platform {
       authenticationEndpoint: this.#authenticationEndpoint,
       accesstokenEndpoint: this.#accesstokenEndpoint,
       authConfig: this.#authConfig,
-      publicKey: await this.platformPublicKey()
+      publicKey: await this.platformPublicKey(),
+      active: await this.platformActive()
     }
     return platformJSON
   }
@@ -189,6 +205,7 @@ class Platform {
    */
   async delete () {
     await this.#Database.Delete('platform', { platformUrl: this.#platformUrl, clientId: this.#clientId })
+    await this.#Database.Delete('platformStatus', { id: this.#kid })
     await this.#Database.Delete('publickey', { kid: this.#kid })
     await this.#Database.Delete('privatekey', { kid: this.#kid })
     return true

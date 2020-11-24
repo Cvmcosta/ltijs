@@ -142,12 +142,35 @@ class Platform {
     return (0, _classPrivateFieldGet2.default)(this, _kid);
   }
   /**
-     * @description Gets the platform key_id.
-     */
+   * @description Gets the platform key_id.
+   */
 
 
   async platformKid() {
     return (0, _classPrivateFieldGet2.default)(this, _kid);
+  }
+  /**
+   * @description Sets/Gets the platform status.
+   * @param {Boolean} active - Wether the Platform is active or not.
+   */
+
+
+  async platformActive(active) {
+    if (!active) {
+      // Get platform status
+      const platformStatus = await (0, _classPrivateFieldGet2.default)(this, _Database).Get(false, 'platformStatus', {
+        id: (0, _classPrivateFieldGet2.default)(this, _kid)
+      });
+      if (!platformStatus || platformStatus[0].active) return true;else return false;
+    }
+
+    await (0, _classPrivateFieldGet2.default)(this, _Database).Replace(false, 'platformStatus', {
+      id: (0, _classPrivateFieldGet2.default)(this, _kid)
+    }, {
+      id: (0, _classPrivateFieldGet2.default)(this, _kid),
+      active: active
+    });
+    return active;
   }
   /**
      * @description Gets the RSA public key assigned to the platform.
@@ -268,7 +291,8 @@ class Platform {
       authenticationEndpoint: (0, _classPrivateFieldGet2.default)(this, _authenticationEndpoint),
       accesstokenEndpoint: (0, _classPrivateFieldGet2.default)(this, _accesstokenEndpoint),
       authConfig: (0, _classPrivateFieldGet2.default)(this, _authConfig2),
-      publicKey: await this.platformPublicKey()
+      publicKey: await this.platformPublicKey(),
+      active: await this.platformActive()
     };
     return platformJSON;
   }
@@ -281,6 +305,9 @@ class Platform {
     await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('platform', {
       platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl),
       clientId: (0, _classPrivateFieldGet2.default)(this, _clientId)
+    });
+    await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('platformStatus', {
+      id: (0, _classPrivateFieldGet2.default)(this, _kid)
     });
     await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('publickey', {
       kid: (0, _classPrivateFieldGet2.default)(this, _kid)

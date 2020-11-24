@@ -16,6 +16,7 @@ describe('Testing shutdown method', function () {
   // Closes connections
   it('Provider.close expected to return true', async () => {
     await expect(lti.deletePlatform('http://localhost/moodle', 'ClientId1')).to.eventually.become(true)
+    await expect(lti.deletePlatform('http://localhost/moodledyn', '123456')).to.eventually.become(true)
     return expect(lti.close({ silent: true })).to.eventually.equal(true)
   })
   it('Provider.registerPlatform expected to throw error when Provider is closed', async () => {

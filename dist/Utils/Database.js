@@ -136,6 +136,18 @@ class Database {
     }, {
       unique: true
     });
+    const platformStatusSchema = new Schema({
+      id: String,
+      active: {
+        type: Boolean,
+        default: false
+      }
+    });
+    platformStatusSchema.index({
+      id: 1
+    }, {
+      unique: true
+    });
     const keySchema = new Schema({
       kid: String,
       platformUrl: String,
@@ -197,6 +209,7 @@ class Database {
       mongoose.model('idtoken', idTokenSchema);
       mongoose.model('contexttoken', contextTokenSchema);
       mongoose.model('platform', platformSchema);
+      mongoose.model('platformStatus', platformStatusSchema);
       mongoose.model('privatekey', keySchema);
       mongoose.model('publickey', keySchema);
       mongoose.model('accesstoken', accessTokenSchema);

@@ -35,6 +35,8 @@ const DeepLinkingService = require('./Services/DeepLinking');
 
 const NamesAndRolesService = require('./Services/NamesAndRoles');
 
+const DynamicRegistration = require('./Services/DynamicRegistration');
+
 const url = require('fast-url-parser');
 
 const jwt = require('jsonwebtoken');
@@ -59,6 +61,10 @@ var _invalidTokenRoute = new WeakMap();
 
 var _keysetRoute = new WeakMap();
 
+var _dynRegRoute = new WeakMap();
+
+var _DynamicRegistration = new WeakMap();
+
 var _whitelistedRoutes = new WeakMap();
 
 var _ENCRYPTIONKEY2 = new WeakMap();
@@ -76,6 +82,8 @@ var _setup = new WeakMap();
 var _connectCallback2 = new WeakMap();
 
 var _deepLinkingCallback2 = new WeakMap();
+
+var _dynamicRegistrationCallback = new WeakMap();
 
 var _sessionTimeoutCallback2 = new WeakMap();
 
@@ -110,6 +118,16 @@ class Provider {
     _keysetRoute.set(this, {
       writable: true,
       value: '/keys'
+    });
+
+    _dynRegRoute.set(this, {
+      writable: true,
+      value: '/register'
+    });
+
+    _DynamicRegistration.set(this, {
+      writable: true,
+      value: false
     });
 
     _whitelistedRoutes.set(this, {
@@ -165,6 +183,11 @@ class Provider {
       }
     });
 
+    _dynamicRegistrationCallback.set(this, {
+      writable: true,
+      value: false
+    });
+
     _sessionTimeoutCallback2.set(this, {
       writable: true,
       value: async (req, res) => {
@@ -187,7 +210,13 @@ class Provider {
           return res.status(200).send(keyset);
         } catch (err) {
           provMainDebug(err);
-          res.sendStatus(500);
+          return res.status(500).send({
+            status: 500,
+            error: 'Internal Server Error',
+            details: {
+              message: err.message
+            }
+          });
         }
       }
     });
@@ -214,6 +243,7 @@ class Provider {
      * @param {String} [options.sessionTimeoutRoute = '/sessiontimeout'] - Lti Provider session timeout route. If no option is set '/sessiontimeout' is used.
      * @param {String} [options.invalidTokenRoute = '/invalidtoken'] - Lti Provider invalid token route. If no option is set '/invalidtoken' is used.
      * @param {String} [options.keysetRoute = '/keys'] - Lti Provider public jwk keyset route. If no option is set '/keys' is used.
+     * @param {String} [options.dynRegRoute = '/register'] - Dynamic registration route.
      * @param {Boolean} [options.https = false] - Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https and are planning to configure ssl through Express.
      * @param {Object} [options.ssl] - SSL certificate and key if https is enabled.
      * @param {String} [options.ssl.key] - SSL key.
@@ -227,12 +257,20 @@ class Provider {
      * @param {String} [options.cookies.domain] - Cookie domain parameter. This parameter can be used to specify a domain so that the cookies set by Ltijs can be shared between subdomains.
      * @param {Boolean} [options.devMode = false] - If true, does not require state and session cookies to be present (If present, they are still validated). This allows ltijs to work on development environments where cookies cannot be set. THIS SHOULD NOT BE USED IN A PRODUCTION ENVIRONMENT.
      * @param {Number} [options.tokenMaxAge = 10] - Sets the idToken max age allowed in seconds. Defaults to 10 seconds. If false, disables max age validation.
+     * @param {Object} [options.dynReg] - Setup for the Dynamic Registration Service.
+     * @param {String} [options.dynReg.url] - Tool Provider main URL. (Ex: 'https://tool.example.com')
+     * @param {String} [options.dynReg.name] - Tool Provider name. (Ex: 'Tool Provider')
+     * * @param {String} [options.dynReg.logo] - Tool Provider logo. (Ex: 'https://client.example.org/logo.png')
+     * @param {Array<String>} [options.dynReg.redirectUris] - Additional redirect URIs. (Ex: ['https://tool.example.com/launch'])
+     * @param {Object} [options.dynReg.customParameters] - Custom parameters object. (Ex: { key: 'value' })
+     * @param {Boolean} [options.dynReg.autoActivate = false] - Platform auto activation flag. If true, every Platform registered dynamically is immediately activated. Defaults to false.
      */
   setup(encryptionkey, database, options) {
     if ((0, _classPrivateFieldGet2.default)(this, _setup)) throw new Error('PROVIDER_ALREADY_SETUP');
     if (options && options.https && (!options.ssl || !options.ssl.key || !options.ssl.cert)) throw new Error('MISSING_SSL_KEY_CERTIFICATE');
     if (!encryptionkey) throw new Error('MISSING_ENCRYPTION_KEY');
     if (!database) throw new Error('MISSING_DATABASE_CONFIGURATION');
+    if (options && options.dynReg && (!options.dynReg.url || !options.dynReg.name)) throw new Error('MISSING_DYNREG_CONFIGURATION');
     /**
      * @description Database object.
      */
@@ -244,6 +282,7 @@ class Provider {
     if (options && (options.sessionTimeoutRoute || options.sessionTimeoutUrl)) (0, _classPrivateFieldSet2.default)(this, _sessionTimeoutRoute, options.sessionTimeoutRoute || options.sessionTimeoutUrl);
     if (options && (options.invalidTokenRoute || options.invalidTokenUrl)) (0, _classPrivateFieldSet2.default)(this, _invalidTokenRoute, options.invalidTokenRoute || options.invalidTokenUrl);
     if (options && (options.keysetRoute || options.keysetUrl)) (0, _classPrivateFieldSet2.default)(this, _keysetRoute, options.keysetRoute || options.keysetUrl);
+    if (options && options.dynRegRoute) (0, _classPrivateFieldSet2.default)(this, _dynRegRoute, options.dynRegRoute);
     if (options && options.devMode === true) (0, _classPrivateFieldSet2.default)(this, _devMode, true);
     if (options && options.ltiaas === true) (0, _classPrivateFieldSet2.default)(this, _ltiaas, true);
     if (options && options.tokenMaxAge !== undefined) (0, _classPrivateFieldSet2.default)(this, _tokenMaxAge, options.tokenMaxAge); // Cookie options
@@ -276,12 +315,22 @@ class Provider {
      */
 
     this.NamesAndRoles = new NamesAndRolesService(this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), this.Database);
+
+    if (options && options.dynReg) {
+      const routes = {
+        appRoute: (0, _classPrivateFieldGet2.default)(this, _appRoute),
+        loginRoute: (0, _classPrivateFieldGet2.default)(this, _loginRoute),
+        keysetRoute: (0, _classPrivateFieldGet2.default)(this, _keysetRoute)
+      };
+      (0, _classPrivateFieldSet2.default)(this, _DynamicRegistration, new DynamicRegistration(options.dynReg, routes, this.registerPlatform, this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), this.Database));
+    }
+
     if (options && options.staticPath) (0, _classPrivateFieldGet2.default)(this, _server).setStaticPath(options.staticPath); // Registers main athentication and routing middleware
 
     const sessionValidator = async (req, res, next) => {
       provMainDebug('Receiving request at path: ' + req.baseUrl + req.path); // Ckeck if request is attempting to initiate oidc login flow or access reserved routes
 
-      if (req.path === (0, _classPrivateFieldGet2.default)(this, _loginRoute) || req.path === (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutRoute) || req.path === (0, _classPrivateFieldGet2.default)(this, _invalidTokenRoute) || req.path === (0, _classPrivateFieldGet2.default)(this, _keysetRoute)) return next();
+      if (req.path === (0, _classPrivateFieldGet2.default)(this, _loginRoute) || req.path === (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutRoute) || req.path === (0, _classPrivateFieldGet2.default)(this, _invalidTokenRoute) || req.path === (0, _classPrivateFieldGet2.default)(this, _keysetRoute) || req.path === (0, _classPrivateFieldGet2.default)(this, _dynRegRoute)) return next();
       provMainDebug('Path does not match reserved endpoints');
 
       try {
@@ -561,6 +610,14 @@ class Provider {
         if (params.client_id) platform = await this.getPlatform(iss, params.client_id);else platform = (await this.getPlatform(iss))[0];
 
         if (platform) {
+          const platformActive = await platform.platformActive();
+          if (!platformActive) return res.status(401).send({
+            status: 401,
+            error: 'Unauthorized',
+            details: {
+              message: 'PLATFORM_NOT_ACTIVATED'
+            }
+          });
           provMainDebug('Redirecting to platform authentication endpoint'); // Create state parameter used to validade authentication response
 
           let state = encodeURIComponent(crypto.randomBytes(25).toString('hex'));
@@ -661,7 +718,17 @@ class Provider {
       (0, _classPrivateFieldGet2.default)(this, _invalidTokenCallback2).call(this, req, res, next);
     });
     this.app.get((0, _classPrivateFieldGet2.default)(this, _keysetRoute), async (req, res, next) => {
-      (0, _classPrivateFieldGet2.default)(this, _keyset).call(this, req, res, next);
+      return (0, _classPrivateFieldGet2.default)(this, _keyset).call(this, req, res, next);
+    });
+    this.app.all((0, _classPrivateFieldGet2.default)(this, _dynRegRoute), async (req, res, next) => {
+      if ((0, _classPrivateFieldGet2.default)(this, _DynamicRegistration)) return (0, _classPrivateFieldGet2.default)(this, _DynamicRegistration).register(req, res, (0, _classPrivateFieldGet2.default)(this, _dynamicRegistrationCallback));
+      return res.status(401).send({
+        status: 401,
+        error: 'Unauthorized',
+        details: {
+          message: 'Dynamic registration is disabled.'
+        }
+      });
     }); // Main app
 
     this.app.all((0, _classPrivateFieldGet2.default)(this, _appRoute), async (req, res, next) => {
@@ -858,6 +925,15 @@ class Provider {
     return (0, _classPrivateFieldGet2.default)(this, _keysetRoute);
   }
   /**
+   * @description Gets the dyncamic registration route that will be used to register platforms dynamically.
+   * @returns {String}
+   */
+
+
+  dynRegRoute() {
+    return (0, _classPrivateFieldGet2.default)(this, _dynRegRoute);
+  }
+  /**
    * @description Whitelists routes to bypass the Ltijs authentication protocol. If validation fails, these routes are still accessed but aren't given an idToken.
    * @param {String} routes - Routes to be whitelisted
    */
@@ -900,11 +976,18 @@ class Provider {
      */
 
 
-  async registerPlatform(platform) {
+  async registerPlatform(platform, getPlatform, ENCRYPTIONKEY, Database) {
     if (!platform || !platform.url || !platform.clientId) throw new Error('MISSING_PLATFORM_URL_OR_CLIENTID');
+
+    const _Database = Database || this.Database;
+
+    const _ENCRYPTIONKEY = ENCRYPTIONKEY || (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2);
+
+    const _getPlatform = getPlatform || this.getPlatform;
+
     let kid;
 
-    const _platform = await this.getPlatform(platform.url, platform.clientId);
+    const _platform = await _getPlatform(platform.url, platform.clientId, _ENCRYPTIONKEY, _Database);
 
     if (!_platform) {
       if (!platform.name || !platform.authenticationEndpoint || !platform.accesstokenEndpoint || !platform.authConfig) throw new Error('MISSING_PARAMS');
@@ -912,13 +995,13 @@ class Provider {
       if (!platform.authConfig.key) throw new Error('MISSING_AUTHCONFIG_KEY');
 
       try {
-        kid = await Auth.generatePlatformKeyPair((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), this.Database, platform.url, platform.clientId);
-        const plat = new Platform(platform.name, platform.url, platform.clientId, platform.authenticationEndpoint, platform.accesstokenEndpoint, kid, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), platform.authConfig, this.Database); // Save platform to db
+        kid = await Auth.generatePlatformKeyPair(_ENCRYPTIONKEY, _Database, platform.url, platform.clientId);
+        const plat = new Platform(platform.name, platform.url, platform.clientId, platform.authenticationEndpoint, platform.accesstokenEndpoint, kid, _ENCRYPTIONKEY, platform.authConfig, this.Database); // Save platform to db
 
         provMainDebug('Registering new platform');
         provMainDebug('Platform Url: ' + platform.url);
         provMainDebug('Platform ClientId: ' + platform.clientId);
-        await this.Database.Replace(false, 'platform', {
+        await _Database.Replace(false, 'platform', {
           platformUrl: platform.url,
           clientId: platform.clientId
         }, {
@@ -932,13 +1015,13 @@ class Provider {
         });
         return plat;
       } catch (err) {
-        await this.Database.Delete('publickey', {
+        await _Database.Delete('publickey', {
           kid: kid
         });
-        await this.Database.Delete('privatekey', {
+        await _Database.Delete('privatekey', {
           kid: kid
         });
-        await this.Database.Delete('platform', {
+        await _Database.Delete('platform', {
           platformUrl: platform.url,
           clientId: platform.clientId
         });
@@ -947,7 +1030,7 @@ class Provider {
       }
     } else {
       provMainDebug('Platform already registered');
-      await this.Database.Modify(false, 'platform', {
+      await _Database.Modify(false, 'platform', {
         platformUrl: platform.url,
         clientId: platform.clientId
       }, {
@@ -956,7 +1039,7 @@ class Provider {
         accesstokenEndpoint: platform.accesstokenEndpoint || (await _platform.platformAccessTokenEndpoint()),
         authConfig: platform.authConfig || (await _platform.platformAuthConfig())
       });
-      return this.getPlatform(platform.url, platform.clientId);
+      return _getPlatform(platform.url, platform.clientId, _ENCRYPTIONKEY, _Database);
     }
   }
   /**
