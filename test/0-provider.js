@@ -42,7 +42,7 @@ describe('Testing Provider', function () {
           keysetRoute: keysetRoute,
           staticPath: path.join(__dirname, '/views/'),
           devMode: false,
-          dynReg: { url: 'https://tool.example.com', name: 'Tool Name', customParameters: { a: 'b' }, redirectUris: ['https://tool.example.com/launch'] }
+          dynReg: { url: 'https://tool.example.com', name: 'Tool Name', logo: 'https://tool.example.com/assets/logo.svg', customParameters: { a: 'b' }, redirectUris: ['https://tool.example.com/launch'] }
         })
       return lti
     }

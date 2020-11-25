@@ -1,0 +1,140 @@
+
+
+<div align="center">
+	<br>
+	<br>
+	<a href="https://cvmcosta.github.io/ltijs"><img width="360" src="logo-300.svg"></img></a>
+  <a href="https://site.imsglobal.org/certifications/coursekey/ltijs"​ target='_blank'><img width="80" src="https://www.imsglobal.org/sites/default/files/IMSconformancelogoREG.png" alt="IMS Global Certified" border="0"></img></a>
+</div>
+
+
+> Dynamic Registration Service
+
+
+[![travisci](https://travis-ci.org/Cvmcosta/ltijs.svg?branch=master)](https://travis-ci.org/Cvmcosta/ltijs)
+[![codecov](https://codecov.io/gh/Cvmcosta/ltijs/branch/master/graph/badge.svg)](https://codecov.io/gh/Cvmcosta/ltijs)
+[![Node Version](https://img.shields.io/node/v/ltijs.svg)](https://www.npmjs.com/package/ltijs)
+[![NPM package](https://img.shields.io/npm/v/ltijs.svg)](https://www.npmjs.com/package/ltijs)
+[![NPM downloads](https://img.shields.io/npm/dm/ltijs)](https://www.npmjs.com/package/ltijs)
+[![dependencies Status](https://david-dm.org/cvmcosta/ltijs/status.svg)](https://david-dm.org/cvmcosta/ltijs)
+[![devDependencies Status](https://david-dm.org/cvmcosta/ltijs/dev-status.svg)](https://david-dm.org/cvmcosta/ltijs?type=dev)
+[![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
+[![APACHE2 License](https://img.shields.io/github/license/cvmcosta/ltijs)](#LICENSE)
+[![Donate](https://img.shields.io/badge/Donate-Buy%20me%20a%20coffe-blue)](https://www.buymeacoffee.com/UL5fBsi)
+
+## Table of Contents
+
+- [Introduction](#introduction)
+- [Usage](#usage)
+- [Documentation](#documentation)
+- [License](#license)
+
+---
+
+
+## Introduction
+
+Ltijs is the first LTI library to implement the **Dynamic Registration Service**. 
+
+Dynamic registration turns the LTI registration flow into a fast, completely automatic process. Ltijs exposes a registration endpoint through which Platforms can initiate the registration flow.
+
+Currently the following LMSs support Dynamic Registration:
+
+| **LMS** | **Version** |
+| ---- | ---|
+| Moodle | ^3.10 |
+
+
+---
+
+
+## Usage
+
+
+### Setting up dynamic registration
+
+Dynamic registration needs to be setup through the `Provider.setup` method with the `options.dynReg` and `options.dynRegRoute` fields.
+
+- **dynRegRoute**: Dynamic registration route. Defaults to `/register`.
+
+- **dynReg**: Dynamic registration configuration object. **The service is disabled if this object is not present in the options.**
+  - **url**: Tool Provider URL. Required field. Example: `http://tool.example.com`.
+  - **name**: Tool Provider name. Required field. Example: `Tool Provider`.
+  - **logo**: Tool Provider logo URL. Example: `http://tool.example.com/assets/logo.svg`.
+  - **redirectUris**: Additional redirection URLs. The main URL is added by default. Example: `['http://tool.example.com/launch']`.
+  - **customParameters**: Custom parameters. Example `{ key: 'value' }`.
+  - **autoActivate**: Determines whether or not dynamically registered Platforms should be automatically activated. Defaults to `false`.
+
+**Example:**
+
+``` javascript
+// Require Provider 
+const lti = require('ltijs').Provider
+
+// Setup provider
+lti.setup('LTIKEY', // Key used to sign cookies and tokens
+  { // Database configuration
+    url: 'mongodb://localhost/database',
+    connection: { user: 'user', pass: 'password' }
+  },
+  { // Options
+    appRoute: '/', loginRoute: '/login', // Optionally, specify some of the reserved routes
+    cookies: {
+      secure: false, // Set secure to true if the testing platform is in a different domain and https is being used
+      sameSite: '' // Set sameSite to 'None' if the testing platform is in a different domain and https is being used
+    },
+    devMode: true, // Set DevMode to false if running in a production environment with https
+    dynRegRoute: '/register', // Setting up dynamic registration route. Defaults to '/register'
+    dynReg: {
+      url: 'http://tool.example.com', // Tool Provider URL. Required field.
+      name: 'Tool Provider', // Tool Provider name. Required field.
+      logo: 'http://tool.example.com/assets/logo.svg', // Tool Provider logo URL.
+      redirectUris: ['http://tool.example.com/launch'], // Additional redirection URLs. The main URL is added by default.
+      customParameters: { key: 'value' }, // Custom parameters.
+      autoActivate: false // Whether or not dynamically registered Platforms should be automatically activated. Defaults to false.
+    }
+  }
+)
+```
+
+
+
+### Using the Dynamic Registration Service
+
+Dynamic Registration is used when a Platform makes a **registration request** to the Tool's **dynamic registration endpoint**, *`/register` by default*. Both parties will then exchange information and create the registrations.
+
+Platform registrations created dynamically, by default, have to be manually activated. This can be done by using the `Platform.platformActive` method:
+
+
+```javascript
+// Retrieve Platform
+const platform = await lti.getPlatform('http://platform.example.com', 'CLIENTID')
+// Activate Platform
+await platform.platformActive(true)
+```
+
+By setting the `options.dynReg.autoActivate` field to `true` in the `Provider.setup` method, dynamically registered Platforms can be automatically activated.
+
+
+#### Moodle
+
+- Go to `Site administration / Plugins / Activity modules / External tool / Manage tools`.
+
+- Fill the `Tool URL` field with your Tool's registration URL. Example: `http://tool.example.com/register`.
+
+- Click `Add LTI Advantage`.
+
+<div align="center">
+  </br>
+	<img width="800" src="dynreg_moodle.png"></img>
+  <div><sub>Dynamic Registration with Moodle</sub></div>
+  </br>
+</div>
+
+
+
+---
+
+## License
+
+[![APACHE2 License](https://img.shields.io/github/license/cvmcosta/ltijs)](LICENSE)

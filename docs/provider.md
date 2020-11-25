@@ -30,6 +30,9 @@ Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps
 > - [Migrating from version 4](https://cvmcosta.github.io/ltijs/#/migration)
 > - [CHANGELOG](https://cvmcosta.github.io/ltijs/#/changelog)
 
+> Ltijs is the first LTI Library to implement the new [LTI® Advantage Dynamic Registration Service](https://cvmcosta.me/ltijs/#/dynamicregistration), now supported by **Moodle 3.10**. 
+> The Dynamic Registration Service turns the LTI Tool registration flow into a fast, completely automatic process.
+
 ## Table of Contents
 
 - [Introduction](#introduction)
@@ -71,6 +74,7 @@ Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps
   - [Deep Linking](#deep-linking-service-with-ltijs)
   - [Assignment and Grades](#assignment-and-grades-service-with-ltijs)
   - [Names and Roles Provisioning](#names-and-roles-provisioning-service-with-ltijs)
+  - [Dynamic Registration Service](#dynamic-registration-service-with-ltijs)
 - [Debugging](#debugging)
 - [Contributing](#contributing)
 - [Special thanks](#special-thanks)
@@ -96,7 +100,9 @@ This library implements a tool provider as an [Express](https://expressjs.com/) 
 | [Deep Linking Service Class](https://cvmcosta.me/ltijs/#/deeplinking) | <center>✔️</center> | <center>✔️</center> |
 | [Grading Service Class](https://cvmcosta.me/ltijs/#/grading) | <center>✔️</center> | <center>✔️</center> |
 | [Names and Roles Service Class](https://cvmcosta.me/ltijs/#/namesandroles) | <center>✔️</center> | <center>✔️</center> |
+| [Dynamic Registration Service ](https://cvmcosta.me/ltijs/#/dynamicregistration) | <center>✔️</center> | <center>✔️</center> |
 | Database plugins | <center>✔️</center> | <center>✔️</center> |
+| Revised usability tutorials | <center></center> | <center></center> |
 | Key Rotation | <center></center> | <center></center> |
 | Redis caching | <center></center> | <center></center> |
 
@@ -253,6 +259,7 @@ Method used to setup and configure the LTI® provider.
 | options.appRoute | `String`  | Lti Provider main url. **Default: '/'**. | *Optional* |
 | options.loginRoute | `String`  | Lti Provider login url. **Default: '/login'**. | *Optional* |
 | options.keysetRoute | `String`  | Lti Provider public jwk keyset route. **Default: '/keys'**. | *Optional* |
+| options.dynRegRoute | `String`  | Dynamic registration route. **Default: '/register'**. | *Optional* |
 | options.sessionTimeoutRoute | `String`  | Lti Provider session timeout url. **Default: '/sessiontimeout'**. | *Optional* |
 | options.invalidTokenRoute | `String`  | Lti Provider invalid token url. **Default: '/invalidtoken'**. | *Optional* |
 | options.https | `Boolean`  |  Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https and are planning to configure ssl through Express. **Default: false**. | *Optional* |
@@ -268,6 +275,13 @@ Method used to setup and configure the LTI® provider.
 | options.tokenMaxAge | `String` | Sets the idToken max age allowed in seconds. If false, disables max age validation. **Default: 10**. | *Optional* |
 | options.devMode | `Boolean` | If true, does not require state and session cookies to be present (If present, they are still validated). This allows Ltijs to work on development environments where cookies cannot be set. **Default: false**. ***THIS SHOULD NOT BE USED IN A PRODUCTION ENVIRONMENT.*** | *Optional* |
 | options.ltiaas | `Boolean` | If set to true, disables the creation and validation of the session cookies. Login state cookies are still created, since they are a part of the LTI specification. **Default: false** | *Optional* |
+| options.dynReg | `Object` | Setup for the Dynamic Registration Service. | *Optional* |
+| options.dynReg.url | `String` | Tool Provider main URL. (Ex: 'https://tool.example.com') |  |
+| options.dynReg.name | `String` | Tool Provider name. (Ex: 'Tool Provider') |  |
+| options.dynReg.logo | `String` | Tool Provider logo. (Ex: 'https://client.example.org/logo.png') | *Optional* |
+| options.dynReg.redirectUris | `Array` | Additional redirect URIs. (Ex: ['https://tool.example.com/launch']) | *Optional* |
+| options.dynReg.customParameters | `Object` | Custom parameters object. (Ex: `{ key: 'value' })` | *Optional* |
+| options.dynReg.autoActivate | `Boolean` | Platform auto activation flag. If true, every Platform registered dynamically is immediately activated. **Default: false**. | *Optional* |
 
 #### async Provider.deploy(options) 
 
@@ -1283,6 +1297,8 @@ authConfig: { method: 'RSA_KEY',
                   '-----END PUBLIC KEY-----' }
 ```
 
+Platforms can also be registered by utilizing the [Dynamic Registration Service](https://cvmcosta.me/ltijs/#/dynamicregistration).
+
 #### Retrieving a Platform
 
 Registered platforms can be retrieved using the following methods:
@@ -1494,6 +1510,14 @@ Ltijs need as way to retrieve the correct `idtoken` and `contexttoken` informati
 
 #### Launches
 
+<div align="center">
+  </br>
+	<img width="500" src="launch.png"></img>
+  <div><sub>Launch process</sub></div>
+  </br>
+</div>
+
+
 A platform can launch to **any of the tool's endpoints**, but only launches targeting the specified `appRoute` will be sent to the [onConnect callback](#onconnect). **Launches to other endpoints must be handled by their specific `Express` routes.**
 
 At the end of a successful launch, Ltijs redirects the request to the desired endpoint, but it also does two other things:
@@ -1502,16 +1526,18 @@ At the end of a successful launch, Ltijs redirects the request to the desired en
 
 - Sends a **ltik** JWT token containing the same platform and user information, with additional context information as a query parameter to the endpoint.
 
-<div align="center">
-  </br>
-	<img width="500" src="launch.png"></img>
-  <div><sub>Launch process</sub></div>
-  </br>
-</div>
-
 > [See more about cookie configuration options](#cookie-configuration)
 
 #### Request authentication
+
+<div align="center">
+  </br>
+	<img width="500" src="request.png"></img>
+  <div><sub>Request process</sub></div>
+  </br>
+</div>
+
+> [Check implementation examples](#implementation-example)
 
 Whenever the tool receives a request **not directed at one of the reserved endpoints** it attempts to validate the request by matching the information received through the [session cookie](#cookies) with the information contained in the **ltik** token.
 
@@ -1589,16 +1615,6 @@ When using the `LTIK-AUTH-V1` authorization schema, `req.headers.authorization` 
 > [See more about development mode]((#development-mode))
 
 If the validation fails, the request is redirected to either the **invalidTokenRoute** or the **sessionTimeoutRoute**.
-
-<div align="center">
-  </br>
-	<img width="500" src="request.png"></img>
-  <div><sub>Request process</sub></div>
-  </br>
-</div>
-
-> [Check implementation examples](#implementation-example)
-
 
 **Cookie creation and validation can be disabled by setting `ltiaas: true` in the [setup options](#ltiaas-mode):**
 
@@ -1766,6 +1782,10 @@ The Assignment and Grades Service class documentation can be accessed [here](htt
 ### Names and Roles Provisioning Service with Ltijs
 
 The Names and Roles Provisioning Service class documentation can be accessed [here](https://cvmcosta.me/ltijs/#/namesandroles).
+
+### Dynamic Registration Service with Ltijs
+
+The Dynamic Registration Service documentation can be accessed [here](https://cvmcosta.me/ltijs/#/dynamicregistration).
 
 ---
 

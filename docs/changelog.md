@@ -9,6 +9,10 @@
 
 ### CHANGELOG
 
+#### V5.5.0
+> 2020-11-24
+> - Released Dynamic Registration Service.
+
 #### V5.4.9
 > 2020-11-19
 > - Added req.query alterantive for Typescript ltiaas users.

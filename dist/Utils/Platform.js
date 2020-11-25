@@ -151,7 +151,7 @@ class Platform {
   }
   /**
    * @description Sets/Gets the platform status.
-   * @param {Boolean} active - Wether the Platform is active or not.
+   * @param {Boolean} active - Whether the Platform is active or not.
    */
 
 

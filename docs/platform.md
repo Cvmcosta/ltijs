@@ -192,6 +192,21 @@ Sets/Gets the platform access token endpoint used to authenticate messages to th
 
 - Promise that resolves the `platform access token endpoint`.
 
+#### async Platform.platformActive([status]) 
+
+Sets/Gets the platform activation status.
+
+
+##### Parameters
+
+| Name | Type | Description |  |
+| ---- | ---- | ----------- | -------- |
+| status | `Boolean`  | Platform activation status. | *Optional* |
+
+##### Returns
+
+
+- Promise that resolves the `platform activation status`.
 
 
 
