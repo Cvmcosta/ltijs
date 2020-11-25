@@ -29,6 +29,9 @@ Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps
 > - [Migrating from version 4](https://cvmcosta.github.io/ltijs/#/migration)
 > - [CHANGELOG](https://cvmcosta.github.io/ltijs/#/changelog)
 
+> Ltijs is the first LTI Library to implement the new [LTI® Advantage Dynamic Registration Service](https://cvmcosta.me/ltijs/#/dynamicregistration), now supported by **Moodle 3.10**. 
+> The Dynamic Registration Service turns the LTI Tool registration flow into a fast, completely automatic process.
+
 > *Learning Tools Interoperability® (LTI®) is a trademark of the IMS Global Learning Consortium, Inc. (https://www.imsglobal.org)*
 
 ## Table of Contents
@@ -62,10 +65,11 @@ This library implements a tool provider as an [Express](https://expressjs.com/) 
 | [Deep Linking Service Class](https://cvmcosta.me/ltijs/#/deeplinking) | <center>✔️</center> | <center>✔️</center> |
 | [Grading Service Class](https://cvmcosta.me/ltijs/#/grading) | <center>✔️</center> | <center>✔️</center> |
 | [Names and Roles Service Class](https://cvmcosta.me/ltijs/#/namesandroles) | <center>✔️</center> | <center>✔️</center> |
+| [Dynamic Registration Service ](https://cvmcosta.me/ltijs/#/dynamicregistration) | <center>✔️</center> | <center>✔️</center> |
 | Database plugins | <center>✔️</center> | <center>✔️</center> |
+| Revised usability tutorials | <center></center> | <center></center> |
 | Key Rotation | <center></center> | <center></center> |
 | Redis caching | <center></center> | <center></center> |
-
 
 
 ---
@@ -172,6 +176,7 @@ Service documentations:
    - [Deep Linking Service documentation](https://cvmcosta.github.io/ltijs/#/deeplinking)
    - [Grading Service documentation](https://cvmcosta.github.io/ltijs/#/grading)
    - [Names and Roles Provisioning Service documentation](https://cvmcosta.github.io/ltijs/#/namesandroles)
+   - [Dynamic Registration Service documentation](https://cvmcosta.me/ltijs/#/dynamicregistration)
 
 Additional documentation:
 
