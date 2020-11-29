@@ -61,6 +61,7 @@ Dynamic registration needs to be setup through the `Provider.setup` method with 
   - **url**: Tool Provider URL. Required field. Example: `http://tool.example.com`.
   - **name**: Tool Provider name. Required field. Example: `Tool Provider`.
   - **logo**: Tool Provider logo URL. Example: `http://tool.example.com/assets/logo.svg`.
+  - **description**: Tool Provider description.
   - **redirectUris**: Additional redirection URLs. The main URL is added by default. Example: `['http://tool.example.com/launch']`.
   - **customParameters**: Custom parameters. Example `{ key: 'value' }`.
   - **autoActivate**: Determines whether or not dynamically registered Platforms should be automatically activated. Defaults to `false`.
@@ -89,6 +90,7 @@ lti.setup('LTIKEY', // Key used to sign cookies and tokens
       url: 'http://tool.example.com', // Tool Provider URL. Required field.
       name: 'Tool Provider', // Tool Provider name. Required field.
       logo: 'http://tool.example.com/assets/logo.svg', // Tool Provider logo URL.
+      description: 'Tool Description', // Tool Provider description.
       redirectUris: ['http://tool.example.com/launch'], // Additional redirection URLs. The main URL is added by default.
       customParameters: { key: 'value' }, // Custom parameters.
       autoActivate: false // Whether or not dynamically registered Platforms should be automatically activated. Defaults to false.

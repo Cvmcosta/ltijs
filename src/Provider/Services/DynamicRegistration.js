@@ -42,6 +42,8 @@ class DynamicRegistration {
 
   #logo
 
+  #description
+
   #hostname
 
   #appUrl
@@ -64,6 +66,7 @@ class DynamicRegistration {
     this.#customParameters = options.customParameters || {}
     this.#autoActivate = options.autoActivate
     this.#logo = options.logo
+    this.#description = options.description
     this.#hostname = getHostname(options.url)
     this.#appUrl = buildUrl(options.url, routes.appRoute)
     this.#loginUrl = buildUrl(options.url, routes.loginRoute)
@@ -99,6 +102,7 @@ class DynamicRegistration {
         scope: 'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly https://purl.imsglobal.org/spec/lti-ags/scope/lineitem https://purl.imsglobal.org/spec/lti-ags/scope/score https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly',
         'https://purl.imsglobal.org/spec/lti-tool-configuration': {
           domain: this.#hostname,
+          description: this.#description,
           target_link_uri: this.#appUrl,
           custom_parameters: this.#customParameters,
           claims: configuration.claims_supported,

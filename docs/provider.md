@@ -279,6 +279,7 @@ Method used to setup and configure the LTI® provider.
 | options.dynReg.url | `String` | Tool Provider main URL. (Ex: 'https://tool.example.com') |  |
 | options.dynReg.name | `String` | Tool Provider name. (Ex: 'Tool Provider') |  |
 | options.dynReg.logo | `String` | Tool Provider logo. (Ex: 'https://client.example.org/logo.png') | *Optional* |
+| options.dynReg.description | `String` | Tool Provider description. (Ex: 'Tool description') | *Optional* |
 | options.dynReg.redirectUris | `Array` | Additional redirect URIs. (Ex: ['https://tool.example.com/launch']) | *Optional* |
 | options.dynReg.customParameters | `Object` | Custom parameters object. (Ex: `{ key: 'value' })` | *Optional* |
 | options.dynReg.autoActivate | `Boolean` | Platform auto activation flag. If true, every Platform registered dynamically is immediately activated. **Default: false**. | *Optional* |

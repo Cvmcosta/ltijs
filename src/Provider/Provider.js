@@ -120,6 +120,7 @@ class Provider {
      * @param {String} [options.dynReg.url] - Tool Provider main URL. (Ex: 'https://tool.example.com')
      * @param {String} [options.dynReg.name] - Tool Provider name. (Ex: 'Tool Provider')
      * @param {String} [options.dynReg.logo] - Tool Provider logo. (Ex: 'https://client.example.org/logo.png')
+     * @param {String} [options.dynReg.description] - Tool Provider description. (Ex: 'Tool description')
      * @param {Array<String>} [options.dynReg.redirectUris] - Additional redirect URIs. (Ex: ['https://tool.example.com/launch'])
      * @param {Object} [options.dynReg.customParameters] - Custom parameters object. (Ex: { key: 'value' })
      * @param {Boolean} [options.dynReg.autoActivate = false] - Platform auto activation flag. If true, every Platform registered dynamically is immediately activated. Defaults to false.

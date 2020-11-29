@@ -9,6 +9,10 @@
 
 ### CHANGELOG
 
+#### V5.5.3
+> 2020-11-29
+> - Added support for Tool description in the Dynamic Registration Service
+
 #### V5.5.0
 > 2020-11-24
 > - Released Dynamic Registration Service.

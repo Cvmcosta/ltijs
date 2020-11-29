@@ -56,6 +56,8 @@ var _autoActivate = new WeakMap();
 
 var _logo = new WeakMap();
 
+var _description = new WeakMap();
+
 var _hostname = new WeakMap();
 
 var _appUrl = new WeakMap();
@@ -95,6 +97,11 @@ class DynamicRegistration {
     });
 
     _logo.set(this, {
+      writable: true,
+      value: void 0
+    });
+
+    _description.set(this, {
       writable: true,
       value: void 0
     });
@@ -144,6 +151,7 @@ class DynamicRegistration {
     (0, _classPrivateFieldSet2.default)(this, _customParameters, options.customParameters || {});
     (0, _classPrivateFieldSet2.default)(this, _autoActivate, options.autoActivate);
     (0, _classPrivateFieldSet2.default)(this, _logo, options.logo);
+    (0, _classPrivateFieldSet2.default)(this, _description, options.description);
     (0, _classPrivateFieldSet2.default)(this, _hostname, getHostname(options.url));
     (0, _classPrivateFieldSet2.default)(this, _appUrl, buildUrl(options.url, routes.appRoute));
     (0, _classPrivateFieldSet2.default)(this, _loginUrl, buildUrl(options.url, routes.loginRoute));
@@ -185,6 +193,7 @@ class DynamicRegistration {
         scope: 'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly https://purl.imsglobal.org/spec/lti-ags/scope/lineitem https://purl.imsglobal.org/spec/lti-ags/scope/score https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly',
         'https://purl.imsglobal.org/spec/lti-tool-configuration': {
           domain: (0, _classPrivateFieldGet2.default)(this, _hostname),
+          description: (0, _classPrivateFieldGet2.default)(this, _description),
           target_link_uri: (0, _classPrivateFieldGet2.default)(this, _appUrl),
           custom_parameters: (0, _classPrivateFieldGet2.default)(this, _customParameters),
           claims: configuration.claims_supported,
