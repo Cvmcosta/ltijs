@@ -162,96 +162,75 @@ class DynamicRegistration {
     (0, _classPrivateFieldSet2.default)(this, _Database, Database);
   }
   /**
-   * @description Performs dynamic registration.
+   * @description Performs dynamic registration flow.
+   * @param {String} openidConfiguration - OpenID configuration URL. Retrieved from req.query.openid_configuration.
+   * @param {String} [registrationToken] - Registration Token. Retrieved from req.query.registration_token.
+   * @param {Object} [options] - Replacements or extensions to default registration options.
    */
 
 
-  async register(req, res, dynamicRegistrationCallback) {
-    try {
-      if (!req.query.openid_configuration) return res.status(400).send({
-        status: 400,
-        error: 'Bad Request',
-        details: {
-          message: 'Missing parameter: "openid_configuration".'
-        }
-      });
-      provDynamicRegistrationDebug('Starting dynamic registration process'); // Get Platform registration configurations
+  async register(openidConfiguration, registrationToken, options) {
+    if (!openidConfiguration) throw new Error('MISSING_OPENID_CONFIGURATION');
+    provDynamicRegistrationDebug('Starting dynamic registration process'); // Get Platform registration configurations
 
-      const configuration = await got.get(req.query.openid_configuration).json();
-      provDynamicRegistrationDebug('Attempting to register Platform with issuer: ', configuration.issuer); // Building registration object
+    const configuration = await got.get(openidConfiguration).json();
+    provDynamicRegistrationDebug('Attempting to register Platform with issuer: ', configuration.issuer); // Building registration object
 
-      const registration = {
-        application_type: 'web',
-        response_types: ['id_token'],
-        grant_types: ['implicit', 'client_credentials'],
-        initiate_login_uri: (0, _classPrivateFieldGet2.default)(this, _loginUrl),
-        redirect_uris: [...(0, _classPrivateFieldGet2.default)(this, _redirectUris), (0, _classPrivateFieldGet2.default)(this, _appUrl)],
-        client_name: (0, _classPrivateFieldGet2.default)(this, _name),
-        jwks_uri: (0, _classPrivateFieldGet2.default)(this, _keysetUrl),
-        logo_uri: (0, _classPrivateFieldGet2.default)(this, _logo),
-        token_endpoint_auth_method: 'private_key_jwt',
-        scope: 'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly https://purl.imsglobal.org/spec/lti-ags/scope/lineitem https://purl.imsglobal.org/spec/lti-ags/scope/score https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly',
-        'https://purl.imsglobal.org/spec/lti-tool-configuration': {
-          domain: (0, _classPrivateFieldGet2.default)(this, _hostname),
-          description: (0, _classPrivateFieldGet2.default)(this, _description),
-          target_link_uri: (0, _classPrivateFieldGet2.default)(this, _appUrl),
-          custom_parameters: (0, _classPrivateFieldGet2.default)(this, _customParameters),
-          claims: configuration.claims_supported,
-          messages: [{
-            type: 'LtiDeepLinkingRequest'
-          }, {
-            type: 'LtiResourceLink'
-          }]
-        }
-      };
-      provDynamicRegistrationDebug('Tool registration request:');
-      provDynamicRegistrationDebug(registration);
-      provDynamicRegistrationDebug('Sending Tool registration request');
-      const registrationResponse = await got.post(configuration.registration_endpoint, {
-        json: registration,
-        headers: req.query.registration_token ? {
-          Authorization: 'Bearer ' + req.query.registration_token
-        } : undefined
-      }).json(); // Registering Platform
+    const registration = {
+      application_type: 'web',
+      response_types: ['id_token'],
+      grant_types: ['implicit', 'client_credentials'],
+      initiate_login_uri: (0, _classPrivateFieldGet2.default)(this, _loginUrl),
+      redirect_uris: [...(0, _classPrivateFieldGet2.default)(this, _redirectUris), (0, _classPrivateFieldGet2.default)(this, _appUrl)],
+      client_name: (0, _classPrivateFieldGet2.default)(this, _name),
+      jwks_uri: (0, _classPrivateFieldGet2.default)(this, _keysetUrl),
+      logo_uri: (0, _classPrivateFieldGet2.default)(this, _logo),
+      token_endpoint_auth_method: 'private_key_jwt',
+      scope: 'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly https://purl.imsglobal.org/spec/lti-ags/scope/lineitem https://purl.imsglobal.org/spec/lti-ags/scope/score https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly',
+      'https://purl.imsglobal.org/spec/lti-tool-configuration': {
+        domain: (0, _classPrivateFieldGet2.default)(this, _hostname),
+        description: (0, _classPrivateFieldGet2.default)(this, _description),
+        target_link_uri: (0, _classPrivateFieldGet2.default)(this, _appUrl),
+        custom_parameters: (0, _classPrivateFieldGet2.default)(this, _customParameters),
+        claims: configuration.claims_supported,
+        messages: [{
+          type: 'LtiDeepLinkingRequest'
+        }, {
+          type: 'LtiResourceLink'
+        }]
+      }
+    };
+    provDynamicRegistrationDebug('Tool registration request:');
+    provDynamicRegistrationDebug(registration);
+    provDynamicRegistrationDebug('Sending Tool registration request');
+    const registrationResponse = await got.post(configuration.registration_endpoint, {
+      json: registration,
+      headers: registrationToken ? {
+        Authorization: 'Bearer ' + registrationToken
+      } : undefined
+    }).json(); // Registering Platform
 
-      const platformName = (configuration['https://purl.imsglobal.org/spec/lti-platformconfiguration '] ? configuration['https://purl.imsglobal.org/spec/lti-platformconfiguration '].product_family_code : 'Platform') + '_DynReg_' + crypto.randomBytes(16).toString('hex');
-      if (await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, configuration.issuer, registrationResponse.client_id, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database))) return res.status(403).send({
-        status: 403,
-        error: 'Forbidden',
-        details: {
-          message: 'Platform already registered.'
-        }
-      });
-      provDynamicRegistrationDebug('Registering Platform');
-      const platform = {
-        url: configuration.issuer,
-        name: platformName,
-        clientId: registrationResponse.client_id,
-        authenticationEndpoint: configuration.authorization_endpoint,
-        accesstokenEndpoint: configuration.token_endpoint,
-        authConfig: {
-          method: 'JWK_SET',
-          key: configuration.jwks_uri
-        }
-      };
-      const registered = await (0, _classPrivateFieldGet2.default)(this, _registerPlatform).call(this, platform, (0, _classPrivateFieldGet2.default)(this, _getPlatform), (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database));
-      await (0, _classPrivateFieldGet2.default)(this, _Database).Insert(false, 'platformStatus', {
-        id: await registered.platformId(),
-        active: (0, _classPrivateFieldGet2.default)(this, _autoActivate)
-      }); // Returing message indicating the end of registration flow
+    const platformName = (configuration['https://purl.imsglobal.org/spec/lti-platformconfiguration '] ? configuration['https://purl.imsglobal.org/spec/lti-platformconfiguration '].product_family_code : 'Platform') + '_DynReg_' + crypto.randomBytes(16).toString('hex');
+    if (await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, configuration.issuer, registrationResponse.client_id, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database))) throw new Error('PLATFORM_ALREADY_REGISTERED');
+    provDynamicRegistrationDebug('Registering Platform');
+    const platform = {
+      url: configuration.issuer,
+      name: platformName,
+      clientId: registrationResponse.client_id,
+      authenticationEndpoint: configuration.authorization_endpoint,
+      accesstokenEndpoint: configuration.token_endpoint,
+      authConfig: {
+        method: 'JWK_SET',
+        key: configuration.jwks_uri
+      }
+    };
+    const registered = await (0, _classPrivateFieldGet2.default)(this, _registerPlatform).call(this, platform, (0, _classPrivateFieldGet2.default)(this, _getPlatform), (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database));
+    await (0, _classPrivateFieldGet2.default)(this, _Database).Insert(false, 'platformStatus', {
+      id: await registered.platformId(),
+      active: (0, _classPrivateFieldGet2.default)(this, _autoActivate)
+    }); // Returing message indicating the end of registration flow
 
-      res.setHeader('Content-type', 'text/html');
-      return res.send(`<script>window.parent.postMessage({subject:"org.imsglobal.lti.close"}, "${configuration.issuer}");</script>`);
-    } catch (err) {
-      provDynamicRegistrationDebug(err);
-      return res.status(500).send({
-        status: 500,
-        error: 'Internal Server Error',
-        details: {
-          message: err.message
-        }
-      });
-    }
+    return `<script>window.parent.postMessage({subject:"org.imsglobal.lti.close"}, "${configuration.issuer}");</script>`;
   }
 
 }

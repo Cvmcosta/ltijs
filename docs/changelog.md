@@ -9,6 +9,10 @@
 
 ### CHANGELOG
 
+#### V5.5.4
+> 2020-11-29
+> - Added support for dynamic registration flow customization. Pending documentation.
+
 #### V5.5.3
 > 2020-11-29
 > - Added support for Tool description in the Dynamic Registration Service

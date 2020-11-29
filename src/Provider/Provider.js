@@ -21,6 +21,7 @@ const crypto = require('crypto')
 
 const provAuthDebug = require('debug')('provider:auth')
 const provMainDebug = require('debug')('provider:main')
+const provDynamicRegistrationDebug = require('debug')('provider:dynamicRegistrationService')
 
 /**
  * @descripttion LTI Provider Class that implements the LTI 1.3 protocol and services.
@@ -38,8 +39,6 @@ class Provider {
   #keysetRoute = '/keys'
 
   #dynRegRoute = '/register'
-
-  #DynamicRegistration = false
 
   #whitelistedRoutes = []
 
@@ -63,7 +62,18 @@ class Provider {
 
   #deepLinkingCallback = async (token, req, res, next) => { return next() }
 
-  #dynamicRegistrationCallback = false
+  #dynamicRegistrationCallback = async (req, res, next) => {
+    try {
+      if (!req.query.openid_configuration) return res.status(400).send({ status: 400, error: 'Bad Request', details: { message: 'Missing parameter: "openid_configuration".' } })
+      const message = await this.DynamicRegistration.register(req.query.openid_configuration, req.query.registration_token)
+      res.setHeader('Content-type', 'text/html')
+      res.send(message)
+    } catch (err) {
+      provDynamicRegistrationDebug(err)
+      if (err.message === 'PLATFORM_ALREADY_REGISTERED') return res.status(403).send({ status: 403, error: 'Forbidden', details: { message: 'Platform already registered.' } })
+      return res.status(500).send({ status: 500, error: 'Internal Server Error', details: { message: err.message } })
+    }
+  }
 
   #sessionTimeoutCallback = async (req, res) => {
     return res.status(401).send(res.locals.err)
@@ -187,7 +197,10 @@ class Provider {
         loginRoute: this.#loginRoute,
         keysetRoute: this.#keysetRoute
       }
-      this.#DynamicRegistration = new DynamicRegistration(options.dynReg, routes, this.registerPlatform, this.getPlatform, this.#ENCRYPTIONKEY, this.Database)
+      /**
+       * @description Dynamic Registration service.
+       */
+      this.DynamicRegistration = new DynamicRegistration(options.dynReg, routes, this.registerPlatform, this.getPlatform, this.#ENCRYPTIONKEY, this.Database)
     }
 
     if (options && options.staticPath) this.#server.setStaticPath(options.staticPath)
@@ -534,8 +547,8 @@ class Provider {
     })
 
     this.app.all(this.#dynRegRoute, async (req, res, next) => {
-      if (this.#DynamicRegistration) return this.#DynamicRegistration.register(req, res, this.#dynamicRegistrationCallback)
-      return res.status(401).send({ status: 401, error: 'Unauthorized', details: { message: 'Dynamic registration is disabled.' } })
+      if (this.DynamicRegistration) return this.#dynamicRegistrationCallback(req, res, next)
+      return res.status(403).send({ status: 403, error: 'Forbidden', details: { message: 'Dynamic registration is disabled.' } })
     })
 
     // Main app
@@ -657,6 +670,18 @@ class Provider {
   onDeepLinking (_deepLinkingCallback) {
     if (_deepLinkingCallback) {
       this.#deepLinkingCallback = _deepLinkingCallback
+      return true
+    }
+    throw new Error('MISSING_CALLBACK')
+  }
+
+  /**
+   * @description Sets the callback function called whenever there's a sucessfull dynamic registration request, allowing the registration flow to be customized.
+   * @param {Function} _dynamicRegistrationCallback - Callback function called everytime the LTI Provider receives a dynamic registration request.
+   */
+  onDynamicRegistration (_dynamicRegistrationCallback) {
+    if (_dynamicRegistrationCallback) {
+      this.#dynamicRegistrationCallback = _dynamicRegistrationCallback
       return true
     }
     throw new Error('MISSING_CALLBACK')

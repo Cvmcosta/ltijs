@@ -46,6 +46,8 @@ const crypto = require('crypto');
 const provAuthDebug = require('debug')('provider:auth');
 
 const provMainDebug = require('debug')('provider:main');
+
+const provDynamicRegistrationDebug = require('debug')('provider:dynamicRegistrationService');
 /**
  * @descripttion LTI Provider Class that implements the LTI 1.3 protocol and services.
  */
@@ -62,8 +64,6 @@ var _invalidTokenRoute = new WeakMap();
 var _keysetRoute = new WeakMap();
 
 var _dynRegRoute = new WeakMap();
-
-var _DynamicRegistration = new WeakMap();
 
 var _whitelistedRoutes = new WeakMap();
 
@@ -83,7 +83,7 @@ var _connectCallback2 = new WeakMap();
 
 var _deepLinkingCallback2 = new WeakMap();
 
-var _dynamicRegistrationCallback = new WeakMap();
+var _dynamicRegistrationCallback2 = new WeakMap();
 
 var _sessionTimeoutCallback2 = new WeakMap();
 
@@ -123,11 +123,6 @@ class Provider {
     _dynRegRoute.set(this, {
       writable: true,
       value: '/register'
-    });
-
-    _DynamicRegistration.set(this, {
-      writable: true,
-      value: false
     });
 
     _whitelistedRoutes.set(this, {
@@ -183,9 +178,38 @@ class Provider {
       }
     });
 
-    _dynamicRegistrationCallback.set(this, {
+    _dynamicRegistrationCallback2.set(this, {
       writable: true,
-      value: false
+      value: async (req, res, next) => {
+        try {
+          if (!req.query.openid_configuration) return res.status(400).send({
+            status: 400,
+            error: 'Bad Request',
+            details: {
+              message: 'Missing parameter: "openid_configuration".'
+            }
+          });
+          const message = await this.DynamicRegistration.register(req.query.openid_configuration, req.query.registration_token);
+          res.setHeader('Content-type', 'text/html');
+          res.send(message);
+        } catch (err) {
+          provDynamicRegistrationDebug(err);
+          if (err.message === 'PLATFORM_ALREADY_REGISTERED') return res.status(403).send({
+            status: 403,
+            error: 'Forbidden',
+            details: {
+              message: 'Platform already registered.'
+            }
+          });
+          return res.status(500).send({
+            status: 500,
+            error: 'Internal Server Error',
+            details: {
+              message: err.message
+            }
+          });
+        }
+      }
     });
 
     _sessionTimeoutCallback2.set(this, {
@@ -323,7 +347,11 @@ class Provider {
         loginRoute: (0, _classPrivateFieldGet2.default)(this, _loginRoute),
         keysetRoute: (0, _classPrivateFieldGet2.default)(this, _keysetRoute)
       };
-      (0, _classPrivateFieldSet2.default)(this, _DynamicRegistration, new DynamicRegistration(options.dynReg, routes, this.registerPlatform, this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), this.Database));
+      /**
+       * @description Dynamic Registration service.
+       */
+
+      this.DynamicRegistration = new DynamicRegistration(options.dynReg, routes, this.registerPlatform, this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), this.Database);
     }
 
     if (options && options.staticPath) (0, _classPrivateFieldGet2.default)(this, _server).setStaticPath(options.staticPath); // Registers main athentication and routing middleware
@@ -722,10 +750,10 @@ class Provider {
       return (0, _classPrivateFieldGet2.default)(this, _keyset).call(this, req, res, next);
     });
     this.app.all((0, _classPrivateFieldGet2.default)(this, _dynRegRoute), async (req, res, next) => {
-      if ((0, _classPrivateFieldGet2.default)(this, _DynamicRegistration)) return (0, _classPrivateFieldGet2.default)(this, _DynamicRegistration).register(req, res, (0, _classPrivateFieldGet2.default)(this, _dynamicRegistrationCallback));
-      return res.status(401).send({
-        status: 401,
-        error: 'Unauthorized',
+      if (this.DynamicRegistration) return (0, _classPrivateFieldGet2.default)(this, _dynamicRegistrationCallback2).call(this, req, res, next);
+      return res.status(403).send({
+        status: 403,
+        error: 'Forbidden',
         details: {
           message: 'Dynamic registration is disabled.'
         }
@@ -843,6 +871,20 @@ class Provider {
   onDeepLinking(_deepLinkingCallback) {
     if (_deepLinkingCallback) {
       (0, _classPrivateFieldSet2.default)(this, _deepLinkingCallback2, _deepLinkingCallback);
+      return true;
+    }
+
+    throw new Error('MISSING_CALLBACK');
+  }
+  /**
+   * @description Sets the callback function called whenever there's a sucessfull dynamic registration request, allowing the registration flow to be customized.
+   * @param {Function} _dynamicRegistrationCallback - Callback function called everytime the LTI Provider receives a dynamic registration request.
+   */
+
+
+  onDynamicRegistration(_dynamicRegistrationCallback) {
+    if (_dynamicRegistrationCallback) {
+      (0, _classPrivateFieldSet2.default)(this, _dynamicRegistrationCallback2, _dynamicRegistrationCallback);
       return true;
     }
 
