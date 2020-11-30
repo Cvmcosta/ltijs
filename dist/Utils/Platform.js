@@ -151,12 +151,12 @@ class Platform {
   }
   /**
    * @description Sets/Gets the platform status.
-   * @param {Boolean} active - Whether the Platform is active or not.
+   * @param {Boolean} [active] - Whether the Platform is active or not.
    */
 
 
   async platformActive(active) {
-    if (!active) {
+    if (active === undefined) {
       // Get platform status
       const platformStatus = await (0, _classPrivateFieldGet2.default)(this, _Database).Get(false, 'platformStatus', {
         id: (0, _classPrivateFieldGet2.default)(this, _kid)

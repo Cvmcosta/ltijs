@@ -89,10 +89,10 @@ class Platform {
 
   /**
    * @description Sets/Gets the platform status.
-   * @param {Boolean} active - Whether the Platform is active or not.
+   * @param {Boolean} [active] - Whether the Platform is active or not.
    */
   async platformActive (active) {
-    if (!active) {
+    if (active === undefined) {
       // Get platform status
       const platformStatus = await this.#Database.Get(false, 'platformStatus', { id: this.#kid })
       if (!platformStatus || platformStatus[0].active) return true

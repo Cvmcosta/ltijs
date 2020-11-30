@@ -9,6 +9,10 @@
 
 ### CHANGELOG
 
+#### V5.5.5
+> 2020-11-30
+> - Fixing bug where passing `false` to `platformActive()` method would not alter the platform status.
+
 #### V5.5.4
 > 2020-11-29
 > - Added support for dynamic registration flow customization. Pending documentation.
