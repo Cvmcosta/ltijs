@@ -17,6 +17,8 @@ const provDynamicRegistrationDebug = require('debug')('provider:dynamicRegistrat
 
 
 const buildUrl = (url, path) => {
+  if (path === '/') return url;
+
   const pathParts = _url.parse(url);
 
   const portMatch = pathParts.pathname.match(/:[0-9]*/);
