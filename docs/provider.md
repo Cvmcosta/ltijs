@@ -58,6 +58,8 @@ Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps
   - [OnDeepLinking Callback](#ondeeplinking)
   - [OnInvalidToken Callback](#oninvalidtoken)
   - [OnSessionTimeout Callback](#onsessiontimeout)
+  - [OnUnregisteredPlatform Callback](#onunregisteredplatform)
+  - [OnInactivePlatform Callback](#oninactiveplatform)
   - [Deploy](#deploy)
   - [Registering a Platform](#registering-a-new-platform)
   - [Retrieving a Platform](#retrieving-a-platform)
