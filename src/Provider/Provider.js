@@ -83,6 +83,14 @@ class Provider {
     return res.status(401).send(res.locals.err)
   }
 
+  #unregisteredPlatformCallback = async (req, res) => {
+    return res.status(400).send({ status: 400, error: 'Bad Request', details: { message: 'UNREGISTERED_PLATFORM' } })
+  }
+
+  #inactivePlatformCallback = async (req, res) => {
+    return res.status(401).send({ status: 401, error: 'Unauthorized', details: { message: 'PLATFORM_NOT_ACTIVATED' } })
+  }
+
   // Assembles and sends keyset
   #keyset = async (req, res) => {
     try {
@@ -456,7 +464,7 @@ class Provider {
     this.app.all(this.#loginRoute, async (req, res) => {
       const params = { ...req.query, ...req.body }
       try {
-        if (!params.iss || !params.login_hint || !params.target_link_uri) return res.status(400).send({ status: 400, error: 'Bad Request', details: { message: 'MISSING_PARAMETERS' } })
+        if (!params.iss || !params.login_hint || !params.target_link_uri) return res.status(400).send({ status: 400, error: 'Bad Request', details: { message: 'MISSING_LOGIN_PARAMETERS' } })
         const iss = params.iss
         provMainDebug('Receiving a login request from: ' + iss)
         let platform
@@ -465,7 +473,7 @@ class Provider {
 
         if (platform) {
           const platformActive = await platform.platformActive()
-          if (!platformActive) return res.status(401).send({ status: 401, error: 'Unauthorized', details: { message: 'PLATFORM_NOT_ACTIVATED' } })
+          if (!platformActive) return this.#inactivePlatformCallback(req, res)
 
           provMainDebug('Redirecting to platform authentication endpoint')
           // Create state parameter used to validade authentication response
@@ -505,7 +513,7 @@ class Provider {
           }))
         } else {
           provMainDebug('Unregistered platform attempting connection: ' + iss)
-          return res.status(400).send({ status: 400, error: 'Bad Request', details: { message: 'UNREGISTERED_PLATFORM' } })
+          return this.#unregisteredPlatformCallback(req, res)
         }
       } catch (err) {
         provMainDebug(err)
@@ -710,6 +718,34 @@ class Provider {
   onInvalidToken (_invalidTokenCallback) {
     if (_invalidTokenCallback) {
       this.#invalidTokenCallback = _invalidTokenCallback
+      return true
+    }
+    throw new Error('MISSING_CALLBACK')
+  }
+
+  /**
+   * @description Sets the callback function called when the Platform attempting to login is not registered.
+   * @param {Function} _unregisteredPlatformCallback - Callback method.
+   * @example .onUnregisteredPlatform((request, response)=>{response.send('Unregistered Platform')})
+   * @returns {true}
+   */
+  onUnregisteredPlatform (_unregisteredPlatformCallback) {
+    if (_unregisteredPlatformCallback) {
+      this.#unregisteredPlatformCallback = _unregisteredPlatformCallback
+      return true
+    }
+    throw new Error('MISSING_CALLBACK')
+  }
+
+  /**
+   * @description Sets the callback function called when the Platform attempting to login is not activated.
+   * @param {Function} _inactivePlatformCallback - Callback method.
+   * @example .onInactivePlatform((request, response)=>{response.send('Platform not activated')})
+   * @returns {true}
+   */
+  onInactivePlatform (_inactivePlatformCallback) {
+    if (_inactivePlatformCallback) {
+      this.#inactivePlatformCallback = _inactivePlatformCallback
       return true
     }
     throw new Error('MISSING_CALLBACK')

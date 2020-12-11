@@ -294,4 +294,30 @@ describe('Testing Provider', function () {
     }
     expect(fn).to.not.throw(Error)
   })
+  it('Provider.onUnregisteredPlatform expected to throw error when receiving no callback', () => {
+    const fn = () => {
+      return lti.onUnregisteredPlatform()
+    }
+    expect(fn).to.throw(Error)
+  })
+
+  it('Provider.onUnregisteredPlatform expected to not throw error when receiving callback', () => {
+    const fn = () => {
+      return lti.onUnregisteredPlatform((req, res) => { return res.status(400).send({ status: 400, error: 'Bad Request', details: { message: 'Unregistered Platform!' } }) })
+    }
+    expect(fn).to.not.throw(Error)
+  })
+  it('Provider.onInactivePlatform expected to throw error when receiving no callback', () => {
+    const fn = () => {
+      return lti.onInactivePlatform()
+    }
+    expect(fn).to.throw(Error)
+  })
+
+  it('Provider.onInactivePlatform expected to not throw error when receiving callback', () => {
+    const fn = () => {
+      return lti.onInactivePlatform((req, res) => { return res.status(401).send({ status: 401, error: 'Unauthorized', details: { message: 'Platform not active!' } }) })
+    }
+    expect(fn).to.not.throw(Error)
+  })
 })

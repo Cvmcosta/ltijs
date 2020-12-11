@@ -89,6 +89,10 @@ var _sessionTimeoutCallback2 = new WeakMap();
 
 var _invalidTokenCallback2 = new WeakMap();
 
+var _unregisteredPlatformCallback2 = new WeakMap();
+
+var _inactivePlatformCallback2 = new WeakMap();
+
 var _keyset = new WeakMap();
 
 var _server = new WeakMap();
@@ -223,6 +227,32 @@ class Provider {
       writable: true,
       value: async (req, res) => {
         return res.status(401).send(res.locals.err);
+      }
+    });
+
+    _unregisteredPlatformCallback2.set(this, {
+      writable: true,
+      value: async (req, res) => {
+        return res.status(400).send({
+          status: 400,
+          error: 'Bad Request',
+          details: {
+            message: 'UNREGISTERED_PLATFORM'
+          }
+        });
+      }
+    });
+
+    _inactivePlatformCallback2.set(this, {
+      writable: true,
+      value: async (req, res) => {
+        return res.status(401).send({
+          status: 401,
+          error: 'Unauthorized',
+          details: {
+            message: 'PLATFORM_NOT_ACTIVATED'
+          }
+        });
       }
     });
 
@@ -630,7 +660,7 @@ class Provider {
           status: 400,
           error: 'Bad Request',
           details: {
-            message: 'MISSING_PARAMETERS'
+            message: 'MISSING_LOGIN_PARAMETERS'
           }
         });
         const iss = params.iss;
@@ -640,13 +670,7 @@ class Provider {
 
         if (platform) {
           const platformActive = await platform.platformActive();
-          if (!platformActive) return res.status(401).send({
-            status: 401,
-            error: 'Unauthorized',
-            details: {
-              message: 'PLATFORM_NOT_ACTIVATED'
-            }
-          });
+          if (!platformActive) return (0, _classPrivateFieldGet2.default)(this, _inactivePlatformCallback2).call(this, req, res);
           provMainDebug('Redirecting to platform authentication endpoint'); // Create state parameter used to validade authentication response
 
           let state = encodeURIComponent(crypto.randomBytes(25).toString('hex'));
@@ -695,13 +719,7 @@ class Provider {
           }));
         } else {
           provMainDebug('Unregistered platform attempting connection: ' + iss);
-          return res.status(400).send({
-            status: 400,
-            error: 'Bad Request',
-            details: {
-              message: 'UNREGISTERED_PLATFORM'
-            }
-          });
+          return (0, _classPrivateFieldGet2.default)(this, _unregisteredPlatformCallback2).call(this, req, res);
         }
       } catch (err) {
         provMainDebug(err);
@@ -917,6 +935,38 @@ class Provider {
   onInvalidToken(_invalidTokenCallback) {
     if (_invalidTokenCallback) {
       (0, _classPrivateFieldSet2.default)(this, _invalidTokenCallback2, _invalidTokenCallback);
+      return true;
+    }
+
+    throw new Error('MISSING_CALLBACK');
+  }
+  /**
+   * @description Sets the callback function called when the Platform attempting to login is not registered.
+   * @param {Function} _unregisteredPlatformCallback - Callback method.
+   * @example .onUnregisteredPlatform((request, response)=>{response.send('Unregistered Platform')})
+   * @returns {true}
+   */
+
+
+  onUnregisteredPlatform(_unregisteredPlatformCallback) {
+    if (_unregisteredPlatformCallback) {
+      (0, _classPrivateFieldSet2.default)(this, _unregisteredPlatformCallback2, _unregisteredPlatformCallback);
+      return true;
+    }
+
+    throw new Error('MISSING_CALLBACK');
+  }
+  /**
+   * @description Sets the callback function called when the Platform attempting to login is not activated.
+   * @param {Function} _inactivePlatformCallback - Callback method.
+   * @example .onInactivePlatform((request, response)=>{response.send('Platform not activated')})
+   * @returns {true}
+   */
+
+
+  onInactivePlatform(_inactivePlatformCallback) {
+    if (_inactivePlatformCallback) {
+      (0, _classPrivateFieldSet2.default)(this, _inactivePlatformCallback2, _inactivePlatformCallback);
       return true;
     }
 

@@ -9,9 +9,13 @@
 
 ### CHANGELOG
 
+#### V5.5.7
+> 2020-12-11
+> - Added the possibility to customize Login Platform errors (Unregistered or Inactive Platform).
+
 #### V5.5.5
 > 2020-11-30
-> - Fixing bug where passing `false` to `platformActive()` method would not alter the platform status.
+> - Fixed bug where passing `false` to `platformActive()` method would not alter the platform status.
 
 #### V5.5.4
 > 2020-11-29
@@ -31,11 +35,11 @@
 
 #### V5.4.8
 > 2020-11-17
-> - Fixing vulnerability related to URI component decoding.
+> - Fixed vulnerability related to URI component decoding.
 
 #### V5.4.6
 > 2020-10-30
-> - Adding support for URL hashes to lti.redirect().
+> - Added support for URL hashes to lti.redirect().
 
 #### V5.4.5
 > 2020-10-23

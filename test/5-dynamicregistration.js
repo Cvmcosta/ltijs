@@ -63,6 +63,13 @@ describe('Testing Dynamic registration Service', function () {
       await expect(platform.platformAccessTokenEndpoint()).to.eventually.equal(configurationInformation.token_endpoint)
     })
   })
+  it('Login route with inactive platform is expected to return 401 error', async () => {
+    const url = lti.loginRoute()
+    return chai.request(lti.app).post(url).send({ iss: 'http://localhost/moodledyn', login_hint: '2', target_link_uri: 'http://localhost:3000/' }).then(res => {
+      expect(res).to.have.status(401)
+      expect(res.body.details.message).to.equal('Platform not active!')
+    })
+  })
   it('Dynamically registered Platform expected to be activated by Platform.platformActive(true)', async () => {
     const platform = await lti.getPlatform('http://localhost/moodledyn', '123456')
     expect(platform).to.be.instanceOf(Platform)

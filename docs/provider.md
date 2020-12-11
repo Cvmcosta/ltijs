@@ -429,6 +429,61 @@ lti.onInvalidToken(async (req, res, next) => { return res.status(401).send(res.l
 *Ltijs provides a default method for this callback.*
 
 
+#### Provider.onUnregisteredPlatform(unregisteredPlatformCallback) 
+
+Sets the callback function called when the Platform attempting to login is not registered.
+
+
+
+
+##### Parameters
+
+| Name | Type | Description |  |
+| ---- | ---- | ----------- | -------- |
+| unregisteredPlatformCallback | `Function`  |  Callback method called when the Platform attempting to login is not registered. | &nbsp; |
+
+
+
+
+
+##### Examples
+
+```javascript
+lti.onUnregisteredPlatform((req, res) => { return res.status(400).send({ status: 400, error: 'Bad Request', details: { message: 'Unregistered Platform!' } }) })
+```
+
+*Ltijs provides a default method for this callback.*
+
+
+
+#### Provider.onInactivePlatform(inactivePlatformCallback) 
+
+Sets the callback function called when the Platform attempting to login is not activated.
+
+
+
+
+##### Parameters
+
+| Name | Type | Description |  |
+| ---- | ---- | ----------- | -------- |
+| inactivePlatformCallback | `Function`  |  Callback method called when the Platform attempting to login is not activated. | &nbsp; |
+
+
+
+
+
+##### Examples
+
+```javascript
+lti.onInactivePlatform((req, res) => { return res.status(401).send({ status: 401, error: 'Unauthorized', details: { message: 'Platform not active!' } }) })
+```
+
+*Ltijs provides a default method for this callback.*
+
+
+
+
 
 #### Provider.appRoute() 
 
@@ -1180,6 +1235,43 @@ lti.onSessionTimeout(async (req, res, next) => {
 )
 ```
 *Ltijs provides a default method for this callback that returns a 401 error code with the `res.locals.err` object.
+
+
+#### onUnregisteredPlatform
+
+The `onUnregisteredPlatform` callback is called whenever the Platform attempting to start a LTI launch is not registered.
+
+The callback route will be given the two Express route parameters (request, response).
+
+> *This callback should be used to display your **Unregistered Platform error screen**.*
+
+```javascript
+lti.onUnregisteredPlatform((req, res) => { 
+  return res.status(400).send({ status: 400, error: 'Bad Request', details: { message: 'Unregistered Platform!' } }) 
+})
+```
+*Ltijs provides a default method for this callback that returns a 400 error code with the default error object:*
+```
+{ status: 400, error: 'Bad Request', details: { message: 'UNREGISTERED_PLATFORM' } }
+```
+
+#### onInactivePlatform
+
+The `onInactivePlatform` callback is called whenever the Platform attempting to start a LTI launch was registered through [Dynamic Registration](https://cvmcosta.me/ltijs/#/dynamicregistration) and is not active.
+
+The callback route will be given the two Express route parameters (request, response).
+
+> *This callback should be used to display your **Inactive Platform error screen**.*
+
+```javascript
+lti.onInactivePlatform((req, res) => { 
+  return res.status(401).send({ status: 401, error: 'Unauthorized', details: { message: 'Platform not active!' } }) 
+})
+```
+*Ltijs provides a default method for this callback that returns a 401 error code with the default error object:*
+```
+{ status: 401, error: 'Unauthorized', details: { message: 'PLATFORM_NOT_ACTIVATED' } }
+```
 
 
 
