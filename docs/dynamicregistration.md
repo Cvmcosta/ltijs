@@ -57,7 +57,7 @@ Dynamic registration needs to be setup through the `Provider.setup` method with 
 
 - **dynRegRoute**: Dynamic registration route. Defaults to `/register`.
 
-- **dynReg**: Dynamic registration configuration object. **The service is disabled if this object is not present in the options.**
+- **dynReg**: Dynamic registration configuration object. **The service is disabled if this object is not present in the setup options.**
   - **url**: Tool Provider URL. Required field. Example: `http://tool.example.com`.
   - **name**: Tool Provider name. Required field. Example: `Tool Provider`.
   - **logo**: Tool Provider logo URL. Example: `http://tool.example.com/assets/logo.svg`.
@@ -117,8 +117,32 @@ await platform.platformActive(true)
 
 By setting the `options.dynReg.autoActivate` field to `true` in the `Provider.setup` method, dynamically registered Platforms can be automatically activated.
 
+#### Custom flow
 
-#### Moodle
+The Dynamic Registration flow can be customized by using the `lti.onDynamicRegistration` method. This method allows us to control the registration flow to add additional screens, for example.
+
+The registration can be finalized by calling the `lti.DynamicRegistration.register` method passing the necessary query parameters and then appending the resulting message to the page HTML.
+
+The following example is a representation of the default Dynamic Registration flow:
+
+```javascript
+lti.onDynamicRegistration(async (req, res, next) => {
+  try {
+    if (!req.query.openid_configuration) return res.status(400).send({ status: 400, error: 'Bad Request', details: { message: 'Missing parameter: "openid_configuration".' } })
+    const message = await lti.DynamicRegistration.register(req.query.openid_configuration, req.query.registration_token)
+    res.setHeader('Content-type', 'text/html')
+    res.send(message)
+  } catch (err) {
+    if (err.message === 'PLATFORM_ALREADY_REGISTERED') return res.status(403).send({ status: 403, error: 'Forbidden', details: { message: 'Platform already registered.' } })
+    return res.status(500).send({ status: 500, error: 'Internal Server Error', details: { message: err.message } })
+  }
+})
+```
+
+
+### Moodle LMS
+
+Follow the steps bellow to use the Dynamic Registration Service with the Moodle LMS:
 
 - Go to `Site administration / Plugins / Activity modules / External tool / Manage tools`.
 
