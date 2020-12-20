@@ -1,6 +1,6 @@
 {
   "name": "ltijs",
-  "version": "5.5.7",
+  "version": "5.5.8",
   "description": "Easily turn your web application into a LTI 1.3 Learning Tool.",
   "main": "index.js",
   "engineStrict": true,
@@ -41,7 +41,7 @@
     "got": "^11.5.1",
     "helmet": "^4.0.0",
     "jsonwebtoken": "^8.5.1",
-    "mongoose": "^5.9.27",
+    "mongoose": "^5.11.8",
     "parse-link-header": "^1.0.1",
     "rasha": "^1.2.5"
   },

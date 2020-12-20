@@ -22,10 +22,10 @@ class Server {
     this.ssl = false;
     if (https) this.ssl = ssl; // Handling URI decode vulnerability
 
-    this.app.use((req, res, next) => {
+    this.app.use(async (req, res, next) => {
       try {
         decodeURIComponent(req.path);
-        next();
+        return next();
       } catch (err) {
         return res.status(400).send({
           status: 400,
