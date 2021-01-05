@@ -7,7 +7,7 @@
 
 
 
-> Easily turn your web application into into a LTI® 1.3 Learning Tool.
+> Easily turn your web application into a LTI® 1.3 Learning Tool.
 
 [![travisci](https://travis-ci.org/Cvmcosta/ltijs.svg?branch=master)](https://travis-ci.org/Cvmcosta/ltijs)
 [![codecov](https://codecov.io/gh/Cvmcosta/ltijs/branch/master/graph/badge.svg)](https://codecov.io/gh/Cvmcosta/ltijs)
