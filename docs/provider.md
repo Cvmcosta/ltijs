@@ -47,6 +47,7 @@ Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps
   - [Reserved endpoints configuration](#reserved-endpoint-configuration)
   - [Cookie configuration](#cookie-configuration)
   - [Development mode](#development-mode)
+  - [Ltiaas mode](#ltiaas-mode)
   - [Token max age](#token-max-age-allowed)
   - [Server addon](#server-addon)
   - [Serving static files](#serving-static-files)
