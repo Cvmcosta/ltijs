@@ -121,7 +121,7 @@ class DynamicRegistration {
     const registrationResponse = await got.post(configuration.registration_endpoint, { json: registration, headers: registrationToken ? { Authorization: 'Bearer ' + registrationToken } : undefined }).json()
 
     // Registering Platform
-    const platformName = (configuration['https://purl.imsglobal.org/spec/lti-platformconfiguration '] ? configuration['https://purl.imsglobal.org/spec/lti-platformconfiguration '].product_family_code : 'Platform') + '_DynReg_' + crypto.randomBytes(16).toString('hex')
+    const platformName = (configuration['https://purl.imsglobal.org/spec/lti-platform-configuration '] ? configuration['https://purl.imsglobal.org/spec/lti-platform-configuration '].product_family_code : 'Platform') + '_DynReg_' + crypto.randomBytes(16).toString('hex')
 
     if (await this.#getPlatform(configuration.issuer, registrationResponse.client_id, this.#ENCRYPTIONKEY, this.#Database)) throw new Error('PLATFORM_ALREADY_REGISTERED')
 
