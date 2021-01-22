@@ -90,6 +90,7 @@ Returns a self submitting Deep Linking form containing the signed JWT message, t
       {
         type: 'ltiResourceLink',
         title: resource.title,
+        url: resource.url,
         custom: {
           resourceurl: resource.path,
           resourcename: resource.title

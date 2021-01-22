@@ -57,10 +57,6 @@ var _loginRoute = new WeakMap();
 
 var _appRoute = new WeakMap();
 
-var _sessionTimeoutRoute = new WeakMap();
-
-var _invalidTokenRoute = new WeakMap();
-
 var _keysetRoute = new WeakMap();
 
 var _dynRegRoute = new WeakMap();
@@ -107,16 +103,6 @@ class Provider {
     _appRoute.set(this, {
       writable: true,
       value: '/'
-    });
-
-    _sessionTimeoutRoute.set(this, {
-      writable: true,
-      value: '/sessiontimeout'
-    });
-
-    _invalidTokenRoute.set(this, {
-      writable: true,
-      value: '/invalidtoken'
     });
 
     _keysetRoute.set(this, {
@@ -294,8 +280,6 @@ class Provider {
      * @param {Object} [options] - Lti Provider options.
      * @param {String} [options.appRoute = '/'] - Lti Provider main route. If no option is set '/' is used.
      * @param {String} [options.loginRoute = '/login'] - Lti Provider login route. If no option is set '/login' is used.
-     * @param {String} [options.sessionTimeoutRoute = '/sessiontimeout'] - Lti Provider session timeout route. If no option is set '/sessiontimeout' is used.
-     * @param {String} [options.invalidTokenRoute = '/invalidtoken'] - Lti Provider invalid token route. If no option is set '/invalidtoken' is used.
      * @param {String} [options.keysetRoute = '/keys'] - Lti Provider public jwk keyset route. If no option is set '/keys' is used.
      * @param {String} [options.dynRegRoute = '/register'] - Dynamic registration route.
      * @param {Boolean} [options.https = false] - Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https and are planning to configure ssl through Express.
@@ -334,8 +318,6 @@ class Provider {
     if (!database.plugin) this.Database = new DB(database);else this.Database = database.plugin;
     if (options && (options.appRoute || options.appUrl)) (0, _classPrivateFieldSet2.default)(this, _appRoute, options.appRoute || options.appUrl);
     if (options && (options.loginRoute || options.loginUrl)) (0, _classPrivateFieldSet2.default)(this, _loginRoute, options.loginRoute || options.loginUrl);
-    if (options && (options.sessionTimeoutRoute || options.sessionTimeoutUrl)) (0, _classPrivateFieldSet2.default)(this, _sessionTimeoutRoute, options.sessionTimeoutRoute || options.sessionTimeoutUrl);
-    if (options && (options.invalidTokenRoute || options.invalidTokenUrl)) (0, _classPrivateFieldSet2.default)(this, _invalidTokenRoute, options.invalidTokenRoute || options.invalidTokenUrl);
     if (options && (options.keysetRoute || options.keysetUrl)) (0, _classPrivateFieldSet2.default)(this, _keysetRoute, options.keysetRoute || options.keysetUrl);
     if (options && options.dynRegRoute) (0, _classPrivateFieldSet2.default)(this, _dynRegRoute, options.dynRegRoute);
     if (options && options.devMode === true) (0, _classPrivateFieldSet2.default)(this, _devMode, true);
@@ -389,7 +371,7 @@ class Provider {
     const sessionValidator = async (req, res, next) => {
       provMainDebug('Receiving request at path: ' + req.baseUrl + req.path); // Ckeck if request is attempting to initiate oidc login flow or access reserved routes
 
-      if (req.path === (0, _classPrivateFieldGet2.default)(this, _loginRoute) || req.path === (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutRoute) || req.path === (0, _classPrivateFieldGet2.default)(this, _invalidTokenRoute) || req.path === (0, _classPrivateFieldGet2.default)(this, _keysetRoute) || req.path === (0, _classPrivateFieldGet2.default)(this, _dynRegRoute)) return next();
+      if (req.path === (0, _classPrivateFieldGet2.default)(this, _loginRoute) || req.path === (0, _classPrivateFieldGet2.default)(this, _keysetRoute) || req.path === (0, _classPrivateFieldGet2.default)(this, _dynRegRoute)) return next();
       provMainDebug('Path does not match reserved endpoints');
 
       try {
@@ -551,11 +533,16 @@ class Provider {
             provMainDebug('No ltik found');
             provMainDebug('Request body: ', req.body);
             provMainDebug('Passing request to invalid token handler');
-            const errObj = {
-              message: 'NO_LTIK_OR_IDTOKEN_FOUND',
-              bodyReceived: req.body
+            res.locals.err = {
+              status: 401,
+              error: 'Unauthorized',
+              details: {
+                description: 'No Ltik or ID Token found.',
+                message: 'NO_LTIK_OR_IDTOKEN_FOUND',
+                bodyReceived: req.body
+              }
             };
-            return res.redirect(req.baseUrl + (0, _classPrivateFieldGet2.default)(this, _invalidTokenRoute) + '?err=' + encodeURIComponent(JSON.stringify(errObj)));
+            return (0, _classPrivateFieldGet2.default)(this, _invalidTokenCallback2).call(this, req, res, next);
           }
         }
 
@@ -625,7 +612,14 @@ class Provider {
           provMainDebug('No session cookie found');
           provMainDebug('Request body: ', req.body);
           provMainDebug('Passing request to session timeout handler');
-          return res.redirect(req.baseUrl + (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutRoute));
+          res.locals.err = {
+            status: 401,
+            error: 'Unauthorized',
+            details: {
+              message: 'Session not found.'
+            }
+          };
+          return (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutCallback2).call(this, req, res, next);
         }
       } catch (err) {
         const state = req.body.state;
@@ -643,11 +637,15 @@ class Provider {
 
         provAuthDebug(err);
         provMainDebug('Passing request to invalid token handler');
-        const errObj = {
-          description: 'Error validating ltik or IdToken',
-          message: err.message
+        res.locals.err = {
+          status: 401,
+          error: 'Unauthorized',
+          details: {
+            description: 'Error validating ltik or IdToken',
+            message: err.message
+          }
         };
-        return res.redirect(req.baseUrl + (0, _classPrivateFieldGet2.default)(this, _invalidTokenRoute) + '?err=' + encodeURIComponent(JSON.stringify(errObj)));
+        return (0, _classPrivateFieldGet2.default)(this, _invalidTokenCallback2).call(this, req, res, next);
       }
     };
 
@@ -732,38 +730,6 @@ class Provider {
         });
       }
     });
-    /* istanbul ignore next */
-    // Session timeout, invalid token and keyset methods
-
-    this.app.all((0, _classPrivateFieldGet2.default)(this, _sessionTimeoutRoute), async (req, res, next) => {
-      res.locals.err = {
-        status: 401,
-        error: 'Unauthorized',
-        details: {
-          message: 'Session not found.'
-        }
-      };
-      (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutCallback2).call(this, req, res, next);
-    });
-    this.app.all((0, _classPrivateFieldGet2.default)(this, _invalidTokenRoute), async (req, res, next) => {
-      let errObj;
-      /* istanbul ignore next */
-
-      try {
-        errObj = JSON.parse(decodeURIComponent(req.query.err));
-      } catch (err) {
-        errObj = {
-          message: 'Failed idToken validation.'
-        };
-      }
-
-      res.locals.err = {
-        status: 401,
-        error: 'Unauthorized',
-        details: errObj
-      };
-      (0, _classPrivateFieldGet2.default)(this, _invalidTokenCallback2).call(this, req, res, next);
-    });
     this.app.get((0, _classPrivateFieldGet2.default)(this, _keysetRoute), async (req, res, next) => {
       return (0, _classPrivateFieldGet2.default)(this, _keyset).call(this, req, res, next);
     });
@@ -812,7 +778,7 @@ class Provider {
         await (0, _classPrivateFieldGet2.default)(this, _server).listen(conf.port);
         provMainDebug('Ltijs started listening on port: ', conf.port); // Startup message
 
-        const message = 'LTI Provider is listening on port ' + conf.port + '!\n\n LTI provider config: \n >App Route: ' + (0, _classPrivateFieldGet2.default)(this, _appRoute) + '\n >Initiate Login Route: ' + (0, _classPrivateFieldGet2.default)(this, _loginRoute) + '\n >Keyset Route: ' + (0, _classPrivateFieldGet2.default)(this, _keysetRoute) + '\n >Session Timeout Route: ' + (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutRoute) + '\n >Invalid Token Route: ' + (0, _classPrivateFieldGet2.default)(this, _invalidTokenRoute);
+        const message = 'LTI Provider is listening on port ' + conf.port + '!\n\n LTI provider config: \n >App Route: ' + (0, _classPrivateFieldGet2.default)(this, _appRoute) + '\n >Initiate Login Route: ' + (0, _classPrivateFieldGet2.default)(this, _loginRoute) + '\n >Keyset Route: ' + (0, _classPrivateFieldGet2.default)(this, _keysetRoute) + '\n >Dynamic Registration Route: ' + (0, _classPrivateFieldGet2.default)(this, _dynRegRoute);
 
         if (!conf.silent) {
           console.log('  _   _______ _____      _  _____\n' + ' | | |__   __|_   _|    | |/ ____|\n' + ' | |    | |    | |      | | (___  \n' + ' | |    | |    | |  _   | |\\___ \\ \n' + ' | |____| |   _| |_| |__| |____) |\n' + ' |______|_|  |_____|\\____/|_____/ \n\n', message);
@@ -991,24 +957,6 @@ class Provider {
     return (0, _classPrivateFieldGet2.default)(this, _loginRoute);
   }
   /**
-     * @description Gets the session timeout route that will be called whenever the system encounters a session timeout.
-     * @returns {String}
-     */
-
-
-  sessionTimeoutRoute() {
-    return (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutRoute);
-  }
-  /**
-     * @description Gets the invalid token route that will be called whenever the system encounters a invalid token or cookie.
-     * @returns {String}
-     */
-
-
-  invalidTokenRoute() {
-    return (0, _classPrivateFieldGet2.default)(this, _invalidTokenRoute);
-  }
-  /**
      * @description Gets the keyset route that will be used to retrieve a public jwk keyset.
      * @returns {String}
      */
@@ -1018,7 +966,7 @@ class Provider {
     return (0, _classPrivateFieldGet2.default)(this, _keysetRoute);
   }
   /**
-   * @description Gets the dyncamic registration route that will be used to register platforms dynamically.
+   * @description Gets the dynamic registration route that will be used to register platforms dynamically.
    * @returns {String}
    */
 
@@ -1423,28 +1371,6 @@ class Provider {
   loginUrl() {
     console.log('Deprecation warning: The loginUrl() method is now deprecated and will be removed in the 6.0 release. Use loginRoute() instead.');
     return this.loginRoute();
-  }
-  /* istanbul ignore next */
-
-  /**
-   * @deprecated
-   */
-
-
-  sessionTimeoutUrl() {
-    console.log('Deprecation warning: The sessionTimeoutUrl() method is now deprecated and will be removed in the 6.0 release. Use sessionTimeoutRoute() instead.');
-    return this.sessionTimeoutRoute();
-  }
-  /* istanbul ignore next */
-
-  /**
-   * @deprecated
-   */
-
-
-  invalidTokenUrl() {
-    console.log('Deprecation warning: The invalidTokenUrl() method is now deprecated and will be removed in the 6.0 release. Use invalidTokenRoute() instead.');
-    return this.invalidTokenRoute();
   }
   /* istanbul ignore next */
 
