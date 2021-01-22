@@ -263,8 +263,6 @@ Method used to setup and configure the LTI® provider.
 | options.loginRoute | `String`  | Lti Provider login url. **Default: '/login'**. | *Optional* |
 | options.keysetRoute | `String`  | Lti Provider public jwk keyset route. **Default: '/keys'**. | *Optional* |
 | options.dynRegRoute | `String`  | Dynamic registration route. **Default: '/register'**. | *Optional* |
-| options.sessionTimeoutRoute | `String`  | Lti Provider session timeout url. **Default: '/sessiontimeout'**. | *Optional* |
-| options.invalidTokenRoute | `String`  | Lti Provider invalid token url. **Default: '/invalidtoken'**. | *Optional* |
 | options.https | `Boolean`  |  Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https and are planning to configure ssl through Express. **Default: false**. | *Optional* |
 | options.ssl | `Object`  | SSL certificate and key to be used ***if https flag is enabled.*** | *Optional* |
 | options.ssl.key | `String`  | SSL key. | *Optional* |
@@ -519,44 +517,9 @@ lti.loginRoute()
 
 
 
-#### Provider.sessionTimeoutRoute() 
-
-Gets the session timeout Route that will be called whenever the system encounters a session timeout.
-
-
-
-##### Examples
-
-```javascript
-lti.sessionTimeoutRoute()
-```
-
-
-
-
-#### Provider.invalidTokenRoute() 
-
-Gets the invalid token Route that will be called whenever the system encounters a invalid token or cookie.
-
-
-
-
-
-##### Examples
-
-```javascript
-lti.invalidTokenRoute()
-```
-
-
-
-
 #### Provider.keysetRoute() 
 
 Gets the public JWK keyset Route.
-
-
-
 
 
 ##### Examples
@@ -564,6 +527,18 @@ Gets the public JWK keyset Route.
 ```javascript
 lti.keysetRoute()
 ```
+
+#### Provider.dynRegRoute() 
+
+Gets the dynamic registration Route.
+
+
+##### Examples
+
+```javascript
+lti.dynRegRoute()
+```
+
 
 #### Provider.whitelist(urls)
 Whitelists routes to bypass the Ltijs authentication protocol. If validation fails, these routes are still accessed but aren't given an idToken.
@@ -837,9 +812,7 @@ Through the **options** parameter you can specify the routes for the reserved en
 
 - **keysetRoute** - Route used serve the tool's JWK keyset. **Default: '/keys'**.
 
-- **invalidTokenRoute** - Route used to handle invalid token errors. **Default: '/invalidtoken'**.
-
-- **sessionTimeoutRoute** - Route used to handle session timeout errors. **Default: '/sessiontimeout'**.
+- **dynRegRoute** - Route used to handle Dynamic Registration requests. **Default: '/register'**.
 
 ```javascript
 // Setup provider example
@@ -852,8 +825,7 @@ lti.setup('EXAMPLEKEY',
             appRoute: '/app',// Scpecifying main app route
             loginRoute: '/loginroute', // Specifying login route
             keysetRoute: '/keyset', // Specifying keyset route
-            invalidTokenRoute: '/invalidtokenroute', // Specifying invalid token route
-            sessionTimeoutRoute: '/sessiontimeoutroute' // Specifying session timeout route
+            dynRegRoute: '/register' // Specifying Dynamic registration route
           })
 ```
 
@@ -1134,16 +1106,10 @@ Ltijs reserved endpoint routes can be retrieved by using the following methods:
   const keysetRoute = lti.keysetRoute() // returns '/keys' by default
   ```
 
-- **lti.sessionTimeoutRoute**
+- **lti.dynRegRoute**
 
   ```javascript
-  const sessionTimeoutRoute = lti.sessionTimeoutRoute() // returns '/sessiontimeout' by default
-  ```
-
-- **lti.invalidTokenRoute**
-
-  ```javascript
-  const invalidTokenRoute = lti.invalidTokenRoute() // returns '/invalidtoken' by default
+  const dynRegRoute = lti.dynRegRoute() // returns '/register' by default
   ```
 
 
@@ -1710,7 +1676,7 @@ When using the `LTIK-AUTH-V1` authorization schema, `req.headers.authorization` 
 
 > [See more about development mode]((#development-mode))
 
-If the validation fails, the request is redirected to either the **invalidTokenRoute** or the **sessionTimeoutRoute**.
+If the validation fails, the request is handled by the **invalidTokenCallback** or the **sessionTimeoutCallback**.
 
 **Cookie creation and validation can be disabled by setting `ltiaas: true` in the [setup options](#ltiaas-mode):**
 

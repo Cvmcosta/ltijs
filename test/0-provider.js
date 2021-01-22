@@ -17,9 +17,8 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
 
 const appRoute = '/approute'
 const loginRoute = '/loginroute'
-const sessionTimeoutRoute = '/sessiontimeoutroute'
-const invalidTokenRoute = '/invalidtokenroute'
 const keysetRoute = '/keysetroute'
+const dynRegRoute = '/register'
 
 describe('Testing Provider', function () {
   this.timeout(10000)
@@ -37,9 +36,8 @@ describe('Testing Provider', function () {
         {
           appRoute: appRoute,
           loginRoute: loginRoute,
-          sessionTimeoutRoute: sessionTimeoutRoute,
-          invalidTokenRoute: invalidTokenRoute,
           keysetRoute: keysetRoute,
+          dynRegRoute: dynRegRoute,
           staticPath: path.join(__dirname, '/views/'),
           devMode: false,
           dynReg: { url: 'https://tool.example.com', name: 'Tool Name', logo: 'https://tool.example.com/assets/logo.svg', customParameters: { a: 'b' }, redirectUris: ['https://tool.example.com/launch'] }
@@ -55,9 +53,8 @@ describe('Testing Provider', function () {
         {
           appRoute: appRoute,
           loginRoute: loginRoute,
-          sessionTimeoutRoute: sessionTimeoutRoute,
-          invalidTokenRoute: invalidTokenRoute,
           keysetRoute: keysetRoute,
+          dynRegRoute: dynRegRoute,
           staticPath: path.join(__dirname, '/views/'),
           devMode: false
         })
@@ -80,12 +77,6 @@ describe('Testing Provider', function () {
   })
   it('Provider.loginRoute expected to return registered route', () => {
     expect(lti.loginRoute()).to.be.a('string').equal(loginRoute)
-  })
-  it('Provider.sessionTimeoutRoute expected to return registered route', () => {
-    expect(lti.sessionTimeoutRoute()).to.be.a('string').equal(sessionTimeoutRoute)
-  })
-  it('Provider.invalidTokenRoute expected to return registered route', () => {
-    expect(lti.invalidTokenRoute()).to.be.a('string').equal(invalidTokenRoute)
   })
   it('Provider.keysetRoute expected to return registered route', () => {
     expect(lti.keysetRoute()).to.be.a('string').equal(keysetRoute)

@@ -152,7 +152,7 @@ describe('Testing LTI 1.3 flow', function () {
   it('MainApp route receiving no idToken is expected to redirect to the invalidtoken route', async () => {
     const url = lti.appRoute()
     return chai.request(lti.app).post(url).then(res => {
-      expect(res).to.redirectTo(new RegExp('.*' + lti.invalidTokenRoute()))
+      expect(res.statusCode).to.equal(401)
     })
   })
   it('Idtoken route is expected to have access to error message', async () => {
@@ -160,7 +160,7 @@ describe('Testing LTI 1.3 flow', function () {
     lti.onInvalidToken((req, res) => { res.status(401).send(res.locals.err) })
 
     return chai.request(lti.app).post(url).then(res => {
-      expect(res).to.redirectTo(new RegExp('.*' + lti.invalidTokenRoute()))
+      expect(res.statusCode).to.equal(401)
       expect(res.body).to.not.deep.equal({})
     })
   })
@@ -208,7 +208,7 @@ describe('Testing LTI 1.3 flow', function () {
       ]
     })
     return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
-      expect(res).to.redirectTo(new RegExp('.*' + lti.invalidTokenRoute()))
+      expect(res.statusCode).to.equal(401)
     })
   })
   it('BadPayload - Wrong multiple aud claim. Expected to redirect to invalid token route', async () => {
@@ -225,7 +225,7 @@ describe('Testing LTI 1.3 flow', function () {
       ]
     })
     return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
-      expect(res).to.redirectTo(new RegExp('.*' + lti.invalidTokenRoute()))
+      expect(res.statusCode).to.equal(401)
     })
   })
   it('BadPayload - Multiple aud claim, wrong azp claim. Expected to redirect to invalid token route', async () => {
@@ -243,7 +243,7 @@ describe('Testing LTI 1.3 flow', function () {
       ]
     })
     return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
-      expect(res).to.redirectTo(new RegExp('.*' + lti.invalidTokenRoute()))
+      expect(res.statusCode).to.equal(401)
     })
   })
   // IMS Certification tests
@@ -253,7 +253,7 @@ describe('Testing LTI 1.3 flow', function () {
     const url = await lti.appRoute()
 
     return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
-      expect(res).to.redirectTo(new RegExp('.*' + lti.invalidTokenRoute()))
+      expect(res.statusCode).to.equal(401)
     })
   })
   it('BadPayload - Incorrect KID in JWT header. Expected to redirect to invalid token route', async () => {
@@ -267,7 +267,7 @@ describe('Testing LTI 1.3 flow', function () {
       ]
     })
     return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
-      expect(res).to.redirectTo(new RegExp('.*' + lti.invalidTokenRoute()))
+      expect(res.statusCode).to.equal(401)
     })
   })
   it('BadPayload - Wrong LTI Version. Expected to redirect to invalid token route', async () => {
@@ -284,7 +284,7 @@ describe('Testing LTI 1.3 flow', function () {
       ]
     })
     return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
-      expect(res).to.redirectTo(new RegExp('.*' + lti.invalidTokenRoute()))
+      expect(res.statusCode).to.equal(401)
     })
   })
   it('BadPayload - No LTI Version. Expected to redirect to invalid token route', async () => {
@@ -301,7 +301,7 @@ describe('Testing LTI 1.3 flow', function () {
       ]
     })
     return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
-      expect(res).to.redirectTo(new RegExp('.*' + lti.invalidTokenRoute()))
+      expect(res.statusCode).to.equal(401)
     })
   })
   it('BadPayload - Invalid LTI message. Expected to redirect to invalid token route', async () => {
@@ -311,7 +311,7 @@ describe('Testing LTI 1.3 flow', function () {
     const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     const url = await lti.appRoute()
     return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
-      expect(res).to.redirectTo(new RegExp('.*' + lti.invalidTokenRoute()))
+      expect(res.statusCode).to.equal(401)
     })
   })
   it('BadPayload - Missing LTI Claims. Expected to redirect to invalid token route', async () => {
@@ -328,7 +328,7 @@ describe('Testing LTI 1.3 flow', function () {
       ]
     })
     return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
-      expect(res).to.redirectTo(new RegExp('.*' + lti.invalidTokenRoute()))
+      expect(res.statusCode).to.equal(401)
     })
   })
   it('BadPayload - Timestamps Incorrect. Expected to redirect to invalid token route', async () => {
@@ -346,7 +346,7 @@ describe('Testing LTI 1.3 flow', function () {
       ]
     })
     return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
-      expect(res).to.redirectTo(new RegExp('.*' + lti.invalidTokenRoute()))
+      expect(res.statusCode).to.equal(401)
     })
   })
   it('BadPayload - Messsage Type Claim Missing. Expected to redirect to invalid token route', async () => {
@@ -363,7 +363,7 @@ describe('Testing LTI 1.3 flow', function () {
       ]
     })
     return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
-      expect(res).to.redirectTo(new RegExp('.*' + lti.invalidTokenRoute()))
+      expect(res.statusCode).to.equal(401)
     })
   })
   it('BadPayload - Role Claim Missing. Expected to redirect to invalid token route', async () => {
@@ -380,7 +380,7 @@ describe('Testing LTI 1.3 flow', function () {
       ]
     })
     return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
-      expect(res).to.redirectTo(new RegExp('.*' + lti.invalidTokenRoute()))
+      expect(res.statusCode).to.equal(401)
     })
   })
   it('BadPayload - Deployment Id Claim Missing. Expected to redirect to invalid token route', async () => {
@@ -397,7 +397,7 @@ describe('Testing LTI 1.3 flow', function () {
       ]
     })
     return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
-      expect(res).to.redirectTo(new RegExp('.*' + lti.invalidTokenRoute()))
+      expect(res.statusCode).to.equal(401)
     })
   })
   it('BadPayload - Resource Link Id Claim Missing. Expected to redirect to invalid token route', async () => {
@@ -414,7 +414,7 @@ describe('Testing LTI 1.3 flow', function () {
       ]
     })
     return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
-      expect(res).to.redirectTo(new RegExp('.*' + lti.invalidTokenRoute()))
+      expect(res.statusCode).to.equal(401)
     })
   })
   it('BadPayload - User Claim Missing. Expected to redirect to invalid token route', async () => {
@@ -431,7 +431,7 @@ describe('Testing LTI 1.3 flow', function () {
       ]
     })
     return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
-      expect(res).to.redirectTo(new RegExp('.*' + lti.invalidTokenRoute()))
+      expect(res.statusCode).to.equal(401)
     })
   })
   it('ValidPayload. Expected to return status 200', async () => {
