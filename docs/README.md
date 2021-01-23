@@ -25,14 +25,16 @@ Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps
 
 > [Ltijs is LTI® Advantage Complete Certified by IMS](https://site.imsglobal.org/certifications/coursekey/ltijs)
 
-> Ltijs version 5.0 is a re-release of the project as a Certified LTI® library, that comes with many improvements, new functionalities and a few **API changes**, see bellow for a migration guide from version 4 and a complete list of the changes made:
-> - [Migrating from version 4](https://cvmcosta.github.io/ltijs/#/migration)
-> - [CHANGELOG](https://cvmcosta.github.io/ltijs/#/changelog)
-
 > Ltijs is the first LTI Library to implement the new [LTI® Advantage Dynamic Registration Service](https://cvmcosta.me/ltijs/#/dynamicregistration), now supported by **Moodle 3.10**. 
 > The Dynamic Registration Service turns the LTI Tool registration flow into a fast, completely automatic process.
 
-> *Learning Tools Interoperability® (LTI®) is a trademark of the IMS Global Learning Consortium, Inc. (https://www.imsglobal.org)*
+> v5.6 - Breaking Changes
+> - Removed `invalidToken` and `sessionTimeout` routes, Ltijs no longer redirects to error routes, it simply calls the handler methods `onInvalidToken` and `onSessionTimeout`.
+> - Error handlers sill work in the exact same way.
+> - Fixed a spelling error in the Dynamic Registration Service that caused Ltijs to be unable to identify the LMS Family. Big Thanks to @lselden for the pull request!
+
+> - [Migrating from version 4](https://cvmcosta.github.io/ltijs/#/migration)
+> - [CHANGELOG](https://cvmcosta.github.io/ltijs/#/changelog)
 
 ## Table of Contents
 
@@ -240,3 +242,5 @@ And if you feel like it, you can donate any amount through paypal, it helps a lo
 ## License
 
 [![APACHE2 License](https://img.shields.io/github/license/cvmcosta/ltijs)](LICENSE)
+
+> *Learning Tools Interoperability® (LTI®) is a trademark of the IMS Global Learning Consortium, Inc. (https://www.imsglobal.org)*

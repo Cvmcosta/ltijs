@@ -118,6 +118,7 @@ Returns a signed JWT message, that the client has to submit in a POST form in or
       {
         type: 'ltiResourceLink',
         title: resource.title,
+        url: resource.url,
         custom: {
           resourceurl: resource.path,
           resourcename: resource.title
@@ -162,6 +163,7 @@ const items = [
       {
         type: 'ltiResourceLink',
         title: 'LTI resource',
+        url: 'https://your.ltijs.com?resource=resource1',
         custom: {
           resource: 'resource1'
         }
