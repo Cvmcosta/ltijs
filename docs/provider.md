@@ -1191,7 +1191,13 @@ lti.onInvalidToken(async (req, res, next) => {
   }
 )
 ```
-*Ltijs provides a default method for this callback that returns a 401 error code with the `res.locals.err` object.*
+
+
+*Ltijs provides a default method for this callback that returns a 401 error code with the `res.locals.err` object:*
+
+```
+{ status: 401, error: 'Unauthorized', details: { message: 'ERROR_MESSAGE' } }
+```
 
 #### onSessionTimeout
 
@@ -1207,7 +1213,12 @@ lti.onSessionTimeout(async (req, res, next) => {
   }
 )
 ```
-*Ltijs provides a default method for this callback that returns a 401 error code with the `res.locals.err` object.
+
+*Ltijs provides a default method for this callback that returns a 401 error code with the `res.locals.err` object:*
+
+```
+{ status: 401, error: 'Unauthorized', details: { message: 'ERROR_MESSAGE' } }
+```
 
 
 #### onUnregisteredPlatform
