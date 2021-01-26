@@ -212,7 +212,7 @@ class DynamicRegistration {
       } : undefined
     }).json(); // Registering Platform
 
-    const platformName = (configuration['https://purl.imsglobal.org/spec/lti-platformconfiguration '] ? configuration['https://purl.imsglobal.org/spec/lti-platformconfiguration '].product_family_code : 'Platform') + '_DynReg_' + crypto.randomBytes(16).toString('hex');
+    const platformName = (configuration['https://purl.imsglobal.org/spec/lti-platform-configuration '] ? configuration['https://purl.imsglobal.org/spec/lti-platform-configuration '].product_family_code : 'Platform') + '_DynReg_' + crypto.randomBytes(16).toString('hex');
     if (await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, configuration.issuer, registrationResponse.client_id, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database))) throw new Error('PLATFORM_ALREADY_REGISTERED');
     provDynamicRegistrationDebug('Registering Platform');
     const platform = {
