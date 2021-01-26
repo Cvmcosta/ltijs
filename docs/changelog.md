@@ -9,6 +9,16 @@
 
 ### CHANGELOG
 
+#### V5.6.3
+> 2021-01-26
+> - Added a new error message `MISSING_VALIDATION_COOKIE` used when the `state` cookie is not present.
+
+#### V5.6.0
+> 2021-01-25
+> - Removed `invalidToken` and `sessionTimeout` routes, Ltijs no longer redirects to error routes, it simply calls the handler methods `onInvalidToken` and `onSessionTimeout`.
+> - Error handlers sill work in the exact same way.
+> - Fixed a spelling error in the Dynamic Registration Service that caused Ltijs to be unable to identify the LMS Family. Big Thanks to @lselden for the pull request!
+
 #### V5.5.7
 > 2020-12-11
 > - Added the possibility to customize Login Platform errors (Unregistered or Inactive Platform).

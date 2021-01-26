@@ -71,7 +71,7 @@ class Auth {
     provAuthDebug('Request Iss claim: ' + validationParameters.iss)
     provAuthDebug('Response Iss claim: ' + decoded.payload.iss)
     if (!validationParameters.iss) {
-      if (!devMode) throw new Error('ISS_CLAIM_DOES_NOT_MATCH')
+      if (!devMode) throw new Error('MISSING_VALIDATION_COOKIE')
       else { provAuthDebug('Dev Mode enabled: Missing state validation cookies will be ignored') }
     } else if (validationParameters.iss !== decoded.payload.iss) throw new Error('ISS_CLAIM_DOES_NOT_MATCH')
 
