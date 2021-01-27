@@ -9,6 +9,11 @@
 
 ### CHANGELOG
 
+#### V5.6.5
+> 2021-01-27
+> - Fixed bug where Blackboard would not see access token request iat and exp claims.
+> - Fixed bug where Blackboard would not accept the generated access token due to the "bearer" word not being capitalized.
+
 #### V5.6.4
 > 2021-01-26
 > - Fixed bug where domain generation would ignore port numbers in the Dynamic Registration flow.
