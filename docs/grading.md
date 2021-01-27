@@ -37,6 +37,7 @@
 Ltijs implements the [LTI® 1.3 Assignment and Grading Service Specification](https://www.imsglobal.org/spec/lti-ags/v2p0/) in the form of the **Grade Class**.
 
 #### **This documentation is incomplete. The full Assignment and Grades documentation is being written and will come out soon...**
+- For now, please see this gist for an example of the new Grading system: [Grading gist](https://gist.github.com/Cvmcosta/2a503dd3df6905cd635d26d188f99c13)
 
 ___
 
