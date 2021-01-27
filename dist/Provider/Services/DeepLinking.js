@@ -103,8 +103,6 @@ class DeepLinking {
     const jwtBody = {
       iss: await platform.platformClientId(),
       aud: idtoken.iss,
-      iat: Date.now() / 1000,
-      exp: Date.now() / 1000 + 60,
       nonce: encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``),
       'https://purl.imsglobal.org/spec/lti/claim/deployment_id': idtoken.deploymentId,
       'https://purl.imsglobal.org/spec/lti/claim/message_type': 'LtiDeepLinkingResponse',
@@ -140,6 +138,7 @@ class DeepLinking {
     jwtBody['https://purl.imsglobal.org/spec/lti-dl/claim/content_items'] = selectedContentItems;
     const message = jwt.sign(jwtBody, await platform.platformPrivateKey(), {
       algorithm: 'RS256',
+      expiresIn: 60,
       keyid: await platform.platformKid()
     });
     return message;
