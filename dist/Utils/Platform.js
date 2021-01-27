@@ -260,22 +260,25 @@ class Platform {
 
 
   async platformAccessToken(scopes) {
-    const token = await (0, _classPrivateFieldGet2.default)(this, _Database).Get((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), 'accesstoken', {
+    const result = await (0, _classPrivateFieldGet2.default)(this, _Database).Get((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), 'accesstoken', {
       platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl),
       clientId: (0, _classPrivateFieldGet2.default)(this, _clientId),
       scopes: scopes
     });
+    let token;
 
-    if (!token || (Date.now() - token[0].createdAt) / 1000 > token[0].expires_in) {
+    if (!result || (Date.now() - result[0].createdAt) / 1000 > result[0].token.expires_in) {
       provPlatformDebug('Valid access_token for ' + (0, _classPrivateFieldGet2.default)(this, _platformUrl) + ' not found');
       provPlatformDebug('Attempting to generate new access_token for ' + (0, _classPrivateFieldGet2.default)(this, _platformUrl));
       provPlatformDebug('With scopes: ' + scopes);
-      const res = await Auth.getAccessToken(scopes, this, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), (0, _classPrivateFieldGet2.default)(this, _Database));
-      return res;
+      token = await Auth.getAccessToken(scopes, this, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), (0, _classPrivateFieldGet2.default)(this, _Database));
     } else {
       provPlatformDebug('Access_token found');
-      return token[0].token;
+      token = result[0].token;
     }
+
+    token.token_type = token.token_type.charAt(0).toUpperCase() + token.token_type.slice(1);
+    return token;
   }
   /**
    * @description Retrieves the platform information as a JSON object.

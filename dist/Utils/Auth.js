@@ -308,12 +308,11 @@ class Auth {
       sub: clientId,
       iss: clientId,
       aud: await platform.platformAccessTokenEndpoint(),
-      iat: Date.now() / 1000,
-      exp: Date.now() / 1000 + 60,
       jti: encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     };
     const token = jwt.sign(confjwt, await platform.platformPrivateKey(), {
       algorithm: 'RS256',
+      expiresIn: 60,
       keyid: await platform.platformKid()
     });
     const message = {
