@@ -9,6 +9,10 @@
 
 ### CHANGELOG
 
+#### V5.6.4
+> 2021-01-26
+> - Fixed bug where domain generation would ignore port numbers in the Dynamic Registration flow.
+
 #### V5.6.3
 > 2021-01-26
 > - Added a new error message `MISSING_VALIDATION_COOKIE` used when the `state` cookie is not present.

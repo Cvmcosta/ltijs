@@ -45,7 +45,9 @@ const buildUrl = (url, path) => {
 const getHostname = url => {
   const pathParts = _url.parse(url);
 
-  return pathParts.hostname;
+  let hostname = pathParts.hostname;
+  if (pathParts.port) hostname += ':' + pathParts.port;
+  return hostname;
 };
 
 var _name = new WeakMap();

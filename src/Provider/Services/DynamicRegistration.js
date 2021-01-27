@@ -29,7 +29,9 @@ const buildUrl = (url, path) => {
 // Helper method to get the url hostname
 const getHostname = (url) => {
   const pathParts = _url.parse(url)
-  return pathParts.hostname
+  let hostname = pathParts.hostname
+  if (pathParts.port) hostname += ':' + pathParts.port
+  return hostname
 }
 
 class DynamicRegistration {
