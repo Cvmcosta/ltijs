@@ -106,7 +106,7 @@ The `getMembers()` method allows us to apply filters to the request, and these f
   Specifies the number of members per page that should be returned per members page **(By default only one members page is returned.)**.
 
 - **options.pages**
-  Specifies the number of pages that should be returned. *Defaults to 1*.
+  Specifies the number of pages that should be returned. *Defaults to 1*. If set to false retrieves every available page.
 
   Ex: 
 
@@ -212,7 +212,7 @@ Retrieves members from platform.
 | options | `Object`  | Options object. |
 | options.role| `String`  | Specific role to be returned. |
 | options.limit | `Number`  | Specifies maximum number of members per page. |
-| options.pages | `Number`  | Specifies maximum number of pages returned. Defaults to 1. |
+| options.pages | `Number`  | Specifies maximum number of pages returned. Defaults to 1. If set to false retrieves every available page. |
 | options.url | `String` | Specifies the initial members endpoint, usually retrieved from a previous incomplete request. |
 | options.resourceLinkId | `Boolean` | If set to true, retrieves resource Link level memberships. |
 

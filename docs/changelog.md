@@ -9,6 +9,11 @@
 
 ### CHANGELOG
 
+#### V5.6.6
+> 2021-01-29
+> - Added the capability to remove the limit of number of pages returned by the Names and Roles Service.
+
+
 #### V5.6.5
 > 2021-01-27
 > - Fixed bug where Blackboard would not see access token request iat and exp claims.

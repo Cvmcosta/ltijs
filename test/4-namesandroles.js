@@ -128,7 +128,7 @@ describe('Testing Names and Roles Service', function () {
 
     lti.onConnect(async (token, req, res) => {
       try {
-        return res.send(await lti.NamesAndRoles.getMembers(token, { role: 'Learner', limit: 2, pages: 1 }))
+        return res.send(await lti.NamesAndRoles.getMembers(token, { role: 'Learner', limit: 2 }))
       } catch (err) {
         res.sendStatus(500)
       }
@@ -184,6 +184,51 @@ describe('Testing Names and Roles Service', function () {
       expect(result.members[3]).to.deep.include(membersResult.members[1])
     })
   })
+
+  it('NamesAndRoles.getMembers() expected to return valid member list and include multiple pages when "pages" parameter is set to false', async () => {
+    const token = JSON.parse(JSON.stringify(tokenValid))
+    token.nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+
+    const payload = signToken(token, '123456')
+    const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const url = await lti.appRoute()
+
+    nock('http://localhost/moodle').get('/keyset').reply(200, {
+      keys: [
+        { kty: 'RSA', e: 'AQAB', kid: '123456', n: 'VrJSr-xli8NfuAdk_Wem5BARmmW4BpJvXBx3MbFY_0grH9Cd7OxBwVYSwI4P4yhL27upa1_FCRwLi3raOPSJOkHEDvFwtyYZMvdYcpDYTv6JRVqbgEyZtHa-vjL1wBqqW75yPDRoyZdnA8MWrfyRUOak53ZVWHRKgBnP53oXm7M' }
+      ]
+    })
+
+    nock('http://localhost/moodle').post('/AccessTokenUrl').reply(200, {
+      access_token: 'dkj4985kjaIAJDJ89kl8rkn5',
+      token_type: 'bearer',
+      expires_in: 3600,
+      scope: 'https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly'
+    })
+
+    nock('http://localhost/moodle').get('/members?role=Learner&limit=2').reply(200, membersResult, { link: '<http://localhost/moodle/api/lti/courses/1/names_and_roles?since=623698163>; rel="differences",<http://localhost/moodle/api/lti/courses/1/names_and_roles?page=2&per_page=1>; rel="next",<http://localhost/moodle/api/lti/courses/1/names_and_roles?page=1&per_page=1>; rel="first",<http://localhost/moodle/api/lti/courses/1/names_and_roles?page=2&per_page=1>; rel="last"' })
+
+    nock('http://localhost/moodle').get('/api/lti/courses/1/names_and_roles?page=2&per_page=1').reply(200, membersResult)
+
+    lti.onConnect(async (token, req, res) => {
+      try {
+        return res.send(await lti.NamesAndRoles.getMembers(token, { role: 'Learner', limit: 2, pages: false }))
+      } catch (err) {
+        console.log(err)
+        res.sendStatus(500)
+      }
+    })
+
+    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state: state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;', 'ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
+      expect(res).to.have.status(200)
+
+      const result = JSON.parse(res.text)
+      expect(result.differences).to.eql('http://localhost/moodle/api/lti/courses/1/names_and_roles?since=623698163')
+      expect(result.members[0]).to.deep.include(membersResult.members[0])
+      expect(result.members[3]).to.deep.include(membersResult.members[1])
+    })
+  })
+
   it('NamesAndRoles.getMembers() expected to return valid member list when using custom url', async () => {
     const token = JSON.parse(JSON.stringify(tokenValid))
     token.nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
