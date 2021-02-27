@@ -188,17 +188,17 @@ class Provider {
     /**
      * @description Grading service.
      */
-    this.Grade = new GradeService(this.getPlatform)
+    this.Grade = GradeService
 
     /**
      * @description Deep Linking service.
      */
-    this.DeepLinking = new DeepLinkingService(this.getPlatform)
+    this.DeepLinking = DeepLinkingService
 
     /**
      * @description Names and Roles service.
      */
-    this.NamesAndRoles = new NamesAndRolesService(this.getPlatform)
+    this.NamesAndRoles = NamesAndRolesService
 
     if (options && options.dynReg) {
       const routes = {

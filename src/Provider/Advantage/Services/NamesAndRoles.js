@@ -1,22 +1,14 @@
 /* Names and Roles Provisioning Service */
 
+// Dependencies
 const got = require('got')
 const parseLink = require('parse-link-header')
 const provNamesAndRolesServiceDebug = require('debug')('provider:namesAndRolesService')
 
+// Classes
+const Platform = require('../Classes/Platform')
+
 class NamesAndRoles {
-  #getPlatform = null
-
-  #ENCRYPTIONKEY = ''
-
-  #Database
-
-  constructor (getPlatform, ENCRYPTIONKEY, Database) {
-    this.#getPlatform = getPlatform
-    this.#ENCRYPTIONKEY = ENCRYPTIONKEY
-    this.#Database = Database
-  }
-
   /**
    * @description Retrieves members from platform.
    * @param {Object} idtoken - Idtoken for the user.
@@ -27,12 +19,12 @@ class NamesAndRoles {
    * @param {String} [options.url] - Retrieve memberships from a specific URL. Usually retrieved from the `next` link header of a previous request.
    * @param {Boolean} [options.resourceLinkId = false] - If set to true, retrieves resource Link level memberships.
    */
-  async getMembers (idtoken, options) {
+  static async getMembers (idtoken, options) {
     if (!idtoken) { provNamesAndRolesServiceDebug('Missing IdToken object.'); throw new Error('MISSING_ID_TOKEN') }
     provNamesAndRolesServiceDebug('Attempting to retrieve memberships')
     provNamesAndRolesServiceDebug('Target platform: ' + idtoken.iss)
 
-    const platform = await this.#getPlatform(idtoken.iss, idtoken.clientId, this.#ENCRYPTIONKEY, this.#Database)
+    const platform = await Platform.getPlatform(idtoken.iss, idtoken.clientId)
 
     if (!platform) {
       provNamesAndRolesServiceDebug('Platform not found')

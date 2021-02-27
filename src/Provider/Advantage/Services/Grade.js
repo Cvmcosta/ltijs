@@ -147,7 +147,7 @@ class Grade {
     provGradeServiceDebug('Target platform: ' + idtoken.iss)
 
     if (!accessToken) {
-      const platform = await Platform.getPlatform(idtoken.iss, idtoken.clientId) // Remove and use DB instead
+      const platform = await Platform.getPlatform(idtoken.iss, idtoken.clientId)
 
       /* istanbul ignore next */
       if (!platform) {
