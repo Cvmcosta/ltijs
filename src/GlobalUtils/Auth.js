@@ -1,9 +1,12 @@
+// Dependencies
 const crypto = require('crypto')
 const Jwk = require('rasha')
 const got = require('got')
 const jwt = require('jsonwebtoken')
 const provAuthDebug = require('debug')('provider:auth')
-// const cons_authdebug = require('debug')('consumer:auth')
+
+// Classes
+const Database = require('./Database')
 
 /**
  * @description Authentication class manages RSA keys and validation of tokens.
@@ -14,7 +17,7 @@ class Auth {
      * @param {String} ENCRYPTIONKEY - Encryption key.
      * @returns {String} kid for the keypair.
      */
-  static async generatePlatformKeyPair (ENCRYPTIONKEY, Database, platformUrl, platformClientId) {
+  static async generateKeyPair (platformUrl, platformClientId) {
     let kid = crypto.randomBytes(16).toString('hex')
 
     while (await Database.Get(false, 'publickey', { kid: kid })) {
@@ -45,8 +48,8 @@ class Auth {
       kid: kid
     }
 
-    await Database.Replace(ENCRYPTIONKEY, 'publickey', { platformUrl: platformUrl, clientId: platformClientId }, pubkeyobj, { kid: kid, platformUrl: platformUrl, clientId: platformClientId })
-    await Database.Replace(ENCRYPTIONKEY, 'privatekey', { platformUrl: platformUrl, clientId: platformClientId }, privkeyobj, { kid: kid, platformUrl: platformUrl, clientId: platformClientId })
+    await Database.replace('publickey', { platformUrl: platformUrl, clientId: platformClientId }, pubkeyobj, true, { kid: kid, platformUrl: platformUrl, clientId: platformClientId })
+    await Database.replace('privatekey', { platformUrl: platformUrl, clientId: platformClientId }, privkeyobj, true, { kid: kid, platformUrl: platformUrl, clientId: platformClientId })
 
     return kid
   }
@@ -262,11 +265,11 @@ class Auth {
   }
 
   /**
-     * @description Gets a new access token from the platform.
+     * @description Generates a new access token for a given Platform.
      * @param {String} scopes - Request scopes
      * @param {Platform} platform - Platform object of the platform you want to access.
      */
-  static async getAccessToken (scopes, platform, ENCRYPTIONKEY, Database) {
+  static async generateAccessToken (scopes, platform, ENCRYPTIONKEY, Database) {
     const platformUrl = await platform.platformUrl()
     const clientId = await platform.platformClientId()
     const confjwt = {

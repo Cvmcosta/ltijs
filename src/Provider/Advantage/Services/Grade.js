@@ -3,12 +3,15 @@
 
 /* Provider Assignment and Grade Service */
 
+// Dependencies
 const got = require('got')
 const parseLink = require('parse-link-header')
 const provGradeServiceDebug = require('debug')('provider:gradeService')
 
-class Grade {
+// Classes
+const Platform = require('../Classes/Platform')
 
+class Grade {
   /**
    * @description Gets lineitems from a given platform
    * @param {Object} idtoken - Idtoken for the user
@@ -21,13 +24,12 @@ class Grade {
    * @param {String} [options.label = false] - Filters line items based on the label
    * @param {String} [options.url = false] - Retrieves line items from a specific URL. Usually retrieved from the `next` link header of a previous request.
    */
-  async getLineItems (idtoken, options, accessToken) {
+  static async getLineItems (idtoken, options, accessToken) {
     if (!idtoken) { provGradeServiceDebug('Missing IdToken object.'); throw new Error('MISSING_ID_TOKEN') }
     provGradeServiceDebug('Target platform: ' + idtoken.iss)
 
     if (!accessToken) {
-      const platform = await this.#getPlatform(idtoken.iss, idtoken.clientId, this.#ENCRYPTIONKEY, this.#Database) // Remove and use DB instead
-
+      const platform = await Platform.getPlatform(idtoken.iss, idtoken.clientId)
       /* istanbul ignore next */
       if (!platform) {
         provGradeServiceDebug('Platform not found')
@@ -97,7 +99,7 @@ class Grade {
    * @param {Object} [options] - Aditional configuration for the lineItem
    * @param {Boolean} [options.resourceLinkId = false] - If set to true, binds the created lineItem to the resource that originated the request
    */
-  async createLineItem (idtoken, lineItem, options, accessToken) {
+  static async createLineItem (idtoken, lineItem, options, accessToken) {
     // Validating lineItem
     if (!idtoken) { provGradeServiceDebug('Missing IdToken object.'); throw new Error('MISSING_ID_TOKEN') }
     if (!lineItem) { provGradeServiceDebug('Line item object missing.'); throw new Error('MISSING_LINE_ITEM') }
@@ -107,7 +109,7 @@ class Grade {
     provGradeServiceDebug('Target platform: ' + idtoken.iss)
 
     if (!accessToken) {
-      const platform = await this.#getPlatform(idtoken.iss, idtoken.clientId, this.#ENCRYPTIONKEY, this.#Database)
+      const platform = await Platform.getPlatform(idtoken.iss, idtoken.clientId)
 
       /* istanbul ignore next */
       if (!platform) {
@@ -138,14 +140,14 @@ class Grade {
    * @param {Object} idtoken - Idtoken for the user
    * @param {String} lineItemId - LineItem ID.
    */
-  async getLineItemById (idtoken, lineItemId, accessToken) {
+  static async getLineItemById (idtoken, lineItemId, accessToken) {
     if (!idtoken) { provGradeServiceDebug('Missing IdToken object.'); throw new Error('MISSING_ID_TOKEN') }
     if (!lineItemId) { provGradeServiceDebug('Missing lineItemID.'); throw new Error('MISSING_LINEITEM_ID') }
 
     provGradeServiceDebug('Target platform: ' + idtoken.iss)
 
     if (!accessToken) {
-      const platform = await this.#getPlatform(idtoken.iss, idtoken.clientId, this.#ENCRYPTIONKEY, this.#Database) // Remove and use DB instead
+      const platform = await Platform.getPlatform(idtoken.iss, idtoken.clientId) // Remove and use DB instead
 
       /* istanbul ignore next */
       if (!platform) {
@@ -175,14 +177,14 @@ class Grade {
    * @param {String} lineItemId - LineItem ID.
    * @param {Object} lineItem - Updated fields.
    */
-  async updateLineItemById (idtoken, lineItemId, lineItem) {
+  static async updateLineItemById (idtoken, lineItemId, lineItem) {
     if (!idtoken) { provGradeServiceDebug('Missing IdToken object.'); throw new Error('MISSING_ID_TOKEN') }
     if (!lineItemId) { provGradeServiceDebug('Missing lineItemID.'); throw new Error('MISSING_LINEITEM_ID') }
     if (!lineItem) { provGradeServiceDebug('Missing lineItem object.'); throw new Error('MISSING_LINEITEM') }
 
     provGradeServiceDebug('Target platform: ' + idtoken.iss)
 
-    const platform = await this.#getPlatform(idtoken.iss, idtoken.clientId, this.#ENCRYPTIONKEY, this.#Database)
+    const platform = await Platform.getPlatform(idtoken.iss, idtoken.clientId)
 
     /* istanbul ignore next */
     if (!platform) {
@@ -209,13 +211,13 @@ class Grade {
    * @param {Object} idtoken - Idtoken for the user
    * @param {String} lineItemId - LineItem ID.
    */
-  async deleteLineItemById (idtoken, lineItemId) {
+  static async deleteLineItemById (idtoken, lineItemId) {
     if (!idtoken) { provGradeServiceDebug('Missing IdToken object.'); throw new Error('MISSING_ID_TOKEN') }
     if (!lineItemId) { provGradeServiceDebug('Missing lineItemID.'); throw new Error('MISSING_LINEITEM_ID') }
 
     provGradeServiceDebug('Target platform: ' + idtoken.iss)
 
-    const platform = await this.#getPlatform(idtoken.iss, idtoken.clientId, this.#ENCRYPTIONKEY, this.#Database)
+    const platform = await Platform.getPlatform(idtoken.iss, idtoken.clientId)
 
     /* istanbul ignore next */
     if (!platform) {
@@ -242,13 +244,13 @@ class Grade {
    * @param {String} lineItemId - LineItem ID.
    * @param {Object} score - Score/Grade following the LTI Standard application/vnd.ims.lis.v1.score+json.
    */
-  async submitScore (idtoken, lineItemId, score) {
+  static async submitScore (idtoken, lineItemId, score) {
     if (!idtoken) { provGradeServiceDebug('Missing IdToken object.'); throw new Error('MISSING_ID_TOKEN') }
     if (!lineItemId) { provGradeServiceDebug('Missing lineItemID.'); throw new Error('MISSING_LINEITEM_ID') }
     if (!score) { provGradeServiceDebug('Score object missing.'); throw new Error('MISSING_SCORE') }
     provGradeServiceDebug('Target platform: ' + idtoken.iss)
 
-    const platform = await this.#getPlatform(idtoken.iss, idtoken.clientId, this.#ENCRYPTIONKEY, this.#Database)
+    const platform = await Platform.getPlatform(idtoken.iss, idtoken.clientId)
 
     /* istanbul ignore next */
     if (!platform) {
@@ -298,13 +300,13 @@ class Grade {
    * @param {Number} [options.limit = false] - Sets a maximum number of scores to be returned.
    * @param {String} [options.url = false] - Retrieves scores from a specific URL. Usually retrieved from the `next` link header of a previous request.
    */
-  async getScores (idtoken, lineItemId, options) {
+  static async getScores (idtoken, lineItemId, options) {
     if (!idtoken) { provGradeServiceDebug('Missing IdToken object.'); throw new Error('MISSING_ID_TOKEN') }
     if (!lineItemId) { provGradeServiceDebug('Missing lineItemID.'); throw new Error('MISSING_LINEITEM_ID') }
 
     provGradeServiceDebug('Target platform: ' + idtoken.iss)
 
-    const platform = await this.#getPlatform(idtoken.iss, idtoken.clientId, this.#ENCRYPTIONKEY, this.#Database)
+    const platform = await Platform.getPlatform(idtoken.iss, idtoken.clientId)
 
     /* istanbul ignore next */
     if (!platform) {
@@ -379,12 +381,12 @@ class Grade {
    * @param {String} [options.id = false] - Filters line items based on the id
    * @param {String} [options.label = false] - Filters line items based on the label
    */
-  async deleteLineItems (idtoken, options) {
+  static async deleteLineItems (idtoken, options) {
     if (!idtoken) { provGradeServiceDebug('Missing IdToken object.'); throw new Error('MISSING_ID_TOKEN') }
 
     provGradeServiceDebug('Target platform: ' + idtoken.iss)
 
-    const platform = await this.#getPlatform(idtoken.iss, idtoken.clientId, this.#ENCRYPTIONKEY, this.#Database)
+    const platform = await Platform.getPlatform(idtoken.iss, idtoken.clientId)
 
     if (!platform) {
       provGradeServiceDebug('Platform not found')
@@ -434,12 +436,12 @@ class Grade {
    * @param {String} [options.id = false] - Filters line items based on the id
    * @param {String} [options.label = false] - Filters line items based on the label
    */
-  async scorePublish (idtoken, score, options) {
+  static async scorePublish (idtoken, score, options) {
     if (!idtoken) { provGradeServiceDebug('Missing IdToken object.'); throw new Error('MISSING_ID_TOKEN') }
     if (!score) { provGradeServiceDebug('Score object missing.'); throw new Error('MISSING_SCORE') }
     provGradeServiceDebug('Target platform: ' + idtoken.iss)
 
-    const platform = await this.#getPlatform(idtoken.iss, idtoken.clientId, this.#ENCRYPTIONKEY, this.#Database)
+    const platform = await Platform.getPlatform(idtoken.iss, idtoken.clientId)
 
     if (!platform) {
       provGradeServiceDebug('Platform not found')
@@ -525,12 +527,12 @@ class Grade {
    * @param {String} [options.id = false] - Filters line items based on the id
    * @param {String} [options.label = false] - Filters line items based on the label
    */
-  async result (idtoken, options) {
+  static async result (idtoken, options) {
     if (!idtoken) { provGradeServiceDebug('Missing IdToken object.'); throw new Error('MISSING_ID_TOKEN') }
 
     provGradeServiceDebug('Target platform: ' + idtoken.iss)
 
-    const platform = await this.#getPlatform(idtoken.iss, idtoken.clientId, this.#ENCRYPTIONKEY, this.#Database)
+    const platform = await Platform.getPlatform(idtoken.iss, idtoken.clientId)
 
     if (!platform) {
       provGradeServiceDebug('Platform not found')
@@ -611,7 +613,7 @@ class Grade {
   /**
    * @deprecated
    */
-  async GetLineItems (idtoken, options, accessToken) {
+  static async GetLineItems (idtoken, options, accessToken) {
     console.log('Deprecation warning: GetLineItems() is now deprecated, use getLineItems() instead. GetLineItems() will be removed in the 6.0 release.')
     return this.getLineItems(idtoken, options, accessToken)
   }
@@ -620,7 +622,7 @@ class Grade {
   /**
    * @deprecated
    */
-  async CreateLineItem (idtoken, lineItem, options, accessToken) {
+  static async CreateLineItem (idtoken, lineItem, options, accessToken) {
     console.log('Deprecation warning: CreateLineItem() is now deprecated, use createLineItem() instead. CreateLineItem() will be removed in the 6.0 release.')
     return this.createLineItem(idtoken, lineItem, options, accessToken)
   }
@@ -629,7 +631,7 @@ class Grade {
   /**
    * @deprecated
    */
-  async DeleteLineItems (idtoken, options) {
+  static async DeleteLineItems (idtoken, options) {
     console.log('Deprecation warning: DeleteLineItems() is now deprecated, use deleteLineItems() instead. DeleteLineItems() will be removed in the 6.0 release.')
     return this.deleteLineItems(idtoken, options)
   }
@@ -638,7 +640,7 @@ class Grade {
   /**
    * @deprecated
    */
-  async ScorePublish (idtoken, score, options) {
+  static async ScorePublish (idtoken, score, options) {
     console.log('Deprecation warning: ScorePublish() is now deprecated, use scorePublish() instead. ScorePublish() will be removed in the 6.0 release.')
     return this.scorePublish(idtoken, score, options)
   }
@@ -647,7 +649,7 @@ class Grade {
   /**
    * @deprecated
    */
-  async Result (idtoken, options) {
+  static async Result (idtoken, options) {
     console.log('Deprecation warning: Result() is now deprecated, use result() instead. Result() will be removed in the 6.0 release.')
     return this.result(idtoken, options)
   }
