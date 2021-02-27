@@ -1,9 +1,14 @@
 /* Provider Dynamic Registration Service */
+
+// Dependencies
 const got = require('got')
 const crypto = require('crypto')
 const _url = require('fast-url-parser')
-
 const provDynamicRegistrationDebug = require('debug')('provider:dynamicRegistrationService')
+
+// Classes
+const Database = require('../../../GlobalUtils/Database')
+const Platform = require('../Classes/Platform')
 
 // Helper method to build URLs
 const buildUrl = (url, path) => {
@@ -55,15 +60,7 @@ class DynamicRegistration {
 
   #keysetUrl
 
-  #getPlatform
-
-  #registerPlatform
-
-  #ENCRYPTIONKEY = ''
-
-  #Database
-
-  constructor (options, routes, registerPlatform, getPlatform, ENCRYPTIONKEY, Database) {
+  constructor (options, routes) {
     this.#name = options.name
     this.#redirectUris = options.redirectUris || []
     this.#customParameters = options.customParameters || {}
@@ -74,11 +71,6 @@ class DynamicRegistration {
     this.#appUrl = buildUrl(options.url, routes.appRoute)
     this.#loginUrl = buildUrl(options.url, routes.loginRoute)
     this.#keysetUrl = buildUrl(options.url, routes.keysetRoute)
-    this.#getPlatform = getPlatform
-    this.#registerPlatform = registerPlatform
-
-    this.#ENCRYPTIONKEY = ENCRYPTIONKEY
-    this.#Database = Database
   }
 
   /**
@@ -125,7 +117,7 @@ class DynamicRegistration {
     // Registering Platform
     const platformName = (configuration['https://purl.imsglobal.org/spec/lti-platform-configuration'] ? configuration['https://purl.imsglobal.org/spec/lti-platform-configuration'].product_family_code : 'Platform') + '_DynReg_' + crypto.randomBytes(16).toString('hex')
 
-    if (await this.#getPlatform(configuration.issuer, registrationResponse.client_id, this.#ENCRYPTIONKEY, this.#Database)) throw new Error('PLATFORM_ALREADY_REGISTERED')
+    if (await Platform.getPlatform(configuration.issuer, registrationResponse.client_id)) throw new Error('PLATFORM_ALREADY_REGISTERED')
 
     provDynamicRegistrationDebug('Registering Platform')
     const platform = {
@@ -139,8 +131,8 @@ class DynamicRegistration {
         key: configuration.jwks_uri
       }
     }
-    const registered = await this.#registerPlatform(platform, this.#getPlatform, this.#ENCRYPTIONKEY, this.#Database)
-    await this.#Database.Insert(false, 'platformStatus', { id: await registered.platformId(), active: this.#autoActivate })
+    const registered = await Platform.registerPlatform(platform)
+    await Database.insert('platformStatus', { id: await registered.platformId(), active: this.#autoActivate })
 
     // Returing message indicating the end of registration flow
     return `<script>window.parent.postMessage({subject:"org.imsglobal.lti.close"}, "${configuration.issuer}");</script>`

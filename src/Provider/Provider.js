@@ -209,7 +209,7 @@ class Provider {
       /**
        * @description Dynamic Registration service.
        */
-      this.DynamicRegistration = new DynamicRegistration(options.dynReg, routes, this.registerPlatform, this.getPlatform, this.#ENCRYPTIONKEY, this.Database)
+      this.DynamicRegistration = new DynamicRegistration(options.dynReg, routes)
     }
 
     if (options && options.staticPath) this.#server.setStaticPath(options.staticPath)
