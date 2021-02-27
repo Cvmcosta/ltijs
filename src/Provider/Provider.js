@@ -10,7 +10,7 @@ const provMainDebug = require('debug')('provider:main')
 const provDynamicRegistrationDebug = require('debug')('provider:dynamicRegistrationService')
 
 // Services
-const Launch = require('./Advantage/Services/Core')
+const Core = require('./Advantage/Services/Core')
 const GradeService = require('./Advantage/Services/Grade')
 const DeepLinkingService = require('./Advantage/Services/DeepLinking')
 const NamesAndRolesService = require('./Advantage/Services/NamesAndRoles')
@@ -480,7 +480,40 @@ class Provider {
     this.app.use(sessionValidator)
 
     this.app.all(this.#loginRoute, async (req, res) => {
-      
+      const params = { ...req.query, ...req.body }
+      if (!params.iss || !params.login_hint || !params.target_link_uri) return res.status(400).send({ status: 400, error: 'Bad Request', details: { message: 'MISSING_LOGIN_PARAMETERS' } })
+      try {
+        provMainDebug('Receiving a login request from: ' + params.iss)
+        let platform = false
+        if (params.client_id) platform = await Platform.getPlatform(params.iss, params.client_id)
+        else {
+          const platforms = await Platform.getPlatform(params.iss)
+          if (platforms.length > 0) platform = platforms[0]
+        }
+
+        if (!platform) {
+          provMainDebug('Unregistered platform attempting connection: ' + params.iss)
+          return this.#unregisteredPlatformCallback(req, res)
+        }
+
+        const platformActive = await platform.platformActive()
+        if (!platformActive) {
+          provMainDebug('Inactive platform attempting connection: ' + params.iss)
+          return this.#inactivePlatformCallback(req, res)
+        }
+
+        // Creating login request
+        const login = await Core.login(platform, params)
+        // Setting up validation info
+        const cookieOptions = JSON.parse(JSON.stringify(this.#cookieOptions))
+        cookieOptions.maxAge = 60 * 1000 // Adding max age to state cookie = 1min
+        res.cookie('state' + login.state, params.iss, cookieOptions)
+        // Redirect to authentication endpoint
+        return res.redirect(login.target)
+      } catch (err) {
+        provMainDebug(err)
+        return res.status(500).send({ status: 500, error: 'Internal Server Error', details: { message: err.message } })
+      }
     })
 
     this.app.get(this.#keysetRoute, async (req, res, next) => {

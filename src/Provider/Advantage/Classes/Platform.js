@@ -50,12 +50,22 @@ class Platform {
    * @returns {Promise<Platform | false>}
    */
   static async getPlatform (url, clientId) {
-    if (!url || !clientId) throw new Error('MISSING_PARAM')
-    const result = await Database.get('platform', { platformUrl: url, clientId: clientId })
-    if (!result) return false
-    const _platform = result[0]
-    const platform = new Platform(_platform.kid, _platform.platformName, _platform.platformUrl, _platform.clientId, _platform.authEndpoint, _platform.accesstokenEndpoint, _platform.authConfig)
-    return platform
+    if (!url) throw new Error('MISSING_PLATFORM_URL')
+    if (clientId) {
+      const result = await Database.get(false, 'platform', { platformUrl: url, clientId: clientId })
+      if (!result) return false
+      const _platform = result[0]
+      const platform = new Platform(_platform.kid, _platform.platformName, _platform.platformUrl, _platform.clientId, _platform.authEndpoint, _platform.accesstokenEndpoint, _platform.authConfig)
+      return platform
+    }
+    const platforms = []
+    const result = await Database.get(false, 'platform', { platformUrl: url })
+    if (result) {
+      for (const platform of result) {
+        platforms.push(new Platform(platform.kid, platform.platformName, platform.platformUrl, platform.clientId, platform.authEndpoint, platform.accesstokenEndpoint, platform.authConfig))
+      }
+    }
+    return platforms
   }
 
   /**
