@@ -2,26 +2,29 @@
 /* eslint-disable no-useless-escape */
 
 /* Main class for the Provider functionalities */
-
-const Server = require('../Utils/Server')
-const Request = require('../Utils/Request')
-const Platform = require('../Utils/Platform')
-const Auth = require('../Utils/Auth')
-const DB = require('../Utils/Database')
-const Keyset = require('../Utils/Keyset')
-
-const GradeService = require('./Services/Grade')
-const DeepLinkingService = require('./Services/DeepLinking')
-const NamesAndRolesService = require('./Services/NamesAndRoles')
-const DynamicRegistration = require('./Services/DynamicRegistration')
-
+// Dependencies
 const url = require('fast-url-parser')
 const jwt = require('jsonwebtoken')
-const crypto = require('crypto')
-
 const provAuthDebug = require('debug')('provider:auth')
 const provMainDebug = require('debug')('provider:main')
 const provDynamicRegistrationDebug = require('debug')('provider:dynamicRegistrationService')
+
+// Services
+const Launch = require('./Advantage/Services/Core')
+const GradeService = require('./Advantage/Services/Grade')
+const DeepLinkingService = require('./Advantage/Services/DeepLinking')
+const NamesAndRolesService = require('./Advantage/Services/NamesAndRoles')
+const DynamicRegistration = require('./Advantage/Services/DynamicRegistration')
+
+// Classes
+const Server = require('../GlobalUtils/Server')
+const Platform = require('../GlobalUtils/Platform')
+const Auth = require('../GlobalUtils/Auth')
+const Keyset = require('../GlobalUtils/Keyset')
+
+// Database
+const Database = require('../GlobalUtils/Database')
+const MongoDB = require('../GlobalUtils/MongoDB/MongoDB')
 
 /**
  * @descripttion LTI Provider Class that implements the LTI 1.3 protocol and services.
@@ -42,6 +45,7 @@ class Provider {
 
   #devMode = false
   #ltiaas = false
+  #legacy = false
 
   #tokenMaxAge = 10
 
@@ -144,13 +148,6 @@ class Provider {
     if (!database) throw new Error('MISSING_DATABASE_CONFIGURATION')
     if (options && options.dynReg && (!options.dynReg.url || !options.dynReg.name)) throw new Error('MISSING_DYNREG_CONFIGURATION')
 
-    /**
-     * @description Database object.
-     */
-    this.Database = null
-    if (!database.plugin) this.Database = new DB(database)
-    else this.Database = database.plugin
-
     if (options && (options.appRoute || options.appUrl)) this.#appRoute = options.appRoute || options.appUrl
     if (options && (options.loginRoute || options.loginUrl)) this.#loginRoute = options.loginRoute || options.loginUrl
     if (options && (options.keysetRoute || options.keysetUrl)) this.#keysetRoute = options.keysetRoute || options.keysetUrl
@@ -158,6 +155,7 @@ class Provider {
 
     if (options && options.devMode === true) this.#devMode = true
     if (options && options.ltiaas === true) this.#ltiaas = true
+    if (options && options.legacy === true) this.#legacy = true
     if (options && options.tokenMaxAge !== undefined) this.#tokenMaxAge = options.tokenMaxAge
 
     // Cookie options
@@ -169,6 +167,17 @@ class Provider {
 
     this.#ENCRYPTIONKEY = encryptionkey
 
+    // Setup Databse
+    let connector
+    if (!database.plugin) connector = new MongoDB(database)
+    else connector = database.plugin
+    /**
+     * @description Database object.
+     */
+    this.Database = Database
+    this.Database.setup(this.#ENCRYPTIONKEY, connector, { type: 'PROVIDER', legacy: this.#legacy })
+
+    // Setting up Server
     this.#server = new Server(options ? options.https : false, options ? options.ssl : false, this.#ENCRYPTIONKEY, options ? options.cors : true, options ? options.serverAddon : false)
 
     /**
@@ -179,17 +188,17 @@ class Provider {
     /**
      * @description Grading service.
      */
-    this.Grade = new GradeService(this.getPlatform, this.#ENCRYPTIONKEY, this.Database)
+    this.Grade = new GradeService(this.getPlatform)
 
     /**
      * @description Deep Linking service.
      */
-    this.DeepLinking = new DeepLinkingService(this.getPlatform, this.#ENCRYPTIONKEY, this.Database)
+    this.DeepLinking = new DeepLinkingService(this.getPlatform)
 
     /**
      * @description Names and Roles service.
      */
-    this.NamesAndRoles = new NamesAndRolesService(this.getPlatform, this.#ENCRYPTIONKEY, this.Database)
+    this.NamesAndRoles = new NamesAndRolesService(this.getPlatform)
 
     if (options && options.dynReg) {
       const routes = {
@@ -471,63 +480,7 @@ class Provider {
     this.app.use(sessionValidator)
 
     this.app.all(this.#loginRoute, async (req, res) => {
-      const params = { ...req.query, ...req.body }
-      try {
-        if (!params.iss || !params.login_hint || !params.target_link_uri) return res.status(400).send({ status: 400, error: 'Bad Request', details: { message: 'MISSING_LOGIN_PARAMETERS' } })
-        const iss = params.iss
-        provMainDebug('Receiving a login request from: ' + iss)
-        let platform
-        if (params.client_id) platform = await this.getPlatform(iss, params.client_id)
-        else platform = (await this.getPlatform(iss))[0]
-
-        if (platform) {
-          const platformActive = await platform.platformActive()
-          if (!platformActive) return this.#inactivePlatformCallback(req, res)
-
-          provMainDebug('Redirecting to platform authentication endpoint')
-          // Create state parameter used to validade authentication response
-          let state = encodeURIComponent(crypto.randomBytes(25).toString('hex'))
-
-          provMainDebug('Target Link URI: ', params.target_link_uri)
-          /* istanbul ignore next */
-          // Cleaning up target link uri and retrieving query parameters
-          if (params.target_link_uri.includes('?')) {
-            // Retrieve raw queries
-            const rawQueries = new URLSearchParams('?' + params.target_link_uri.split('?')[1])
-            // Check if state is unique
-            while (await this.Database.Get(false, 'state', { state: state })) state = encodeURIComponent(crypto.randomBytes(25).toString('hex'))
-            provMainDebug('Generated state: ', state)
-            // Assemble queries object
-            const queries = {}
-            for (const [key, value] of rawQueries) { queries[key] = value }
-            params.target_link_uri = params.target_link_uri.split('?')[0]
-            provMainDebug('Query parameters found: ', queries)
-            provMainDebug('Final Redirect URI: ', params.target_link_uri)
-            // Store state and query parameters on database
-            await this.Database.Insert(false, 'state', { state: state, query: queries })
-          }
-
-          // Setting up validation info
-          const cookieOptions = JSON.parse(JSON.stringify(this.#cookieOptions))
-          cookieOptions.maxAge = 60 * 1000 // Adding max age to state cookie = 1min
-          res.cookie('state' + state, iss, cookieOptions)
-
-          // Redirect to authentication endpoint
-          const query = await Request.ltiAdvantageLogin(params, platform, state)
-          provMainDebug('Login request: ')
-          provMainDebug(query)
-          res.redirect(url.format({
-            pathname: await platform.platformAuthEndpoint(),
-            query: query
-          }))
-        } else {
-          provMainDebug('Unregistered platform attempting connection: ' + iss)
-          return this.#unregisteredPlatformCallback(req, res)
-        }
-      } catch (err) {
-        provMainDebug(err)
-        return res.status(500).send({ status: 500, error: 'Internal Server Error', details: { message: err.message } })
-      }
+      
     })
 
     this.app.get(this.#keysetRoute, async (req, res, next) => {
@@ -561,7 +514,7 @@ class Provider {
     if (!this.#setup) throw new Error('PROVIDER_NOT_SETUP')
     provMainDebug('Attempting to connect to database')
     try {
-      await this.Database.setup()
+      await this.Database.connect()
 
       const conf = {
         port: 3000,
@@ -615,7 +568,7 @@ class Provider {
     if (!options || options.silent !== true) console.log('\nClosing server...')
     await this.#server.close()
     if (!options || options.silent !== true) console.log('Closing connection to the database...')
-    await this.Database.Close()
+    await this.Database.close()
     if (!options || options.silent !== true) console.log('Shutdown complete.')
     return true
   }
@@ -793,7 +746,7 @@ class Provider {
      * @param {String} platform.clientId - Client Id generated by the platform.
      * @param {String} platform.authenticationEndpoint - Authentication endpoint that the tool will use to authenticate within the platform.
      * @param {String} platform.accesstokenEndpoint - Access token endpoint that the tool will use to get an access token for the platform.
-     * @param {object} platform.authConfig - Authentication method and key for verifying messages from the platform. {method: "RSA_KEY", key:"PUBLIC KEY..."}
+     * @param {Object} platform.authConfig - Authentication method and key for verifying messages from the platform. {method: "RSA_KEY", key:"PUBLIC KEY..."}
      * @param {String} platform.authConfig.method - Method of authorization "RSA_KEY" or "JWK_KEY" or "JWK_SET".
      * @param {String} platform.authConfig.key - Either the RSA public key provided by the platform, or the JWK key, or the JWK keyset address.
      * @returns {Promise<Platform>}

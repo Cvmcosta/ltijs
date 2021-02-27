@@ -8,17 +8,6 @@ const parseLink = require('parse-link-header')
 const provGradeServiceDebug = require('debug')('provider:gradeService')
 
 class Grade {
-  #getPlatform = null
-
-  #ENCRYPTIONKEY = ''
-
-  #Database
-
-  constructor (getPlatform, ENCRYPTIONKEY, Database) {
-    this.#getPlatform = getPlatform
-    this.#ENCRYPTIONKEY = ENCRYPTIONKEY
-    this.#Database = Database
-  }
 
   /**
    * @description Gets lineitems from a given platform
