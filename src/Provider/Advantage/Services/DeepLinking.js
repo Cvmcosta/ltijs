@@ -1,21 +1,13 @@
 /* Provider Deep Linking Service */
 
+// Dependencies
 const jwt = require('jsonwebtoken')
 const provDeepLinkingDebug = require('debug')('provider:deepLinkingService')
 
+// Classes
+const Platform = require('../Classes/Platform')
+
 class DeepLinking {
-  #getPlatform = null
-
-  #ENCRYPTIONKEY = ''
-
-  #Database
-
-  constructor (getPlatform, ENCRYPTIONKEY, Database) {
-    this.#getPlatform = getPlatform
-    this.#ENCRYPTIONKEY = ENCRYPTIONKEY
-    this.#Database = Database
-  }
-
   /**
    * @description Creates an auto submitting form containing the DeepLinking Message.
    * @param {Object} idtoken - Idtoken for the user.
@@ -59,7 +51,7 @@ class DeepLinking {
     if (!Array.isArray(contentItems)) contentItems = [contentItems]
 
     // Gets platform
-    const platform = await this.#getPlatform(idtoken.iss, idtoken.clientId, this.#ENCRYPTIONKEY, this.#Database)
+    const platform = await Platform.getPlatform(idtoken.iss, idtoken.clientId)
     if (!platform) {
       provDeepLinkingDebug('Platform not found')
       throw new Error('PLATFORM_NOT_FOUND')
