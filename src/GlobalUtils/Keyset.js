@@ -2,6 +2,7 @@
 
 // Dependencies
 const Jwk = require('rasha')
+const crypto = require('crypto')
 const provKeysetDebug = require('debug')('provider:keyset')
 
 // Classes
@@ -9,8 +10,8 @@ const Database = require('./Database')
 
 class Keyset {
   /**
-     * @description Handles the creation of jwk keyset.
-     */
+   * @description Handles the creation of jwk keyset.
+   */
   static async build () {
     provKeysetDebug('Generating JWK keyset')
     const keys = await Database.get('publickey') || []
@@ -23,6 +24,34 @@ class Keyset {
       keyset.keys.push(jwk)
     }
     return keyset
+  }
+
+  /**
+   * @description Generates a new RSA keypair.
+   */
+  static async generateKeyPair () {
+    let kid = crypto.randomBytes(16).toString('hex')
+
+    while (await Database.get('publickey', { kid: kid })) {
+      /* istanbul ignore next */
+      kid = crypto.randomBytes(16).toString('hex')
+    }
+    const keys = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 4096,
+      publicKeyEncoding: {
+        type: 'spki',
+        format: 'pem'
+      },
+      privateKeyEncoding: {
+        type: 'pkcs1',
+        format: 'pem'
+      }
+    })
+
+    return {
+      ...keys,
+      kid: kid
+    }
   }
 }
 

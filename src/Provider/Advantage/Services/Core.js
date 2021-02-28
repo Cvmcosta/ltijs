@@ -1,11 +1,15 @@
 // Dependencies
 const crypto = require('crypto')
+const jwt = require('jsonwebtoken')
 const url = require('fast-url-parser')
 const provLoginDebug = require('debug')('provider:login')
-// const provLaunchDebug = require('debug')('provider:launch')
+const provLaunchDebug = require('debug')('provider:launch')
+const provAccessDebug = require('debug')('provider:access')
 
 // Classes
 const Database = require('../../../GlobalUtils/Database')
+const Platform = require('../Classes/Platform')
+const Auth = require('../../../GlobalUtils/Auth')
 
 /**
  * @description LTI 1.3 Core service methods.
@@ -35,7 +39,7 @@ class Core {
       provLoginDebug('Query parameters found: ', queries)
       provLoginDebug('Final Redirect URI: ', params.target_link_uri)
       // Store state and query parameters on database
-      await this.Database.Insert(false, 'state', { state: state, query: queries })
+      await Database.insert('state', { state: state, query: queries })
     }
 
     // Build authentication request
@@ -62,6 +66,119 @@ class Core {
       }),
       state: state
     }
+  }
+
+  /**
+   * @description LTI 1.3 Launch handler
+   */
+  static async launch (idtoken, validationParameters) {
+    const valid = await Auth.validateToken(idtoken, validationParameters)
+    provLaunchDebug('Successfully validated token!')
+    const courseId = valid['https://purl.imsglobal.org/spec/lti/claim/context'] ? valid['https://purl.imsglobal.org/spec/lti/claim/context'].id : 'NF'
+    const resourceId = valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'] ? valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'].id : 'NF'
+    const clientId = valid.clientId
+    const deploymentId = valid['https://purl.imsglobal.org/spec/lti/claim/deployment_id']
+    const contextId = encodeURIComponent(valid.iss + clientId + deploymentId + courseId + '_' + resourceId)
+    const platformCode = encodeURIComponent('lti' + Buffer.from(valid.iss + clientId + deploymentId).toString('base64'))
+
+    // Mount platform token
+    const platformToken = {
+      iss: valid.iss,
+      user: valid.sub,
+      userInfo: {
+        given_name: valid.given_name,
+        family_name: valid.family_name,
+        name: valid.name,
+        email: valid.email
+      },
+      platformInfo: valid['https://purl.imsglobal.org/spec/lti/claim/tool_platform'],
+      clientId: valid.clientId,
+      platformId: valid.platformId,
+      deploymentId: valid['https://purl.imsglobal.org/spec/lti/claim/deployment_id']
+    }
+
+    // Store idToken in database
+    await Database.replace('idtoken', { iss: valid.iss, clientId: clientId, deploymentId: deploymentId, user: valid.sub }, platformToken)
+
+    // Mount context token
+    const contextToken = {
+      contextId: contextId,
+      path: validationParameters.path,
+      user: valid.sub,
+      roles: valid['https://purl.imsglobal.org/spec/lti/claim/roles'],
+      targetLinkUri: valid['https://purl.imsglobal.org/spec/lti/claim/target_link_uri'],
+      context: valid['https://purl.imsglobal.org/spec/lti/claim/context'],
+      resource: valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'],
+      custom: valid['https://purl.imsglobal.org/spec/lti/claim/custom'],
+      launchPresentation: valid['https://purl.imsglobal.org/spec/lti/claim/launch_presentation'],
+      messageType: valid['https://purl.imsglobal.org/spec/lti/claim/message_type'],
+      version: valid['https://purl.imsglobal.org/spec/lti/claim/version'],
+      deepLinkingSettings: valid['https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings'],
+      lis: valid['https://purl.imsglobal.org/spec/lti/claim/lis'],
+      endpoint: valid['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint'],
+      namesRoles: valid['https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice']
+    }
+
+    // Store contextToken in database
+    await Database.replace('contexttoken', { contextId: contextId, user: valid.sub }, contextToken)
+
+    provLaunchDebug('Generating ltik')
+    const ltikObj = {
+      platformUrl: valid.iss,
+      clientId: clientId,
+      deploymentId: deploymentId,
+      platformCode: platformCode,
+      contextId: contextId,
+      user: valid.sub,
+      s: validationParameters.state // Added state to make unique ltiks
+    }
+    // Signing context token
+    const ltik = jwt.sign(ltikObj, validationParameters.encryptionkey)
+
+    return {
+      token: platformToken,
+      context: contextToken,
+      ltik: ltik
+    }
+  }
+
+  /**
+   * @description LTI 1.3 Access handler
+   */
+  static async access (ltik, validationParameters) {
+    const validLtik = jwt.verify(ltik, validationParameters.encryptionkey)
+    provAccessDebug('Ltik successfully verified')
+
+    const platformUrl = validLtik.platformUrl
+    const platformCode = validLtik.platformCode
+    const clientId = validLtik.clientId
+    const deploymentId = validLtik.deploymentId
+    const contextId = validLtik.contextId
+
+    provAccessDebug('Retrieving user session')
+    let user = validLtik.user
+    if (!validationParameters.ltiaas) {
+      provAccessDebug('Attempting to retrieve matching session cookie')
+      const cookieUser = validationParameters.cookies[platformCode]
+      if (!cookieUser) {
+        if (!validationParameters.devMode) user = false
+        else { provAccessDebug('Dev Mode enabled: Missing session cookies will be ignored') }
+      } else if (user.toString() !== cookieUser.toString()) user = false
+    }
+    if (!user) throw new Error('SESSION_NOT_FOUND')
+    provAccessDebug('Valid session found')
+
+    provAccessDebug('Building ID Token')
+    // Gets corresponding id token from database
+    const idTokenObject = await Database.get('idtoken', { iss: platformUrl, clientId: clientId, deploymentId: deploymentId, user: user })
+    if (!idTokenObject) throw new Error('IDTOKEN_NOT_FOUND_DB')
+    const idToken = JSON.parse(JSON.stringify(idTokenObject[0]))
+    // Gets correspondent context token from database
+    const contextTokenObject = await Database.get('contexttoken', { contextId: contextId, user: user })
+    if (!contextTokenObject) throw new Error('CONTEXTTOKEN_NOT_FOUND_DB')
+    idToken.platformContext = JSON.parse(JSON.stringify(contextTokenObject[0]))
+
+    return idToken
   }
 }
 

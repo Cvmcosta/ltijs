@@ -1,5 +1,4 @@
 // Dependencies
-const crypto = require('crypto')
 const Jwk = require('rasha')
 const got = require('got')
 const jwt = require('jsonwebtoken')
@@ -13,48 +12,6 @@ const Database = require('./Database')
  */
 class Auth {
   /**
-     * @description Generates a new keypair for a platform.
-     * @param {String} ENCRYPTIONKEY - Encryption key.
-     * @returns {String} kid for the keypair.
-     */
-  static async generateKeyPair (platformUrl, platformClientId) {
-    let kid = crypto.randomBytes(16).toString('hex')
-
-    while (await Database.Get(false, 'publickey', { kid: kid })) {
-      /* istanbul ignore next */
-      kid = crypto.randomBytes(16).toString('hex')
-    }
-
-    const keys = crypto.generateKeyPairSync('rsa', {
-      modulusLength: 4096,
-      publicKeyEncoding: {
-        type: 'spki',
-        format: 'pem'
-      },
-      privateKeyEncoding: {
-        type: 'pkcs1',
-        format: 'pem'
-      }
-    })
-
-    const { publicKey, privateKey } = keys
-
-    const pubkeyobj = {
-      key: publicKey,
-      kid: kid
-    }
-    const privkeyobj = {
-      key: privateKey,
-      kid: kid
-    }
-
-    await Database.replace('publickey', { platformUrl: platformUrl, clientId: platformClientId }, pubkeyobj, true, { kid: kid, platformUrl: platformUrl, clientId: platformClientId })
-    await Database.replace('privatekey', { platformUrl: platformUrl, clientId: platformClientId }, privkeyobj, true, { kid: kid, platformUrl: platformUrl, clientId: platformClientId })
-
-    return kid
-  }
-
-  /**
      * @description Resolves a promisse if the token is valid following LTI 1.3 standards.
      * @param {String} token - JWT token to be verified.
      * @param {Boolean} devMode - DevMode option.
@@ -63,7 +20,7 @@ class Auth {
      * @param {String} ENCRYPTIONKEY - Encription key.
      * @returns {Promise}
      */
-  static async validateToken (token, devMode, validationParameters, getPlatform, ENCRYPTIONKEY, Database) {
+  static async validateToken (token, devMode, validationParameters) {
     const decoded = jwt.decode(token, { complete: true })
     if (!decoded) throw new Error('INVALID_JWT_RECEIVED')
 
@@ -80,10 +37,10 @@ class Auth {
 
     provAuthDebug('Attempting to retrieve registered platform')
     let platform
-    if (!Array.isArray(decoded.payload.aud)) platform = await getPlatform(decoded.payload.iss, decoded.payload.aud, ENCRYPTIONKEY, Database)
+    if (!Array.isArray(decoded.payload.aud)) platform = await Platform.getPlatform(decoded.payload.iss, decoded.payload.aud)
     else {
       for (const aud of decoded.payload.aud) {
-        platform = await getPlatform(decoded.payload.iss, aud, ENCRYPTIONKEY, Database)
+        platform = await Platform.getPlatform(decoded.payload.iss, aud)
         if (platform) break
       }
     }
@@ -108,7 +65,7 @@ class Auth {
         if (!jwk) throw new Error('KEY_NOT_FOUND')
         provAuthDebug('Converting JWK key to PEM key')
         const key = await Jwk.export({ jwk: jwk })
-        const verified = await this.verifyToken(token, key, validationParameters, platform, Database)
+        const verified = await this.verifyToken(token, key, validationParameters, platform)
         return (verified)
       }
       case 'JWK_KEY': {
@@ -117,7 +74,7 @@ class Auth {
 
         const key = Jwk.jwk2pem(authConfig.key)
 
-        const verified = await this.verifyToken(token, key, validationParameters, platform, Database)
+        const verified = await this.verifyToken(token, key, validationParameters, platform)
         return (verified)
       }
       case 'RSA_KEY': {
@@ -125,7 +82,7 @@ class Auth {
         const key = authConfig.key
         if (!key) throw new Error('KEY_NOT_FOUND')
 
-        const verified = await this.verifyToken(token, key, validationParameters, platform, Database)
+        const verified = await this.verifyToken(token, key, validationParameters, platform)
         return (verified)
       }
       default: {
@@ -142,10 +99,10 @@ class Auth {
      * @param {Object} validationParameters - Validation Parameters.
      * @param {Platform} platform - Issuer platform.
      */
-  static async verifyToken (token, key, validationParameters, platform, Database) {
+  static async verifyToken (token, key, validationParameters, platform) {
     provAuthDebug('Attempting to verify JWT with the given key')
     const verified = jwt.verify(token, key, { algorithms: [validationParameters.alg] })
-    await this.oidcValidation(verified, platform, validationParameters, Database)
+    await this.oidcValidation(verified, platform, validationParameters)
     await this.claimValidation(verified)
 
     // Adding clientId and platformId information to token
@@ -160,14 +117,14 @@ class Auth {
      * @param {Platform} platform - Platform object.
      * @param {Object} validationParameters - Validation parameters.
      */
-  static async oidcValidation (token, platform, validationParameters, Database) {
+  static async oidcValidation (token, platform, validationParameters) {
     provAuthDebug('Token signature verified')
     provAuthDebug('Initiating OIDC aditional validation steps')
 
     const aud = this.validateAud(token, platform)
     const alg = this.validateAlg(validationParameters.alg)
     const maxAge = this.validateMaxAge(token, validationParameters.maxAge)
-    const nonce = this.validateNonce(token, Database)
+    const nonce = this.validateNonce(token)
 
     return Promise.all([aud, alg, maxAge, nonce])
   }
@@ -221,13 +178,13 @@ class Auth {
      * @description Validates Nonce.
      * @param {Object} token - Id token you wish to validate.
      */
-  static async validateNonce (token, Database) {
+  static async validateNonce (token) {
     provAuthDebug('Validating nonce')
     provAuthDebug('Nonce: ' + token.nonce)
 
-    if (await Database.Get(false, 'nonce', { nonce: token.nonce })) throw new Error('NONCE_ALREADY_RECEIVED')
+    if (await Database.get('nonce', { nonce: token.nonce })) throw new Error('NONCE_ALREADY_RECEIVED')
     provAuthDebug('Storing nonce')
-    await Database.Insert(false, 'nonce', { nonce: token.nonce })
+    await Database.insert('nonce', { nonce: token.nonce })
 
     return true
   }
@@ -269,7 +226,7 @@ class Auth {
      * @param {String} scopes - Request scopes
      * @param {Platform} platform - Platform object of the platform you want to access.
      */
-  static async generateAccessToken (scopes, platform, ENCRYPTIONKEY, Database) {
+  static async generateAccessToken (scopes, platform) {
     const platformUrl = await platform.platformUrl()
     const clientId = await platform.platformClientId()
     const confjwt = {
@@ -292,7 +249,7 @@ class Auth {
     const access = await got.post(await platform.platformAccessTokenEndpoint(), { form: message }).json()
     provAuthDebug('Successfully generated new access_token')
 
-    await Database.Replace(ENCRYPTIONKEY, 'accesstoken', { platformUrl: platformUrl, clientId: clientId, scopes: scopes }, { token: access }, { platformUrl: platformUrl, clientId: clientId, scopes: scopes })
+    await Database.replace('accesstoken', { platformUrl: platformUrl, clientId: clientId, scopes: scopes }, { token: access }, true, { platformUrl: platformUrl, clientId: clientId, scopes: scopes })
     return access
   }
 }

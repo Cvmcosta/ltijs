@@ -3,6 +3,7 @@ const provPlatformDebug = require('debug')('provider:platform')
 
 // Classes
 const Database = require('../../../GlobalUtils/Database')
+const Keyset = require('../../../GlobalUtils/Keyset')
 const Auth = require('./Auth')
 
 /**
@@ -120,15 +121,20 @@ class Platform {
       if (!platform.authConfig.key) throw new Error('MISSING_AUTHCONFIG_KEY')
 
       try {
-        kid = await Auth.generateKeyPair(platform.url, platform.clientId)
-        const plat = new Platform(kid, platform.name, platform.url, platform.clientId, platform.authenticationEndpoint, platform.accesstokenEndpoint, platform.authConfig)
-
-        // Save platform to db
         provPlatformDebug('Registering new platform')
         provPlatformDebug('Platform Url: ' + platform.url)
         provPlatformDebug('Platform ClientId: ' + platform.clientId)
+
+        // Generating and storing RSA keys
+        const keyPair = await Keyset.generateKeyPair()
+        kid = keyPair.kid
+        await Database.replace('publickey', { platformUrl: platform.url, clientId: platform.clientId }, { key: keyPair.publicKey, kid: kid }, true, { kid: kid, platformUrl: platform.url, clientId: platform.clientId })
+        await Database.replace('privatekey', { platformUrl: platform.url, clientId: platform.clientId }, { key: keyPair.privateKey, kid: kid }, true, { kid: kid, platformUrl: platform.url, clientId: platform.clientId })
+
+        // Storing new platform
         await Database.replace('platform', { platformUrl: platform.url, clientId: platform.clientId }, { platformName: platform.name, platformUrl: platform.url, clientId: platform.clientId, authEndpoint: platform.authenticationEndpoint, accesstokenEndpoint: platform.accesstokenEndpoint, kid: kid, authConfig: platform.authConfig })
 
+        const plat = new Platform(kid, platform.name, platform.url, platform.clientId, platform.authenticationEndpoint, platform.accesstokenEndpoint, platform.authConfig)
         return plat
       } catch (err) {
         await Database.delete('publickey', { kid: kid })

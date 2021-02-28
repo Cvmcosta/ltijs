@@ -4,7 +4,6 @@
 /* Main class for the Provider functionalities */
 // Dependencies
 const url = require('fast-url-parser')
-const jwt = require('jsonwebtoken')
 const provAuthDebug = require('debug')('provider:auth')
 const provMainDebug = require('debug')('provider:main')
 const provDynamicRegistrationDebug = require('debug')('provider:dynamicRegistrationService')
@@ -19,7 +18,6 @@ const DynamicRegistration = require('./Advantage/Services/DynamicRegistration')
 // Classes
 const Server = require('../GlobalUtils/Server')
 const Platform = require('../GlobalUtils/Platform')
-const Auth = require('../GlobalUtils/Auth')
 const Keyset = require('../GlobalUtils/Keyset')
 
 // Database
@@ -73,10 +71,6 @@ class Provider {
       if (err.message === 'PLATFORM_ALREADY_REGISTERED') return res.status(403).send({ status: 403, error: 'Forbidden', details: { message: 'Platform already registered.' } })
       return res.status(500).send({ status: 500, error: 'Internal Server Error', details: { message: err.message } })
     }
-  }
-
-  #sessionTimeoutCallback = async (req, res) => {
-    return res.status(401).send(res.locals.err)
   }
 
   #invalidTokenCallback = async (req, res) => {
@@ -203,14 +197,13 @@ class Provider {
 
     if (options && options.staticPath) this.#server.setStaticPath(options.staticPath)
 
-    // Registers main athentication and routing middleware
-    const sessionValidator = async (req, res, next) => {
+    /**
+     * @description Main authentication middleware
+     */
+    this.app.use(async (req, res, next) => {
       provMainDebug('Receiving request at path: ' + req.baseUrl + req.path)
       // Ckeck if request is attempting to initiate oidc login flow or access reserved routes
       if (req.path === this.#loginRoute || req.path === this.#keysetRoute || req.path === this.#dynRegRoute) return next()
-
-      provMainDebug('Path does not match reserved endpoints')
-
       try {
         // Retrieving ltik token
         const ltik = req.token
@@ -220,253 +213,104 @@ class Provider {
         provMainDebug(cookies)
 
         if (!ltik) {
-          const idtoken = req.body.id_token
-          if (idtoken) {
-            // No ltik found but request contains an idtoken
-            provMainDebug('Received idtoken for validation')
-
-            // Retrieves state
-            const state = req.body.state
-
-            // Retrieving validation parameters from cookies
-            provAuthDebug('Response state: ' + state)
-            const validationCookie = cookies['state' + state]
-
-            const validationParameters = {
-              iss: validationCookie,
-              maxAge: this.#tokenMaxAge
-            }
-
-            const valid = await Auth.validateToken(idtoken, this.#devMode, validationParameters, this.getPlatform, this.#ENCRYPTIONKEY, this.Database)
-
-            // Retrieve State object from Database
-            const savedState = await this.Database.Get(false, 'state', { state: state })
-
-            // Deletes state validation cookie and Database entry
+          provMainDebug('Access Ltik not found')
+          const state = req.body.state
+          let savedQueries = false
+          if (state) {
+            provAuthDebug('Received state: ' + state)
+            provAuthDebug('Cleaning state cookie')
             res.clearCookie('state' + state, this.#cookieOptions)
-            if (savedState) this.Database.Delete('state', { state: state })
-
-            provAuthDebug('Successfully validated token!')
-
-            const courseId = valid['https://purl.imsglobal.org/spec/lti/claim/context'] ? valid['https://purl.imsglobal.org/spec/lti/claim/context'].id : 'NF'
-            const resourceId = valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'] ? valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'].id : 'NF'
-
-            const clientId = valid.clientId
-            const deploymentId = valid['https://purl.imsglobal.org/spec/lti/claim/deployment_id']
-
-            const contextId = encodeURIComponent(valid.iss + clientId + deploymentId + courseId + '_' + resourceId)
-            const platformCode = encodeURIComponent('lti' + Buffer.from(valid.iss + clientId + deploymentId).toString('base64'))
-
-            // Mount platform token
-            const platformToken = {
-              iss: valid.iss,
-              user: valid.sub,
-              userInfo: {
-                given_name: valid.given_name,
-                family_name: valid.family_name,
-                name: valid.name,
-                email: valid.email
-              },
-              platformInfo: valid['https://purl.imsglobal.org/spec/lti/claim/tool_platform'],
-              clientId: valid.clientId,
-              platformId: valid.platformId,
-              deploymentId: valid['https://purl.imsglobal.org/spec/lti/claim/deployment_id']
-            }
-
-            // Store idToken in database
-            await this.Database.Replace(false, 'idtoken', { iss: valid.iss, clientId: clientId, deploymentId: deploymentId, user: valid.sub }, platformToken)
-
-            // Mount context token
-            const contextToken = {
-              contextId: contextId,
-              path: req.path,
-              user: valid.sub,
-              roles: valid['https://purl.imsglobal.org/spec/lti/claim/roles'],
-              targetLinkUri: valid['https://purl.imsglobal.org/spec/lti/claim/target_link_uri'],
-              context: valid['https://purl.imsglobal.org/spec/lti/claim/context'],
-              resource: valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'],
-              custom: valid['https://purl.imsglobal.org/spec/lti/claim/custom'],
-              launchPresentation: valid['https://purl.imsglobal.org/spec/lti/claim/launch_presentation'],
-              messageType: valid['https://purl.imsglobal.org/spec/lti/claim/message_type'],
-              version: valid['https://purl.imsglobal.org/spec/lti/claim/version'],
-              deepLinkingSettings: valid['https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings'],
-              lis: valid['https://purl.imsglobal.org/spec/lti/claim/lis'],
-              endpoint: valid['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint'],
-              namesRoles: valid['https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice']
-            }
-
-            // Store contextToken in database
-            await this.Database.Replace(false, 'contexttoken', { contextId: contextId, user: valid.sub }, contextToken)
-
-            // Creates platform session cookie
-            if (!this.#ltiaas) res.cookie(platformCode, valid.sub, this.#cookieOptions)
-
-            provMainDebug('Generating ltik')
-            const newLtikObj = {
-              platformUrl: valid.iss,
-              clientId: clientId,
-              deploymentId: deploymentId,
-              platformCode: platformCode,
-              contextId: contextId,
-              user: valid.sub,
-              s: state // Added state to make unique ltiks
-            }
-            // Signing context token
-            const newLtik = jwt.sign(newLtikObj, this.#ENCRYPTIONKEY)
-
-            if (this.#ltiaas) {
-              // Appending query parameters
-              res.locals.query = {}
-              if (savedState) {
-                for (const [key, value] of Object.entries(savedState[0].query)) {
-                  req.query[key] = value
-                  res.locals.query[key] = value
-                }
-              }
-
-              // Creating local variables
-              res.locals.context = JSON.parse(JSON.stringify(contextToken))
-              res.locals.token = JSON.parse(JSON.stringify(platformToken))
-              res.locals.token.platformContext = res.locals.context
-              res.locals.ltik = newLtik
-              provMainDebug('Forwarding request to next handler')
-              return next()
-            }
-
-            // Appending query parameters
-            const query = new URLSearchParams(req.query)
-            if (savedState) {
-              for (const [key, value] of Object.entries(savedState[0].query)) {
-                query.append(key, value)
-              }
-            }
-            query.append('ltik', newLtik)
-            const urlSearchParams = query.toString()
-            provMainDebug('Redirecting to endpoint with ltik')
-            return res.redirect(req.baseUrl + req.path + '?' + urlSearchParams)
-          } else {
-            const state = req.body.state
-            if (state) {
-              provMainDebug('Deleting state cookie and Database entry')
-              const savedState = await this.Database.Get(false, 'state', { state: state })
-              res.clearCookie('state' + state, this.#cookieOptions)
-              if (savedState) this.Database.Delete('state', { state: state })
-            }
-
-            if (this.#whitelistedRoutes.find(r => {
-              if ((r.route instanceof RegExp && r.route.test(req.path)) || r.route === req.path) return r.method === 'ALL' || r.method === req.method.toUpperCase()
-              return false
-            })) {
-              provMainDebug('Accessing as whitelisted route')
-              return next()
-            }
-            provMainDebug('No ltik found')
-            provMainDebug('Request body: ', req.body)
-            provMainDebug('Passing request to invalid token handler')
-            res.locals.err = {
-              status: 401,
-              error: 'Unauthorized',
-              details: {
-                description: 'No Ltik or ID Token found.',
-                message: 'NO_LTIK_OR_IDTOKEN_FOUND',
-                bodyReceived: req.body
-              }
-            }
-            return this.#invalidTokenCallback(req, res, next)
+            savedQueries = await Database.get('state', { state: state })
+            if (savedQueries) Database.delete('state', { state: state })
           }
-        }
+          const idtoken = req.body.id_token
+          if (!idtoken) throw new Error('NO_LTIK_OR_IDTOKEN_FOUND')
+          provMainDebug('Received idtoken for validation')
+          // Retrieving validation cookie
+          const validationCookie = cookies['state' + state]
+          const validationParameters = {
+            state: state,
+            iss: validationCookie,
+            maxAge: this.#tokenMaxAge,
+            devMode: this.#devMode,
+            encryptionkey: this.#ENCRYPTIONKEY,
+            path: req.path
+          }
+          // Validating launch
+          const launch = await Core.launch(idtoken, validationParameters)
 
-        provMainDebug('Ltik found')
-        let validLtik
-        try {
-          validLtik = jwt.verify(ltik, this.#ENCRYPTIONKEY)
-        } catch (err) {
-          if (this.#whitelistedRoutes.find(r => {
-            if ((r.route instanceof RegExp && r.route.test(req.path)) || r.route === req.path) return r.method === 'ALL' || r.method === req.method.toUpperCase()
-            return false
-          })) {
-            provMainDebug('Accessing as whitelisted route')
+          if (this.#ltiaas) {
+            // Appending query parameters
+            res.locals.query = {}
+            if (savedQueries) {
+              for (const [key, value] of Object.entries(savedQueries[0].query)) {
+                req.query[key] = value
+                res.locals.query[key] = value
+              }
+            }
+            // Creating local variables
+            res.locals.context = launch.context
+            res.locals.token = launch.token
+            res.locals.token.platformContext = res.locals.context
+            res.locals.ltik = launch.ltik
+            provMainDebug('Forwarding request to next handler')
             return next()
           }
-          throw (err)
-        }
-        provMainDebug('Ltik successfully verified')
 
-        const platformUrl = validLtik.platformUrl
-        const platformCode = validLtik.platformCode
-        const clientId = validLtik.clientId
-        const deploymentId = validLtik.deploymentId
-        const contextId = validLtik.contextId
-        let user = validLtik.user
-
-        if (!this.#ltiaas) {
-          provMainDebug('Attempting to retrieve matching session cookie')
-          const cookieUser = cookies[platformCode]
-          if (!cookieUser) {
-            if (!this.#devMode) user = false
-            else { provMainDebug('Dev Mode enabled: Missing session cookies will be ignored') }
-          } else if (user.toString() !== cookieUser.toString()) user = false
-        }
-
-        if (user) {
-          provAuthDebug('Valid session found')
-          // Gets corresponding id token from database
-          let idTokenRes = await this.Database.Get(false, 'idtoken', { iss: platformUrl, clientId: clientId, deploymentId: deploymentId, user: user })
-          if (!idTokenRes) throw new Error('IDTOKEN_NOT_FOUND_DB')
-          idTokenRes = idTokenRes[0]
-          const idToken = JSON.parse(JSON.stringify(idTokenRes))
-
-          // Gets correspondent context token from database
-          let contextToken = await this.Database.Get(false, 'contexttoken', { contextId: contextId, user: user })
-          if (!contextToken) throw new Error('CONTEXTTOKEN_NOT_FOUND_DB')
-          contextToken = contextToken[0]
-          idToken.platformContext = JSON.parse(JSON.stringify(contextToken))
-
-          // Creating local variables
-          res.locals.context = idToken.platformContext
-          res.locals.token = idToken
-          res.locals.ltik = ltik
-
-          provMainDebug('Passing request to next handler')
-          return next()
-        } else {
-          provMainDebug('No session cookie found')
-          provMainDebug('Request body: ', req.body)
-          provMainDebug('Passing request to session timeout handler')
-          res.locals.err = {
-            status: 401,
-            error: 'Unauthorized',
-            details: {
-              message: 'Session not found.'
+          // Creates platform session cookie
+          res.cookie(launch.platformCode, launch.token.user, this.#cookieOptions)
+          // Appending query parameters
+          const query = new URLSearchParams(req.query)
+          if (savedQueries) {
+            for (const [key, value] of Object.entries(savedQueries[0].query)) {
+              query.append(key, value)
             }
           }
-          return this.#sessionTimeoutCallback(req, res, next)
+          query.append('ltik', launch.ltik)
+          const urlSearchParams = query.toString()
+          provMainDebug('Redirecting to endpoint with ltik')
+          return res.redirect(req.baseUrl + req.path + '?' + urlSearchParams)
         }
+
+        provMainDebug('Access Ltik found')
+        const validationParameters = {
+          cookies: cookies,
+          devMode: this.#devMode,
+          ltiaas: this.#ltiaas,
+          encryptionkey: this.#ENCRYPTIONKEY
+        }
+        const idToken = Core.access(ltik, validationParameters)
+        // Creating local variables
+        res.locals.context = idToken.platformContext
+        res.locals.token = idToken
+        res.locals.ltik = ltik
+        provMainDebug('Passing request to next handler')
+        return next()
       } catch (err) {
-        const state = req.body.state
-        if (state) {
-          provMainDebug('Deleting state cookie and Database entry')
-          const savedState = await this.Database.Get(false, 'state', { state: state })
-          res.clearCookie('state' + state, this.#cookieOptions)
-          if (savedState) this.Database.Delete('state', { state: state })
+        // Checking for whitelisted route
+        if (await this.isWhitelisted({ path: req.path, method: req.method })) {
+          provAuthDebug('Accessing as whitelisted route')
+          return next()
         }
+        provAuthDebug('Error found during request validation: ', err)
+        provAuthDebug('Request body: ', req.body)
+        provAuthDebug('Request query: ', req.query)
 
-        provAuthDebug(err)
-        provMainDebug('Passing request to invalid token handler')
-
+        // Creating error obejct
         res.locals.err = {
           status: 401,
           error: 'Unauthorized',
           details: {
             description: 'Error validating ltik or IdToken',
-            message: err.message
+            message: err.message,
+            bodyReceived: req.body,
+            queryReceived: req.query
           }
         }
+        provAuthDebug('Passing request to invalid token handler')
         return this.#invalidTokenCallback(req, res, next)
       }
-    }
-
-    this.app.use(sessionValidator)
+    })
 
     this.app.all(this.#loginRoute, async (req, res) => {
       const params = { ...req.query, ...req.body }
@@ -636,18 +480,6 @@ class Provider {
   }
 
   /**
-   * @description Sets the callback function called when no valid session is found during a request validation.
-   * @param {Function} sessionTimeoutCallback - Callback method.
-   * @example .onSessionTimeout((request, response)=>{response.send('Session timeout')})
-   * @returns {true}
-   */
-  onSessionTimeout (sessionTimeoutCallback) {
-    if (!sessionTimeoutCallback) throw new Error('MISSING_CALLBACK')
-    this.#sessionTimeoutCallback = sessionTimeoutCallback
-    return true
-  }
-
-  /**
    * @description Sets the callback function called when the token received fails to be validated.
    * @param {Function} invalidTokenCallback - Callback method.
    * @example .onInvalidToken((request, response)=>{response.send('Invalid token')})
@@ -735,6 +567,21 @@ class Provider {
     ]
 
     return this.#whitelistedRoutes
+  }
+
+  /**
+   * Checks if a route is whitelisted.
+   * @param {Object} route - Route object
+   * @param {String} route.path - Route pach.
+   * @param {String} route.method - HTTP Method.
+   */
+  async isWhitelisted (route) {
+    if (!route || !route.path || !route.method) throw new Error('MISSING_ARGUMENT')
+    if (this.#whitelistedRoutes.find(r => {
+      if ((r.route instanceof RegExp && r.route.test(route.path)) || r.route === route.path) return r.method === 'ALL' || r.method === route.method.toUpperCase()
+      return false
+    })) return true
+    return false
   }
 
   /**
