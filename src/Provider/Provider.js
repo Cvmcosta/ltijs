@@ -227,10 +227,10 @@ class Provider {
           if (!idtoken) throw new Error('NO_LTIK_OR_IDTOKEN_FOUND')
           provMainDebug('Received idtoken for validation')
           // Retrieving validation cookie
-          const validationCookie = cookies['state' + state]
+          const stateValue = cookies['state' + state]
           const validationParameters = {
             state: state,
-            iss: validationCookie,
+            stateValue: stateValue,
             maxAge: this.#tokenMaxAge,
             devMode: this.#devMode,
             encryptionkey: this.#ENCRYPTIONKEY,
@@ -385,7 +385,7 @@ class Provider {
     if (!this.#setup) throw new Error('PROVIDER_NOT_SETUP')
     provMainDebug('Attempting to connect to database')
     try {
-      await this.Database.connect()
+      await Database.connect()
 
       const conf = {
         port: 3000,
@@ -439,7 +439,7 @@ class Provider {
     if (!options || options.silent !== true) console.log('\nClosing server...')
     await this.#server.close()
     if (!options || options.silent !== true) console.log('Closing connection to the database...')
-    await this.Database.close()
+    await Database.close()
     if (!options || options.silent !== true) console.log('Shutdown complete.')
     return true
   }
@@ -604,7 +604,7 @@ class Provider {
     // Updates path variable if this is a new resource
     if ((options && (options.newResource || options.isNewResource))) {
       provMainDebug('Changing context token path to: ' + path)
-      await this.Database.Modify(false, 'contexttoken', { contextId: token.platformContext.contextId, user: res.locals.token.user }, { path: path })
+      await Database.modify('contexttoken', { contextId: token.platformContext.contextId, user: res.locals.token.user }, { path: path })
     }
 
     // Formatting path with queries

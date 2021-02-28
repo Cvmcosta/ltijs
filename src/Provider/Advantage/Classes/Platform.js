@@ -53,14 +53,14 @@ class Platform {
   static async getPlatform (url, clientId) {
     if (!url) throw new Error('MISSING_PLATFORM_URL')
     if (clientId) {
-      const result = await Database.get(false, 'platform', { platformUrl: url, clientId: clientId })
+      const result = await Database.get('platform', { platformUrl: url, clientId: clientId })
       if (!result) return false
       const _platform = result[0]
       const platform = new Platform(_platform.kid, _platform.platformName, _platform.platformUrl, _platform.clientId, _platform.authEndpoint, _platform.accesstokenEndpoint, _platform.authConfig)
       return platform
     }
     const platforms = []
-    const result = await Database.get(false, 'platform', { platformUrl: url })
+    const result = await Database.get('platform', { platformUrl: url })
     if (result) {
       for (const platform of result) {
         platforms.push(new Platform(platform.kid, platform.platformName, platform.platformUrl, platform.clientId, platform.authEndpoint, platform.accesstokenEndpoint, platform.authConfig))
@@ -76,7 +76,7 @@ class Platform {
    */
   static async getPlatformById (platformId) {
     if (!platformId) throw new Error('MISSING_PLATFORM_ID')
-    const result = await Database.Get(false, 'platform', { kid: platformId })
+    const result = await Database.get('platform', { kid: platformId })
     if (!result) return false
     const _platform = result[0]
     const platform = new Platform(_platform.kid, _platform.platformName, _platform.platformUrl, _platform.clientId, _platform.authEndpoint, _platform.accesstokenEndpoint, _platform.authConfig)
@@ -145,7 +145,7 @@ class Platform {
       }
     } else {
       provPlatformDebug('Platform already registered')
-      await Database.modify(false, 'platform', { platformUrl: platform.url, clientId: platform.clientId }, { platformName: platform.name || await _platform.platformName(), authEndpoint: platform.authenticationEndpoint || await _platform.platformAuthenticationEndpoint(), accesstokenEndpoint: platform.accesstokenEndpoint || await _platform.platformAccessTokenEndpoint(), authConfig: platform.authConfig || await _platform.platformAuthConfig() })
+      await Database.modify('platform', { platformUrl: platform.url, clientId: platform.clientId }, { platformName: platform.name || await _platform.platformName(), authEndpoint: platform.authenticationEndpoint || await _platform.platformAuthenticationEndpoint(), accesstokenEndpoint: platform.accesstokenEndpoint || await _platform.platformAccessTokenEndpoint(), authConfig: platform.authConfig || await _platform.platformAuthConfig() })
       return Platform.getPlatform(platform.url, platform.clientId)
     }
   }

@@ -9,7 +9,7 @@ const provAccessDebug = require('debug')('provider:access')
 // Classes
 const Database = require('../../../GlobalUtils/Database')
 const Platform = require('../Classes/Platform')
-const Auth = require('../../../GlobalUtils/Auth')
+const Auth = require('../Classes/Auth')
 
 /**
  * @description LTI 1.3 Core service methods.
@@ -72,7 +72,36 @@ class Core {
    * @description LTI 1.3 Launch handler
    */
   static async launch (idtoken, validationParameters) {
-    const valid = await Auth.validateToken(idtoken, validationParameters)
+    const decoded = jwt.decode(idtoken, { complete: true })
+    if (!decoded) throw new Error('INVALID_JWT_RECEIVED')
+
+    validationParameters.iss = decoded.payload.iss
+    validationParameters.aud = decoded.payload.aud
+    validationParameters.kid = decoded.header.kid
+    validationParameters.alg = decoded.header.alg
+
+    provLaunchDebug('Validating iss claim')
+    provLaunchDebug('Request Iss claim: ' + validationParameters.stateValue)
+    provLaunchDebug('Response Iss claim: ' + validationParameters.iss)
+    if (!validationParameters.stateValue) {
+      if (!validationParameters.devMode) throw new Error('MISSING_VALIDATION_COOKIE')
+      else { provLaunchDebug('Dev Mode enabled: Missing state validation cookies will be ignored') }
+    } else if (validationParameters.stateValue !== validationParameters.iss) throw new Error('ISS_CLAIM_DOES_NOT_MATCH')
+
+    provLaunchDebug('Retrieving registered platform')
+    let platform
+    if (!Array.isArray(decoded.payload.aud)) platform = await Platform.getPlatform(validationParameters.iss, validationParameters.aud)
+    else {
+      for (const aud of validationParameters.aud) {
+        platform = await Platform.getPlatform(validationParameters.iss, aud)
+        if (platform) break
+      }
+    }
+    if (!platform) throw new Error('UNREGISTERED_PLATFORM')
+    const platformActive = await platform.platformActive()
+    if (!platformActive) throw new Error('PLATFORM_NOT_ACTIVATED')
+
+    const valid = await Auth.validateToken(idtoken, platform, validationParameters)
     provLaunchDebug('Successfully validated token!')
     const courseId = valid['https://purl.imsglobal.org/spec/lti/claim/context'] ? valid['https://purl.imsglobal.org/spec/lti/claim/context'].id : 'NF'
     const resourceId = valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'] ? valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'].id : 'NF'
