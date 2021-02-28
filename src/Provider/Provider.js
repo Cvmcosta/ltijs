@@ -91,17 +91,6 @@ class Provider {
     return res.status(401).send({ status: 401, error: 'Unauthorized', details: { message: 'PLATFORM_NOT_ACTIVATED' } })
   }
 
-  // Assembles and sends keyset
-  #keyset = async (req, res) => {
-    try {
-      const keyset = await Keyset.build(this.Database, this.#ENCRYPTIONKEY)
-      return res.status(200).send(keyset)
-    } catch (err) {
-      provMainDebug(err)
-      return res.status(500).send({ status: 500, error: 'Internal Server Error', details: { message: err.message } })
-    }
-  }
-
   #server
 
   /**
@@ -517,7 +506,13 @@ class Provider {
     })
 
     this.app.get(this.#keysetRoute, async (req, res, next) => {
-      return this.#keyset(req, res, next)
+      try {
+        const keyset = await Keyset.build()
+        return res.status(200).send(keyset)
+      } catch (err) {
+        provMainDebug(err)
+        return res.status(500).send({ status: 500, error: 'Internal Server Error', details: { message: err.message } })
+      }
     })
 
     this.app.all(this.#dynRegRoute, async (req, res, next) => {
@@ -525,7 +520,6 @@ class Provider {
       return res.status(403).send({ status: 403, error: 'Forbidden', details: { message: 'Dynamic registration is disabled.' } })
     })
 
-    // Main app
     this.app.all(this.#appRoute, async (req, res, next) => {
       if (res.locals.context && res.locals.context.messageType === 'LtiDeepLinkingRequest') return this.#deepLinkingCallback(res.locals.token, req, res, next)
       return this.#connectCallback(res.locals.token, req, res, next)
@@ -608,113 +602,85 @@ class Provider {
 
   /**
      * @description Sets the callback function called whenever there's a sucessfull lti 1.3 launch, exposing a "token" object containing the idtoken information.
-     * @param {Function} _connectCallback - Callback function called everytime a platform sucessfully launches to the provider.
+     * @param {Function} connectCallback - Callback function called everytime a platform sucessfully launches to the provider.
      * @example .onConnect((token, request, response)=>{response.send('OK')})
      * @returns {true}
      */
-  onConnect (_connectCallback, options) {
+  onConnect (connectCallback) {
     /* istanbul ignore next */
-    if (options) {
-      if (options.sameSite || options.secure) console.log('Deprecation Warning: The optional parameters of the onConnect() method are now deprecated and will be removed in the 6.0 release. Cookie parameters can be found in the main Ltijs constructor options: ... { cookies: { secure: true, sameSite: \'None\' }.')
-
-      if (options.sessionTimeout || options.invalidToken) console.log('Deprecation Warning: The optional parameters of the onConnect() method are now deprecated and will be removed in the 6.0 release. Invalid token and Session Timeout methods can now be set with the onSessionTimeout() and onInvalidToken() methods.')
-
-      if (options.sameSite) {
-        this.#cookieOptions.sameSite = options.sameSite
-        if (options.sameSite.toLowerCase() === 'none') this.#cookieOptions.secure = true
-      }
-      if (options.secure === true) this.#cookieOptions.secure = true
-      if (options.sessionTimeout) this.#sessionTimeoutCallback = options.sessionTimeout
-      if (options.invalidToken) this.#invalidTokenCallback = options.invalidToken
-    }
-
-    if (_connectCallback) {
-      this.#connectCallback = _connectCallback
-      return true
-    }
-    throw new Error('MISSING_CALLBACK')
+    if (!connectCallback) throw new Error('MISSING_CALLBACK')
+    this.#connectCallback = connectCallback
+    return true
   }
 
   /**
    * @description Sets the callback function called whenever there's a sucessfull deep linking launch, exposing a "token" object containing the idtoken information.
-   * @param {Function} _deepLinkingCallback - Callback function called everytime a platform sucessfully launches a deep linking request.
+   * @param {Function} deepLinkingCallback - Callback function called everytime a platform sucessfully launches a deep linking request.
    * @example .onDeepLinking((token, request, response)=>{response.send('OK')})
    * @returns {true}
    */
-  onDeepLinking (_deepLinkingCallback) {
-    if (_deepLinkingCallback) {
-      this.#deepLinkingCallback = _deepLinkingCallback
-      return true
-    }
-    throw new Error('MISSING_CALLBACK')
+  onDeepLinking (deepLinkingCallback) {
+    if (!deepLinkingCallback) throw new Error('MISSING_CALLBACK')
+    this.#deepLinkingCallback = deepLinkingCallback
+    return true
   }
 
   /**
    * @description Sets the callback function called whenever there's a sucessfull dynamic registration request, allowing the registration flow to be customized.
-   * @param {Function} _dynamicRegistrationCallback - Callback function called everytime the LTI Provider receives a dynamic registration request.
+   * @param {Function} dynamicRegistrationCallback - Callback function called everytime the LTI Provider receives a dynamic registration request.
    */
-  onDynamicRegistration (_dynamicRegistrationCallback) {
-    if (_dynamicRegistrationCallback) {
-      this.#dynamicRegistrationCallback = _dynamicRegistrationCallback
-      return true
-    }
-    throw new Error('MISSING_CALLBACK')
+  onDynamicRegistration (dynamicRegistrationCallback) {
+    if (!dynamicRegistrationCallback) throw new Error('MISSING_CALLBACK')
+    this.#dynamicRegistrationCallback = dynamicRegistrationCallback
+    return true
   }
 
   /**
    * @description Sets the callback function called when no valid session is found during a request validation.
-   * @param {Function} _sessionTimeoutCallback - Callback method.
+   * @param {Function} sessionTimeoutCallback - Callback method.
    * @example .onSessionTimeout((request, response)=>{response.send('Session timeout')})
    * @returns {true}
    */
-  onSessionTimeout (_sessionTimeoutCallback) {
-    if (_sessionTimeoutCallback) {
-      this.#sessionTimeoutCallback = _sessionTimeoutCallback
-      return true
-    }
-    throw new Error('MISSING_CALLBACK')
+  onSessionTimeout (sessionTimeoutCallback) {
+    if (!sessionTimeoutCallback) throw new Error('MISSING_CALLBACK')
+    this.#sessionTimeoutCallback = sessionTimeoutCallback
+    return true
   }
 
   /**
    * @description Sets the callback function called when the token received fails to be validated.
-   * @param {Function} _invalidTokenCallback - Callback method.
+   * @param {Function} invalidTokenCallback - Callback method.
    * @example .onInvalidToken((request, response)=>{response.send('Invalid token')})
    * @returns {true}
    */
-  onInvalidToken (_invalidTokenCallback) {
-    if (_invalidTokenCallback) {
-      this.#invalidTokenCallback = _invalidTokenCallback
-      return true
-    }
-    throw new Error('MISSING_CALLBACK')
+  onInvalidToken (invalidTokenCallback) {
+    if (!invalidTokenCallback) throw new Error('MISSING_CALLBACK')
+    this.#invalidTokenCallback = invalidTokenCallback
+    return true
   }
 
   /**
    * @description Sets the callback function called when the Platform attempting to login is not registered.
-   * @param {Function} _unregisteredPlatformCallback - Callback method.
+   * @param {Function} unregisteredPlatformCallback - Callback method.
    * @example .onUnregisteredPlatform((request, response)=>{response.send('Unregistered Platform')})
    * @returns {true}
    */
-  onUnregisteredPlatform (_unregisteredPlatformCallback) {
-    if (_unregisteredPlatformCallback) {
-      this.#unregisteredPlatformCallback = _unregisteredPlatformCallback
-      return true
-    }
-    throw new Error('MISSING_CALLBACK')
+  onUnregisteredPlatform (unregisteredPlatformCallback) {
+    if (!unregisteredPlatformCallback) throw new Error('MISSING_CALLBACK')
+    this.#unregisteredPlatformCallback = unregisteredPlatformCallback
+    return true
   }
 
   /**
    * @description Sets the callback function called when the Platform attempting to login is not activated.
-   * @param {Function} _inactivePlatformCallback - Callback method.
+   * @param {Function} inactivePlatformCallback - Callback method.
    * @example .onInactivePlatform((request, response)=>{response.send('Platform not activated')})
    * @returns {true}
    */
-  onInactivePlatform (_inactivePlatformCallback) {
-    if (_inactivePlatformCallback) {
-      this.#inactivePlatformCallback = _inactivePlatformCallback
-      return true
-    }
-    throw new Error('MISSING_CALLBACK')
+  onInactivePlatform (inactivePlatformCallback) {
+    if (!inactivePlatformCallback) throw new Error('MISSING_CALLBACK')
+    this.#inactivePlatformCallback = inactivePlatformCallback
+    return true
   }
 
   /**
