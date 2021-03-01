@@ -13,6 +13,7 @@ const providerAdvantage = require('./Provider/Advantage')
 class MongoDB {
   #dbConnection = {
     useNewUrlParser: true,
+    useCreateIndex: true,
     keepAlive: true,
     keepAliveInitialDelay: 300000,
     connectTimeoutMS: 300000,
@@ -110,7 +111,7 @@ class MongoDB {
     if (encryptionkey) {
       for (const i in result) {
         const temp = result[i]
-        result[i] = JSON.parse(await this.Decrypt(result[i].data, result[i].iv, encryptionkey))
+        result[i] = JSON.parse(await this.decrypt(result[i].data, result[i].iv, encryptionkey))
         if (temp.createdAt) {
           const createdAt = Date.parse(temp.createdAt)
           result[i].createdAt = createdAt
@@ -133,7 +134,7 @@ class MongoDB {
     const Model = mongoose.model(collection)
     let newDocData = item
     if (encryptionkey) {
-      const encrypted = await this.Encrypt(JSON.stringify(item), encryptionkey)
+      const encrypted = await this.encrypt(JSON.stringify(item), encryptionkey)
       newDocData = {
         ...index,
         iv: encrypted.iv,
@@ -157,7 +158,7 @@ class MongoDB {
     const Model = mongoose.model(collection)
     let newDocData = item
     if (encryptionkey) {
-      const encrypted = await this.Encrypt(JSON.stringify(item), encryptionkey)
+      const encrypted = await this.encrypt(JSON.stringify(item), encryptionkey)
       newDocData = {
         ...index,
         iv: encrypted.iv,
@@ -183,9 +184,9 @@ class MongoDB {
     if (encryptionkey) {
       let result = await Model.findOne(query)
       if (result) {
-        result = JSON.parse(await this.Decrypt(result.data, result.iv, encryptionkey))
+        result = JSON.parse(await this.decrypt(result.data, result.iv, encryptionkey))
         result[Object.keys(modification)[0]] = Object.values(modification)[0]
-        newMod = await this.Encrypt(JSON.stringify(result), encryptionkey)
+        newMod = await this.encrypt(JSON.stringify(result), encryptionkey)
       }
     }
 

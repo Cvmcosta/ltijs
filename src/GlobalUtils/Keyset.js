@@ -14,7 +14,7 @@ class Keyset {
    */
   static async build () {
     provKeysetDebug('Generating JWK keyset')
-    const keys = await Database.get('publickey') || []
+    const keys = await Database.get('publickey', {}, true) || []
     const keyset = { keys: [] }
     for (const key of keys) {
       const jwk = await Jwk.import({ pem: key.key })
@@ -32,7 +32,7 @@ class Keyset {
   static async generateKeyPair () {
     let kid = crypto.randomBytes(16).toString('hex')
 
-    while (await Database.get('publickey', { kid: kid })) {
+    while (await Database.get('publickey', { kid: kid }, true)) {
       /* istanbul ignore next */
       kid = crypto.randomBytes(16).toString('hex')
     }

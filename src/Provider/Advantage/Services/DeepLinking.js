@@ -18,7 +18,7 @@ class DeepLinking {
    * @param {String} options.log - Message the platform may log in it's system upon return to the platform.
    * @param {String} options.errLog - Message the platform may log in it's system upon return to the platform if some error has occurred.
    */
-  async createDeepLinkingForm (idtoken, contentItems, options) {
+  static async createDeepLinkingForm (idtoken, contentItems, options) {
     const message = await this.createDeepLinkingMessage(idtoken, contentItems, options)
 
     // Creating auto submitting form
@@ -41,7 +41,7 @@ class DeepLinking {
    * @param {String} options.log - Message the platform may log in it's system upon return to the platform.
    * @param {String} options.errLog - Message the platform may log in it's system upon return to the platform if some error has occurred.
    */
-  async createDeepLinkingMessage (idtoken, contentItems, options) {
+  static async createDeepLinkingMessage (idtoken, contentItems, options) {
     provDeepLinkingDebug('Starting deep linking process')
     if (!idtoken) { provDeepLinkingDebug('Missing IdToken object.'); throw new Error('MISSING_ID_TOKEN') }
     if (!idtoken.platformContext.deepLinkingSettings) { provDeepLinkingDebug('DeepLinkingSettings object missing.'); throw new Error('MISSING_DEEP_LINK_SETTINGS') }

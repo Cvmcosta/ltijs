@@ -1,45 +1,17 @@
 "use strict";
 
-var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefault");
-
-var _classPrivateFieldGet2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldGet"));
-
-var _classPrivateFieldSet2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldSet"));
-
 /* Names and Roles Provisioning Service */
+// Dependencies
 const got = require('got');
 
 const parseLink = require('parse-link-header');
 
-const provNamesAndRolesServiceDebug = require('debug')('provider:namesAndRolesService');
+const provNamesAndRolesServiceDebug = require('debug')('provider:namesAndRolesService'); // Classes
 
-var _getPlatform = new WeakMap();
 
-var _ENCRYPTIONKEY = new WeakMap();
-
-var _Database = new WeakMap();
+const Platform = require('../Classes/Platform');
 
 class NamesAndRoles {
-  constructor(getPlatform, ENCRYPTIONKEY, Database) {
-    _getPlatform.set(this, {
-      writable: true,
-      value: null
-    });
-
-    _ENCRYPTIONKEY.set(this, {
-      writable: true,
-      value: ''
-    });
-
-    _Database.set(this, {
-      writable: true,
-      value: void 0
-    });
-
-    (0, _classPrivateFieldSet2.default)(this, _getPlatform, getPlatform);
-    (0, _classPrivateFieldSet2.default)(this, _ENCRYPTIONKEY, ENCRYPTIONKEY);
-    (0, _classPrivateFieldSet2.default)(this, _Database, Database);
-  }
   /**
    * @description Retrieves members from platform.
    * @param {Object} idtoken - Idtoken for the user.
@@ -50,9 +22,7 @@ class NamesAndRoles {
    * @param {String} [options.url] - Retrieve memberships from a specific URL. Usually retrieved from the `next` link header of a previous request.
    * @param {Boolean} [options.resourceLinkId = false] - If set to true, retrieves resource Link level memberships.
    */
-
-
-  async getMembers(idtoken, options) {
+  static async getMembers(idtoken, options) {
     if (!idtoken) {
       provNamesAndRolesServiceDebug('Missing IdToken object.');
       throw new Error('MISSING_ID_TOKEN');
@@ -60,7 +30,7 @@ class NamesAndRoles {
 
     provNamesAndRolesServiceDebug('Attempting to retrieve memberships');
     provNamesAndRolesServiceDebug('Target platform: ' + idtoken.iss);
-    const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, idtoken.clientId, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database));
+    const platform = await Platform.getPlatform(idtoken.iss, idtoken.clientId);
 
     if (!platform) {
       provNamesAndRolesServiceDebug('Platform not found');

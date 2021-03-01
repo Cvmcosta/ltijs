@@ -17,7 +17,7 @@ class Database {
     if (!options || !(options.type === 'PROVIDER' || options.type === 'CONSUMER')) throw new Error('MISSING_DATABASE_CONFIG')
     this.#encryptionkey = encryptionkey
     this.connector = connector
-    return connector.setup()
+    return connector.setup(options)
   }
 
   /**

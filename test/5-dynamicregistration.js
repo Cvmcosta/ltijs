@@ -1,7 +1,7 @@
 // Tests for the Names and Roles class LTI methods
 // Cvmcosta 2020
 const nock = require('nock')
-const Platform = require('../dist/Utils/Platform')
+const Platform = require('../dist/Provider/Advantage/Classes/Platform')
 
 const chai = require('chai')
 const chaiHttp = require('chai-http')

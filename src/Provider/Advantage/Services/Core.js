@@ -61,7 +61,7 @@ class Core {
     provLoginDebug(query)
     return {
       target: url.format({
-        pathname: await platform.platformAuthEndpoint(),
+        pathname: await platform.platformAuthenticationEndpoint(),
         query: query
       }),
       state: state

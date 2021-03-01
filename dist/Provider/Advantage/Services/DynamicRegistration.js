@@ -7,13 +7,19 @@ var _classPrivateFieldGet2 = _interopRequireDefault(require("@babel/runtime/help
 var _classPrivateFieldSet2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldSet"));
 
 /* Provider Dynamic Registration Service */
+// Dependencies
 const got = require('got');
 
 const crypto = require('crypto');
 
 const _url = require('fast-url-parser');
 
-const provDynamicRegistrationDebug = require('debug')('provider:dynamicRegistrationService'); // Helper method to build URLs
+const provDynamicRegistrationDebug = require('debug')('provider:dynamicRegistrationService'); // Classes
+
+
+const Database = require('../../../GlobalUtils/Database');
+
+const Platform = require('../Classes/Platform'); // Helper method to build URLs
 
 
 const buildUrl = (url, path) => {
@@ -70,16 +76,8 @@ var _loginUrl = new WeakMap();
 
 var _keysetUrl = new WeakMap();
 
-var _getPlatform = new WeakMap();
-
-var _registerPlatform = new WeakMap();
-
-var _ENCRYPTIONKEY = new WeakMap();
-
-var _Database = new WeakMap();
-
 class DynamicRegistration {
-  constructor(options, routes, registerPlatform, getPlatform, ENCRYPTIONKEY, Database) {
+  constructor(options, routes) {
     _name.set(this, {
       writable: true,
       value: void 0
@@ -130,26 +128,6 @@ class DynamicRegistration {
       value: void 0
     });
 
-    _getPlatform.set(this, {
-      writable: true,
-      value: void 0
-    });
-
-    _registerPlatform.set(this, {
-      writable: true,
-      value: void 0
-    });
-
-    _ENCRYPTIONKEY.set(this, {
-      writable: true,
-      value: ''
-    });
-
-    _Database.set(this, {
-      writable: true,
-      value: void 0
-    });
-
     (0, _classPrivateFieldSet2.default)(this, _name, options.name);
     (0, _classPrivateFieldSet2.default)(this, _redirectUris, options.redirectUris || []);
     (0, _classPrivateFieldSet2.default)(this, _customParameters, options.customParameters || {});
@@ -160,10 +138,6 @@ class DynamicRegistration {
     (0, _classPrivateFieldSet2.default)(this, _appUrl, buildUrl(options.url, routes.appRoute));
     (0, _classPrivateFieldSet2.default)(this, _loginUrl, buildUrl(options.url, routes.loginRoute));
     (0, _classPrivateFieldSet2.default)(this, _keysetUrl, buildUrl(options.url, routes.keysetRoute));
-    (0, _classPrivateFieldSet2.default)(this, _getPlatform, getPlatform);
-    (0, _classPrivateFieldSet2.default)(this, _registerPlatform, registerPlatform);
-    (0, _classPrivateFieldSet2.default)(this, _ENCRYPTIONKEY, ENCRYPTIONKEY);
-    (0, _classPrivateFieldSet2.default)(this, _Database, Database);
   }
   /**
    * @description Performs dynamic registration flow.
@@ -215,7 +189,7 @@ class DynamicRegistration {
     }).json(); // Registering Platform
 
     const platformName = (configuration['https://purl.imsglobal.org/spec/lti-platform-configuration'] ? configuration['https://purl.imsglobal.org/spec/lti-platform-configuration'].product_family_code : 'Platform') + '_DynReg_' + crypto.randomBytes(16).toString('hex');
-    if (await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, configuration.issuer, registrationResponse.client_id, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database))) throw new Error('PLATFORM_ALREADY_REGISTERED');
+    if (await Platform.getPlatform(configuration.issuer, registrationResponse.client_id)) throw new Error('PLATFORM_ALREADY_REGISTERED');
     provDynamicRegistrationDebug('Registering Platform');
     const platform = {
       url: configuration.issuer,
@@ -228,8 +202,8 @@ class DynamicRegistration {
         key: configuration.jwks_uri
       }
     };
-    const registered = await (0, _classPrivateFieldGet2.default)(this, _registerPlatform).call(this, platform, (0, _classPrivateFieldGet2.default)(this, _getPlatform), (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database));
-    await (0, _classPrivateFieldGet2.default)(this, _Database).Insert(false, 'platformStatus', {
+    const registered = await Platform.registerPlatform(platform);
+    await Database.insert('platformStatus', {
       id: await registered.platformId(),
       active: (0, _classPrivateFieldGet2.default)(this, _autoActivate)
     }); // Returing message indicating the end of registration flow

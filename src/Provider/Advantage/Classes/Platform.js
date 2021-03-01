@@ -91,7 +91,7 @@ class Platform {
     const result = []
     const platforms = await Database.get('platform')
     if (platforms) {
-      for (const platform of result) result.push(new Platform(platform.kid, platform.platformName, platform.platformUrl, platform.clientId, platform.authEndpoint, platform.accesstokenEndpoint, platform.authConfig))
+      for (const platform of platforms) result.push(new Platform(platform.kid, platform.platformName, platform.platformUrl, platform.clientId, platform.authEndpoint, platform.accesstokenEndpoint, platform.authConfig))
     }
     return result
   }

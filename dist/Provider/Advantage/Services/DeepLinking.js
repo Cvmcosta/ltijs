@@ -1,43 +1,15 @@
 "use strict";
 
-var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefault");
-
-var _classPrivateFieldGet2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldGet"));
-
-var _classPrivateFieldSet2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldSet"));
-
 /* Provider Deep Linking Service */
+// Dependencies
 const jwt = require('jsonwebtoken');
 
-const provDeepLinkingDebug = require('debug')('provider:deepLinkingService');
+const provDeepLinkingDebug = require('debug')('provider:deepLinkingService'); // Classes
 
-var _getPlatform = new WeakMap();
 
-var _ENCRYPTIONKEY = new WeakMap();
-
-var _Database = new WeakMap();
+const Platform = require('../Classes/Platform');
 
 class DeepLinking {
-  constructor(getPlatform, ENCRYPTIONKEY, Database) {
-    _getPlatform.set(this, {
-      writable: true,
-      value: null
-    });
-
-    _ENCRYPTIONKEY.set(this, {
-      writable: true,
-      value: ''
-    });
-
-    _Database.set(this, {
-      writable: true,
-      value: void 0
-    });
-
-    (0, _classPrivateFieldSet2.default)(this, _getPlatform, getPlatform);
-    (0, _classPrivateFieldSet2.default)(this, _ENCRYPTIONKEY, ENCRYPTIONKEY);
-    (0, _classPrivateFieldSet2.default)(this, _Database, Database);
-  }
   /**
    * @description Creates an auto submitting form containing the DeepLinking Message.
    * @param {Object} idtoken - Idtoken for the user.
@@ -48,9 +20,7 @@ class DeepLinking {
    * @param {String} options.log - Message the platform may log in it's system upon return to the platform.
    * @param {String} options.errLog - Message the platform may log in it's system upon return to the platform if some error has occurred.
    */
-
-
-  async createDeepLinkingForm(idtoken, contentItems, options) {
+  static async createDeepLinkingForm(idtoken, contentItems, options) {
     const message = await this.createDeepLinkingMessage(idtoken, contentItems, options); // Creating auto submitting form
 
     const form = '<form id="ltijs_submit" style="display: none;" action="' + idtoken.platformContext.deepLinkingSettings.deep_link_return_url + '" method="POST">' + '<input type="hidden" name="JWT" value="' + message + '" />' + '</form>' + '<script>' + 'document.getElementById("ltijs_submit").submit()' + '</script>';
@@ -68,7 +38,7 @@ class DeepLinking {
    */
 
 
-  async createDeepLinkingMessage(idtoken, contentItems, options) {
+  static async createDeepLinkingMessage(idtoken, contentItems, options) {
     provDeepLinkingDebug('Starting deep linking process');
 
     if (!idtoken) {
@@ -89,7 +59,7 @@ class DeepLinking {
 
     if (!Array.isArray(contentItems)) contentItems = [contentItems]; // Gets platform
 
-    const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, idtoken.clientId, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database));
+    const platform = await Platform.getPlatform(idtoken.iss, idtoken.clientId);
 
     if (!platform) {
       provDeepLinkingDebug('Platform not found');

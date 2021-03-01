@@ -17,37 +17,37 @@ function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { va
 /* eslint-disable no-useless-escape */
 
 /* Main class for the Provider functionalities */
-const Server = require('../Utils/Server');
-
-const Request = require('../Utils/Request');
-
-const Platform = require('../Utils/Platform');
-
-const Auth = require('../Utils/Auth');
-
-const DB = require('../Utils/Database');
-
-const Keyset = require('../Utils/Keyset');
-
-const GradeService = require('./Services/Grade');
-
-const DeepLinkingService = require('./Services/DeepLinking');
-
-const NamesAndRolesService = require('./Services/NamesAndRoles');
-
-const DynamicRegistration = require('./Services/DynamicRegistration');
-
+// Dependencies
 const url = require('fast-url-parser');
-
-const jwt = require('jsonwebtoken');
-
-const crypto = require('crypto');
 
 const provAuthDebug = require('debug')('provider:auth');
 
 const provMainDebug = require('debug')('provider:main');
 
-const provDynamicRegistrationDebug = require('debug')('provider:dynamicRegistrationService');
+const provDynamicRegistrationDebug = require('debug')('provider:dynamicRegistrationService'); // Services
+
+
+const Core = require('./Advantage/Services/Core');
+
+const GradeService = require('./Advantage/Services/Grade');
+
+const DeepLinkingService = require('./Advantage/Services/DeepLinking');
+
+const NamesAndRolesService = require('./Advantage/Services/NamesAndRoles');
+
+const DynamicRegistration = require('./Advantage/Services/DynamicRegistration'); // Classes
+
+
+const Platform = require('./Advantage/Classes/Platform');
+
+const Server = require('../GlobalUtils/Server');
+
+const Keyset = require('../GlobalUtils/Keyset'); // Database
+
+
+const Database = require('../GlobalUtils/Database');
+
+const MongoDB = require('../GlobalUtils/MongoDB/MongoDB');
 /**
  * @descripttion LTI Provider Class that implements the LTI 1.3 protocol and services.
  */
@@ -63,11 +63,13 @@ var _dynRegRoute = new WeakMap();
 
 var _whitelistedRoutes = new WeakMap();
 
-var _ENCRYPTIONKEY2 = new WeakMap();
+var _ENCRYPTIONKEY = new WeakMap();
 
 var _devMode = new WeakMap();
 
 var _ltiaas = new WeakMap();
+
+var _legacy = new WeakMap();
 
 var _tokenMaxAge = new WeakMap();
 
@@ -75,21 +77,17 @@ var _cookieOptions = new WeakMap();
 
 var _setup = new WeakMap();
 
-var _connectCallback2 = new WeakMap();
+var _connectCallback = new WeakMap();
 
-var _deepLinkingCallback2 = new WeakMap();
+var _deepLinkingCallback = new WeakMap();
 
-var _dynamicRegistrationCallback2 = new WeakMap();
+var _dynamicRegistrationCallback = new WeakMap();
 
-var _sessionTimeoutCallback2 = new WeakMap();
+var _invalidTokenCallback = new WeakMap();
 
-var _invalidTokenCallback2 = new WeakMap();
+var _unregisteredPlatformCallback = new WeakMap();
 
-var _unregisteredPlatformCallback2 = new WeakMap();
-
-var _inactivePlatformCallback2 = new WeakMap();
-
-var _keyset = new WeakMap();
+var _inactivePlatformCallback = new WeakMap();
 
 var _server = new WeakMap();
 
@@ -120,7 +118,7 @@ class Provider {
       value: []
     });
 
-    _ENCRYPTIONKEY2.set(this, {
+    _ENCRYPTIONKEY.set(this, {
       writable: true,
       value: void 0
     });
@@ -131,6 +129,11 @@ class Provider {
     });
 
     _ltiaas.set(this, {
+      writable: true,
+      value: false
+    });
+
+    _legacy.set(this, {
       writable: true,
       value: false
     });
@@ -154,21 +157,21 @@ class Provider {
       value: false
     });
 
-    _connectCallback2.set(this, {
+    _connectCallback.set(this, {
       writable: true,
       value: async (token, req, res, next) => {
         return next();
       }
     });
 
-    _deepLinkingCallback2.set(this, {
+    _deepLinkingCallback.set(this, {
       writable: true,
       value: async (token, req, res, next) => {
         return next();
       }
     });
 
-    _dynamicRegistrationCallback2.set(this, {
+    _dynamicRegistrationCallback.set(this, {
       writable: true,
       value: async (req, res, next) => {
         try {
@@ -202,21 +205,14 @@ class Provider {
       }
     });
 
-    _sessionTimeoutCallback2.set(this, {
+    _invalidTokenCallback.set(this, {
       writable: true,
       value: async (req, res) => {
         return res.status(401).send(res.locals.err);
       }
     });
 
-    _invalidTokenCallback2.set(this, {
-      writable: true,
-      value: async (req, res) => {
-        return res.status(401).send(res.locals.err);
-      }
-    });
-
-    _unregisteredPlatformCallback2.set(this, {
+    _unregisteredPlatformCallback.set(this, {
       writable: true,
       value: async (req, res) => {
         return res.status(400).send({
@@ -229,7 +225,7 @@ class Provider {
       }
     });
 
-    _inactivePlatformCallback2.set(this, {
+    _inactivePlatformCallback.set(this, {
       writable: true,
       value: async (req, res) => {
         return res.status(401).send({
@@ -239,25 +235,6 @@ class Provider {
             message: 'PLATFORM_NOT_ACTIVATED'
           }
         });
-      }
-    });
-
-    _keyset.set(this, {
-      writable: true,
-      value: async (req, res) => {
-        try {
-          const keyset = await Keyset.build(this.Database, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2));
-          return res.status(200).send(keyset);
-        } catch (err) {
-          provMainDebug(err);
-          return res.status(500).send({
-            status: 500,
-            error: 'Internal Server Error',
-            details: {
-              message: err.message
-            }
-          });
-        }
       }
     });
 
@@ -310,18 +287,13 @@ class Provider {
     if (!encryptionkey) throw new Error('MISSING_ENCRYPTION_KEY');
     if (!database) throw new Error('MISSING_DATABASE_CONFIGURATION');
     if (options && options.dynReg && (!options.dynReg.url || !options.dynReg.name)) throw new Error('MISSING_DYNREG_CONFIGURATION');
-    /**
-     * @description Database object.
-     */
-
-    this.Database = null;
-    if (!database.plugin) this.Database = new DB(database);else this.Database = database.plugin;
     if (options && (options.appRoute || options.appUrl)) (0, _classPrivateFieldSet2.default)(this, _appRoute, options.appRoute || options.appUrl);
     if (options && (options.loginRoute || options.loginUrl)) (0, _classPrivateFieldSet2.default)(this, _loginRoute, options.loginRoute || options.loginUrl);
     if (options && (options.keysetRoute || options.keysetUrl)) (0, _classPrivateFieldSet2.default)(this, _keysetRoute, options.keysetRoute || options.keysetUrl);
     if (options && options.dynRegRoute) (0, _classPrivateFieldSet2.default)(this, _dynRegRoute, options.dynRegRoute);
     if (options && options.devMode === true) (0, _classPrivateFieldSet2.default)(this, _devMode, true);
     if (options && options.ltiaas === true) (0, _classPrivateFieldSet2.default)(this, _ltiaas, true);
+    if (options && options.legacy === true) (0, _classPrivateFieldSet2.default)(this, _legacy, true);
     if (options && options.tokenMaxAge !== undefined) (0, _classPrivateFieldSet2.default)(this, _tokenMaxAge, options.tokenMaxAge); // Cookie options
 
     if (options && options.cookies) {
@@ -330,8 +302,21 @@ class Provider {
       if (options.cookies.domain) (0, _classPrivateFieldGet2.default)(this, _cookieOptions).domain = options.cookies.domain;
     }
 
-    (0, _classPrivateFieldSet2.default)(this, _ENCRYPTIONKEY2, encryptionkey);
-    (0, _classPrivateFieldSet2.default)(this, _server, new Server(options ? options.https : false, options ? options.ssl : false, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), options ? options.cors : true, options ? options.serverAddon : false));
+    (0, _classPrivateFieldSet2.default)(this, _ENCRYPTIONKEY, encryptionkey); // Setup Databse
+
+    let connector;
+    if (!database.plugin) connector = new MongoDB(database);else connector = database.plugin;
+    /**
+     * @description Database object.
+     */
+
+    this.Database = Database;
+    this.Database.setup((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), connector, {
+      type: 'PROVIDER',
+      legacy: (0, _classPrivateFieldGet2.default)(this, _legacy)
+    }); // Setting up Server
+
+    (0, _classPrivateFieldSet2.default)(this, _server, new Server(options ? options.https : false, options ? options.ssl : false, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), options ? options.cors : true, options ? options.serverAddon : false));
     /**
      * @description Express server object.
      */
@@ -341,17 +326,17 @@ class Provider {
      * @description Grading service.
      */
 
-    this.Grade = new GradeService(this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), this.Database);
+    this.Grade = GradeService;
     /**
      * @description Deep Linking service.
      */
 
-    this.DeepLinking = new DeepLinkingService(this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), this.Database);
+    this.DeepLinking = DeepLinkingService;
     /**
      * @description Names and Roles service.
      */
 
-    this.NamesAndRoles = new NamesAndRolesService(this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), this.Database);
+    this.NamesAndRoles = NamesAndRolesService;
 
     if (options && options.dynReg) {
       const routes = {
@@ -363,16 +348,18 @@ class Provider {
        * @description Dynamic Registration service.
        */
 
-      this.DynamicRegistration = new DynamicRegistration(options.dynReg, routes, this.registerPlatform, this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), this.Database);
+      this.DynamicRegistration = new DynamicRegistration(options.dynReg, routes);
     }
 
-    if (options && options.staticPath) (0, _classPrivateFieldGet2.default)(this, _server).setStaticPath(options.staticPath); // Registers main athentication and routing middleware
+    if (options && options.staticPath) (0, _classPrivateFieldGet2.default)(this, _server).setStaticPath(options.staticPath);
+    /**
+     * @description Main authentication middleware
+     */
 
-    const sessionValidator = async (req, res, next) => {
+    this.app.use(async (req, res, next) => {
       provMainDebug('Receiving request at path: ' + req.baseUrl + req.path); // Ckeck if request is attempting to initiate oidc login flow or access reserved routes
 
       if (req.path === (0, _classPrivateFieldGet2.default)(this, _loginRoute) || req.path === (0, _classPrivateFieldGet2.default)(this, _keysetRoute) || req.path === (0, _classPrivateFieldGet2.default)(this, _dynRegRoute)) return next();
-      provMainDebug('Path does not match reserved endpoints');
 
       try {
         // Retrieving ltik token
@@ -383,342 +370,157 @@ class Provider {
         provMainDebug(cookies);
 
         if (!ltik) {
-          const idtoken = req.body.id_token;
+          provMainDebug('Access Ltik not found');
+          const state = req.body.state;
+          let savedQueries = false;
 
-          if (idtoken) {
-            // No ltik found but request contains an idtoken
-            provMainDebug('Received idtoken for validation'); // Retrieves state
-
-            const state = req.body.state; // Retrieving validation parameters from cookies
-
-            provAuthDebug('Response state: ' + state);
-            const validationCookie = cookies['state' + state];
-            const validationParameters = {
-              iss: validationCookie,
-              maxAge: (0, _classPrivateFieldGet2.default)(this, _tokenMaxAge)
-            };
-            const valid = await Auth.validateToken(idtoken, (0, _classPrivateFieldGet2.default)(this, _devMode), validationParameters, this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), this.Database); // Retrieve State object from Database
-
-            const savedState = await this.Database.Get(false, 'state', {
-              state: state
-            }); // Deletes state validation cookie and Database entry
-
+          if (state) {
+            provAuthDebug('Received state: ' + state);
+            provAuthDebug('Cleaning state cookie');
             res.clearCookie('state' + state, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
-            if (savedState) this.Database.Delete('state', {
+            savedQueries = await Database.get('state', {
               state: state
             });
-            provAuthDebug('Successfully validated token!');
-            const courseId = valid['https://purl.imsglobal.org/spec/lti/claim/context'] ? valid['https://purl.imsglobal.org/spec/lti/claim/context'].id : 'NF';
-            const resourceId = valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'] ? valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'].id : 'NF';
-            const clientId = valid.clientId;
-            const deploymentId = valid['https://purl.imsglobal.org/spec/lti/claim/deployment_id'];
-            const contextId = encodeURIComponent(valid.iss + clientId + deploymentId + courseId + '_' + resourceId);
-            const platformCode = encodeURIComponent('lti' + Buffer.from(valid.iss + clientId + deploymentId).toString('base64')); // Mount platform token
-
-            const platformToken = {
-              iss: valid.iss,
-              user: valid.sub,
-              userInfo: {
-                given_name: valid.given_name,
-                family_name: valid.family_name,
-                name: valid.name,
-                email: valid.email
-              },
-              platformInfo: valid['https://purl.imsglobal.org/spec/lti/claim/tool_platform'],
-              clientId: valid.clientId,
-              platformId: valid.platformId,
-              deploymentId: valid['https://purl.imsglobal.org/spec/lti/claim/deployment_id']
-            }; // Store idToken in database
-
-            await this.Database.Replace(false, 'idtoken', {
-              iss: valid.iss,
-              clientId: clientId,
-              deploymentId: deploymentId,
-              user: valid.sub
-            }, platformToken); // Mount context token
-
-            const contextToken = {
-              contextId: contextId,
-              path: req.path,
-              user: valid.sub,
-              roles: valid['https://purl.imsglobal.org/spec/lti/claim/roles'],
-              targetLinkUri: valid['https://purl.imsglobal.org/spec/lti/claim/target_link_uri'],
-              context: valid['https://purl.imsglobal.org/spec/lti/claim/context'],
-              resource: valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'],
-              custom: valid['https://purl.imsglobal.org/spec/lti/claim/custom'],
-              launchPresentation: valid['https://purl.imsglobal.org/spec/lti/claim/launch_presentation'],
-              messageType: valid['https://purl.imsglobal.org/spec/lti/claim/message_type'],
-              version: valid['https://purl.imsglobal.org/spec/lti/claim/version'],
-              deepLinkingSettings: valid['https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings'],
-              lis: valid['https://purl.imsglobal.org/spec/lti/claim/lis'],
-              endpoint: valid['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint'],
-              namesRoles: valid['https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice']
-            }; // Store contextToken in database
-
-            await this.Database.Replace(false, 'contexttoken', {
-              contextId: contextId,
-              user: valid.sub
-            }, contextToken); // Creates platform session cookie
-
-            if (!(0, _classPrivateFieldGet2.default)(this, _ltiaas)) res.cookie(platformCode, valid.sub, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
-            provMainDebug('Generating ltik');
-            const newLtikObj = {
-              platformUrl: valid.iss,
-              clientId: clientId,
-              deploymentId: deploymentId,
-              platformCode: platformCode,
-              contextId: contextId,
-              user: valid.sub,
-              s: state // Added state to make unique ltiks
-
-            }; // Signing context token
-
-            const newLtik = jwt.sign(newLtikObj, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2));
-
-            if ((0, _classPrivateFieldGet2.default)(this, _ltiaas)) {
-              // Appending query parameters
-              res.locals.query = {};
-
-              if (savedState) {
-                for (const [key, value] of Object.entries(savedState[0].query)) {
-                  req.query[key] = value;
-                  res.locals.query[key] = value;
-                }
-              } // Creating local variables
-
-
-              res.locals.context = JSON.parse(JSON.stringify(contextToken));
-              res.locals.token = JSON.parse(JSON.stringify(platformToken));
-              res.locals.token.platformContext = res.locals.context;
-              res.locals.ltik = newLtik;
-              provMainDebug('Forwarding request to next handler');
-              return next();
-            } // Appending query parameters
-
-
-            const query = new URLSearchParams(req.query);
-
-            if (savedState) {
-              for (const [key, value] of Object.entries(savedState[0].query)) {
-                query.append(key, value);
-              }
-            }
-
-            query.append('ltik', newLtik);
-            const urlSearchParams = query.toString();
-            provMainDebug('Redirecting to endpoint with ltik');
-            return res.redirect(req.baseUrl + req.path + '?' + urlSearchParams);
-          } else {
-            const state = req.body.state;
-
-            if (state) {
-              provMainDebug('Deleting state cookie and Database entry');
-              const savedState = await this.Database.Get(false, 'state', {
-                state: state
-              });
-              res.clearCookie('state' + state, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
-              if (savedState) this.Database.Delete('state', {
-                state: state
-              });
-            }
-
-            if ((0, _classPrivateFieldGet2.default)(this, _whitelistedRoutes).find(r => {
-              if (r.route instanceof RegExp && r.route.test(req.path) || r.route === req.path) return r.method === 'ALL' || r.method === req.method.toUpperCase();
-              return false;
-            })) {
-              provMainDebug('Accessing as whitelisted route');
-              return next();
-            }
-
-            provMainDebug('No ltik found');
-            provMainDebug('Request body: ', req.body);
-            provMainDebug('Passing request to invalid token handler');
-            res.locals.err = {
-              status: 401,
-              error: 'Unauthorized',
-              details: {
-                description: 'No Ltik or ID Token found.',
-                message: 'NO_LTIK_OR_IDTOKEN_FOUND',
-                bodyReceived: req.body
-              }
-            };
-            return (0, _classPrivateFieldGet2.default)(this, _invalidTokenCallback2).call(this, req, res, next);
+            if (savedQueries) Database.delete('state', {
+              state: state
+            });
           }
-        }
 
-        provMainDebug('Ltik found');
-        let validLtik;
+          const idtoken = req.body.id_token;
+          if (!idtoken) throw new Error('NO_LTIK_OR_IDTOKEN_FOUND');
+          provMainDebug('Received idtoken for validation'); // Retrieving validation cookie
 
-        try {
-          validLtik = jwt.verify(ltik, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2));
-        } catch (err) {
-          if ((0, _classPrivateFieldGet2.default)(this, _whitelistedRoutes).find(r => {
-            if (r.route instanceof RegExp && r.route.test(req.path) || r.route === req.path) return r.method === 'ALL' || r.method === req.method.toUpperCase();
-            return false;
-          })) {
-            provMainDebug('Accessing as whitelisted route');
+          const stateValue = cookies['state' + state];
+          const validationParameters = {
+            state: state,
+            stateValue: stateValue,
+            maxAge: (0, _classPrivateFieldGet2.default)(this, _tokenMaxAge),
+            devMode: (0, _classPrivateFieldGet2.default)(this, _devMode),
+            encryptionkey: (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY),
+            path: req.path
+          }; // Validating launch
+
+          const launch = await Core.launch(idtoken, validationParameters);
+
+          if ((0, _classPrivateFieldGet2.default)(this, _ltiaas)) {
+            // Appending query parameters
+            res.locals.query = {};
+
+            if (savedQueries) {
+              for (const [key, value] of Object.entries(savedQueries[0].query)) {
+                req.query[key] = value;
+                res.locals.query[key] = value;
+              }
+            } // Creating local variables
+
+
+            res.locals.context = launch.context;
+            res.locals.token = launch.token;
+            res.locals.token.platformContext = launch.context;
+            res.locals.ltik = launch.ltik;
+            provMainDebug('Forwarding request to next handler');
             return next();
+          } // Creates platform session cookie
+
+
+          res.cookie(launch.platformCode, launch.token.user, (0, _classPrivateFieldGet2.default)(this, _cookieOptions)); // Appending query parameters
+
+          const query = new URLSearchParams(req.query);
+
+          if (savedQueries) {
+            for (const [key, value] of Object.entries(savedQueries[0].query)) {
+              query.append(key, value);
+            }
           }
 
-          throw err;
+          query.append('ltik', launch.ltik);
+          const urlSearchParams = query.toString();
+          provMainDebug('Redirecting to endpoint with ltik');
+          return res.redirect(req.baseUrl + req.path + '?' + urlSearchParams);
         }
 
-        provMainDebug('Ltik successfully verified');
-        const platformUrl = validLtik.platformUrl;
-        const platformCode = validLtik.platformCode;
-        const clientId = validLtik.clientId;
-        const deploymentId = validLtik.deploymentId;
-        const contextId = validLtik.contextId;
-        let user = validLtik.user;
+        provMainDebug('Access Ltik found');
+        const validationParameters = {
+          cookies: cookies,
+          devMode: (0, _classPrivateFieldGet2.default)(this, _devMode),
+          ltiaas: (0, _classPrivateFieldGet2.default)(this, _ltiaas),
+          encryptionkey: (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY)
+        };
+        const idToken = await Core.access(ltik, validationParameters); // Creating local variables
 
-        if (!(0, _classPrivateFieldGet2.default)(this, _ltiaas)) {
-          provMainDebug('Attempting to retrieve matching session cookie');
-          const cookieUser = cookies[platformCode];
-
-          if (!cookieUser) {
-            if (!(0, _classPrivateFieldGet2.default)(this, _devMode)) user = false;else {
-              provMainDebug('Dev Mode enabled: Missing session cookies will be ignored');
-            }
-          } else if (user.toString() !== cookieUser.toString()) user = false;
-        }
-
-        if (user) {
-          provAuthDebug('Valid session found'); // Gets corresponding id token from database
-
-          let idTokenRes = await this.Database.Get(false, 'idtoken', {
-            iss: platformUrl,
-            clientId: clientId,
-            deploymentId: deploymentId,
-            user: user
-          });
-          if (!idTokenRes) throw new Error('IDTOKEN_NOT_FOUND_DB');
-          idTokenRes = idTokenRes[0];
-          const idToken = JSON.parse(JSON.stringify(idTokenRes)); // Gets correspondent context token from database
-
-          let contextToken = await this.Database.Get(false, 'contexttoken', {
-            contextId: contextId,
-            user: user
-          });
-          if (!contextToken) throw new Error('CONTEXTTOKEN_NOT_FOUND_DB');
-          contextToken = contextToken[0];
-          idToken.platformContext = JSON.parse(JSON.stringify(contextToken)); // Creating local variables
-
-          res.locals.context = idToken.platformContext;
-          res.locals.token = idToken;
-          res.locals.ltik = ltik;
-          provMainDebug('Passing request to next handler');
-          return next();
-        } else {
-          provMainDebug('No session cookie found');
-          provMainDebug('Request body: ', req.body);
-          provMainDebug('Passing request to session timeout handler');
-          res.locals.err = {
-            status: 401,
-            error: 'Unauthorized',
-            details: {
-              message: 'Session not found.'
-            }
-          };
-          return (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutCallback2).call(this, req, res, next);
-        }
+        res.locals.context = idToken.platformContext;
+        res.locals.token = idToken;
+        res.locals.ltik = ltik;
+        provMainDebug('Passing request to next handler');
+        return next();
       } catch (err) {
-        const state = req.body.state;
-
-        if (state) {
-          provMainDebug('Deleting state cookie and Database entry');
-          const savedState = await this.Database.Get(false, 'state', {
-            state: state
-          });
-          res.clearCookie('state' + state, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
-          if (savedState) this.Database.Delete('state', {
-            state: state
-          });
+        // Checking for whitelisted route
+        if (await this.isWhitelisted({
+          path: req.path,
+          method: req.method
+        })) {
+          provAuthDebug('Accessing as whitelisted route');
+          return next();
         }
 
-        provAuthDebug(err);
-        provMainDebug('Passing request to invalid token handler');
+        provAuthDebug('Error found during request validation: ', err);
+        provAuthDebug('Request body: ', req.body);
+        provAuthDebug('Request query: ', req.query); // Creating error obejct
+
         res.locals.err = {
           status: 401,
           error: 'Unauthorized',
           details: {
             description: 'Error validating ltik or IdToken',
-            message: err.message
+            message: err.message,
+            bodyReceived: req.body,
+            queryReceived: req.query
           }
         };
-        return (0, _classPrivateFieldGet2.default)(this, _invalidTokenCallback2).call(this, req, res, next);
+        provAuthDebug('Passing request to invalid token handler');
+        return (0, _classPrivateFieldGet2.default)(this, _invalidTokenCallback).call(this, req, res, next);
       }
-    };
-
-    this.app.use(sessionValidator);
+    });
     this.app.all((0, _classPrivateFieldGet2.default)(this, _loginRoute), async (req, res) => {
       const params = _objectSpread(_objectSpread({}, req.query), req.body);
 
-      try {
-        if (!params.iss || !params.login_hint || !params.target_link_uri) return res.status(400).send({
-          status: 400,
-          error: 'Bad Request',
-          details: {
-            message: 'MISSING_LOGIN_PARAMETERS'
-          }
-        });
-        const iss = params.iss;
-        provMainDebug('Receiving a login request from: ' + iss);
-        let platform;
-        if (params.client_id) platform = await this.getPlatform(iss, params.client_id);else platform = (await this.getPlatform(iss))[0];
-
-        if (platform) {
-          const platformActive = await platform.platformActive();
-          if (!platformActive) return (0, _classPrivateFieldGet2.default)(this, _inactivePlatformCallback2).call(this, req, res);
-          provMainDebug('Redirecting to platform authentication endpoint'); // Create state parameter used to validade authentication response
-
-          let state = encodeURIComponent(crypto.randomBytes(25).toString('hex'));
-          provMainDebug('Target Link URI: ', params.target_link_uri);
-          /* istanbul ignore next */
-          // Cleaning up target link uri and retrieving query parameters
-
-          if (params.target_link_uri.includes('?')) {
-            // Retrieve raw queries
-            const rawQueries = new URLSearchParams('?' + params.target_link_uri.split('?')[1]); // Check if state is unique
-
-            while (await this.Database.Get(false, 'state', {
-              state: state
-            })) state = encodeURIComponent(crypto.randomBytes(25).toString('hex'));
-
-            provMainDebug('Generated state: ', state); // Assemble queries object
-
-            const queries = {};
-
-            for (const [key, value] of rawQueries) {
-              queries[key] = value;
-            }
-
-            params.target_link_uri = params.target_link_uri.split('?')[0];
-            provMainDebug('Query parameters found: ', queries);
-            provMainDebug('Final Redirect URI: ', params.target_link_uri); // Store state and query parameters on database
-
-            await this.Database.Insert(false, 'state', {
-              state: state,
-              query: queries
-            });
-          } // Setting up validation info
-
-
-          const cookieOptions = JSON.parse(JSON.stringify((0, _classPrivateFieldGet2.default)(this, _cookieOptions)));
-          cookieOptions.maxAge = 60 * 1000; // Adding max age to state cookie = 1min
-
-          res.cookie('state' + state, iss, cookieOptions); // Redirect to authentication endpoint
-
-          const query = await Request.ltiAdvantageLogin(params, platform, state);
-          provMainDebug('Login request: ');
-          provMainDebug(query);
-          res.redirect(url.format({
-            pathname: await platform.platformAuthEndpoint(),
-            query: query
-          }));
-        } else {
-          provMainDebug('Unregistered platform attempting connection: ' + iss);
-          return (0, _classPrivateFieldGet2.default)(this, _unregisteredPlatformCallback2).call(this, req, res);
+      if (!params.iss || !params.login_hint || !params.target_link_uri) return res.status(400).send({
+        status: 400,
+        error: 'Bad Request',
+        details: {
+          message: 'MISSING_LOGIN_PARAMETERS'
         }
+      });
+
+      try {
+        provMainDebug('Receiving a login request from: ' + params.iss);
+        let platform = false;
+        if (params.client_id) platform = await Platform.getPlatform(params.iss, params.client_id);else {
+          const platforms = await Platform.getPlatform(params.iss);
+          if (platforms.length > 0) platform = platforms[0];
+        }
+
+        if (!platform) {
+          provMainDebug('Unregistered platform attempting connection: ' + params.iss);
+          return (0, _classPrivateFieldGet2.default)(this, _unregisteredPlatformCallback).call(this, req, res);
+        }
+
+        const platformActive = await platform.platformActive();
+
+        if (!platformActive) {
+          provMainDebug('Inactive platform attempting connection: ' + params.iss);
+          return (0, _classPrivateFieldGet2.default)(this, _inactivePlatformCallback).call(this, req, res);
+        } // Creating login request
+
+
+        const login = await Core.login(platform, params); // Setting up validation info
+
+        const cookieOptions = JSON.parse(JSON.stringify((0, _classPrivateFieldGet2.default)(this, _cookieOptions)));
+        cookieOptions.maxAge = 60 * 1000; // Adding max age to state cookie = 1min
+
+        res.cookie('state' + login.state, params.iss, cookieOptions); // Redirect to authentication endpoint
+
+        return res.redirect(login.target);
       } catch (err) {
         provMainDebug(err);
         return res.status(500).send({
@@ -731,10 +533,22 @@ class Provider {
       }
     });
     this.app.get((0, _classPrivateFieldGet2.default)(this, _keysetRoute), async (req, res, next) => {
-      return (0, _classPrivateFieldGet2.default)(this, _keyset).call(this, req, res, next);
+      try {
+        const keyset = await Keyset.build();
+        return res.status(200).send(keyset);
+      } catch (err) {
+        provMainDebug(err);
+        return res.status(500).send({
+          status: 500,
+          error: 'Internal Server Error',
+          details: {
+            message: err.message
+          }
+        });
+      }
     });
     this.app.all((0, _classPrivateFieldGet2.default)(this, _dynRegRoute), async (req, res, next) => {
-      if (this.DynamicRegistration) return (0, _classPrivateFieldGet2.default)(this, _dynamicRegistrationCallback2).call(this, req, res, next);
+      if (this.DynamicRegistration) return (0, _classPrivateFieldGet2.default)(this, _dynamicRegistrationCallback).call(this, req, res, next);
       return res.status(403).send({
         status: 403,
         error: 'Forbidden',
@@ -742,11 +556,10 @@ class Provider {
           message: 'Dynamic registration is disabled.'
         }
       });
-    }); // Main app
-
+    });
     this.app.all((0, _classPrivateFieldGet2.default)(this, _appRoute), async (req, res, next) => {
-      if (res.locals.context && res.locals.context.messageType === 'LtiDeepLinkingRequest') return (0, _classPrivateFieldGet2.default)(this, _deepLinkingCallback2).call(this, res.locals.token, req, res, next);
-      return (0, _classPrivateFieldGet2.default)(this, _connectCallback2).call(this, res.locals.token, req, res, next);
+      if (res.locals.context && res.locals.context.messageType === 'LtiDeepLinkingRequest') return (0, _classPrivateFieldGet2.default)(this, _deepLinkingCallback).call(this, res.locals.token, req, res, next);
+      return (0, _classPrivateFieldGet2.default)(this, _connectCallback).call(this, res.locals.token, req, res, next);
     });
     (0, _classPrivateFieldSet2.default)(this, _setup, true);
     return this;
@@ -766,7 +579,7 @@ class Provider {
     provMainDebug('Attempting to connect to database');
 
     try {
-      await this.Database.setup();
+      await Database.connect();
       const conf = {
         port: 3000,
         silent: false
@@ -809,134 +622,86 @@ class Provider {
     if (!options || options.silent !== true) console.log('\nClosing server...');
     await (0, _classPrivateFieldGet2.default)(this, _server).close();
     if (!options || options.silent !== true) console.log('Closing connection to the database...');
-    await this.Database.Close();
+    await Database.close();
     if (!options || options.silent !== true) console.log('Shutdown complete.');
     return true;
   }
   /**
      * @description Sets the callback function called whenever there's a sucessfull lti 1.3 launch, exposing a "token" object containing the idtoken information.
-     * @param {Function} _connectCallback - Callback function called everytime a platform sucessfully launches to the provider.
+     * @param {Function} connectCallback - Callback function called everytime a platform sucessfully launches to the provider.
      * @example .onConnect((token, request, response)=>{response.send('OK')})
      * @returns {true}
      */
 
 
-  onConnect(_connectCallback, options) {
+  onConnect(connectCallback) {
     /* istanbul ignore next */
-    if (options) {
-      if (options.sameSite || options.secure) console.log('Deprecation Warning: The optional parameters of the onConnect() method are now deprecated and will be removed in the 6.0 release. Cookie parameters can be found in the main Ltijs constructor options: ... { cookies: { secure: true, sameSite: \'None\' }.');
-      if (options.sessionTimeout || options.invalidToken) console.log('Deprecation Warning: The optional parameters of the onConnect() method are now deprecated and will be removed in the 6.0 release. Invalid token and Session Timeout methods can now be set with the onSessionTimeout() and onInvalidToken() methods.');
-
-      if (options.sameSite) {
-        (0, _classPrivateFieldGet2.default)(this, _cookieOptions).sameSite = options.sameSite;
-        if (options.sameSite.toLowerCase() === 'none') (0, _classPrivateFieldGet2.default)(this, _cookieOptions).secure = true;
-      }
-
-      if (options.secure === true) (0, _classPrivateFieldGet2.default)(this, _cookieOptions).secure = true;
-      if (options.sessionTimeout) (0, _classPrivateFieldSet2.default)(this, _sessionTimeoutCallback2, options.sessionTimeout);
-      if (options.invalidToken) (0, _classPrivateFieldSet2.default)(this, _invalidTokenCallback2, options.invalidToken);
-    }
-
-    if (_connectCallback) {
-      (0, _classPrivateFieldSet2.default)(this, _connectCallback2, _connectCallback);
-      return true;
-    }
-
-    throw new Error('MISSING_CALLBACK');
+    if (!connectCallback) throw new Error('MISSING_CALLBACK');
+    (0, _classPrivateFieldSet2.default)(this, _connectCallback, connectCallback);
+    return true;
   }
   /**
    * @description Sets the callback function called whenever there's a sucessfull deep linking launch, exposing a "token" object containing the idtoken information.
-   * @param {Function} _deepLinkingCallback - Callback function called everytime a platform sucessfully launches a deep linking request.
+   * @param {Function} deepLinkingCallback - Callback function called everytime a platform sucessfully launches a deep linking request.
    * @example .onDeepLinking((token, request, response)=>{response.send('OK')})
    * @returns {true}
    */
 
 
-  onDeepLinking(_deepLinkingCallback) {
-    if (_deepLinkingCallback) {
-      (0, _classPrivateFieldSet2.default)(this, _deepLinkingCallback2, _deepLinkingCallback);
-      return true;
-    }
-
-    throw new Error('MISSING_CALLBACK');
+  onDeepLinking(deepLinkingCallback) {
+    if (!deepLinkingCallback) throw new Error('MISSING_CALLBACK');
+    (0, _classPrivateFieldSet2.default)(this, _deepLinkingCallback, deepLinkingCallback);
+    return true;
   }
   /**
    * @description Sets the callback function called whenever there's a sucessfull dynamic registration request, allowing the registration flow to be customized.
-   * @param {Function} _dynamicRegistrationCallback - Callback function called everytime the LTI Provider receives a dynamic registration request.
+   * @param {Function} dynamicRegistrationCallback - Callback function called everytime the LTI Provider receives a dynamic registration request.
    */
 
 
-  onDynamicRegistration(_dynamicRegistrationCallback) {
-    if (_dynamicRegistrationCallback) {
-      (0, _classPrivateFieldSet2.default)(this, _dynamicRegistrationCallback2, _dynamicRegistrationCallback);
-      return true;
-    }
-
-    throw new Error('MISSING_CALLBACK');
-  }
-  /**
-   * @description Sets the callback function called when no valid session is found during a request validation.
-   * @param {Function} _sessionTimeoutCallback - Callback method.
-   * @example .onSessionTimeout((request, response)=>{response.send('Session timeout')})
-   * @returns {true}
-   */
-
-
-  onSessionTimeout(_sessionTimeoutCallback) {
-    if (_sessionTimeoutCallback) {
-      (0, _classPrivateFieldSet2.default)(this, _sessionTimeoutCallback2, _sessionTimeoutCallback);
-      return true;
-    }
-
-    throw new Error('MISSING_CALLBACK');
+  onDynamicRegistration(dynamicRegistrationCallback) {
+    if (!dynamicRegistrationCallback) throw new Error('MISSING_CALLBACK');
+    (0, _classPrivateFieldSet2.default)(this, _dynamicRegistrationCallback, dynamicRegistrationCallback);
+    return true;
   }
   /**
    * @description Sets the callback function called when the token received fails to be validated.
-   * @param {Function} _invalidTokenCallback - Callback method.
+   * @param {Function} invalidTokenCallback - Callback method.
    * @example .onInvalidToken((request, response)=>{response.send('Invalid token')})
    * @returns {true}
    */
 
 
-  onInvalidToken(_invalidTokenCallback) {
-    if (_invalidTokenCallback) {
-      (0, _classPrivateFieldSet2.default)(this, _invalidTokenCallback2, _invalidTokenCallback);
-      return true;
-    }
-
-    throw new Error('MISSING_CALLBACK');
+  onInvalidToken(invalidTokenCallback) {
+    if (!invalidTokenCallback) throw new Error('MISSING_CALLBACK');
+    (0, _classPrivateFieldSet2.default)(this, _invalidTokenCallback, invalidTokenCallback);
+    return true;
   }
   /**
    * @description Sets the callback function called when the Platform attempting to login is not registered.
-   * @param {Function} _unregisteredPlatformCallback - Callback method.
+   * @param {Function} unregisteredPlatformCallback - Callback method.
    * @example .onUnregisteredPlatform((request, response)=>{response.send('Unregistered Platform')})
    * @returns {true}
    */
 
 
-  onUnregisteredPlatform(_unregisteredPlatformCallback) {
-    if (_unregisteredPlatformCallback) {
-      (0, _classPrivateFieldSet2.default)(this, _unregisteredPlatformCallback2, _unregisteredPlatformCallback);
-      return true;
-    }
-
-    throw new Error('MISSING_CALLBACK');
+  onUnregisteredPlatform(unregisteredPlatformCallback) {
+    if (!unregisteredPlatformCallback) throw new Error('MISSING_CALLBACK');
+    (0, _classPrivateFieldSet2.default)(this, _unregisteredPlatformCallback, unregisteredPlatformCallback);
+    return true;
   }
   /**
    * @description Sets the callback function called when the Platform attempting to login is not activated.
-   * @param {Function} _inactivePlatformCallback - Callback method.
+   * @param {Function} inactivePlatformCallback - Callback method.
    * @example .onInactivePlatform((request, response)=>{response.send('Platform not activated')})
    * @returns {true}
    */
 
 
-  onInactivePlatform(_inactivePlatformCallback) {
-    if (_inactivePlatformCallback) {
-      (0, _classPrivateFieldSet2.default)(this, _inactivePlatformCallback2, _inactivePlatformCallback);
-      return true;
-    }
-
-    throw new Error('MISSING_CALLBACK');
+  onInactivePlatform(inactivePlatformCallback) {
+    if (!inactivePlatformCallback) throw new Error('MISSING_CALLBACK');
+    (0, _classPrivateFieldSet2.default)(this, _inactivePlatformCallback, inactivePlatformCallback);
+    return true;
   }
   /**
    * @description Gets the main application route that will receive the final decoded Idtoken at the end of a successful launch.
@@ -1003,291 +768,20 @@ class Provider {
     return (0, _classPrivateFieldGet2.default)(this, _whitelistedRoutes);
   }
   /**
-     * @description Registers a platform.
-     * @param {Object} platform
-     * @param {String} platform.url - Platform url.
-     * @param {String} platform.name - Platform nickname.
-     * @param {String} platform.clientId - Client Id generated by the platform.
-     * @param {String} platform.authenticationEndpoint - Authentication endpoint that the tool will use to authenticate within the platform.
-     * @param {String} platform.accesstokenEndpoint - Access token endpoint that the tool will use to get an access token for the platform.
-     * @param {object} platform.authConfig - Authentication method and key for verifying messages from the platform. {method: "RSA_KEY", key:"PUBLIC KEY..."}
-     * @param {String} platform.authConfig.method - Method of authorization "RSA_KEY" or "JWK_KEY" or "JWK_SET".
-     * @param {String} platform.authConfig.key - Either the RSA public key provided by the platform, or the JWK key, or the JWK keyset address.
-     * @returns {Promise<Platform>}
-     */
-
-
-  async registerPlatform(platform, getPlatform, ENCRYPTIONKEY, Database) {
-    if (!platform || !platform.url || !platform.clientId) throw new Error('MISSING_PLATFORM_URL_OR_CLIENTID');
-
-    const _Database = Database || this.Database;
-
-    const _ENCRYPTIONKEY = ENCRYPTIONKEY || (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2);
-
-    const _getPlatform = getPlatform || this.getPlatform;
-
-    let kid;
-
-    const _platform = await _getPlatform(platform.url, platform.clientId, _ENCRYPTIONKEY, _Database);
-
-    if (!_platform) {
-      if (!platform.name || !platform.authenticationEndpoint || !platform.accesstokenEndpoint || !platform.authConfig) throw new Error('MISSING_PARAMS');
-      if (platform.authConfig.method !== 'RSA_KEY' && platform.authConfig.method !== 'JWK_KEY' && platform.authConfig.method !== 'JWK_SET') throw new Error('INVALID_AUTHCONFIG_METHOD. Details: Valid methods are "RSA_KEY", "JWK_KEY", "JWK_SET".');
-      if (!platform.authConfig.key) throw new Error('MISSING_AUTHCONFIG_KEY');
-
-      try {
-        kid = await Auth.generatePlatformKeyPair(_ENCRYPTIONKEY, _Database, platform.url, platform.clientId);
-        const plat = new Platform(platform.name, platform.url, platform.clientId, platform.authenticationEndpoint, platform.accesstokenEndpoint, kid, _ENCRYPTIONKEY, platform.authConfig, this.Database); // Save platform to db
-
-        provMainDebug('Registering new platform');
-        provMainDebug('Platform Url: ' + platform.url);
-        provMainDebug('Platform ClientId: ' + platform.clientId);
-        await _Database.Replace(false, 'platform', {
-          platformUrl: platform.url,
-          clientId: platform.clientId
-        }, {
-          platformName: platform.name,
-          platformUrl: platform.url,
-          clientId: platform.clientId,
-          authEndpoint: platform.authenticationEndpoint,
-          accesstokenEndpoint: platform.accesstokenEndpoint,
-          kid: kid,
-          authConfig: platform.authConfig
-        });
-        return plat;
-      } catch (err) {
-        await _Database.Delete('publickey', {
-          kid: kid
-        });
-        await _Database.Delete('privatekey', {
-          kid: kid
-        });
-        await _Database.Delete('platform', {
-          platformUrl: platform.url,
-          clientId: platform.clientId
-        });
-        provMainDebug(err.message);
-        throw err;
-      }
-    } else {
-      provMainDebug('Platform already registered');
-      await _Database.Modify(false, 'platform', {
-        platformUrl: platform.url,
-        clientId: platform.clientId
-      }, {
-        platformName: platform.name || (await _platform.platformName()),
-        authEndpoint: platform.authenticationEndpoint || (await _platform.platformAuthEndpoint()),
-        accesstokenEndpoint: platform.accesstokenEndpoint || (await _platform.platformAccessTokenEndpoint()),
-        authConfig: platform.authConfig || (await _platform.platformAuthConfig())
-      });
-      return _getPlatform(platform.url, platform.clientId, _ENCRYPTIONKEY, _Database);
-    }
-  }
-  /**
-     * @description Gets a platform.
-     * @param {String} url - Platform url.
-     * @param {String} [clientId] - Tool clientId.
-     * @returns {Promise<Array<Platform>, Platform | false>}
-     */
-
-
-  async getPlatform(url, clientId, ENCRYPTIONKEY, Database) {
-    if (!url) throw new Error('MISSING_PLATFORM_URL');
-
-    const _Database = Database || this.Database;
-
-    const _ENCRYPTIONKEY = ENCRYPTIONKEY || (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2);
-
-    if (clientId) {
-      const result = await _Database.Get(false, 'platform', {
-        platformUrl: url,
-        clientId: clientId
-      });
-      if (!result) return false;
-      const plat = result[0];
-      const platform = new Platform(plat.platformName, plat.platformUrl, plat.clientId, plat.authEndpoint, plat.accesstokenEndpoint, plat.kid, _ENCRYPTIONKEY, plat.authConfig, _Database);
-      return platform;
-    }
-
-    const result = await _Database.Get(false, 'platform', {
-      platformUrl: url
-    });
-    if (!result) return false;
-    const platforms = [];
-
-    for (const plat of result) {
-      const platform = new Platform(plat.platformName, plat.platformUrl, plat.clientId, plat.authEndpoint, plat.accesstokenEndpoint, plat.kid, _ENCRYPTIONKEY, plat.authConfig, _Database);
-      platforms.push(platform);
-    }
-
-    return platforms;
-  }
-  /**
-   * @description Gets a platform by the platformId.
-   * @param {String} platformId - Platform Id.
-   * @returns {Promise<Array<Platform>, Platform | false>}
+   * Checks if a route is whitelisted.
+   * @param {Object} route - Route object
+   * @param {String} route.path - Route pach.
+   * @param {String} route.method - HTTP Method.
    */
 
 
-  async getPlatformById(platformId) {
-    if (!platformId) throw new Error('MISSING_PLATFORM_ID');
-    const result = await this.Database.Get(false, 'platform', {
-      kid: platformId
-    });
-    if (!result) return false;
-    const plat = result[0];
-    const platform = new Platform(plat.platformName, plat.platformUrl, plat.clientId, plat.authEndpoint, plat.accesstokenEndpoint, plat.kid, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), plat.authConfig, this.Database);
-    return platform;
-  }
-  /**
-   * @description Updates a platform by the platformId.
-   * @param {String} platformId - Platform Id.
-   * @param {Object} platformInfo - Update Information.
-   * @param {String} platformInfo.url - Platform url.
-   * @param {String} platformInfo.clientId - Platform clientId.
-   * @param {String} platformInfo.name - Platform nickname.
-   * @param {String} platformInfo.authenticationEndpoint - Authentication endpoint that the tool will use to authenticate within the platform.
-   * @param {String} platformInfo.accesstokenEndpoint - Access token endpoint that the tool will use to get an access token for the platform.
-   * @param {object} platformInfo.authConfig - Authentication method and key for verifying messages from the platform. {method: "RSA_KEY", key:"PUBLIC KEY..."}
-   * @param {String} platformInfo.authConfig.method - Method of authorization "RSA_KEY" or "JWK_KEY" or "JWK_SET".
-   * @param {String} platformInfo.authConfig.key - Either the RSA public key provided by the platform, or the JWK key, or the JWK keyset address.
-   * @returns {Promise<Array<Platform>, Platform | false>}
-   */
-
-
-  async updatePlatformById(platformId, platformInfo) {
-    if (!platformId) {
-      throw new Error('MISSING_PLATFORM_ID');
-    }
-
-    if (!platformInfo) {
-      throw new Error('MISSING_PLATFORM_INFO');
-    }
-
-    const platform = await this.getPlatformById(platformId);
-    if (!platform) return false;
-    const oldURL = await platform.platformUrl();
-    const oldClientId = await platform.platformClientId();
-    const update = {
-      url: platformInfo.url || oldURL,
-      clientId: platformInfo.clientId || oldClientId,
-      name: platformInfo.name || (await platform.platformName()),
-      authenticationEndpoint: platformInfo.authenticationEndpoint || (await platform.platformAuthEndpoint()),
-      accesstokenEndpoint: platformInfo.accesstokenEndpoint || (await platform.platformAccessTokenEndpoint())
-    };
-    const authConfig = await platform.platformAuthConfig();
-    update.authConfig = authConfig;
-
-    if (platformInfo.authConfig) {
-      if (platformInfo.authConfig.method) update.authConfig.method = platformInfo.authConfig.method;
-      if (platformInfo.authConfig.key) update.authConfig.key = platformInfo.authConfig.key;
-    }
-
-    let alteredUrlClientIdFlag = false;
-
-    if (platformInfo.url || platformInfo.clientId) {
-      if (platformInfo.url !== oldURL || platformInfo.clientId !== oldClientId) alteredUrlClientIdFlag = true;
-    }
-
-    if (alteredUrlClientIdFlag) {
-      if (await this.Database.Get(false, 'platform', {
-        platformUrl: update.url,
-        clientId: update.clientId
-      })) throw new Error('URL_CLIENT_ID_COMBINATION_ALREADY_EXISTS');
-    }
-
-    try {
-      if (alteredUrlClientIdFlag) {
-        await this.Database.Modify(false, 'publickey', {
-          kid: platformId
-        }, {
-          platformUrl: update.url,
-          clientId: update.clientId
-        });
-        await this.Database.Modify(false, 'privatekey', {
-          kid: platformId
-        }, {
-          platformUrl: update.url,
-          clientId: update.clientId
-        });
-      }
-
-      await this.Database.Modify(false, 'platform', {
-        kid: platformId
-      }, {
-        platformUrl: update.url,
-        clientId: update.clientId,
-        platformName: update.name,
-        authEndpoint: update.authenticationEndpoint,
-        accesstokenEndpoint: update.accesstokenEndpoint,
-        authConfig: update.authConfig
-      });
-      const platform = new Platform(update.name, update.url, update.clientId, update.authenticationEndpoint, update.accesstokenEndpoint, platformId, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), update.authConfig, this.Database);
-      return platform;
-    } catch (err) {
-      if (alteredUrlClientIdFlag) {
-        await this.Database.Modify(false, 'publickey', {
-          kid: platformId
-        }, {
-          platformUrl: oldURL,
-          clientId: oldClientId
-        });
-        await this.Database.Modify(false, 'privatekey', {
-          kid: platformId
-        }, {
-          platformUrl: oldURL,
-          clientId: oldClientId
-        });
-      }
-
-      provMainDebug(err.message);
-      throw err;
-    }
-  }
-  /**
-     * @description Deletes a platform.
-     * @param {string} url - Platform url.
-     * @param {String} clientId - Tool clientId.
-     * @returns {Promise<true>}
-     */
-
-
-  async deletePlatform(url, clientId) {
-    if (!url || !clientId) throw new Error('MISSING_PARAM');
-    const platform = await this.getPlatform(url, clientId);
-    if (platform) await platform.delete();
-    return true;
-  }
-  /**
-   * @description Deletes a platform by the platform Id.
-   * @param {string} platformId - Platform Id.
-   * @returns {Promise<true>}
-   */
-
-
-  async deletePlatformById(platformId) {
-    if (!platformId) throw new Error('MISSING_PLATFORM_ID');
-    const platform = await this.getPlatformById(platformId);
-    if (platform) await platform.delete();
-    return true;
-  }
-  /**
-     * @description Gets all platforms.
-     * @returns {Promise<Array<Platform>>}
-     */
-
-
-  async getAllPlatforms() {
-    const platforms = [];
-    const result = await this.Database.Get(false, 'platform');
-
-    if (result) {
-      for (const plat of result) platforms.push(new Platform(plat.platformName, plat.platformUrl, plat.clientId, plat.authEndpoint, plat.accesstokenEndpoint, plat.kid, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), plat.authConfig, this.Database));
-
-      return platforms;
-    }
-
-    return [];
+  async isWhitelisted(route) {
+    if (!route || !route.path || !route.method) throw new Error('MISSING_ARGUMENT');
+    if ((0, _classPrivateFieldGet2.default)(this, _whitelistedRoutes).find(r => {
+      if (r.route instanceof RegExp && r.route.test(route.path) || r.route === route.path) return r.method === 'ALL' || r.method === route.method.toUpperCase();
+      return false;
+    })) return true;
+    return false;
   }
   /**
    * @description Redirects to a new location. Passes Ltik if present.
@@ -1311,7 +805,7 @@ class Provider {
 
     if (options && (options.newResource || options.isNewResource)) {
       provMainDebug('Changing context token path to: ' + path);
-      await this.Database.Modify(false, 'contexttoken', {
+      await Database.modify('contexttoken', {
         contextId: token.platformContext.contextId,
         user: res.locals.token.user
       }, {
@@ -1348,40 +842,95 @@ class Provider {
     }); // Redirects to path with queries
 
     return res.redirect(formattedPath);
-  } // Deprecated methods, these methods will be removed in version 6.0
-
-  /* istanbul ignore next */
+  } // Platform methods
 
   /**
-   * @deprecated
+   * @description Registers a platform.
+   * @param {Object} platform
+   * @param {String} platform.url - Platform url.
+   * @param {String} platform.name - Platform nickname.
+   * @param {String} platform.clientId - Client Id generated by the platform.
+   * @param {String} platform.authenticationEndpoint - Authentication endpoint that the tool will use to authenticate within the platform.
+   * @param {String} platform.accesstokenEndpoint - Access token endpoint that the tool will use to get an access token for the platform.
+   * @param {Object} platform.authConfig - Authentication method and key for verifying messages from the platform. {method: "RSA_KEY", key:"PUBLIC KEY..."}
+   * @param {String} platform.authConfig.method - Method of authorization "RSA_KEY" or "JWK_KEY" or "JWK_SET".
+   * @param {String} platform.authConfig.key - Either the RSA public key provided by the platform, or the JWK key, or the JWK keyset address.
+   * @returns {Promise<Platform>}
    */
 
 
-  appUrl() {
-    console.log('Deprecation warning: The appUrl() method is now deprecated and will be removed in the 6.0 release. Use appRoute() instead.');
-    return this.appRoute();
+  async registerPlatform(platform) {
+    return Platform.registerPlatform(platform);
   }
-  /* istanbul ignore next */
-
   /**
-   * @deprecated
+   * @description Gets a platform.
+   * @param {String} url - Platform url.
+   * @param {String} clientId - Platform generated Client ID.
+   * @returns {Promise<Platform | false>}
    */
 
 
-  loginUrl() {
-    console.log('Deprecation warning: The loginUrl() method is now deprecated and will be removed in the 6.0 release. Use loginRoute() instead.');
-    return this.loginRoute();
+  async getPlatform(url, clientId) {
+    return Platform.getPlatform(url, clientId);
   }
-  /* istanbul ignore next */
-
   /**
-   * @deprecated
+   * @description Gets a platform by the Id.
+   * @param {String} platformId - Platform Id.
+   * @returns {Promise<Platform | false>}
    */
 
 
-  keysetUrl() {
-    console.log('Deprecation warning: The keysetUrl() method is now deprecated and will be removed in the 6.0 release. Use keysetRoute() instead.');
-    return this.keysetRoute();
+  async getPlatformById(platformId) {
+    return Platform.getPlatformById(platformId);
+  }
+  /**
+   * @description Updates a platform by the Id.
+   * @param {String} platformId - Platform Id.
+   * @param {Object} platformInfo - Update Information.
+   * @param {String} platformInfo.url - Platform url.
+   * @param {String} platformInfo.clientId - Platform clientId.
+   * @param {String} platformInfo.name - Platform nickname.
+   * @param {String} platformInfo.authenticationEndpoint - Authentication endpoint that the tool will use to authenticate within the platform.
+   * @param {String} platformInfo.accesstokenEndpoint - Access token endpoint that the tool will use to get an access token for the platform.
+   * @param {object} platformInfo.authConfig - Authentication method and key for verifying messages from the platform. {method: "RSA_KEY", key:"PUBLIC KEY..."}
+   * @param {String} platformInfo.authConfig.method - Method of authorization "RSA_KEY" or "JWK_KEY" or "JWK_SET".
+   * @param {String} platformInfo.authConfig.key - Either the RSA public key provided by the platform, or the JWK key, or the JWK keyset address.
+   * @returns {Promise<Platform | false>}
+   */
+
+
+  async updatePlatformById(platformId, platformInfo) {
+    return Platform.updatePlatformById(platformId, platformInfo);
+  }
+  /**
+   * @description Deletes a platform.
+   * @param {string} url - Platform url.
+   * @param {String} clientId - Tool clientId.
+   * @returns {Promise<true>}
+   */
+
+
+  async deletePlatform(url, clientId) {
+    return Platform.deletePlatform(url, clientId);
+  }
+  /**
+   * @description Deletes a platform by the Id.
+   * @param {string} platformId - Platform Id.
+   * @returns {Promise<true>}
+   */
+
+
+  async deletePlatformById(platformId) {
+    return Platform.deletePlatformById(platformId);
+  }
+  /**
+   * @description Gets all platforms.
+   * @returns {Promise<Array<Platform>>}
+   */
+
+
+  async getAllPlatforms() {
+    return Platform.getAllPlatforms();
   }
 
 }

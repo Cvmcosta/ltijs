@@ -11,7 +11,7 @@ const expect = chai.expect
 const path = require('path')
 
 const lti = require('../dist/Provider/Provider')
-const Platform = require('../dist/Utils/Platform')
+const Platform = require('../dist/Provider/Advantage/Classes/Platform')
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
 
@@ -256,19 +256,6 @@ describe('Testing Provider', function () {
   it('Provider.onDeepLinking expected to not throw error when receiving callback', () => {
     const fn = () => {
       return lti.onDeepLinking((req, res) => { res.status(200).send('It works!') })
-    }
-    expect(fn).to.not.throw(Error)
-  })
-  it('Provider.onSessionTimeout expected to throw error when receiving no callback', () => {
-    const fn = () => {
-      return lti.onSessionTimeout()
-    }
-    expect(fn).to.throw(Error)
-  })
-
-  it('Provider.onSessionTimeout expected to not throw error when receiving callback', () => {
-    const fn = () => {
-      return lti.onSessionTimeout((req, res) => { res.status(401).send('Session Timeout!') })
     }
     expect(fn).to.not.throw(Error)
   })

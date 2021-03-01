@@ -16,8 +16,8 @@ const NamesAndRolesService = require('./Advantage/Services/NamesAndRoles')
 const DynamicRegistration = require('./Advantage/Services/DynamicRegistration')
 
 // Classes
+const Platform = require('./Advantage/Classes/Platform')
 const Server = require('../GlobalUtils/Server')
-const Platform = require('../GlobalUtils/Platform')
 const Keyset = require('../GlobalUtils/Keyset')
 
 // Database
@@ -251,7 +251,7 @@ class Provider {
             // Creating local variables
             res.locals.context = launch.context
             res.locals.token = launch.token
-            res.locals.token.platformContext = res.locals.context
+            res.locals.token.platformContext = launch.context
             res.locals.ltik = launch.ltik
             provMainDebug('Forwarding request to next handler')
             return next()
@@ -279,7 +279,7 @@ class Provider {
           ltiaas: this.#ltiaas,
           encryptionkey: this.#ENCRYPTIONKEY
         }
-        const idToken = Core.access(ltik, validationParameters)
+        const idToken = await Core.access(ltik, validationParameters)
         // Creating local variables
         res.locals.context = idToken.platformContext
         res.locals.token = idToken
