@@ -191,6 +191,7 @@ class Core {
     return {
       token: platformToken,
       context: contextToken,
+      platformCode: platformCode,
       ltik: ltik
     };
   }
