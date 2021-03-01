@@ -18,20 +18,18 @@ class Core {
   /**
    * @description LTI 1.3 Login handler
    */
-  static async login (platform, params) {
+  static async login (platform, params, encryptionkey) {
     provLoginDebug('Redirecting to platform authentication endpoint')
     // Create state parameter used to validade authentication response
-    let state = encodeURIComponent(crypto.randomBytes(25).toString('hex'))
-
+    const state = {
+      key: encodeURIComponent(crypto.randomBytes(25).toString('hex'))
+    }
     provLoginDebug('Target Link URI: ', params.target_link_uri)
     /* istanbul ignore next */
     // Cleaning up target link uri and retrieving query parameters
     if (params.target_link_uri.includes('?')) {
       // Retrieve raw queries
       const rawQueries = new URLSearchParams('?' + params.target_link_uri.split('?')[1])
-      // Check if state is unique
-      while (await Database.get('state', { state: state })) state = encodeURIComponent(crypto.randomBytes(25).toString('hex'))
-      provLoginDebug('Generated state: ', state)
       // Assemble queries object
       const queries = {}
       for (const [key, value] of rawQueries) { queries[key] = value }
@@ -39,8 +37,11 @@ class Core {
       provLoginDebug('Query parameters found: ', queries)
       provLoginDebug('Final Redirect URI: ', params.target_link_uri)
       // Store state and query parameters on database
-      await Database.insert('state', { state: state, query: queries })
+      state.query = queries
     }
+
+    // Signing state token
+    const stateToken = jwt.sign(state, encryptionkey, { expiresIn: 600 })
 
     // Build authentication request
     const query = {
@@ -53,7 +54,7 @@ class Core {
       login_hint: params.login_hint,
       nonce: encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``),
       prompt: 'none',
-      state: state
+      state: stateToken
     }
     if (params.lti_message_hint) query.lti_message_hint = params.lti_message_hint
     if (params.lti_deployment_id) query.lti_deployment_id = params.lti_deployment_id
@@ -64,7 +65,7 @@ class Core {
         pathname: await platform.platformAuthenticationEndpoint(),
         query: query
       }),
-      state: state
+      stateKey: state.key
     }
   }
 

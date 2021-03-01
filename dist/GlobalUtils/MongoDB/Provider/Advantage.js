@@ -132,20 +132,6 @@ exports.register = () => {
   nonceSchema.index({
     nonce: 1
   });
-  const stateSchema = new Schema({
-    state: String,
-    query: JSON,
-    createdAt: {
-      type: Date,
-      expires: 600,
-      default: Date.now
-    }
-  });
-  stateSchema.index({
-    state: 1
-  }, {
-    unique: true
-  });
   mongoose.model('idtoken', idTokenSchema);
   mongoose.model('contexttoken', contextTokenSchema);
   mongoose.model('platform', platformSchema);
@@ -154,5 +140,4 @@ exports.register = () => {
   mongoose.model('publickey', keySchema);
   mongoose.model('accesstoken', accessTokenSchema);
   mongoose.model('nonce', nonceSchema);
-  mongoose.model('state', stateSchema);
 };

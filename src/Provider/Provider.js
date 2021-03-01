@@ -4,6 +4,7 @@
 /* Main class for the Provider functionalities */
 // Dependencies
 const url = require('fast-url-parser')
+const jwt = require('jsonwebtoken')
 const provAuthDebug = require('debug')('provider:auth')
 const provMainDebug = require('debug')('provider:main')
 const provDynamicRegistrationDebug = require('debug')('provider:dynamicRegistrationService')
@@ -214,22 +215,25 @@ class Provider {
 
         if (!ltik) {
           provMainDebug('Access Ltik not found')
-          const state = req.body.state
+          let state
           let savedQueries = false
-          if (state) {
-            provAuthDebug('Received state: ' + state)
-            provAuthDebug('Cleaning state cookie')
-            res.clearCookie('state' + state, this.#cookieOptions)
-            savedQueries = await Database.get('state', { state: state })
-            if (savedQueries) Database.delete('state', { state: state })
-          }
+          if (req.body.state) {
+            provAuthDebug('Validating state cookie')
+            try {
+              state = jwt.verify(req.body.state, this.#ENCRYPTIONKEY)
+            } catch { throw new Error('INVALID_STATE_PARAMETER') }
+
+            res.clearCookie('state' + state.key, this.#cookieOptions)
+            savedQueries = state.query
+          } else throw new Error('MISSING_STATE_PARAMETER')
+
           const idtoken = req.body.id_token
           if (!idtoken) throw new Error('NO_LTIK_OR_IDTOKEN_FOUND')
           provMainDebug('Received idtoken for validation')
           // Retrieving validation cookie
-          const stateValue = cookies['state' + state]
+          const stateValue = cookies['state' + state.key]
           const validationParameters = {
-            state: state,
+            state: state.key,
             stateValue: stateValue,
             maxAge: this.#tokenMaxAge,
             devMode: this.#devMode,
@@ -243,7 +247,7 @@ class Provider {
             // Appending query parameters
             res.locals.query = {}
             if (savedQueries) {
-              for (const [key, value] of Object.entries(savedQueries[0].query)) {
+              for (const [key, value] of Object.entries(savedQueries)) {
                 req.query[key] = value
                 res.locals.query[key] = value
               }
@@ -262,7 +266,7 @@ class Provider {
           // Appending query parameters
           const query = new URLSearchParams(req.query)
           if (savedQueries) {
-            for (const [key, value] of Object.entries(savedQueries[0].query)) {
+            for (const [key, value] of Object.entries(savedQueries)) {
               query.append(key, value)
             }
           }
@@ -336,11 +340,11 @@ class Provider {
         }
 
         // Creating login request
-        const login = await Core.login(platform, params)
+        const login = await Core.login(platform, params, this.#ENCRYPTIONKEY)
         // Setting up validation info
         const cookieOptions = JSON.parse(JSON.stringify(this.#cookieOptions))
         cookieOptions.maxAge = 60 * 1000 // Adding max age to state cookie = 1min
-        res.cookie('state' + login.state, params.iss, cookieOptions)
+        res.cookie('state' + login.stateKey, params.iss, cookieOptions)
         // Redirect to authentication endpoint
         return res.redirect(login.target)
       } catch (err) {
