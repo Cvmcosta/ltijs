@@ -463,7 +463,7 @@ class Provider {
           return next();
         }
 
-        provAuthDebug('Error found during request validation: ', err);
+        provAuthDebug('Error during request validation: ', err);
         provAuthDebug('Request body: ', req.body);
         provAuthDebug('Request query: ', req.query); // Creating error obejct
 
