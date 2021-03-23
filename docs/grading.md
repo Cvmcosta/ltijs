@@ -37,7 +37,6 @@
 Ltijs implements the [LTI® 1.3 Assignment and Grading Service Specification](https://www.imsglobal.org/spec/lti-ags/v2p0/) in the form of the **Grade Class**.
 
 #### **This documentation is incomplete. The full Assignment and Grades documentation is being written and will come out soon...**
-- For now, please see this gist for an example of the new Grading system: [Grading gist](https://gist.github.com/Cvmcosta/2a503dd3df6905cd635d26d188f99c13)
 
 ___
 
@@ -50,15 +49,17 @@ ___
 Ltijs is able to send grades to a platform in the [application/vnd.ims.lis.v1.score+json](https://www.imsglobal.org/spec/lti-ags/v2p0/#score-publish-service) LTI® standard:
 
 ```javascript
-{
+{ 
+  "userId" : "200",
   "scoreGiven" : 83,
+  "scoreMaximum" : 100,
   "comment" : "This is exceptional work.",
   "activityProgress" : "Completed",
   "gradingProgress": "FullyGraded"
 }
 ```
 
-> This excludes the fields *timestamp*, *userId* and *scoreMaximum* of the specification, because the *messagePlatform()* function fills them automatically using the idtoken passed
+> This excludes the *timestamp* field of the specification, because the submitScore method generates it automatically.
 
 
 Sending the grade: 
