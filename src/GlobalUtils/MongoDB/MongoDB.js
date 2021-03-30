@@ -2,7 +2,7 @@
 // Dependencies
 const mongoose = require('mongoose')
 const crypto = require('crypto')
-const provDatabaseDebug = require('debug')('provider:database')
+const provDatabaseDebug = require('debug')('global:database')
 
 // Models
 const providerAdvantage = require('./Provider/Advantage')

@@ -3,7 +3,7 @@
 // Dependencies
 const Jwk = require('rasha')
 const crypto = require('crypto')
-const provKeysetDebug = require('debug')('provider:keyset')
+const provKeysetDebug = require('debug')('global:keyset')
 
 // Classes
 const Database = require('./Database')
@@ -32,7 +32,7 @@ class Keyset {
   static async generateKeyPair () {
     let kid = crypto.randomBytes(16).toString('hex')
 
-    while (await Database.get('publickey', { kid: kid }, true)) {
+    while (await Database.get('publickey', { kid: kid }, false)) {
       /* istanbul ignore next */
       kid = crypto.randomBytes(16).toString('hex')
     }

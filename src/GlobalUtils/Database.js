@@ -42,7 +42,7 @@ class Database {
    * @description Get item or entire collection.
    * @param {String} collection - The collection to be accessed inside the database.
    * @param {Object} [query] - Query for the item you are looking for in the format {type: "type1"}.
-   * @param {String} [decrypt] - Wheter or not the data should be decrypted.
+   * @param {Boolean} [decrypt] - Wheter or not the data should be decrypted.
    */
   async get (collection, query, decrypt) {
     if (!this.#deploy) throw new Error('PROVIDER_NOT_DEPLOYED')
@@ -60,7 +60,7 @@ class Database {
    * @description Insert item in database.
    * @param {String} collection - The collection to be accessed inside the database.
    * @param {Object} item - The item Object you want to insert in the database.
-   * @param {String} [encrypt] - Wheter or not the data should be encrypted.
+   * @param {Boolean} [encrypt] - Wheter or not the data should be encrypted.
    * @param {Object} [index] - Key that should be used as index in case of Encrypted document.
    */
   async insert (collection, item, encrypt, index) {
@@ -80,7 +80,7 @@ class Database {
    * @param {String} collection - The collection to be accessed inside the database.
    * @param {Object} query - Query for the item you are looking for in the format {type: "type1"}.
    * @param {Object} item - The item Object you want to insert in the database.
-   * @param {String} [encrypt] - Wheter or not the data should be encrypted.
+   * @param {Boolean} [encrypt] - Wheter or not the data should be encrypted.
    * @param {Object} [index] - Key that should be used as index in case of Encrypted document.
    */
   async replace (collection, query, item, encrypt, index) {
@@ -100,7 +100,7 @@ class Database {
    * @param {String} collection - The collection to be accessed inside the database.
    * @param {Object} query - The entry you want to modify in the format {type: "type1"}.
    * @param {Object} modification - The modification you want to make in the format {type: "type2"}.
-   * @param {String} [encrypt] - Wheter or not the data should be encrypted.
+   * @param {Boolean} [encrypt] - Wheter or not the data should be encrypted.
    */
   async modify (collection, query, modification, encrypt) {
     if (!this.#deploy) throw new Error('PROVIDER_NOT_DEPLOYED')
