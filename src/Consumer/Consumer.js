@@ -456,7 +456,7 @@ class Consumer {
    * @param {Object} tool.authConfig - Authentication method and key for verifying messages from the platform. {method: "RSA_KEY", key:"PUBLIC KEY..."}
    * @param {String} tool.authConfig.method - Method of authorization "RSA_KEY" or "JWK_KEY" or "JWK_SET".
    * @param {String} tool.authConfig.key - Either the RSA public key provided by the platform, or the JWK key, or the JWK keyset address.
-   * @returns {Promise<Platform>}
+   * @returns {Promise<Tool>}
    */
   async registerTool (tool) {
     return Tool.registerTool(tool)
@@ -472,17 +472,17 @@ class Consumer {
   }
 
   /**
-   * @description Updates a platform by the Id.
-   * @param {String} platformId - Platform Id.
-   * @param {Object} platformInfo - Update Information.
-   * @param {String} platformInfo.url - Platform url.
-   * @param {String} platformInfo.clientId - Platform clientId.
-   * @param {String} platformInfo.name - Platform nickname.
-   * @param {String} platformInfo.authenticationEndpoint - Authentication endpoint that the tool will use to authenticate within the platform.
-   * @param {String} platformInfo.accesstokenEndpoint - Access token endpoint that the tool will use to get an access token for the platform.
-   * @param {object} platformInfo.authConfig - Authentication method and key for verifying messages from the platform. {method: "RSA_KEY", key:"PUBLIC KEY..."}
-   * @param {String} platformInfo.authConfig.method - Method of authorization "RSA_KEY" or "JWK_KEY" or "JWK_SET".
-   * @param {String} platformInfo.authConfig.key - Either the RSA public key provided by the platform, or the JWK key, or the JWK keyset address.
+   * @description Updates a Tool.
+   * @param {String} clientId - Tool Client Id.
+   * @param {Object} toolInfo - Update Information.
+   * @param {String} toolInfo.url - Platform url.
+   * @param {String} toolInfo.clientId - Platform clientId.
+   * @param {String} toolInfo.name - Platform nickname.
+   * @param {String} toolInfo.authenticationEndpoint - Authentication endpoint that the tool will use to authenticate within the platform.
+   * @param {String} toolInfo.accesstokenEndpoint - Access token endpoint that the tool will use to get an access token for the platform.
+   * @param {object} toolInfo.authConfig - Authentication method and key for verifying messages from the platform. {method: "RSA_KEY", key:"PUBLIC KEY..."}
+   * @param {String} toolInfo.authConfig.method - Method of authorization "RSA_KEY" or "JWK_KEY" or "JWK_SET".
+   * @param {String} toolInfo.authConfig.key - Either the RSA public key provided by the platform, or the JWK key, or the JWK keyset address.
    * @returns {Promise<Tool | false>}
    */
   async updateTool (clientId, toolInfo) {
