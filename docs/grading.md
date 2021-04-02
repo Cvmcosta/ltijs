@@ -37,7 +37,6 @@
 Ltijs implements the [LTI® 1.3 Assignment and Grading Service Specification](https://www.imsglobal.org/spec/lti-ags/v2p0/) in the form of the **Grade Class**.
 
 #### **This documentation is incomplete. The full Assignment and Grades documentation is being written and will come out soon...**
-- For now, please see this gist for an example of the new Grading system: [Grading gist](https://gist.github.com/Cvmcosta/2a503dd3df6905cd635d26d188f99c13)
 
 ___
 
@@ -50,30 +49,65 @@ ___
 Ltijs is able to send grades to a platform in the [application/vnd.ims.lis.v1.score+json](https://www.imsglobal.org/spec/lti-ags/v2p0/#score-publish-service) LTI® standard:
 
 ```javascript
-{
+{ 
+  "userId" : "200",
   "scoreGiven" : 83,
+  "scoreMaximum" : 100,
   "comment" : "This is exceptional work.",
   "activityProgress" : "Completed",
   "gradingProgress": "FullyGraded"
 }
 ```
 
-> This excludes the fields *timestamp*, *userId* and *scoreMaximum* of the specification, because the *messagePlatform()* function fills them automatically using the idtoken passed
+> This excludes the *timestamp* field of the specification, because the submitScore method generates it automatically.
 
 
 Sending the grade: 
 
 ```javascript
-lti.app.post('/grade', async (req, res) => {
-  let grade = {
-    scoreGiven: 50,
-    activityProgress: 'Completed',
-    gradingProgress: 'FullyGraded'
-  }
+const lti = require('ltijs').Provider
 
-  // Sends a grade to a platform's grade line
-  await lti.Grade.scorePublish(res.locals.token, grade)
-  return res.sendStatus(201)
+/**
+ * sendGrade
+ */
+lti.app.post('/grade', async (req, res) => {
+  try {
+    const idtoken = res.locals.token // IdToken
+    const score = req.body.grade // User numeric score sent in the body
+    // Creating Grade object
+    const gradeObj = {
+      userId: idtoken.user,
+      scoreGiven: score,
+      scoreMaximum: 100,
+      activityProgress: 'Completed',
+      gradingProgress: 'FullyGraded'
+    }
+
+    // Selecting linetItem ID
+    let lineItemId = idtoken.platformContext.endpoint.lineitem // Attempting to retrieve it from idtoken
+    if (!lineItemId) {
+      const response = await lti.Grade.getLineItems(idtoken, { resourceLinkId: true })
+      const lineItems = response.lineItems
+      if (lineItems.length === 0) {
+        // Creating line item if there is none
+        console.log('Creating new line item')
+        const newLineItem = {
+          scoreMaximum: 100,
+          label: 'Grade',
+          tag: 'grade',
+          resourceLinkId: idtoken.platformContext.resource.id
+        }
+        const lineItem = await lti.Grade.createLineItem(idtoken, newLineItem)
+        lineItemId = lineItem.id
+      } else lineItemId = lineItems[0].id
+    }
+
+    // Sending Grade
+    const responseGrade = await lti.Grade.submitScore(idtoken, lineItemId, gradeObj)
+    return res.send(responseGrade)
+  } catch (err) {
+    return res.status(500).send({ err: err.message })
+  }
 })
 ```
 
@@ -86,7 +120,8 @@ Ltijs is able to retrieve grades from a platform:
 ```javascript
 lti.app.get('/grade', async (req, res) => {
   // Retrieves grades from a platform, only for the current user
-  const result  = await lti.Grade.result(res.locals.token, { userId: true })
+  const idtoken = res.locals.token // IdToken
+  const response = await lti.Grade.getScores(idtoken, idtoken.platformContext.endpoint.lineitem, { userId: idtoken.user })
   return res.send(result)
 })
 ```
