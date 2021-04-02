@@ -89,7 +89,7 @@ class Auth {
     consAuthDebug('Building ID Token')
     const toolObject = await Tool.getTool(loginRequest.clientId)
     if (!toolObject) throw new Error('INVALID_CLIENT_ID_CLAIM')
-    const tool = await toolObject.toolJSON()
+    const tool = await toolObject.toJSON()
     const idtoken = {
       iss: consumer.url,
       aud: loginRequest.clientId,
@@ -131,7 +131,7 @@ class Auth {
     }
     // Signing ID Token
     consAuthDebug('Signing ID Token')
-    const token = jwt.sign(idtoken, await tool.privateKey, { algorithm: 'RS256', expiresIn: '1h', keyid: await tool.kid })
+    const token = jwt.sign(idtoken, await toolObject.privateKey(), { algorithm: 'RS256', expiresIn: '1h', keyid: tool.kid })
     return token
   }
 

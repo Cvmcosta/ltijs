@@ -25,8 +25,9 @@ class DeepLinking {
     if (!userId) throw new Error('MISSING_USER_ID_PARAMETER')
     consLaunchDebug('Generating Deep Linking launch form')
     const toolObject = await Tool.getTool(clientId)
-    const tool = await toolObject.toolJSON()
-    if (!tool) throw new Error('TOOL_NOT_FOUND')
+    if (!toolObject) throw new Error('TOOL_NOT_FOUND')
+    const tool = await toolObject.toJSON()
+
     const messageHintObject = {
       type: messageTypes.DEEPLINKING_LAUNCH
     }

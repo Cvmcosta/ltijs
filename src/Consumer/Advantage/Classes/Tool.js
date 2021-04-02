@@ -316,7 +316,7 @@ class Tool {
    * @description Retrieves the tool information as a JSON object.
    */
   async toJSON () {
-    const toolJSON = {
+    const JSON = {
       kid: this.#kid,
       url: this.#url,
       clientId: this.#clientId,
@@ -332,7 +332,7 @@ class Tool {
       customParameters: this.#customParameters,
       publicKey: await this.toolPublicKey()
     }
-    return toolJSON
+    return JSON
   }
 
   /**
