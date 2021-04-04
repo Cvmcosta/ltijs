@@ -3,7 +3,6 @@ const consLaunchDebug = require('debug')('consumer:launch')
 const jwt = require('jsonwebtoken')
 
 // Classes
-const Database = require('../../../GlobalUtils/Database')
 const Tool = require('../Classes/Tool')
 
 // Helpers

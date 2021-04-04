@@ -198,8 +198,8 @@ class Tool {
    * @returns {Promise<Tool | false>}
    */
   static async updateTool (clientId, toolInfo) {
-    if (!clientId) { throw new Error('MISSING_PLATFORM_ID') }
-    if (!toolInfo) { throw new Error('MISSING_PLATFORM_INFO') }
+    if (!clientId) { throw new Error('MISSING_CLIENT_ID_PARAMETER') }
+    if (!toolInfo) { throw new Error('MISSING_TOOL_INFO_PARAMETER') }
 
     const toolObject = await Tool.getTool(clientId)
     if (!toolObject) return false

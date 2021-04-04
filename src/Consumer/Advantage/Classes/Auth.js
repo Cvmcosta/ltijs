@@ -5,7 +5,6 @@ const jwt = require('jsonwebtoken')
 const consAuthDebug = require('debug')('consumer:auth')
 
 // Classes
-/* const Database = require('../../../GlobalUtils/Database') */
 const Tool = require('./Tool')
 const ToolLink = require('./ToolLink')
 

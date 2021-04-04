@@ -1,430 +1,258 @@
 // Dependencies
-const provToolDebug = require('debug')('consumer:tool')
+const consToolDebug = require('debug')('consumer:tool')
+const { v4: uuidv4 } = require('uuid')
 
 // Classes
 const Database = require('../../../GlobalUtils/Database')
 const Keyset = require('../../../GlobalUtils/Keyset')
 const Auth = require('./Auth')
 
+// Helpers
+const validScopes = require('../../../GlobalUtils/Helpers/scopes')
+
 /**
  * @description Class representing a registered tool.
  */
-class Tool {
-  
+class ToolLink {
+  #id
+
   #clientId
 
   #deploymentId
-  
+
   #url
-  
-  #deepLinkingUrl
 
-  #loginUrl
-  
-  #redirectionURIs
-  
   #name
-  
-  #description
-  
-  #authConfig
 
-  #scopes
-  
+  #description
+
+  #scopes = []
+
+  #privacy
+
   #customParameters = {}
-  
-  #kid
 
   /**
-     * @param {string} clientId - Tool Client Id.
-     * @param {string} deploymentId - Tool deployment Id.
-     * @param {string} url - Tool url.
-     * @param {string} deepLinkingUrl - Tool deep linking url.
-     * @param {string} loginUrl - Tool login url.
-     * @param {string} redirectionURIs - Tool redirection URIs.
-     * @param {string} name - Tool name.
-     * @param {string} description - Tool description.
-     * @param {Object} authConfig - Authentication configurations for the platform.
-     * @param {Object} customParameters - Globally set custom parameters.
-     * @param {string} kid - Key id for local keypair used to sign messages to this tool.
-     */
-  constructor (clientId, deploymentId, url, deepLinkingUrl, loginUrl, redirectionURIs, name, description, authConfig, customParameters, kid) {
+   * @param {string} id - Tool Link Id.
+   * @param {string} clientId - Tool Link Client Id.
+   * @param {string} deploymentId - Tool Link deployment Id.
+   * @param {string} url - Tool Link url.
+   * @param {string} name - Tool Link name.
+   * @param {string} description - Tool Link description.
+   * @param {Array<String>} scopes - Scopes allowed for the tool link.
+   * @param {Object} privacy - Privacy configuration.
+   * @param {Object} customParameters - Tool Link specific set custom parameters.
+  */
+  constructor (id, clientId, deploymentId, url, name, description, scopes, privacy, customParameters) {
+    this.#id = id
     this.#clientId = clientId
     this.#deploymentId = deploymentId
     this.#url = url
-    this.#deepLinkingUrl = deepLinkingUrl
-    this.#loginUrl = loginUrl
-    this.#redirectionURIs = redirectionURIs
     this.#name = name
     this.#description = description
-    this.#authConfig = authConfig
+    this.#scopes = scopes
+    this.#privacy = privacy
     this.#customParameters = customParameters
-    this.#kid = kid
   }
 
   // Static methods
   /**
-   * @description Gets a platform.
-   * @param {String} url - Platform url.
-   * @param {String} clientId - Platform generated Client ID.
-   * @returns {Promise<Platform | false>}
+   * @description Gets a registered Tool Link.
+   * @param {String} id - Tool Link ID.
+   * @returns {Promise<ToolLink | false>}
    */
-  static async getPlatform (url, clientId) {
-    if (!url) throw new Error('MISSING_PLATFORM_URL')
-    if (clientId) {
-      const result = await Database.get('platform', { platformUrl: url, clientId: clientId })
-      if (!result) return false
-      const _platform = result[0]
-      const platform = new Platform(_platform.kid, _platform.platformName, _platform.platformUrl, _platform.clientId, _platform.authEndpoint, _platform.accesstokenEndpoint, _platform.authConfig)
-      return platform
-    }
-    const platforms = []
-    const result = await Database.get('platform', { platformUrl: url })
-    if (result) {
-      for (const platform of result) {
-        platforms.push(new Platform(platform.kid, platform.platformName, platform.platformUrl, platform.clientId, platform.authEndpoint, platform.accesstokenEndpoint, platform.authConfig))
-      }
-    }
-    return platforms
-  }
-
-  /**
-   * @description Gets a platform by the Id.
-   * @param {String} platformId - Platform Id.
-   * @returns {Promise<Platform | false>}
-   */
-  static async getPlatformById (platformId) {
-    if (!platformId) throw new Error('MISSING_PLATFORM_ID')
-    const result = await Database.get('platform', { kid: platformId })
+  static async getToolLink (id) {
+    if (!id) throw new Error('MISSING_ID_PARAMETER')
+    const result = await Database.get('toollink', { id: id })
     if (!result) return false
-    const _platform = result[0]
-    const platform = new Platform(_platform.kid, _platform.platformName, _platform.platformUrl, _platform.clientId, _platform.authEndpoint, _platform.accesstokenEndpoint, _platform.authConfig)
-    return platform
+    const _toolLink = result[0]
+    const toolLink = new ToolLink(id, _toolLink.clientId, _toolLink.deploymentId, _toolLink.url, _toolLink.name, _toolLink.description, _toolLink.scopes, _toolLink.privacy, _toolLink.customParameters)
+    return toolLink
   }
 
   /**
-   * @description Gets all platforms.
-   * @returns {Promise<Array<Platform>>}
+   * @description Gets all tool links for a given tool.
+   * @returns {Promise<Array<Tool>>}
    */
-  static async getAllPlatforms () {
+  static async getAllToolLinks (clientId) {
     const result = []
-    const platforms = await Database.get('platform')
-    if (platforms) {
-      for (const platform of platforms) result.push(new Platform(platform.kid, platform.platformName, platform.platformUrl, platform.clientId, platform.authEndpoint, platform.accesstokenEndpoint, platform.authConfig))
+    const toolLinks = await Database.get('toollink', { clientId: clientId })
+    if (toolLinks) {
+      for (const _toolLink of toolLinks) result.push(new ToolLink(_toolLink.id, _toolLink.clientId, _toolLink.deploymentId, _toolLink.url, _toolLink.name, _toolLink.description, _toolLink.scopes, _toolLink.privacy, _toolLink.customParameters))
     }
     return result
   }
 
   /**
-   * @description Registers a platform.
-   * @param {Object} platform
-   * @param {String} platform.url - Platform url.
-   * @param {String} platform.name - Platform nickname.
-   * @param {String} platform.clientId - Client Id generated by the platform.
-   * @param {String} platform.authenticationEndpoint - Authentication endpoint that the tool will use to authenticate within the platform.
-   * @param {String} platform.accesstokenEndpoint - Access token endpoint that the tool will use to get an access token for the platform.
-   * @param {Object} platform.authConfig - Authentication method and key for verifying messages from the platform. {method: "RSA_KEY", key:"PUBLIC KEY..."}
-   * @param {String} platform.authConfig.method - Method of authorization "RSA_KEY" or "JWK_KEY" or "JWK_SET".
-   * @param {String} platform.authConfig.key - Either the RSA public key provided by the platform, or the JWK key, or the JWK keyset address.
-   * @returns {Promise<Platform>}
+   * @description Registers a toolLink.
+   * @param {Tool} parentTool - Parent Tool.
+   * @param {Object} toolLink - Tool Link configuration object.
+   * @param {string} toolLink.url - Tool Link url.
+   * @param {string} toolLink.name - Tool Link name.
+   * @param {string} [toolLink.description] - Tool Link description.
+   * @param {Array<String>} [toolLink.scopes] - Scopes allowed for the toolLink.
+   * @param {Object} [toolLink.privacy] - Privacy configuration.
+   * @param {Object} [toolLink.customParameters] - Globally set custom parameters.
+   * @returns {Promise<ToolLink>}
    */
-  static async registerPlatform (platform) {
-    if (!platform || !platform.url || !platform.clientId) throw new Error('MISSING_PLATFORM_URL_OR_CLIENTID')
+  static async registerToolLink (parentTool, toolLink) {
+    if (!parentTool) throw new Error('MISSING_PARENT_TOOL_PARAMETER')
+    if (!toolLink || !toolLink.url || !toolLink.name) throw new Error('MISSING_REGISTRATION_PARAMETERS')
 
-    let kid
-    const _platform = await Platform.getPlatform(platform.url, platform.clientId)
+    const tool = await parentTool.toJSON()
+    toolLink.clientId = tool.clientId
+    toolLink.deploymentId = tool.deploymentId
 
-    if (!_platform) {
-      if (!platform.name || !platform.authenticationEndpoint || !platform.accesstokenEndpoint || !platform.authConfig) throw new Error('MISSING_PARAMS')
-      if (platform.authConfig.method !== 'RSA_KEY' && platform.authConfig.method !== 'JWK_KEY' && platform.authConfig.method !== 'JWK_SET') throw new Error('INVALID_AUTHCONFIG_METHOD. Details: Valid methods are "RSA_KEY", "JWK_KEY", "JWK_SET".')
-      if (!platform.authConfig.key) throw new Error('MISSING_AUTHCONFIG_KEY')
+    if (!toolLink.description) toolLink.description = ''
+    if (!toolLink.url) toolLink.url = tool.url
 
-      try {
-        provPlatformDebug('Registering new platform')
-        provPlatformDebug('Platform Url: ' + platform.url)
-        provPlatformDebug('Platform ClientId: ' + platform.clientId)
+    if (!toolLink.customParameters) toolLink.customParameters = tool.customParameters
+    else if (typeof toolLink.customParameters !== 'object') throw new Error('INVALID_CUSTOM_PARAMETERS_OBJECT')
+    else toolLink.customParameters = { ...tool.customParameters, ...toolLink.customParameters }
 
-        // Generating and storing RSA keys
-        const keyPair = await Keyset.generateKeyPair()
-        kid = keyPair.kid
-        await Database.replace('publickey', { platformUrl: platform.url, clientId: platform.clientId }, { key: keyPair.publicKey, kid: kid }, true, { kid: kid, platformUrl: platform.url, clientId: platform.clientId })
-        await Database.replace('privatekey', { platformUrl: platform.url, clientId: platform.clientId }, { key: keyPair.privateKey, kid: kid }, true, { kid: kid, platformUrl: platform.url, clientId: platform.clientId })
-
-        // Storing new platform
-        await Database.replace('platform', { platformUrl: platform.url, clientId: platform.clientId }, { platformName: platform.name, platformUrl: platform.url, clientId: platform.clientId, authEndpoint: platform.authenticationEndpoint, accesstokenEndpoint: platform.accesstokenEndpoint, kid: kid, authConfig: platform.authConfig })
-
-        const plat = new Platform(kid, platform.name, platform.url, platform.clientId, platform.authenticationEndpoint, platform.accesstokenEndpoint, platform.authConfig)
-        return plat
-      } catch (err) {
-        await Database.delete('publickey', { kid: kid })
-        await Database.delete('privatekey', { kid: kid })
-        await Database.delete('platform', { platformUrl: platform.url, clientId: platform.clientId })
-        provPlatformDebug(err.message)
-        throw (err)
+    if (!toolLink.scopes) toolLink.scopes = tool.scopes
+    else {
+      if (!Array.isArray(toolLink.scopes)) throw new Error('INVALID_SCOPES_ARRAY')
+      for (const scope of toolLink.scopes) {
+        if (!Object.keys(validScopes).includes(scope)) throw new Error('INVALID_SCOPE. Details: Invalid scope: ' + scope)
       }
-    } else {
-      provPlatformDebug('Platform already registered')
-      await Database.modify('platform', { platformUrl: platform.url, clientId: platform.clientId }, { platformName: platform.name || await _platform.platformName(), authEndpoint: platform.authenticationEndpoint || await _platform.platformAuthenticationEndpoint(), accesstokenEndpoint: platform.accesstokenEndpoint || await _platform.platformAccessTokenEndpoint(), authConfig: platform.authConfig || await _platform.platformAuthConfig() })
-      return Platform.getPlatform(platform.url, platform.clientId)
-    }
-  }
-
-  /**
-   * @description Updates a platform by the Id.
-   * @param {String} platformId - Platform Id.
-   * @param {Object} platformInfo - Update Information.
-   * @param {String} platformInfo.url - Platform url.
-   * @param {String} platformInfo.clientId - Platform clientId.
-   * @param {String} platformInfo.name - Platform nickname.
-   * @param {String} platformInfo.authenticationEndpoint - Authentication endpoint that the tool will use to authenticate within the platform.
-   * @param {String} platformInfo.accesstokenEndpoint - Access token endpoint that the tool will use to get an access token for the platform.
-   * @param {object} platformInfo.authConfig - Authentication method and key for verifying messages from the platform. {method: "RSA_KEY", key:"PUBLIC KEY..."}
-   * @param {String} platformInfo.authConfig.method - Method of authorization "RSA_KEY" or "JWK_KEY" or "JWK_SET".
-   * @param {String} platformInfo.authConfig.key - Either the RSA public key provided by the platform, or the JWK key, or the JWK keyset address.
-   * @returns {Promise<Platform | false>}
-   */
-  static async updatePlatformById (platformId, platformInfo) {
-    if (!platformId) { throw new Error('MISSING_PLATFORM_ID') }
-    if (!platformInfo) { throw new Error('MISSING_PLATFORM_INFO') }
-
-    const platform = await Platform.getPlatformById(platformId)
-    if (!platform) return false
-
-    const oldURL = await platform.platformUrl()
-    const oldClientId = await platform.platformClientId()
-
-    const update = {
-      url: platformInfo.url || oldURL,
-      clientId: platformInfo.clientId || oldClientId,
-      name: platformInfo.name || await platform.platformName(),
-      authenticationEndpoint: platformInfo.authenticationEndpoint || await platform.platformAuthenticationEndpoint(),
-      accesstokenEndpoint: platformInfo.accesstokenEndpoint || await platform.platformAccessTokenEndpoint()
     }
 
-    const authConfig = await platform.platformAuthConfig()
-    update.authConfig = authConfig
-    if (platformInfo.authConfig) {
-      if (platformInfo.authConfig.method) update.authConfig.method = platformInfo.authConfig.method
-      if (platformInfo.authConfig.key) update.authConfig.key = platformInfo.authConfig.key
-    }
-
-    let alteredUrlClientIdFlag = false
-    if (platformInfo.url || platformInfo.clientId) {
-      if (platformInfo.url !== oldURL || platformInfo.clientId !== oldClientId) alteredUrlClientIdFlag = true
-    }
-
-    if (alteredUrlClientIdFlag) {
-      if (await Database.get('platform', { platformUrl: update.url, clientId: update.clientId })) throw new Error('URL_CLIENT_ID_COMBINATION_ALREADY_EXISTS')
+    toolLink.privacy = {
+      name: (toolLink.privacy && toolLink.privacy.name) ? toolLink.privacy.name : tool.privacy.name,
+      email: (toolLink.privacy && toolLink.privacy.email) ? toolLink.privacy.email : tool.privacy.email
     }
 
     try {
-      if (alteredUrlClientIdFlag) {
-        await Database.modify('publickey', { kid: platformId }, { platformUrl: update.url, clientId: update.clientId })
-        await Database.modify('privatekey', { kid: platformId }, { platformUrl: update.url, clientId: update.clientId })
+      consToolDebug('Registering new toolLink')
+      consToolDebug('Parent Tool Client ID: ' + toolLink.clientId)
+      // Generating ID
+      toolLink.id = uuidv4()
+      while (await Database.get('toollink', { id: toolLink.id })) {
+        toolLink.id = uuidv4()
       }
 
-      await Database.modify('platform', { kid: platformId }, { platformUrl: update.url, clientId: update.clientId, platformName: update.name, authEndpoint: update.authenticationEndpoint, accesstokenEndpoint: update.accesstokenEndpoint, authConfig: update.authConfig })
+      // Storing new toolLink
+      await Database.replace('toolLink', { clientId: toolLink.clientId }, { id: toolLink.id, clientId: toolLink.clientId, deploymentId: toolLink.deploymentId, url: toolLink.url, name: toolLink.name, description: toolLink.description, scopes: toolLink.scopes, privacy: toolLink.privacy, customParameters: toolLink.customParameters })
 
-      const platform = new Platform(platformId, update.name, update.url, update.clientId, update.authenticationEndpoint, update.accesstokenEndpoint, update.authConfig)
-      return platform
+      const _toolLink = new ToolLink(toolLink.id, toolLink.clientId, toolLink.deploymentId, toolLink.url, toolLink.name, toolLink.description, toolLink.scopes, toolLink.privacy, toolLink.customParameters)
+      return _toolLink
     } catch (err) {
-      if (alteredUrlClientIdFlag) {
-        await Database.modify('publickey', { kid: platformId }, { platformUrl: oldURL, clientId: oldClientId })
-        await Database.modify('privatekey', { kid: platformId }, { platformUrl: oldURL, clientId: oldClientId })
-      }
-      provPlatformDebug(err.message)
+      if (toolLink.id) await Database.delete('toolLink', { id: toolLink.id })
+      consToolDebug(err.message)
       throw (err)
     }
   }
 
   /**
-   * @description Deletes a platform.
-   * @param {string} url - Platform url.
-   * @param {String} clientId - Tool clientId.
-   * @returns {Promise<true>}
+   * @description Updates a tool by the Id.
+   * @param {String} id - Tool Link ID.
+   * @param {string} toolLinkInfo.url - Tool url.
+   * @param {string} toolLinkInfo.name - Tool name.
+   * @param {string} toolLinkInfo.description - Tool description.
+   * @param {Array<String>} toolLinkInfo.scopes - Scopes allowed for the tool.
+   * @param {Object} toolLinkInfo.privacy - Privacy configuration.
+   * @param {Object} tool.customParameters - Globally set custom parameters.
+   * @returns {Promise<ToolLink | false>}
    */
-  static async deletePlatform (url, clientId) {
-    if (!url || !clientId) throw new Error('MISSING_PARAM')
-    const platform = await Platform.getPlatform(url, clientId)
-    if (platform) await platform.delete()
-    return true
+  static async updateToolLink (id, toolLinkInfo) {
+    if (!id) { throw new Error('MISSING_ID_PARAMETER') }
+    if (!toolLinkInfo) { throw new Error('MISSING_TOOL_LINK_INFO_PARAMETER') }
+
+    const toolLinkObject = await ToolLink.getToolLink(id)
+    if (!toolLinkObject) return false
+    const toolLink = await toolLinkObject.toJSON()
+
+    const update = {
+      url: toolLinkInfo.url || toolLink.url,
+      name: toolLinkInfo.name || toolLink.name,
+      description: toolLinkInfo.description || toolLink.description,
+      scopes: toolLinkInfo.scopes || toolLink.scopes,
+      privacy: toolLinkInfo.privacy || toolLink.privacy,
+      customParameters: toolLinkInfo.customParameters || toolLink.customParameters
+    }
+
+    try {
+      await Database.modify('toollink', { id: id }, update)
+
+      const _toolLink = new ToolLink(id, toolLink.clientId, toolLink.deploymentId, update.url, update.name, update.description, update.scopes, update.privacy, update.customParameters)
+      return _toolLink
+    } catch (err) {
+      consToolDebug(err.message)
+      throw (err)
+    }
   }
 
   /**
-   * @description Deletes a platform by the Id.
-   * @param {string} platformId - Platform Id.
+   * @description Deletes a tool link.
+   * @param {string} id - Tool Link Id.
    * @returns {Promise<true>}
    */
-  static async deletePlatformById (platformId) {
-    if (!platformId) throw new Error('MISSING_PLATFORM_ID')
-    const platform = await Platform.getPlatformById(platformId)
-    if (platform) await platform.delete()
+  static async deleteToolLink (id) {
+    if (!id) throw new Error('MISSING_ID_PARAMETER')
+    const toolLink = await ToolLink.getToolLink(id)
+    if (toolLink) await toolLink.delete()
     return true
   }
 
   // Instance methods
   /**
-   * @description Gets the platform url.
+   * @description Gets the tool link client id.
    */
-  async platformUrl () {
-    return this.#platformUrl
-  }
-
-  /**
-   * @description Gets the platform client id.
-   */
-  async platformClientId () {
+  async clientId () {
     return this.#clientId
   }
 
   /**
-     * @description Sets/Gets the platform name.
-     * @param {string} [name] - Platform name.
-     */
-  async platformName (name) {
-    if (!name) return this.#platformName
-    await Database.modify('platform', { platformUrl: this.#platformUrl, clientId: this.#clientId }, { platformName: name })
-    this.#platformName = name
+   * @description Gets/Sets the tool link url.
+   */
+  async url () {
+    return this.#url
+  }
+
+  /**
+   * @description Sets/Gets the tool link name.
+   * @param {string} [name] - Tool link name.
+   */
+  async name (name) {
+    if (!name) return this.#name
+    await Database.modify('toollink', { id: this.#id }, { name: name })
+    this.#name = name
     return name
   }
 
   /**
-     * @description Gets the platform Id.
-     */
-  async platformId () {
-    return this.#kid
-  }
-
-  /**
-   * @description Gets the platform key_id.
+   * @description Gets the tool link id.
    */
-  async platformKid () {
-    return this.#kid
+  async id () {
+    return this.#id
   }
 
   /**
-   * @description Sets/Gets the platform status.
-   * @param {Boolean} [active] - Whether the Platform is active or not.
+   * @description Retrieves the tool link information as a JSON object.
    */
-  async platformActive (active) {
-    if (active === undefined) {
-      // Get platform status
-      const platformStatus = await Database.get('platformStatus', { id: this.#kid })
-      if (!platformStatus || platformStatus[0].active) return true
-      else return false
-    }
-    await Database.replace('platformStatus', { id: this.#kid }, { id: this.#kid, active: active })
-    return active
-  }
-
-  /**
-     * @description Gets the RSA public key assigned to the platform.
-     *
-     */
-  async platformPublicKey () {
-    const key = await Database.get('publickey', { kid: this.#kid }, true)
-    return key[0].key
-  }
-
-  /**
-     * @description Gets the RSA private key assigned to the platform.
-     *
-     */
-  async platformPrivateKey () {
-    const key = await Database.get('privatekey', { kid: this.#kid }, true)
-    return key[0].key
-  }
-
-  /**
-     * @description Sets/Gets the platform authorization configurations used to validate it's messages.
-     * @param {string} method - Method of authorization "RSA_KEY" or "JWK_KEY" or "JWK_SET".
-     * @param {string} key - Either the RSA public key provided by the platform, or the JWK key, or the JWK keyset address.
-     */
-  async platformAuthConfig (method, key) {
-    if (!method && !key) return this.#authConfig
-
-    if (method && method !== 'RSA_KEY' && method !== 'JWK_KEY' && method !== 'JWK_SET') throw new Error('INVALID_METHOD. Details: Valid methods are "RSA_KEY", "JWK_KEY", "JWK_SET".')
-
-    const authConfig = {
-      method: method || this.#authConfig.method,
-      key: key || this.#authConfig.key
-    }
-
-    await Database.modify('platform', { platformUrl: this.#platformUrl, clientId: this.#clientId }, { authConfig: authConfig })
-    this.#authConfig = authConfig
-    return authConfig
-  }
-
-  /**
-   * @description Sets/Gets the platform authorization endpoint used to perform the OIDC login.
-   * @param {string} [authenticationEndpoint - Platform authentication endpoint.
-   */
-  async platformAuthenticationEndpoint (authenticationEndpoint) {
-    if (!authenticationEndpoint) return this.#authenticationEndpoint
-    await Database.modify('platform', { platformUrl: this.#platformUrl, clientId: this.#clientId }, { authEndpoint: authenticationEndpoint })
-    this.#authenticationEndpoint = authenticationEndpoint
-    return authenticationEndpoint
-  }
-
-  /**
-     * @description Sets/Gets the platform access token endpoint used to authenticate messages to the platform.
-     * @param {string} [accesstokenEndpoint] - Platform access token endpoint.
-     */
-  async platformAccessTokenEndpoint (accesstokenEndpoint) {
-    if (!accesstokenEndpoint) return this.#accesstokenEndpoint
-    await Database.modify('platform', { platformUrl: this.#platformUrl, clientId: this.#clientId }, { accesstokenEndpoint: accesstokenEndpoint })
-    this.#accesstokenEndpoint = accesstokenEndpoint
-    return accesstokenEndpoint
-  }
-
-  /**
-     * @description Gets the platform access token or attempts to generate a new one.
-     * @param {String} scopes - String of scopes.
-     */
-  async platformAccessToken (scopes) {
-    const result = await Database.get('accesstoken', { platformUrl: this.#platformUrl, clientId: this.#clientId, scopes: scopes }, true)
-    let token
-    if (!result || (Date.now() - result[0].createdAt) / 1000 > result[0].token.expires_in) {
-      provPlatformDebug('Valid access_token for ' + this.#platformUrl + ' not found')
-      provPlatformDebug('Attempting to generate new access_token for ' + this.#platformUrl)
-      provPlatformDebug('With scopes: ' + scopes)
-      token = await Auth.generateAccessToken(scopes, this)
-    } else {
-      provPlatformDebug('Access_token found')
-      token = result[0].token
-    }
-    token.token_type = token.token_type.charAt(0).toUpperCase() + token.token_type.slice(1)
-    return token
-  }
-
-  /**
-   * @description Retrieves the platform information as a JSON object.
-   */
-  async platformJSON () {
-    const platformJSON = {
-      id: this.#kid,
-      url: this.#platformUrl,
+  async toJSON () {
+    const JSON = {
+      id: this.#id,
+      url: this.#url,
       clientId: this.#clientId,
-      name: this.#platformName,
-      authenticationEndpoint: this.#authenticationEndpoint,
-      accesstokenEndpoint: this.#accesstokenEndpoint,
-      authConfig: this.#authConfig,
-      publicKey: await this.platformPublicKey(),
-      active: await this.platformActive()
+      deploymentId: this.#deploymentId,
+      name: this.#name,
+      description: this.#description,
+      scopes: this.#scopes,
+      privacy: this.#privacy,
+      customParameters: this.#customParameters
     }
-    return platformJSON
+    return JSON
   }
 
   /**
-   * @description Deletes a registered platform.
+   * @description Deletes a registered tool link.
    */
   async delete () {
-    await Database.delete('platform', { platformUrl: this.#platformUrl, clientId: this.#clientId })
-    await Database.delete('platformStatus', { id: this.#kid })
-    await Database.delete('publickey', { kid: this.#kid })
-    await Database.delete('privatekey', { kid: this.#kid })
+    await Database.delete('toollink', { id: this.#id })
     return true
   }
 }
 
-module.exports = Tool
+module.exports = ToolLink

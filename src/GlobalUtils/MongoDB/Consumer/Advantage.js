@@ -24,7 +24,7 @@ exports.register = () => {
     customParameters: JSON,
     kid: String
   })
-  toolSchema.index({ clientId: 1 })
+  toolSchema.index({ clientId: 1 }, { unique: true })
 
   const toolLinkSchema = new Schema({
     id: String,
@@ -40,7 +40,7 @@ exports.register = () => {
     },
     customParameters: JSON
   })
-  toolLinkSchema.index({ id: 1 })
+  toolLinkSchema.index({ id: 1 }, { unique: true })
 
   const keySchema = new Schema({
     kid: String,
