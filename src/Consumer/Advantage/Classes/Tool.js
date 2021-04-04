@@ -3,6 +3,7 @@ const consToolDebug = require('debug')('consumer:tool')
 const { v4: uuidv4 } = require('uuid')
 
 // Classes
+const ToolLink = require('./ToolLink')
 const Database = require('../../../GlobalUtils/Database')
 const Keyset = require('../../../GlobalUtils/Keyset')
 const Auth = require('./Auth')
@@ -121,7 +122,6 @@ class Tool {
     if (!tool.authConfig.key) throw new Error('MISSING_AUTHCONFIG_KEY')
 
     if (!tool.description) tool.description = ''
-    if (!tool.deepLinkingUrl) tool.deepLinkingUrl = tool.url
 
     if (!tool.redirectionURIs) tool.redirectionURIs = []
     else if (!Array.isArray(tool.redirectionURIs)) throw new Error('INVALID_REDIRECTION_URIS_ARRAY')
@@ -243,6 +243,21 @@ class Tool {
 
   // Instance methods
   /**
+   * @description Registers a toolLink.
+   * @param {Object} toolLink - Tool Link configuration object.
+   * @param {string} toolLink.name - Tool Link name.
+   * @param {string} [toolLink.url] - Tool Link url.
+   * @param {string} [toolLink.description] - Tool Link description.
+   * @param {Array<String>} [toolLink.scopes] - Scopes allowed for the toolLink.
+   * @param {Object} [toolLink.privacy] - Privacy configuration.
+   * @param {Object} [toolLink.customParameters] - Tool Link specific set custom parameters.
+   * @returns {Promise<ToolLink>}
+   */
+  async registerToolLink (toolLink) {
+    return ToolLink.registerToolLink(this, toolLink)
+  }
+
+  /**
    * @description Gets the tool client id.
    */
   async clientId () {
@@ -254,6 +269,13 @@ class Tool {
    */
   async url () {
     return this.#url
+  }
+
+  /**
+   * @description Gets/Sets the tool url.
+   */
+  async deepLinkingUrl () {
+    return this.#deepLinkingUrl || this.#url
   }
 
   /**
@@ -324,7 +346,7 @@ class Tool {
       name: this.#name,
       description: this.#description,
       authConfig: this.#authConfig,
-      deepLinkingUrl: this.#deepLinkingUrl,
+      deepLinkingUrl: this.#deepLinkingUrl || this.#url,
       loginUrl: this.#loginUrl,
       redirectionURIs: this.#redirectionURIs,
       scopes: this.#scopes,

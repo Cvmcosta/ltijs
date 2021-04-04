@@ -4,8 +4,7 @@ const { v4: uuidv4 } = require('uuid')
 
 // Classes
 const Database = require('../../../GlobalUtils/Database')
-const Keyset = require('../../../GlobalUtils/Keyset')
-const Auth = require('./Auth')
+const Tool = require('./Tool')
 
 // Helpers
 const validScopes = require('../../../GlobalUtils/Helpers/scopes')
@@ -72,7 +71,7 @@ class ToolLink {
 
   /**
    * @description Gets all tool links for a given tool.
-   * @returns {Promise<Array<Tool>>}
+   * @returns {Promise<Array<ToolLink>>}
    */
   static async getAllToolLinks (clientId) {
     const result = []
@@ -87,31 +86,27 @@ class ToolLink {
    * @description Registers a toolLink.
    * @param {Tool} parentTool - Parent Tool.
    * @param {Object} toolLink - Tool Link configuration object.
-   * @param {string} toolLink.url - Tool Link url.
    * @param {string} toolLink.name - Tool Link name.
+   * @param {string} [toolLink.url] - Tool Link url.
    * @param {string} [toolLink.description] - Tool Link description.
    * @param {Array<String>} [toolLink.scopes] - Scopes allowed for the toolLink.
    * @param {Object} [toolLink.privacy] - Privacy configuration.
-   * @param {Object} [toolLink.customParameters] - Globally set custom parameters.
+   * @param {Object} [toolLink.customParameters] - Tool Link specific set custom parameters.
    * @returns {Promise<ToolLink>}
    */
   static async registerToolLink (parentTool, toolLink) {
     if (!parentTool) throw new Error('MISSING_PARENT_TOOL_PARAMETER')
-    if (!toolLink || !toolLink.url || !toolLink.name) throw new Error('MISSING_REGISTRATION_PARAMETERS')
+    if (!toolLink || !toolLink.name) throw new Error('MISSING_REGISTRATION_PARAMETERS')
 
     const tool = await parentTool.toJSON()
     toolLink.clientId = tool.clientId
     toolLink.deploymentId = tool.deploymentId
 
     if (!toolLink.description) toolLink.description = ''
-    if (!toolLink.url) toolLink.url = tool.url
 
-    if (!toolLink.customParameters) toolLink.customParameters = tool.customParameters
-    else if (typeof toolLink.customParameters !== 'object') throw new Error('INVALID_CUSTOM_PARAMETERS_OBJECT')
-    else toolLink.customParameters = { ...tool.customParameters, ...toolLink.customParameters }
+    if (toolLink.customParameters && typeof toolLink.customParameters !== 'object') throw new Error('INVALID_CUSTOM_PARAMETERS_OBJECT')
 
-    if (!toolLink.scopes) toolLink.scopes = tool.scopes
-    else {
+    if (toolLink.scopes) {
       if (!Array.isArray(toolLink.scopes)) throw new Error('INVALID_SCOPES_ARRAY')
       for (const scope of toolLink.scopes) {
         if (!Object.keys(validScopes).includes(scope)) throw new Error('INVALID_SCOPE. Details: Invalid scope: ' + scope)
@@ -119,8 +114,8 @@ class ToolLink {
     }
 
     toolLink.privacy = {
-      name: (toolLink.privacy && toolLink.privacy.name) ? toolLink.privacy.name : tool.privacy.name,
-      email: (toolLink.privacy && toolLink.privacy.email) ? toolLink.privacy.email : tool.privacy.email
+      name: (toolLink.privacy && toolLink.privacy.name) ? toolLink.privacy.name : undefined,
+      email: (toolLink.privacy && toolLink.privacy.email) ? toolLink.privacy.email : undefined
     }
 
     try {
@@ -145,14 +140,15 @@ class ToolLink {
   }
 
   /**
-   * @description Updates a tool by the Id.
-   * @param {String} id - Tool Link ID.
-   * @param {string} toolLinkInfo.url - Tool url.
-   * @param {string} toolLinkInfo.name - Tool name.
-   * @param {string} toolLinkInfo.description - Tool description.
-   * @param {Array<String>} toolLinkInfo.scopes - Scopes allowed for the tool.
+   * @description Updates a tool link by the Id.
+   * @param {string} id - Tool Link ID.
+   * @param {object} toolLinkInfo - Tool Link Information
+   * @param {string} toolLinkInfo.url - Tool Link url.
+   * @param {string} toolLinkInfo.name - Tool Link name.
+   * @param {string} toolLinkInfo.description - Tool Link description.
+   * @param {Array<string>} toolLinkInfo.scopes - Scopes allowed for the tool link.
    * @param {Object} toolLinkInfo.privacy - Privacy configuration.
-   * @param {Object} tool.customParameters - Globally set custom parameters.
+   * @param {Object} tool.customParameters - Tool Link specific set custom parameters.
    * @returns {Promise<ToolLink | false>}
    */
   static async updateToolLink (id, toolLinkInfo) {
@@ -197,6 +193,14 @@ class ToolLink {
 
   // Instance methods
   /**
+   * @description Gets the parent Tool.
+   * @returns {Promise<Tool>}
+   */
+  async parentTool () {
+    return Tool.getTool(this.#clientId)
+  }
+
+  /**
    * @description Gets the tool link client id.
    */
   async clientId () {
@@ -232,16 +236,18 @@ class ToolLink {
    * @description Retrieves the tool link information as a JSON object.
    */
   async toJSON () {
+    const toolObject = await this.parentTool()
+    const tool = await toolObject.toJSON()
     const JSON = {
       id: this.#id,
-      url: this.#url,
+      url: this.#url || tool.url,
       clientId: this.#clientId,
       deploymentId: this.#deploymentId,
       name: this.#name,
       description: this.#description,
-      scopes: this.#scopes,
-      privacy: this.#privacy,
-      customParameters: this.#customParameters
+      scopes: this.#scopes || tool.scopes,
+      privacy: this.#privacy || tool.privacy,
+      customParameters: this.#customParameters || tool.customParameters
     }
     return JSON
   }
