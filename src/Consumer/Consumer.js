@@ -179,7 +179,10 @@ class Consumer {
     // Deep Linking response route
     this.app.all(this.#deepLinkingResponseRoute, async (req, res, next) => {
       try {
-        // Validate response
+        const consumer = {
+          url: this.#consumerUrl
+        }
+        res.locals.deepLinkingResponse = await Auth.validateDeepLinkingResponse(req.body, consumer)
         return this.#deepLinkingResponseCallback(res.locals.deepLinkingResponse, req, res)
       } catch (err) {
         provMainDebug(err)

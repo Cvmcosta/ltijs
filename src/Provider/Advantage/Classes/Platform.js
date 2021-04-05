@@ -319,7 +319,7 @@ class Platform {
   /**
      * @description Sets/Gets the platform authorization configurations used to validate it's messages.
      * @param {string} method - Method of authorization "RSA_KEY" or "JWK_KEY" or "JWK_SET".
-     * @param {string} key - Either the RSA public key provided by the platform, or the JWK key, or the JWK keyset address.
+     * @param {string} key - Either the RSA public key provided by the platform, the JWK key, or the JWK keyset address.
      */
   async platformAuthConfig (method, key) {
     if (!method && !key) return this.#authConfig

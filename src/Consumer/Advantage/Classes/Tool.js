@@ -312,6 +312,27 @@ class Tool {
   }
 
   /**
+   * @description Sets/Gets the tool authorization configurations used to validate it's messages.
+   * @param {object} authConfig - Authorization configuration object.
+   * @param {string} authConfig.method - Method of authorization "RSA_KEY" or "JWK_KEY" or "JWK_SET".
+   * @param {string} authConfig.key - Either the RSA public key provided by the Tool, the JWK key, or the JWK keyset address.
+   */
+  async authConfig (authConfig) {
+    if (!authConfig) return this.#authConfig
+
+    if (authConfig.method && authConfig.method !== 'RSA_KEY' && authConfig.method !== 'JWK_KEY' && authConfig.method !== 'JWK_SET') throw new Error('INVALID_METHOD. Details: Valid methods are "RSA_KEY", "JWK_KEY", "JWK_SET".')
+
+    const _authConfig = {
+      method: authConfig.nmethod || this.#authConfig.method,
+      key: authConfig.key || this.#authConfig.key
+    }
+
+    await Database.modify('tool', { clientId: this.#clientId }, { authConfig: _authConfig })
+    this.#authConfig = _authConfig
+    return authConfig
+  }
+
+  /**
    * @description Gets the tool key id.
    */
   async kid () {

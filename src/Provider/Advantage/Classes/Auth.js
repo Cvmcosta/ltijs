@@ -25,7 +25,7 @@ class Auth {
     switch (authConfig.method) {
       case 'JWK_SET': {
         provAuthDebug('Retrieving key from jwk_set')
-        if (!validationParameters.kid) throw new Error('KID_NOT_FOUND')
+        if (!validationParameters.kid) throw new Error('MISSING_KID_PARAMETER')
 
         const keysEndpoint = authConfig.key
         const res = await got.get(keysEndpoint).json()

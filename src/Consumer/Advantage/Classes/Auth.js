@@ -1,6 +1,6 @@
 // Dependencies
-/* const Jwk = require('rasha')
-const got = require('got') */
+const Jwk = require('rasha')
+const got = require('got')
 const jwt = require('jsonwebtoken')
 const consAuthDebug = require('debug')('consumer:auth')
 
@@ -17,10 +17,10 @@ const messageTypes = require('../../../GlobalUtils/Helpers/messageTypes')
  */
 class Auth {
   /**
-     * @description Validates LTI 1.3 Login request
-     * @param {Object} obj - Login request obj object.
-     * @param {String} encryptionkey - Consumer encryption key.
-     */
+   * @description Validates LTI 1.3 Login request
+   * @param {Object} obj - Login request obj object.
+   * @param {String} encryptionkey - Consumer encryption key.
+   */
   static async validateLoginRequest (obj, encryptionkey) {
     consAuthDebug('Validating login request')
     consAuthDebug('Validating lti_message_hint claim')
@@ -44,13 +44,13 @@ class Auth {
     await Database.insert('nonce', { nonce: obj.nonce })
 
     consAuthDebug('Validating scope claim')
-    if (!obj.scope || obj.scope !== 'openid') throw new Error('INVALID_SCOPE_CLAIM')
+    if (obj.scope !== 'openid') throw new Error('INVALID_SCOPE_CLAIM')
     consAuthDebug('Validating response_type claim')
-    if (!obj.response_type || obj.response_type !== 'id_token') throw new Error('INVALID_RESPONSE_TYPE_CLAIM')
+    if (obj.response_type !== 'id_token') throw new Error('INVALID_RESPONSE_TYPE_CLAIM')
     consAuthDebug('Validating response_mode claim')
-    if (!obj.response_mode || obj.response_mode !== 'form_post') throw new Error('INVALID_RESPONSE_MODE_CLAIM')
+    if (obj.response_mode !== 'form_post') throw new Error('INVALID_RESPONSE_MODE_CLAIM')
     consAuthDebug('Validating prompt claim')
-    if (!obj.prompt || obj.prompt !== 'none') throw new Error('INVALID_PROMPT_CLAIM')
+    if (obj.prompt !== 'none') throw new Error('INVALID_PROMPT_CLAIM')
 
     consAuthDebug('Validating client ID claim')
     if (!obj.client_id) throw new Error('MISSING_CLIENT_ID_CLAIM')
@@ -76,6 +76,85 @@ class Auth {
     if (obj.state) loginRequest.state = obj.state
 
     return loginRequest
+  }
+
+  /**
+   * @description Validates LTI 1.3 Deep Linking Response
+   * @param {Object} obj - Deep Linking response obj object.
+   * @param {Object} consumer - Consumer configurations.
+   */
+  static async validateDeepLinkingResponse (obj, consumer) {
+    consAuthDebug('Validating deep linking response')
+    if (!obj.JWT) throw new Error('MISSING_JWT_PARAMETER')
+    const decoded = jwt.decode(obj.JWT, { complete: true })
+    const tool = await Tool.getTool(decoded.payload.iss)
+    consAuthDebug('Validating JWT')
+    const authConfig = await tool.authConfig()
+    let verified
+    switch (authConfig.method) {
+      case 'JWK_SET': {
+        consAuthDebug('Retrieving key from jwk_set')
+        if (!decoded.header.kid) throw new Error('MISSING_KID_PARAMETER')
+        const keysEndpoint = authConfig.key
+        const res = await got.get(keysEndpoint).json()
+        const keyset = res.keys
+        if (!keyset) throw new Error('KEYSET_NOT_FOUND')
+        const jwk = keyset.find(key => {
+          return key.kid === decoded.header.kid
+        })
+        if (!jwk) throw new Error('KEY_NOT_FOUND')
+        consAuthDebug('Converting JWK key to PEM key')
+        const key = await Jwk.export({ jwk: jwk })
+        verified = jwt.verify(obj.JWT, key, { algorithms: [decoded.header.alg] })
+        break
+      }
+      case 'JWK_KEY': {
+        consAuthDebug('Retrieving key from jwk_key')
+        if (!authConfig.key) throw new Error('KEY_NOT_FOUND')
+        const key = Jwk.jwk2pem(authConfig.key)
+        verified = jwt.verify(obj.JWT, key, { algorithms: [decoded.header.alg] })
+        break
+      }
+      case 'RSA_KEY': {
+        consAuthDebug('Retrieving key from rsa_key')
+        const key = authConfig.key
+        if (!key) throw new Error('KEY_NOT_FOUND')
+        verified = jwt.verify(obj.JWT, key, { algorithms: [decoded.header.alg] })
+        break
+      }
+      default: {
+        consAuthDebug('No auth configuration found for tool')
+        throw new Error('AUTHCONFIG_NOT_FOUND')
+      }
+    }
+
+    consAuthDebug('Validating nonce claim')
+    if (verified.nonce) {
+      if (await Database.get('nonce', { nonce: verified.nonce })) throw new Error('NONCE_ALREADY_RECEIVED')
+      consAuthDebug('Storing nonce')
+      await Database.insert('nonce', { nonce: verified.nonce })
+    }
+
+    consAuthDebug('Validating aud claim')
+    if (verified.aud !== consumer.url) throw new Error('INVALID_AUD_CLAIM')
+    consAuthDebug('Validating deployment ID claim')
+    if (verified['https://purl.imsglobal.org/spec/lti/claim/deployment_id'] !== (await tool.deploymentId())) throw new Error('INVALID_DEPLOYMENT_ID_CLAIM')
+    consAuthDebug('Validating message type claim')
+    if (verified['https://purl.imsglobal.org/spec/lti/claim/message_type'] !== messageTypes.DEEPLINKING_RESPONSE) throw new Error('INVALID_MESSAGE_TYPE_CLAIM')
+    consAuthDebug('Validating version claim')
+    if (verified['https://purl.imsglobal.org/spec/lti/claim/version'] !== '1.3.0') throw new Error('INVALID_VERSION_CLAIM')
+
+    const deepLinkingResponse = {
+      clientId: verified.iss,
+      deploymentId: verified.deploymentId,
+      contentItems: verified['https://purl.imsglobal.org/spec/lti-dl/claim/content_items'],
+      message: verified['https://purl.imsglobal.org/spec/lti-dl/claim/msg'],
+      log: verified['https://purl.imsglobal.org/spec/lti-dl/claim/log'],
+      error: verified['https://purl.imsglobal.org/spec/lti-dl/claim/errormsg'],
+      errorLog: verified['https://purl.imsglobal.org/spec/lti-dl/claim/errorlog']
+    }
+
+    return deepLinkingResponse
   }
 
   /**
