@@ -23,19 +23,18 @@ class DeepLinking {
     if (!clientId) throw new Error('MISSING_CLIENT_ID_PARAMETER')
     if (!userId) throw new Error('MISSING_USER_ID_PARAMETER')
     consLaunchDebug('Generating Deep Linking launch form')
-    const toolObject = await Tool.getTool(clientId)
-    if (!toolObject) throw new Error('TOOL_NOT_FOUND')
-    const tool = await toolObject.toJSON()
+    const tool = await Tool.getTool(clientId)
+    if (!tool) throw new Error('TOOL_NOT_FOUND')
 
     const messageHintObject = {
       type: messageTypes.DEEPLINKING_LAUNCH
     }
     const messageHint = jwt.sign(messageHintObject, encryptionkey)
-    const form = `<form id="ltiadv_deeplinking_launch" style="display: none;" action="${tool.deepLinkingUrl}" method="POST">
+    const form = `<form id="ltiadv_deeplinking_launch" style="display: none;" action="${await tool.loginUrl()}" method="POST">
                   <input type="hidden" name="iss" value="${consumerUrl}" />
-                  <input type="hidden" name="client_id" value="${tool.clientId}" />
-                  <input type="hidden" name="lti_deployment_id" value="${tool.deploymentId}" />
-                  <input type="hidden" name="target_link_uri" value="${tool.deepLinkingUrl || tool.url}" />
+                  <input type="hidden" name="client_id" value="${await tool.clientId()}" />
+                  <input type="hidden" name="lti_deployment_id" value="${await tool.deploymentId()}" />
+                  <input type="hidden" name="target_link_uri" value="${await tool.deepLinkingUrl()}" />
                   <input type="hidden" name="login_hint" value="${userId}" />
                   <input type="hidden" name="lti_message_hint" value="${messageHint}" />
                 </form>

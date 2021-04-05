@@ -104,7 +104,8 @@ class ToolLink {
 
     if (!toolLink.description) toolLink.description = ''
 
-    if (toolLink.customParameters && typeof toolLink.customParameters !== 'object') throw new Error('INVALID_CUSTOM_PARAMETERS_OBJECT')
+    if (!toolLink.customParameters) toolLink.customParameters = {}
+    else if (typeof toolLink.customParameters !== 'object') throw new Error('INVALID_CUSTOM_PARAMETERS_OBJECT')
 
     if (toolLink.scopes) {
       if (!Array.isArray(toolLink.scopes)) throw new Error('INVALID_SCOPES_ARRAY')
@@ -211,7 +212,11 @@ class ToolLink {
    * @description Gets/Sets the tool link url.
    */
   async url () {
-    return this.#url
+    if (this.#url) return this.#url
+    else {
+      const tool = await this.parentTool()
+      return tool.url()
+    }
   }
 
   /**
@@ -247,7 +252,7 @@ class ToolLink {
       description: this.#description,
       scopes: this.#scopes || tool.scopes,
       privacy: this.#privacy || tool.privacy,
-      customParameters: this.#customParameters || tool.customParameters
+      customParameters: { ...tool.customParameters, ...this.#customParameters }
     }
     return JSON
   }

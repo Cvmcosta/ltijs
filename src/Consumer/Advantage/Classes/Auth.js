@@ -7,6 +7,7 @@ const consAuthDebug = require('debug')('consumer:auth')
 // Classes
 const Tool = require('./Tool')
 const ToolLink = require('./ToolLink')
+const Database = require('../../../GlobalUtils/Database')
 
 // Helpers
 const messageTypes = require('../../../GlobalUtils/Helpers/messageTypes')
@@ -38,7 +39,9 @@ class Auth {
 
     consAuthDebug('Validating nonce claim')
     if (!obj.nonce) throw new Error('MISSING_NONCE_CLAIM')
-    // Check nonce
+    if (await Database.get('nonce', { nonce: obj.nonce })) throw new Error('NONCE_ALREADY_RECEIVED')
+    consAuthDebug('Storing nonce')
+    await Database.insert('nonce', { nonce: obj.nonce })
 
     consAuthDebug('Validating scope claim')
     if (!obj.scope || obj.scope !== 'openid') throw new Error('INVALID_SCOPE_CLAIM')
@@ -111,7 +114,7 @@ class Auth {
 
     idtoken['https://purl.imsglobal.org/spec/lti/claim/message_type'] = loginRequest.type
     if (loginRequest.type === messageTypes.DEEPLINKING_LAUNCH) {
-      idtoken['https://purl.imsglobal.org/spec/lti/claim/custom'] = { ...tool.customParameters }
+      idtoken['https://purl.imsglobal.org/spec/lti/claim/custom'] = tool.customParameters
       idtoken['https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings'] = {
         deep_link_return_url: consumer.url + consumer.deepLinkingResponseRoute,
         accept_types: ['ltiResourceLink'],
@@ -123,9 +126,9 @@ class Auth {
     } else {
       const toolLinkObject = await ToolLink.getToolLink(loginRequest.toolLink)
       if (!toolLinkObject) throw new Error('INVALID_TOOL_LINK_ID')
-      const toolLink = await toolLinkObject.toolLinkJSON()
-      idtoken['https://purl.imsglobal.org/spec/lti/claim/custom'] = { ...tool.customParameters, ...toolLink.customParameters }
-      idtoken['https://purl.imsglobal.org/spec/lti/claim/target_link_uri'] = toolLink.url || tool.url
+      const toolLink = await toolLinkObject.toJSON()
+      idtoken['https://purl.imsglobal.org/spec/lti/claim/custom'] = toolLink.customParameters
+      idtoken['https://purl.imsglobal.org/spec/lti/claim/target_link_uri'] = toolLink.url
       idtoken['https://purl.imsglobal.org/spec/lti/claim/resource_link'] = _idtoken.launch.resource
     }
     // Signing ID Token

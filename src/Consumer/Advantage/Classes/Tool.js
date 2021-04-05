@@ -258,6 +258,14 @@ class Tool {
   }
 
   /**
+   * @description Gets all tool links related to this tool.
+   * @returns {Promise<Array<ToolLink>>}
+   */
+  async getAllToolLinks () {
+    return ToolLink.getAllToolLinks(this.#clientId)
+  }
+
+  /**
    * @description Gets the tool client id.
    */
   async clientId () {
@@ -265,10 +273,24 @@ class Tool {
   }
 
   /**
+   * @description Gets the tool deployment id.
+   */
+  async deploymentId () {
+    return this.#deploymentId
+  }
+
+  /**
    * @description Gets/Sets the tool url.
    */
   async url () {
     return this.#url
+  }
+
+  /**
+   * @description Gets/Sets the tool url.
+   */
+  async loginUrl () {
+    return this.#loginUrl
   }
 
   /**
