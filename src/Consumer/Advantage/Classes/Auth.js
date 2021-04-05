@@ -13,12 +13,63 @@ const Database = require('../../../GlobalUtils/Database')
 const messageTypes = require('../../../GlobalUtils/Helpers/messageTypes')
 
 /**
+ * Verifies JWTs sent by a Tool
+ * @param {String} token
+ * @param {Tool} tool
+ * @param {String} alg
+ * @param {String} kid
+ * @returns Verified payload
+ */
+const verifyToken = async (token, tool, alg, kid) => {
+  consAuthDebug('Validating JWT')
+  const authConfig = await tool.authConfig()
+  let verified
+  switch (authConfig.method) {
+    case 'JWK_SET': {
+      consAuthDebug('Retrieving key from jwk_set')
+      if (!kid) throw new Error('MISSING_KID_PARAMETER')
+      const keysEndpoint = authConfig.key
+      const res = await got.get(keysEndpoint).json()
+      const keyset = res.keys
+      if (!keyset) throw new Error('KEYSET_NOT_FOUND')
+      const jwk = keyset.find(key => {
+        return key.kid === kid
+      })
+      if (!jwk) throw new Error('KEY_NOT_FOUND')
+      consAuthDebug('Converting JWK key to PEM key')
+      const key = await Jwk.export({ jwk: jwk })
+      verified = jwt.verify(token, key, { algorithms: [alg] })
+      break
+    }
+    case 'JWK_KEY': {
+      consAuthDebug('Retrieving key from jwk_key')
+      if (!authConfig.key) throw new Error('KEY_NOT_FOUND')
+      const key = Jwk.jwk2pem(authConfig.key)
+      verified = jwt.verify(token, key, { algorithms: [alg] })
+      break
+    }
+    case 'RSA_KEY': {
+      consAuthDebug('Retrieving key from rsa_key')
+      const key = authConfig.key
+      if (!key) throw new Error('KEY_NOT_FOUND')
+      verified = jwt.verify(token, key, { algorithms: [alg] })
+      break
+    }
+    default: {
+      consAuthDebug('No auth configuration found for tool')
+      throw new Error('AUTHCONFIG_NOT_FOUND')
+    }
+  }
+  return verified
+}
+
+/**
  * @description Authentication class manages RSA keys and validation and creation of tokens.
  */
 class Auth {
   /**
    * @description Validates LTI 1.3 Login request
-   * @param {Object} obj - Login request obj object.
+   * @param {Object} obj - Login request object.
    * @param {String} encryptionkey - Consumer encryption key.
    */
   static async validateLoginRequest (obj, encryptionkey) {
@@ -80,7 +131,7 @@ class Auth {
 
   /**
    * @description Validates LTI 1.3 Deep Linking Response
-   * @param {Object} obj - Deep Linking response obj object.
+   * @param {Object} obj - Deep Linking response object.
    * @param {Object} consumer - Consumer configurations.
    */
   static async validateDeepLinkingResponse (obj, consumer) {
@@ -88,45 +139,9 @@ class Auth {
     if (!obj.JWT) throw new Error('MISSING_JWT_PARAMETER')
     const decoded = jwt.decode(obj.JWT, { complete: true })
     const tool = await Tool.getTool(decoded.payload.iss)
+    if (!tool) throw new Error('TOOL_NOT_FOUND')
     consAuthDebug('Validating JWT')
-    const authConfig = await tool.authConfig()
-    let verified
-    switch (authConfig.method) {
-      case 'JWK_SET': {
-        consAuthDebug('Retrieving key from jwk_set')
-        if (!decoded.header.kid) throw new Error('MISSING_KID_PARAMETER')
-        const keysEndpoint = authConfig.key
-        const res = await got.get(keysEndpoint).json()
-        const keyset = res.keys
-        if (!keyset) throw new Error('KEYSET_NOT_FOUND')
-        const jwk = keyset.find(key => {
-          return key.kid === decoded.header.kid
-        })
-        if (!jwk) throw new Error('KEY_NOT_FOUND')
-        consAuthDebug('Converting JWK key to PEM key')
-        const key = await Jwk.export({ jwk: jwk })
-        verified = jwt.verify(obj.JWT, key, { algorithms: [decoded.header.alg] })
-        break
-      }
-      case 'JWK_KEY': {
-        consAuthDebug('Retrieving key from jwk_key')
-        if (!authConfig.key) throw new Error('KEY_NOT_FOUND')
-        const key = Jwk.jwk2pem(authConfig.key)
-        verified = jwt.verify(obj.JWT, key, { algorithms: [decoded.header.alg] })
-        break
-      }
-      case 'RSA_KEY': {
-        consAuthDebug('Retrieving key from rsa_key')
-        const key = authConfig.key
-        if (!key) throw new Error('KEY_NOT_FOUND')
-        verified = jwt.verify(obj.JWT, key, { algorithms: [decoded.header.alg] })
-        break
-      }
-      default: {
-        consAuthDebug('No auth configuration found for tool')
-        throw new Error('AUTHCONFIG_NOT_FOUND')
-      }
-    }
+    const verified = await verifyToken(obj.JWT, tool, decoded.header.alg, decoded.header.kid)
 
     consAuthDebug('Validating nonce claim')
     if (verified.nonce) {
@@ -246,16 +261,59 @@ class Auth {
   /**
    * @description Generates a new access token for a Tool.
    * @param {Object} body - Access token request body.
+   * @param {Object} consumer - Consumer configurations.
+   * @param {String} encryptionkey - Consumer encryption key.
    */
-  static async generateAccessToken (body) {
+  static async generateAccessToken (body, consumer, encryptionkey) {
+    consAuthDebug('Validating access token request')
+    consAuthDebug('Validating grant type claim')
+    if (body.grant_type !== 'client_credentials') throw new Error('INVALID_GRANT_TYPE_CLAIM')
+    consAuthDebug('Validating client assertion type claim')
+    if (body.client_assertion_type !== 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer') throw new Error('INVALID_CLIENT_ASSERTION_TYPE_CLAIM')
+
+    consAuthDebug('Validating scope claim')
+    const decoded = jwt.decode(body.client_assertion, { complete: true })
+    const tool = await Tool.getTool(decoded.payload.sub)
+    if (!tool) throw new Error('INVALID_CLIENT_ID')
+    if (!body.scope) throw new Error('MISSING_SCOPE_CLAIM')
+    const scopes = body.scope.split(' ')
+    const toolScopes = await tool.scopes()
+    for (const scope of scopes) {
+      if (!toolScopes.includes(scope)) throw new Error('INVALID_SCOPE_CLAIM. Details: Invalid or unauthorized scope: ' + scope)
+    }
+
+    consAuthDebug('Validating client assertion claim')
+    if (!body.client_assertion) throw new Error('MISSING_CLIENT_ASSERTION_CLAIM')
+    const accesstokenURL = consumer.url + consumer.accesstokenRoute
+    if (Array.isArray(decoded.payload.aud) && !decoded.payload.aud.includes(accesstokenURL)) throw new Error('INVALID_AUD_CLAIM')
+    else if (decoded.payload.aud !== accesstokenURL) throw new Error('INVALID_AUD_CLAIM')
+    await verifyToken(body.client_assertion, tool, decoded.header.alg, decoded.header.kid)
+
+    // Building Access Token
+    const accessTokenPayload = {
+      clientId: decoded.payload.sub,
+      scopes: body.scope
+    }
+    const accessToken = jwt.sign(accessTokenPayload, encryptionkey, { expiresIn: 3600 })
+    return {
+      access_token: accessToken,
+      token_type: 'bearer',
+      expires_in: 3600,
+      scope: body.scope
+    }
   }
 
   /**
-   * @description Generates a new access token for a given Platform.
+   * @description Validates access token.
    * @param {String} token - Access token.
    * @param {String} scope - Requested scope.
+   * @param {String} encryptionkey - Consumer encryption key.
    */
-  static async validateAccessToken (token, scope) {
+  static async validateAccessToken (token, scope, encryptionkey) {
+    const verified = jwt.verify(token, encryptionkey)
+    const scopes = verified.scopes.split(' ')
+    if (!scopes.includes(scope)) throw new Error('UNAUTHORIZED_SCOPE')
+    return true
   }
 }
 

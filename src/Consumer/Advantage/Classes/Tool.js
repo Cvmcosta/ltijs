@@ -287,14 +287,21 @@ class Tool {
   }
 
   /**
-   * @description Gets/Sets the tool url.
+   * @description Gets/Sets the tool login url.
    */
   async loginUrl () {
     return this.#loginUrl
   }
 
   /**
-   * @description Gets/Sets the tool url.
+   * @description Gets/Sets the tool scopes.
+   */
+  async scopes () {
+    return this.#scopes
+  }
+
+  /**
+   * @description Gets/Sets the tool deep linking url.
    */
   async deepLinkingUrl () {
     return this.#deepLinkingUrl || this.#url
@@ -312,7 +319,7 @@ class Tool {
   }
 
   /**
-   * @description Sets/Gets the tool authorization configurations used to validate it's messages.
+   * @description Gets/Sets the tool authorization configurations used to validate it's messages.
    * @param {object} authConfig - Authorization configuration object.
    * @param {string} authConfig.method - Method of authorization "RSA_KEY" or "JWK_KEY" or "JWK_SET".
    * @param {string} authConfig.key - Either the RSA public key provided by the Tool, the JWK key, or the JWK keyset address.

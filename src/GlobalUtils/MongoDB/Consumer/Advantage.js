@@ -50,15 +50,6 @@ exports.register = () => {
   })
   keySchema.index({ kid: 1 }, { unique: true })
 
-  const accessTokenSchema = new Schema({
-    clientId: String,
-    scopes: String,
-    iv: String,
-    data: String,
-    createdAt: { type: Date, expires: 3600, default: Date.now }
-  })
-  accessTokenSchema.index({ clientId: 1, scopes: 1 }, { unique: true })
-
   const nonceSchema = new Schema({
     nonce: String,
     createdAt: { type: Date, expires: 10, default: Date.now }
@@ -69,6 +60,5 @@ exports.register = () => {
   mongoose.model('toollink', toolLinkSchema)
   mongoose.model('privatekey', keySchema)
   mongoose.model('publickey', keySchema)
-  mongoose.model('accesstoken', accessTokenSchema)
   mongoose.model('nonce', nonceSchema)
 }

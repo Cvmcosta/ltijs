@@ -68,7 +68,11 @@ class Consumer {
   }
 
   #invalidDeepLinkingResponseCallback = async (req, res) => {
-    return res.status(401).send(res.locals.err)
+    return res.status(400).send(res.locals.err)
+  }
+
+  #invalidAccessTokenRequestCallback = async (req, res) => {
+    return res.status(400).send(res.locals.err)
   }
 
   #server
@@ -172,36 +176,55 @@ class Consumer {
             queryReceived: req.query
           }
         }
-        return this.#invalidLoginRequestCallback(req, res)
+        return this.#invalidLoginRequestCallback(req, res, next)
       }
     })
 
     // Deep Linking response route
-    this.app.all(this.#deepLinkingResponseRoute, async (req, res, next) => {
+    this.app.post(this.#deepLinkingResponseRoute, async (req, res, next) => {
       try {
         const consumer = {
           url: this.#consumerUrl
         }
         res.locals.deepLinkingResponse = await Auth.validateDeepLinkingResponse(req.body, consumer)
-        return this.#deepLinkingResponseCallback(res.locals.deepLinkingResponse, req, res)
+        return this.#deepLinkingResponseCallback(res.locals.deepLinkingResponse, req, res, next)
       } catch (err) {
         provMainDebug(err)
         res.locals.err = {
-          status: 401,
-          error: 'Unauthorized',
+          status: 400,
+          error: 'Bad Request',
           details: {
             description: 'Error validating deep linking response',
             message: err.message,
-            bodyReceived: req.body,
-            queryReceived: req.query
+            bodyReceived: req.body
           }
         }
-        return this.#invalidDeepLinkingResponseCallback(req, res)
+        return this.#invalidDeepLinkingResponseCallback(req, res, next)
       }
     })
 
     // Access token generation route
-    this.app.all(this.#accesstokenRoute, async (req, res, next) => {
+    this.app.post(this.#accesstokenRoute, async (req, res, next) => {
+      try {
+        const consumer = {
+          url: this.#consumerUrl,
+          accesstokenRoute: this.#accesstokenRoute
+        }
+        const accessToken = await Auth.generateAccessToken(req.body, consumer, this.#ENCRYPTIONKEY)
+        return res.status(200).send(accessToken)
+      } catch (err) {
+        provMainDebug(err)
+        res.locals.err = {
+          status: 400,
+          error: 'Bad Request',
+          details: {
+            description: 'Error validating access token request',
+            message: err.message,
+            bodyReceived: req.body
+          }
+        }
+        return this.#invalidAccessTokenRequestCallback(req, res, next)
+      }
     })
 
     // Keyset generation route
@@ -405,6 +428,18 @@ class Consumer {
     /* istanbul ignore next */
     if (!onInvalidDeepLinkingResponseCallback) throw new Error('MISSING_CALLBACK')
     this.#invalidDeepLinkingResponseCallback = onInvalidDeepLinkingResponseCallback
+    return true
+  }
+
+  /**
+   * @description Sets the callback function called whenever the Consumer receives an invalid LTI 1.3 Access Token request.
+   * @param {Function} onInvalidAccessTokenRequestCallback - Callback function called whenever the Consumer receives an invalid LTI 1.3 Access Token request.
+   * @returns {true}
+   */
+  onInvalidAccessTokenRequest (onInvalidAccessTokenRequestCallback) {
+    /* istanbul ignore next */
+    if (!onInvalidAccessTokenRequestCallback) throw new Error('MISSING_CALLBACK')
+    this.#invalidAccessTokenRequestCallback = onInvalidAccessTokenRequestCallback
     return true
   }
 

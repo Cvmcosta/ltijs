@@ -34,7 +34,7 @@ class Core {
       resource: resourceId,
       type: messageTypes.CORE_LAUNCH
     }
-    const messageHint = jwt.sign(messageHintObject, encryptionkey)
+    const messageHint = jwt.sign(messageHintObject, encryptionkey, { expiresIn: 60 })
     const form = `<form id="ltiadv_core_launch" style="display: none;" action="${await tool.loginUrl()}" method="POST">
                   <input type="hidden" name="iss" value="${consumerUrl}" />
                   <input type="hidden" name="client_id" value="${await tool.clientId()}" />
