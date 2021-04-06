@@ -233,9 +233,9 @@ describe('Testing Provider', function () {
     return expect(plat.platformAccessTokenEndpoint()).to.eventually.become(value)
   })
   it('Platform.platformAuthorizationServer expected to alter platform authorizaion server', async () => {
-    const value1 = 'http://localhost/moodle/AccessTokenUrl'
-    const value2 = 'http://localhost/moodle/AccessTokenUrlAud'
     const plat = await lti.getPlatform('http://localhost/moodle', 'ClientId1')
+    const value1 = await plat.platformAccessTokenEndpoint()
+    const value2 = 'http://localhost/moodle/AccessTokenUrlAud'
     expect(plat.platformAuthorizationServer()).to.eventually.become(value1)
     await plat.platformAuthorizationServer(value2)
     return expect(plat.platformAuthorizationServer()).to.eventually.become(value2)
