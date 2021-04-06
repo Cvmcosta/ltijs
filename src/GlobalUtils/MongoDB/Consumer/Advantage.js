@@ -33,7 +33,6 @@ exports.register = () => {
     url: String,
     name: String,
     description: String,
-    scopes: [String],
     privacy: {
       name: Boolean,
       email: Boolean

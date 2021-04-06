@@ -248,7 +248,6 @@ class Tool {
    * @param {string} toolLink.name - Tool Link name.
    * @param {string} [toolLink.url] - Tool Link url.
    * @param {string} [toolLink.description] - Tool Link description.
-   * @param {Array<String>} [toolLink.scopes] - Scopes allowed for the toolLink.
    * @param {Object} [toolLink.privacy] - Privacy configuration.
    * @param {Object} [toolLink.customParameters] - Tool Link specific set custom parameters.
    * @returns {Promise<ToolLink>}

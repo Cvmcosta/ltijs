@@ -540,7 +540,6 @@ class Consumer {
    * @param {string} toolLinkInfo.url - Tool Link url.
    * @param {string} toolLinkInfo.name - Tool Link name.
    * @param {string} toolLinkInfo.description - Tool Link description.
-   * @param {Array<string>} toolLinkInfo.scopes - Scopes allowed for the tool link.
    * @param {Object} toolLinkInfo.privacy - Privacy configuration.
    * @param {Object} tool.customParameters - Tool Link specific set custom parameters.
    * @returns {Promise<ToolLink | false>}

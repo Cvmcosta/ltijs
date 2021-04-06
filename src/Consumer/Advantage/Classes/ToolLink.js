@@ -6,9 +6,6 @@ const { v4: uuidv4 } = require('uuid')
 const Database = require('../../../GlobalUtils/Database')
 const Tool = require('./Tool')
 
-// Helpers
-const validScopes = require('../../../GlobalUtils/Helpers/scopes')
-
 /**
  * @description Class representing a registered tool.
  */
@@ -25,8 +22,6 @@ class ToolLink {
 
   #description
 
-  #scopes = []
-
   #privacy
 
   #customParameters = {}
@@ -38,18 +33,16 @@ class ToolLink {
    * @param {string} url - Tool Link url.
    * @param {string} name - Tool Link name.
    * @param {string} description - Tool Link description.
-   * @param {Array<String>} scopes - Scopes allowed for the tool link.
    * @param {Object} privacy - Privacy configuration.
    * @param {Object} customParameters - Tool Link specific set custom parameters.
   */
-  constructor (id, clientId, deploymentId, url, name, description, scopes, privacy, customParameters) {
+  constructor (id, clientId, deploymentId, url, name, description, privacy, customParameters) {
     this.#id = id
     this.#clientId = clientId
     this.#deploymentId = deploymentId
     this.#url = url
     this.#name = name
     this.#description = description
-    this.#scopes = scopes
     this.#privacy = privacy
     this.#customParameters = customParameters
   }
@@ -65,7 +58,7 @@ class ToolLink {
     const result = await Database.get('toollink', { id: id })
     if (!result) return false
     const _toolLink = result[0]
-    const toolLink = new ToolLink(id, _toolLink.clientId, _toolLink.deploymentId, _toolLink.url, _toolLink.name, _toolLink.description, _toolLink.scopes, _toolLink.privacy, _toolLink.customParameters)
+    const toolLink = new ToolLink(id, _toolLink.clientId, _toolLink.deploymentId, _toolLink.url, _toolLink.name, _toolLink.description, _toolLink.privacy, _toolLink.customParameters)
     return toolLink
   }
 
@@ -77,7 +70,7 @@ class ToolLink {
     const result = []
     const toolLinks = await Database.get('toollink', { clientId: clientId })
     if (toolLinks) {
-      for (const _toolLink of toolLinks) result.push(new ToolLink(_toolLink.id, _toolLink.clientId, _toolLink.deploymentId, _toolLink.url, _toolLink.name, _toolLink.description, _toolLink.scopes, _toolLink.privacy, _toolLink.customParameters))
+      for (const _toolLink of toolLinks) result.push(new ToolLink(_toolLink.id, _toolLink.clientId, _toolLink.deploymentId, _toolLink.url, _toolLink.name, _toolLink.description, _toolLink.privacy, _toolLink.customParameters))
     }
     return result
   }
@@ -89,7 +82,6 @@ class ToolLink {
    * @param {string} toolLink.name - Tool Link name.
    * @param {string} [toolLink.url] - Tool Link url.
    * @param {string} [toolLink.description] - Tool Link description.
-   * @param {Array<String>} [toolLink.scopes] - Scopes allowed for the toolLink.
    * @param {Object} [toolLink.privacy] - Privacy configuration.
    * @param {Object} [toolLink.customParameters] - Tool Link specific set custom parameters.
    * @returns {Promise<ToolLink>}
@@ -107,16 +99,9 @@ class ToolLink {
     if (!toolLink.customParameters) toolLink.customParameters = {}
     else if (typeof toolLink.customParameters !== 'object') throw new Error('INVALID_CUSTOM_PARAMETERS_OBJECT')
 
-    if (toolLink.scopes) {
-      if (!Array.isArray(toolLink.scopes)) throw new Error('INVALID_SCOPES_ARRAY')
-      for (const scope of toolLink.scopes) {
-        if (!Object.keys(validScopes).includes(scope)) throw new Error('INVALID_SCOPE. Details: Invalid scope: ' + scope)
-      }
-    }
-
     toolLink.privacy = {
-      name: (toolLink.privacy && toolLink.privacy.name) ? toolLink.privacy.name : undefined,
-      email: (toolLink.privacy && toolLink.privacy.email) ? toolLink.privacy.email : undefined
+      name: (toolLink.privacy && toolLink.privacy.name !== undefined) ? toolLink.privacy.name : undefined,
+      email: (toolLink.privacy && toolLink.privacy.email !== undefined) ? toolLink.privacy.email : undefined
     }
 
     try {
@@ -129,9 +114,9 @@ class ToolLink {
       }
 
       // Storing new toolLink
-      await Database.replace('toolLink', { clientId: toolLink.clientId }, { id: toolLink.id, clientId: toolLink.clientId, deploymentId: toolLink.deploymentId, url: toolLink.url, name: toolLink.name, description: toolLink.description, scopes: toolLink.scopes, privacy: toolLink.privacy, customParameters: toolLink.customParameters })
+      await Database.replace('toolLink', { clientId: toolLink.clientId }, { id: toolLink.id, clientId: toolLink.clientId, deploymentId: toolLink.deploymentId, url: toolLink.url, name: toolLink.name, description: toolLink.description, privacy: toolLink.privacy, customParameters: toolLink.customParameters })
 
-      const _toolLink = new ToolLink(toolLink.id, toolLink.clientId, toolLink.deploymentId, toolLink.url, toolLink.name, toolLink.description, toolLink.scopes, toolLink.privacy, toolLink.customParameters)
+      const _toolLink = new ToolLink(toolLink.id, toolLink.clientId, toolLink.deploymentId, toolLink.url, toolLink.name, toolLink.description, toolLink.privacy, toolLink.customParameters)
       return _toolLink
     } catch (err) {
       if (toolLink.id) await Database.delete('toolLink', { id: toolLink.id })
@@ -147,7 +132,6 @@ class ToolLink {
    * @param {string} toolLinkInfo.url - Tool Link url.
    * @param {string} toolLinkInfo.name - Tool Link name.
    * @param {string} toolLinkInfo.description - Tool Link description.
-   * @param {Array<string>} toolLinkInfo.scopes - Scopes allowed for the tool link.
    * @param {Object} toolLinkInfo.privacy - Privacy configuration.
    * @param {Object} tool.customParameters - Tool Link specific set custom parameters.
    * @returns {Promise<ToolLink | false>}
@@ -164,7 +148,6 @@ class ToolLink {
       url: toolLinkInfo.url || toolLink.url,
       name: toolLinkInfo.name || toolLink.name,
       description: toolLinkInfo.description || toolLink.description,
-      scopes: toolLinkInfo.scopes || toolLink.scopes,
       privacy: toolLinkInfo.privacy || toolLink.privacy,
       customParameters: toolLinkInfo.customParameters || toolLink.customParameters
     }
@@ -172,7 +155,7 @@ class ToolLink {
     try {
       await Database.modify('toollink', { id: id }, update)
 
-      const _toolLink = new ToolLink(id, toolLink.clientId, toolLink.deploymentId, update.url, update.name, update.description, update.scopes, update.privacy, update.customParameters)
+      const _toolLink = new ToolLink(id, toolLink.clientId, toolLink.deploymentId, update.url, update.name, update.description, update.privacy, update.customParameters)
       return _toolLink
     } catch (err) {
       consToolDebug(err.message)
@@ -250,8 +233,10 @@ class ToolLink {
       deploymentId: this.#deploymentId,
       name: this.#name,
       description: this.#description,
-      scopes: this.#scopes || tool.scopes,
-      privacy: this.#privacy || tool.privacy,
+      privacy: {
+        name: this.#privacy.name !== undefined ? this.#privacy.name : tool.privacy.name,
+        email: this.#privacy.email !== undefined ? this.#privacy.email : tool.privacy.email
+      },
       customParameters: { ...tool.customParameters, ...this.#customParameters }
     }
     return JSON

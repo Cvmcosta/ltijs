@@ -197,10 +197,6 @@ class Auth {
       aud: loginRequest.clientId,
       'https://purl.imsglobal.org/spec/lti/claim/deployment_id': loginRequest.deploymentId,
       sub: loginRequest.user,
-      given_name: _idtoken.user.givenName,
-      family_name: _idtoken.user.familyName,
-      name: _idtoken.user.name,
-      email: _idtoken.user.email,
       'https://purl.imsglobal.org/spec/lti/claim/roles': _idtoken.user.roles,
       'https://purl.imsglobal.org/spec/lti/claim/context': {
         id: _idtoken.launch.context.id,
@@ -235,6 +231,12 @@ class Auth {
         auto_create: false,
         title: tool.name
       }
+      if (tool.privacy.email) idtoken.email = _idtoken.user.email
+      if (tool.privacy.name) {
+        idtoken.given_name = _idtoken.user.givenName
+        idtoken.family_name = _idtoken.user.familyName
+        idtoken.name = _idtoken.user.name
+      }
     } else {
       const toolLinkObject = await ToolLink.getToolLink(loginRequest.toolLink)
       if (!toolLinkObject) throw new Error('INVALID_TOOL_LINK_ID')
@@ -242,6 +244,12 @@ class Auth {
       idtoken['https://purl.imsglobal.org/spec/lti/claim/custom'] = toolLink.customParameters
       idtoken['https://purl.imsglobal.org/spec/lti/claim/target_link_uri'] = toolLink.url
       idtoken['https://purl.imsglobal.org/spec/lti/claim/resource_link'] = _idtoken.launch.resource
+      if (toolLink.privacy.email) idtoken.email = _idtoken.user.email
+      if (toolLink.privacy.name) {
+        idtoken.given_name = _idtoken.user.givenName
+        idtoken.family_name = _idtoken.user.familyName
+        idtoken.name = _idtoken.user.name
+      }
     }
     // Signing ID Token
     consAuthDebug('Signing ID Token')
