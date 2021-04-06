@@ -4,6 +4,7 @@
 /* Main class for the Consumer functionalities */
 // Dependencies
 const provMainDebug = require('debug')('consumer:main')
+const url = require('fast-url-parser')
 
 // Services
 const Core = require('./Advantage/Services/Core')
@@ -32,6 +33,8 @@ const scopes = require('../GlobalUtils/Helpers/scopes')
  */
 class Consumer {
   // Pre-initiated variables
+  #consumer
+
   #consumerUrl
 
   #loginRoute = '/login'
@@ -104,17 +107,25 @@ class Consumer {
      */
   setup (encryptionkey, database, options) {
     if (this.#setup) throw new Error('PROVIDER_ALREADY_SETUP')
-    if (options && options.https && (!options.ssl || !options.ssl.key || !options.ssl.cert)) throw new Error('MISSING_SSL_KEY_CERTIFICATE')
+
     if (!encryptionkey) throw new Error('MISSING_ENCRYPTION_KEY')
     if (!database) throw new Error('MISSING_DATABASE_CONFIGURATION')
+    if (!options || !options.consumerUrl) throw new Error('MISSING_CONSUMER_URL_CONFIGURATION')
+    if (options && options.https && (!options.ssl || !options.ssl.key || !options.ssl.cert)) throw new Error('MISSING_SSL_KEY_CERTIFICATE')
 
-    if (options && options.consumerUrl) this.#consumerUrl = options.consumerUrl
     if (options && options.loginRoute) this.#loginRoute = options.loginRoute
     if (options && options.keysetRoute) this.#keysetRoute = options.keysetRoute
     if (options && options.accesstokenRoute) this.#accesstokenRoute = options.accesstokenRoute
     if (options && options.deepLinkingResponseRoute) this.#deepLinkingResponseRoute = options.deepLinkingResponseRoute
     if (options && options.legacy === true) this.#legacy = true
     if (options && options.tokenMaxAge !== undefined) this.#tokenMaxAge = options.tokenMaxAge
+
+    // Creating consumer configuration object
+    this.#consumerUrl = options.consumerUrl
+    this.#consumer = url.parse(this.#consumerUrl)
+    this.#consumer.url = this.#consumerUrl
+    this.#consumer.accesstokenRoute = this.#accesstokenRoute
+    this.#consumer.deepLinkingResponseRoute = this.#deepLinkingResponseRoute
 
     // Encryption Key
     this.#ENCRYPTIONKEY = encryptionkey
@@ -183,10 +194,7 @@ class Consumer {
     // Deep Linking response route
     this.app.post(this.#deepLinkingResponseRoute, async (req, res, next) => {
       try {
-        const consumer = {
-          url: this.#consumerUrl
-        }
-        res.locals.deepLinkingResponse = await Auth.validateDeepLinkingResponse(req.body, consumer)
+        res.locals.deepLinkingResponse = await Auth.validateDeepLinkingResponse(req.body, req.query, this.#consumer)
         return this.#deepLinkingResponseCallback(res.locals.deepLinkingResponse, req, res, next)
       } catch (err) {
         provMainDebug(err)
@@ -206,11 +214,7 @@ class Consumer {
     // Access token generation route
     this.app.post(this.#accesstokenRoute, async (req, res, next) => {
       try {
-        const consumer = {
-          url: this.#consumerUrl,
-          accesstokenRoute: this.#accesstokenRoute
-        }
-        const accessToken = await Auth.generateAccessToken(req.body, consumer, this.#ENCRYPTIONKEY)
+        const accessToken = await Auth.generateAccessToken(req.body, this.#consumer, this.#ENCRYPTIONKEY)
         return res.status(200).send(accessToken)
       } catch (err) {
         provMainDebug(err)
@@ -338,11 +342,7 @@ class Consumer {
    * @param {String} idtoken - Information used to build the ID Token.
    */
   async sendIdToken (res, loginRequest, idtoken) {
-    const consumer = {
-      url: this.#consumerUrl,
-      deepLinkingResponseRoute: this.#deepLinkingResponseRoute
-    }
-    return Auth.buildIdTokenResponse(res, loginRequest, idtoken, consumer)
+    return Auth.buildIdTokenResponse(res, loginRequest, idtoken, this.#consumer)
   }
 
   /**
@@ -351,11 +351,7 @@ class Consumer {
    * @param {String} idtoken - Information used to build the ID Token.
    */
   async buildIdTokenForm (loginRequest, idtoken) {
-    const consumer = {
-      url: this.#consumerUrl,
-      deepLinkingResponseRoute: this.#deepLinkingResponseRoute
-    }
-    return Auth.buildIdTokenForm(loginRequest, idtoken, consumer)
+    return Auth.buildIdTokenForm(loginRequest, idtoken, this.#consumer)
   }
 
   /**
@@ -364,11 +360,7 @@ class Consumer {
    * @param {String} idtoken - Information used to build the ID Token.
    */
   async buildIdToken (loginRequest, idtoken) {
-    const consumer = {
-      url: this.#consumerUrl,
-      deepLinkingResponseRoute: this.#deepLinkingResponseRoute
-    }
-    return Auth.buildIdToken(loginRequest, idtoken, consumer)
+    return Auth.buildIdToken(loginRequest, idtoken, this.#consumer)
   }
 
   /**

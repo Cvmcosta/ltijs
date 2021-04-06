@@ -1,7 +1,9 @@
 // Dependencies
+const crypto = require('crypto')
 const Jwk = require('rasha')
 const got = require('got')
 const jwt = require('jsonwebtoken')
+const url = require('fast-url-parser')
 const consAuthDebug = require('debug')('consumer:auth')
 
 // Classes
@@ -87,6 +89,7 @@ class Auth {
       resource: messageHint.resource,
       type: messageHint.type
     }
+    if (loginRequest.type === messageTypes.DEEPLINKING_LAUNCH) loginRequest.dlState = crypto.randomBytes(16).toString('hex')
 
     consAuthDebug('Validating nonce claim')
     if (!obj.nonce) throw new Error('MISSING_NONCE_CLAIM')
@@ -132,9 +135,10 @@ class Auth {
   /**
    * @description Validates LTI 1.3 Deep Linking Response
    * @param {Object} obj - Deep Linking response object.
+   * @param {Object} query - Deep Linking query object.
    * @param {Object} consumer - Consumer configurations.
    */
-  static async validateDeepLinkingResponse (obj, consumer) {
+  static async validateDeepLinkingResponse (obj, query, consumer) {
     consAuthDebug('Validating deep linking response')
     if (!obj.JWT) throw new Error('MISSING_JWT_PARAMETER')
     const decoded = jwt.decode(obj.JWT, { complete: true })
@@ -166,7 +170,9 @@ class Auth {
       message: verified['https://purl.imsglobal.org/spec/lti-dl/claim/msg'],
       log: verified['https://purl.imsglobal.org/spec/lti-dl/claim/log'],
       error: verified['https://purl.imsglobal.org/spec/lti-dl/claim/errormsg'],
-      errorLog: verified['https://purl.imsglobal.org/spec/lti-dl/claim/errorlog']
+      errorLog: verified['https://purl.imsglobal.org/spec/lti-dl/claim/errorlog'],
+      contextId: query.contextId,
+      state: query.dlState
     }
 
     return deepLinkingResponse
@@ -208,9 +214,21 @@ class Auth {
 
     idtoken['https://purl.imsglobal.org/spec/lti/claim/message_type'] = loginRequest.type
     if (loginRequest.type === messageTypes.DEEPLINKING_LAUNCH) {
+      const deepLinkingReturnUrl = url.format({
+        protocol: consumer.protocol,
+        hostname: consumer.hostname,
+        port: consumer.port,
+        auth: consumer.auth,
+        hash: consumer.hash,
+        pathname: consumer.deepLinkingResponseRoute,
+        query: {
+          contextId: _idtoken.launch.context.id,
+          dlState: loginRequest.dlState
+        }
+      })
       idtoken['https://purl.imsglobal.org/spec/lti/claim/custom'] = tool.customParameters
       idtoken['https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings'] = {
-        deep_link_return_url: consumer.url + consumer.deepLinkingResponseRoute,
+        deep_link_return_url: deepLinkingReturnUrl,
         accept_types: ['ltiResourceLink'],
         accept_presentation_document_targets: ['iframe', 'window'],
         accept_multiple: false,
@@ -284,7 +302,14 @@ class Auth {
 
     consAuthDebug('Validating client assertion claim')
     if (!body.client_assertion) throw new Error('MISSING_CLIENT_ASSERTION_CLAIM')
-    const accesstokenURL = consumer.url + consumer.accesstokenRoute
+    const accesstokenURL = url.format({
+      protocol: consumer.protocol,
+      hostname: consumer.hostname,
+      port: consumer.port,
+      auth: consumer.auth,
+      hash: consumer.hash,
+      pathname: consumer.accesstokenRoute
+    })
     if (Array.isArray(decoded.payload.aud) && !decoded.payload.aud.includes(accesstokenURL)) throw new Error('INVALID_AUD_CLAIM')
     else if (decoded.payload.aud !== accesstokenURL) throw new Error('INVALID_AUD_CLAIM')
     await verifyToken(body.client_assertion, tool, decoded.header.alg, decoded.header.kid)
