@@ -13,6 +13,8 @@ const Database = require('../../../GlobalUtils/Database')
 
 // Helpers
 const messageTypes = require('../../../GlobalUtils/Helpers/messageTypes')
+const privacyLevels = require('../../../GlobalUtils/Helpers/privacy')
+const validScopes = require('../../../GlobalUtils/Helpers/scopes')
 
 /**
  * Verifies JWTs sent by a Tool
@@ -63,6 +65,15 @@ const verifyToken = async (token, tool, alg, kid) => {
     }
   }
   return verified
+}
+
+/**
+ * Find scope code based on value
+ * @param {String} value
+ * @returns
+ */
+const getScopeCode = (value) => {
+  return Object.keys(validScopes).find(key => validScopes[key] === value)
 }
 
 /**
@@ -231,8 +242,8 @@ class Auth {
         auto_create: false,
         title: tool.name
       }
-      if (tool.privacy.email) idtoken.email = _idtoken.user.email
-      if (tool.privacy.name) {
+      if (tool.privacy === privacyLevels.COMPLETE || tool.privacy === privacyLevels.EMAIL) idtoken.email = _idtoken.user.email
+      if (tool.privacy === privacyLevels.COMPLETE || tool.privacy === privacyLevels.NAME) {
         idtoken.given_name = _idtoken.user.givenName
         idtoken.family_name = _idtoken.user.familyName
         idtoken.name = _idtoken.user.name
@@ -241,11 +252,12 @@ class Auth {
       const toolLinkObject = await ToolLink.getToolLink(loginRequest.toolLink)
       if (!toolLinkObject) throw new Error('INVALID_TOOL_LINK_ID')
       const toolLink = await toolLinkObject.toJSON()
-      idtoken['https://purl.imsglobal.org/spec/lti/claim/custom'] = toolLink.customParameters
+      idtoken['https://purl.imsglobal.org/spec/lti/claim/custom'] = { ...tool.customParameters, ...toolLink.customParameters }
       idtoken['https://purl.imsglobal.org/spec/lti/claim/target_link_uri'] = toolLink.url
       idtoken['https://purl.imsglobal.org/spec/lti/claim/resource_link'] = _idtoken.launch.resource
-      if (toolLink.privacy.email) idtoken.email = _idtoken.user.email
-      if (toolLink.privacy.name) {
+      const privacy = toolLink.privacy === privacyLevels.INHERIT ? tool.privacy : toolLink.privacy
+      if (privacy === privacyLevels.COMPLETE || privacy === privacyLevels.EMAIL) idtoken.email = _idtoken.user.email
+      if (privacy === privacyLevels.COMPLETE || privacy === privacyLevels.NAME) {
         idtoken.given_name = _idtoken.user.givenName
         idtoken.family_name = _idtoken.user.familyName
         idtoken.name = _idtoken.user.name
@@ -305,7 +317,8 @@ class Auth {
     const scopes = body.scope.split(' ')
     const toolScopes = await tool.scopes()
     for (const scope of scopes) {
-      if (!toolScopes.includes(scope)) throw new Error('INVALID_SCOPE_CLAIM. Details: Invalid or unauthorized scope: ' + scope)
+      const code = getScopeCode(scope)
+      if (!code || !toolScopes.includes(code)) throw new Error('INVALID_SCOPE_CLAIM. Details: Invalid or unauthorized scope: ' + scope)
     }
 
     consAuthDebug('Validating client assertion claim')
@@ -346,6 +359,13 @@ class Auth {
     const verified = jwt.verify(token, encryptionkey)
     const scopes = verified.scopes.split(' ')
     if (!scopes.includes(scope)) throw new Error('UNAUTHORIZED_SCOPE')
+
+    const tool = await Tool.getTool(verified.clientId)
+    if (!tool) throw new Error('TOOL_NOT_FOUND')
+    const toolScopes = await tool.scopes()
+    const code = getScopeCode(scope)
+    if (!code || !toolScopes.includes(code)) throw new Error('INVALID_SCOPE_CLAIM. Details: Invalid or unauthorized scope: ' + scope)
+
     return true
   }
 }

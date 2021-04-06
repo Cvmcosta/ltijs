@@ -488,7 +488,7 @@ class Consumer {
    * @param {string} [tool.clientId] - Tool Client Id.
    * @param {string} [tool.description] - Tool description.
    * @param {Array<String>} [tool.scopes] - Scopes allowed for the tool.
-   * @param {Object} [tool.privacy] - Privacy configuration.
+   * @param {Number} [tool.privacy] - Privacy level.
    * @param {Object} [tool.customParameters] - Globally set custom parameters.
    * @returns {Promise<Tool>}
    */
@@ -525,7 +525,7 @@ class Consumer {
    * @param {string} toolInfo.deepLinkingUrl - Tool deep linking url.
    * @param {string} toolInfo.description - Tool description.
    * @param {Array<String>} toolInfo.scopes - Scopes allowed for the tool.
-   * @param {Object} toolInfo.privacy - Privacy configuration.
+   * @param {Number} toolInfo.privacy - Privacy level.
    * @param {Object} tool.customParameters - Globally set custom parameters.
    * @returns {Promise<Tool | false>}
    */
@@ -540,7 +540,7 @@ class Consumer {
    * @param {string} toolLinkInfo.url - Tool Link url.
    * @param {string} toolLinkInfo.name - Tool Link name.
    * @param {string} toolLinkInfo.description - Tool Link description.
-   * @param {Object} toolLinkInfo.privacy - Privacy configuration.
+   * @param {Number} toolLinkInfo.privacy - Privacy level.
    * @param {Object} tool.customParameters - Tool Link specific set custom parameters.
    * @returns {Promise<ToolLink | false>}
    */

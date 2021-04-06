@@ -10,6 +10,7 @@ const Auth = require('./Auth')
 
 // Helpers
 const validScopes = require('../../../GlobalUtils/Helpers/scopes')
+const privacyLevels = require('../../../GlobalUtils/Helpers/privacy')
 
 /**
  * @description Class representing a registered tool.
@@ -52,7 +53,7 @@ class Tool {
    * @param {string} description - Tool description.
    * @param {Object} authConfig - Authentication configurations for the tool.
    * @param {Array<String>} scopes - Scopes allowed for the tool.
-   * @param {Object} privacy - Privacy configuration.
+   * @param {Number} privacy - Privacy level.
    * @param {Object} customParameters - Globally set custom parameters.
    * @param {string} kid - Key id for local keypair used to sign messages to this tool.
   */
@@ -112,7 +113,7 @@ class Tool {
    * @param {string} [tool.clientId] - Tool Client Id.
    * @param {string} [tool.description] - Tool description.
    * @param {Array<String>} [tool.scopes] - Scopes allowed for the tool.
-   * @param {Object} [tool.privacy] - Privacy configuration.
+   * @param {Number} [tool.privacy] - Privacy level.
    * @param {Object} [tool.customParameters] - Globally set custom parameters.
    * @returns {Promise<Tool>}
    */
@@ -137,10 +138,7 @@ class Tool {
       }
     }
 
-    tool.privacy = {
-      name: (tool.privacy && tool.privacy.name === true),
-      email: (tool.privacy && tool.privacy.email === true)
-    }
+    tool.privacy = tool.privacy || privacyLevels.NONE
 
     if (tool.clientId) {
       const _tool = await Tool.getTool(tool.clientId)
@@ -193,7 +191,7 @@ class Tool {
    * @param {string} toolInfo.deepLinkingUrl - Tool deep linking url.
    * @param {string} toolInfo.description - Tool description.
    * @param {Array<String>} toolInfo.scopes - Scopes allowed for the tool.
-   * @param {Object} toolInfo.privacy - Privacy configuration.
+   * @param {Number} toolInfo.privacy - Privacy level.
    * @param {Object} tool.customParameters - Globally set custom parameters.
    * @returns {Promise<Tool | false>}
    */
@@ -248,7 +246,7 @@ class Tool {
    * @param {string} toolLink.name - Tool Link name.
    * @param {string} [toolLink.url] - Tool Link url.
    * @param {string} [toolLink.description] - Tool Link description.
-   * @param {Object} [toolLink.privacy] - Privacy configuration.
+   * @param {Number} [toolLink.privacy] - Privacy level.
    * @param {Object} [toolLink.customParameters] - Tool Link specific set custom parameters.
    * @returns {Promise<ToolLink>}
    */

@@ -18,8 +18,8 @@ exports.register = () => {
     },
     scopes: [String],
     privacy: {
-      name: Boolean,
-      email: Boolean
+      type: Number,
+      enum: [0, 1, 2, 3]
     },
     customParameters: JSON,
     kid: String
@@ -34,8 +34,8 @@ exports.register = () => {
     name: String,
     description: String,
     privacy: {
-      name: Boolean,
-      email: Boolean
+      type: Number,
+      enum: ['0', '1', '2', '3', '4']
     },
     customParameters: JSON
   })

@@ -6,6 +6,9 @@ const { v4: uuidv4 } = require('uuid')
 const Database = require('../../../GlobalUtils/Database')
 const Tool = require('./Tool')
 
+// Helpers
+const privacyLevels = require('../../../GlobalUtils/Helpers/privacy')
+
 /**
  * @description Class representing a registered tool.
  */
@@ -33,7 +36,7 @@ class ToolLink {
    * @param {string} url - Tool Link url.
    * @param {string} name - Tool Link name.
    * @param {string} description - Tool Link description.
-   * @param {Object} privacy - Privacy configuration.
+   * @param {number} privacy - Privacy level.
    * @param {Object} customParameters - Tool Link specific set custom parameters.
   */
   constructor (id, clientId, deploymentId, url, name, description, privacy, customParameters) {
@@ -82,7 +85,7 @@ class ToolLink {
    * @param {string} toolLink.name - Tool Link name.
    * @param {string} [toolLink.url] - Tool Link url.
    * @param {string} [toolLink.description] - Tool Link description.
-   * @param {Object} [toolLink.privacy] - Privacy configuration.
+   * @param {number} [toolLink.privacy] - Privacy level.
    * @param {Object} [toolLink.customParameters] - Tool Link specific set custom parameters.
    * @returns {Promise<ToolLink>}
    */
@@ -99,10 +102,7 @@ class ToolLink {
     if (!toolLink.customParameters) toolLink.customParameters = {}
     else if (typeof toolLink.customParameters !== 'object') throw new Error('INVALID_CUSTOM_PARAMETERS_OBJECT')
 
-    toolLink.privacy = {
-      name: (toolLink.privacy && toolLink.privacy.name !== undefined) ? toolLink.privacy.name : undefined,
-      email: (toolLink.privacy && toolLink.privacy.email !== undefined) ? toolLink.privacy.email : undefined
-    }
+    toolLink.privacy = toolLink.privacy || privacyLevels.INHERIT
 
     try {
       consToolDebug('Registering new toolLink')
@@ -132,7 +132,7 @@ class ToolLink {
    * @param {string} toolLinkInfo.url - Tool Link url.
    * @param {string} toolLinkInfo.name - Tool Link name.
    * @param {string} toolLinkInfo.description - Tool Link description.
-   * @param {Object} toolLinkInfo.privacy - Privacy configuration.
+   * @param {number} toolLinkInfo.privacy - Privacy level.
    * @param {Object} tool.customParameters - Tool Link specific set custom parameters.
    * @returns {Promise<ToolLink | false>}
    */
@@ -233,11 +233,8 @@ class ToolLink {
       deploymentId: this.#deploymentId,
       name: this.#name,
       description: this.#description,
-      privacy: {
-        name: this.#privacy.name !== undefined ? this.#privacy.name : tool.privacy.name,
-        email: this.#privacy.email !== undefined ? this.#privacy.email : tool.privacy.email
-      },
-      customParameters: { ...tool.customParameters, ...this.#customParameters }
+      privacy: this.#privacy,
+      customParameters: this.#customParameters
     }
     return JSON
   }
