@@ -813,7 +813,7 @@ class Provider {
       if (!platform.name || !platform.authenticationEndpoint || !platform.accesstokenEndpoint || !platform.authConfig) throw new Error('MISSING_PARAMS')
       if (platform.authConfig.method !== 'RSA_KEY' && platform.authConfig.method !== 'JWK_KEY' && platform.authConfig.method !== 'JWK_SET') throw new Error('INVALID_AUTHCONFIG_METHOD. Details: Valid methods are "RSA_KEY", "JWK_KEY", "JWK_SET".')
       if (!platform.authConfig.key) throw new Error('MISSING_AUTHCONFIG_KEY')
-      if (!platform.authorizationServer) platform.authorizationServer = platform.accesstokenEndpoint
+
       try {
         kid = await Auth.generatePlatformKeyPair(_ENCRYPTIONKEY, _Database, platform.url, platform.clientId)
         const plat = new Platform(platform.name, platform.url, platform.clientId, platform.authenticationEndpoint, platform.accesstokenEndpoint, platform.authorizationServer, kid, _ENCRYPTIONKEY, platform.authConfig, this.Database)
@@ -915,9 +915,9 @@ class Provider {
       clientId: platformInfo.clientId || oldClientId,
       name: platformInfo.name || await platform.platformName(),
       authenticationEndpoint: platformInfo.authenticationEndpoint || await platform.platformAuthEndpoint(),
-      accesstokenEndpoint: platformInfo.accesstokenEndpoint || await platform.platformAccessTokenEndpoint(),
-      authorizationServer: platformInfo.authorizationServer || await platform.platformAuthorizationServer()
+      accesstokenEndpoint: platformInfo.accesstokenEndpoint || await platform.platformAccessTokenEndpoint()
     }
+    if (platformInfo.authorizationServer !== undefined) update.authorizationServer = platformInfo.authorizationServer
 
     const authConfig = await platform.platformAuthConfig()
     update.authConfig = authConfig
