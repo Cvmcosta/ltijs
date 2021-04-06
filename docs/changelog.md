@@ -9,6 +9,11 @@
 
 ### CHANGELOG
 
+#### V5.7.0
+> 2021-04-05
+> - Created new `authorizationServer` Platform registration field used as the `aud` claim for requesting access tokens. Platform methods usage is unchanged.
+> - Create new `platformAuthorizationServer` Platform method to retrieve or set the authorization server. Value defaults to the access token endpoint.
+
 #### V5.6.6
 > 2021-01-29
 > - Added the capability to remove the limit of number of pages returned by the Names and Roles Service.

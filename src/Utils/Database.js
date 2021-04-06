@@ -75,6 +75,7 @@ class Database {
       clientId: String,
       authEndpoint: String,
       accesstokenEndpoint: String,
+      authorizationServer: String,
       kid: String,
       authConfig: {
         method: String,

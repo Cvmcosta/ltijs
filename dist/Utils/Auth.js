@@ -307,7 +307,7 @@ class Auth {
     const confjwt = {
       sub: clientId,
       iss: clientId,
-      aud: await platform.platformAccessTokenEndpoint(),
+      aud: await platform.platformAuthorizationServer(),
       jti: encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     };
     const token = jwt.sign(confjwt, await platform.platformPrivateKey(), {

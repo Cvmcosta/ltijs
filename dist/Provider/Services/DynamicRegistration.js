@@ -223,6 +223,7 @@ class DynamicRegistration {
       clientId: registrationResponse.client_id,
       authenticationEndpoint: configuration.authorization_endpoint,
       accesstokenEndpoint: configuration.token_endpoint,
+      authorizationServer: configuration.authorization_server || configuration.token_endpoint,
       authConfig: {
         method: 'JWK_SET',
         key: configuration.jwks_uri
