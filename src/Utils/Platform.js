@@ -172,7 +172,7 @@ class Platform {
   async platformAuthorizationServer (authorizationServer) {
     if (!authorizationServer) return this.#authorizationServer || this.#accesstokenEndpoint
     await this.#Database.Modify(false, 'platform', { platformUrl: this.#platformUrl, clientId: this.#clientId }, { authorizationServer: authorizationServer })
-    this.#accesstokenEndpoint = authorizationServer
+    this.#authorizationServer = authorizationServer
     return authorizationServer
   }
 

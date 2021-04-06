@@ -226,13 +226,20 @@ describe('Testing Provider', function () {
     await plat.platformAuthenticationEndpoint(value)
     return expect(plat.platformAuthenticationEndpoint()).to.eventually.become(value)
   })
-  it('Platform.platformAccessTokenEndpoint expected to alter platform authentication endpoint', async () => {
+  it('Platform.platformAccessTokenEndpoint expected to alter platform access token endpoint', async () => {
     const value = 'http://localhost/moodle/AccessTokenUrl'
     const plat = await lti.getPlatform('http://localhost/moodle', 'ClientId1')
     await plat.platformAccessTokenEndpoint(value)
     return expect(plat.platformAccessTokenEndpoint()).to.eventually.become(value)
   })
-
+  it('Platform.platformAuthorizationServer expected to alter platform authorizaion server', async () => {
+    const value1 = 'http://localhost/moodle/AccessTokenUrl'
+    const value2 = 'http://localhost/moodle/AccessTokenUrlAud'
+    const plat = await lti.getPlatform('http://localhost/moodle', 'ClientId1')
+    expect(plat.platformAuthorizationServer()).to.eventually.become(value1)
+    await plat.platformAuthorizationServer(value2)
+    return expect(plat.platformAuthorizationServer()).to.eventually.become(value2)
+  })
   it('Provider.onConnect expected to throw error when receiving no callback', () => {
     const fn = () => {
       return lti.onConnect()

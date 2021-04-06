@@ -276,7 +276,7 @@ class Platform {
     }, {
       authorizationServer: authorizationServer
     });
-    (0, _classPrivateFieldSet2.default)(this, _accesstokenEndpoint, authorizationServer);
+    (0, _classPrivateFieldSet2.default)(this, _authorizationServer, authorizationServer);
     return authorizationServer;
   }
   /**
