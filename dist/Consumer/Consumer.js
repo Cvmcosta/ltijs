@@ -72,8 +72,6 @@ var _ENCRYPTIONKEY = new WeakMap();
 
 var _legacy = new WeakMap();
 
-var _tokenMaxAge = new WeakMap();
-
 var _setup = new WeakMap();
 
 var _coreLaunchCallback = new WeakMap();
@@ -137,11 +135,6 @@ class Consumer {
     _legacy.set(this, {
       writable: true,
       value: false
-    });
-
-    _tokenMaxAge.set(this, {
-      writable: true,
-      value: 10
     });
 
     _setup.set(this, {
@@ -252,7 +245,6 @@ class Consumer {
      * @param {String} [options.staticPath] - The path for the static files your application might serve (Ex: _dirname+"/public")
      * @param {Boolean} [options.cors = true] - If set to false, disables cors.
      * @param {Function} [options.serverAddon] - Allows the execution of a method inside of the server contructor. Can be used to register middlewares.
-     * @param {Number} [options.tokenMaxAge = 10] - Sets the idToken max age allowed in seconds. Defaults to 10 seconds. If false, disables max age validation.
      */
   setup(encryptionkey, database, options) {
     if ((0, _classPrivateFieldGet2.default)(this, _setup)) throw new Error('PROVIDER_ALREADY_SETUP');
@@ -265,8 +257,7 @@ class Consumer {
     if (options && options.accesstokenRoute) (0, _classPrivateFieldSet2.default)(this, _accesstokenRoute, options.accesstokenRoute);
     if (options && options.deepLinkingResponseRoute) (0, _classPrivateFieldSet2.default)(this, _deepLinkingResponseRoute, options.deepLinkingResponseRoute);
     if (options && options.membershipsRoute) (0, _classPrivateFieldSet2.default)(this, _membershipsRoute, options.membershipsRoute);
-    if (options && options.legacy === true) (0, _classPrivateFieldSet2.default)(this, _legacy, true);
-    if (options && options.tokenMaxAge !== undefined) (0, _classPrivateFieldSet2.default)(this, _tokenMaxAge, options.tokenMaxAge); // Creating consumer configuration object
+    if (options && options.legacy === true) (0, _classPrivateFieldSet2.default)(this, _legacy, true); // Creating consumer configuration object
 
     (0, _classPrivateFieldSet2.default)(this, _consumerUrl, options.consumerUrl);
     (0, _classPrivateFieldSet2.default)(this, _consumer, url.parse((0, _classPrivateFieldGet2.default)(this, _consumerUrl)));
@@ -285,7 +276,7 @@ class Consumer {
 
     this.Database = Database;
     this.Database.setup((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), connector, {
-      type: 'PROVIDER',
+      type: 'CONSUMER',
       legacy: (0, _classPrivateFieldGet2.default)(this, _legacy)
     }); // Setting up Server
 

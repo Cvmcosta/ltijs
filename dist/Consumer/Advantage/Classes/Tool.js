@@ -18,9 +18,7 @@ const ToolLink = require('./ToolLink');
 
 const Database = require('../../../GlobalUtils/Database');
 
-const Keyset = require('../../../GlobalUtils/Keyset');
-
-const Auth = require('./Auth'); // Helpers
+const Keyset = require('../../../GlobalUtils/Keyset'); // Helpers
 
 
 const validScopes = require('../../../GlobalUtils/Helpers/scopes');
@@ -434,6 +432,14 @@ class Tool {
     return (0, _classPrivateFieldGet2.default)(this, _loginUrl);
   }
   /**
+   * @description Gets/Sets the tool redirection URIs.
+   */
+
+
+  async redirectionURIs() {
+    return (0, _classPrivateFieldGet2.default)(this, _redirectionURIs);
+  }
+  /**
    * @description Gets/Sets the tool scopes.
    */
 
@@ -529,33 +535,6 @@ class Tool {
     return key[0].key;
   }
   /**
-   * @description Gets the tool access token or attempts to generate a new one.
-   * @param {String} scopes - String of scopes.
-   */
-
-
-  async accessToken(scopes) {
-    const result = await Database.get('accesstoken', {
-      toolUrl: (0, _classPrivateFieldGet2.default)(this, _url),
-      clientId: (0, _classPrivateFieldGet2.default)(this, _clientId),
-      scopes: scopes
-    }, true);
-    let token;
-
-    if (!result || (Date.now() - result[0].createdAt) / 1000 > result[0].token.expires_in) {
-      consToolDebug('Valid access_token for ' + (0, _classPrivateFieldGet2.default)(this, _url) + ' not found');
-      consToolDebug('Attempting to generate new access_token for ' + (0, _classPrivateFieldGet2.default)(this, _url));
-      consToolDebug('With scopes: ' + scopes);
-      token = await Auth.generateAccessToken(scopes, this);
-    } else {
-      consToolDebug('Access_token found');
-      token = result[0].token;
-    }
-
-    token.token_type = token.token_type.charAt(0).toUpperCase() + token.token_type.slice(1);
-    return token;
-  }
-  /**
    * @description Retrieves the tool information as a JSON object.
    */
 
@@ -575,7 +554,7 @@ class Tool {
       scopes: (0, _classPrivateFieldGet2.default)(this, _scopes),
       privacy: (0, _classPrivateFieldGet2.default)(this, _privacy),
       customParameters: (0, _classPrivateFieldGet2.default)(this, _customParameters),
-      publicKey: await this.toolPublicKey()
+      publicKey: await this.publicKey()
     };
     return JSON;
   }

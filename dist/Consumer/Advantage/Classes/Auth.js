@@ -170,7 +170,7 @@ class Auth {
     loginRequest.deploymentId = obj.lti_deployment_id;
     consAuthDebug('Validating redirect_uri claim');
     if (!obj.redirect_uri) throw new Error('MISSING_REDIRECT_URI_CLAIM');
-    if (!(await tool.redirectURIs()).includes(obj.redirect_uri)) throw new Error('INVALID_REDIRECT_URI_CLAIM');
+    if (!(await tool.redirectionURIs()).includes(obj.redirect_uri)) throw new Error('INVALID_REDIRECT_URI_CLAIM');
     loginRequest.redirectUri = obj.redirect_uri;
     consAuthDebug('Validating login_hint claim');
     if (!obj.login_hint) throw new Error('MISSING_LOGIN_HINT_CLAIM');
@@ -287,8 +287,8 @@ class Auth {
       if (tool.privacy === privacyLevels.COMPLETE || tool.privacy === privacyLevels.EMAIL) idtoken.email = _idtoken.user.email;
 
       if (tool.privacy === privacyLevels.COMPLETE || tool.privacy === privacyLevels.NAME) {
-        idtoken.given_name = _idtoken.user.givenName;
-        idtoken.family_name = _idtoken.user.familyName;
+        idtoken.given_name = _idtoken.user.given_name;
+        idtoken.family_name = _idtoken.user.family_name;
         idtoken.name = _idtoken.user.name;
       }
     } else {
@@ -302,8 +302,8 @@ class Auth {
       if (privacy === privacyLevels.COMPLETE || privacy === privacyLevels.EMAIL) idtoken.email = _idtoken.user.email;
 
       if (privacy === privacyLevels.COMPLETE || privacy === privacyLevels.NAME) {
-        idtoken.given_name = _idtoken.user.givenName;
-        idtoken.family_name = _idtoken.user.familyName;
+        idtoken.given_name = _idtoken.user.given_name;
+        idtoken.family_name = _idtoken.user.family_name;
         idtoken.name = _idtoken.user.name;
       }
     }

@@ -52,8 +52,6 @@ class Consumer {
 
   #legacy = false
 
-  #tokenMaxAge = 10
-
   // Setup flag
   #setup = false
 
@@ -111,7 +109,6 @@ class Consumer {
      * @param {String} [options.staticPath] - The path for the static files your application might serve (Ex: _dirname+"/public")
      * @param {Boolean} [options.cors = true] - If set to false, disables cors.
      * @param {Function} [options.serverAddon] - Allows the execution of a method inside of the server contructor. Can be used to register middlewares.
-     * @param {Number} [options.tokenMaxAge = 10] - Sets the idToken max age allowed in seconds. Defaults to 10 seconds. If false, disables max age validation.
      */
   setup (encryptionkey, database, options) {
     if (this.#setup) throw new Error('PROVIDER_ALREADY_SETUP')
@@ -127,7 +124,6 @@ class Consumer {
     if (options && options.deepLinkingResponseRoute) this.#deepLinkingResponseRoute = options.deepLinkingResponseRoute
     if (options && options.membershipsRoute) this.#membershipsRoute = options.membershipsRoute
     if (options && options.legacy === true) this.#legacy = true
-    if (options && options.tokenMaxAge !== undefined) this.#tokenMaxAge = options.tokenMaxAge
 
     // Creating consumer configuration object
     this.#consumerUrl = options.consumerUrl
@@ -148,7 +144,7 @@ class Consumer {
      * @description Database object.
      */
     this.Database = Database
-    this.Database.setup(this.#ENCRYPTIONKEY, connector, { type: 'PROVIDER', legacy: this.#legacy })
+    this.Database.setup(this.#ENCRYPTIONKEY, connector, { type: 'CONSUMER', legacy: this.#legacy })
 
     // Setting up Server
     this.#server = new Server(options ? options.https : false, options ? options.ssl : false, this.#ENCRYPTIONKEY, options ? options.cors : true, options ? options.serverAddon : false)

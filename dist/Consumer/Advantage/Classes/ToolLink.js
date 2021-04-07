@@ -14,9 +14,7 @@ const {
 } = require('uuid'); // Classes
 
 
-const Database = require('../../../GlobalUtils/Database');
-
-const Tool = require('./Tool'); // Helpers
+const Database = require('../../../GlobalUtils/Database'); // Helpers
 
 
 const privacyLevels = require('../../../GlobalUtils/Helpers/privacy');
@@ -174,7 +172,7 @@ class ToolLink {
       } // Storing new toolLink
 
 
-      await Database.replace('toolLink', {
+      await Database.replace('toollink', {
         clientId: toolLink.clientId
       }, {
         id: toolLink.id,
@@ -191,7 +189,7 @@ class ToolLink {
 
       return _toolLink;
     } catch (err) {
-      if (toolLink.id) await Database.delete('toolLink', {
+      if (toolLink.id) await Database.delete('toollink', {
         id: toolLink.id
       });
       consToolDebug(err.message);
@@ -259,15 +257,6 @@ class ToolLink {
   } // Instance methods
 
   /**
-   * @description Gets the parent Tool.
-   * @returns {Promise<Tool>}
-   */
-
-
-  async parentTool() {
-    return Tool.getTool((0, _classPrivateFieldGet2.default)(this, _clientId));
-  }
-  /**
    * @description Gets the tool link client id.
    */
 
@@ -282,8 +271,11 @@ class ToolLink {
 
   async url() {
     if ((0, _classPrivateFieldGet2.default)(this, _url)) return (0, _classPrivateFieldGet2.default)(this, _url);else {
-      const tool = await this.parentTool();
-      return tool.url();
+      const result = await Database.get('tool', {
+        clientId: (0, _classPrivateFieldGet2.default)(this, _clientId)
+      });
+      const tool = result[0];
+      return tool.url;
     }
   }
   /**
@@ -316,11 +308,9 @@ class ToolLink {
 
 
   async toJSON() {
-    const toolObject = await this.parentTool();
-    const tool = await toolObject.toJSON();
     const JSON = {
       id: (0, _classPrivateFieldGet2.default)(this, _id),
-      url: (0, _classPrivateFieldGet2.default)(this, _url) || tool.url,
+      url: await this.url(),
       clientId: (0, _classPrivateFieldGet2.default)(this, _clientId),
       deploymentId: (0, _classPrivateFieldGet2.default)(this, _deploymentId),
       name: (0, _classPrivateFieldGet2.default)(this, _name),

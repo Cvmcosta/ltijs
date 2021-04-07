@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken')
 
 // Classes
 const ToolLink = require('../Classes/ToolLink')
+const Tool = require('../Classes/Tool')
 
 // Helpers
 const messageTypes = require('../../../GlobalUtils/Helpers/messageTypes')
@@ -26,7 +27,7 @@ class Core {
     consCoreDebug('Generating Core launch form')
     const toolLink = await ToolLink.getToolLink(toolLinkId)
     if (!toolLink) throw new Error('TOOL_LINK_NOT_FOUND')
-    const tool = await toolLink.parentTool()
+    const tool = await Tool.getTool(await toolLink.clientId())
     if (!tool) throw new Error('TOOL_NOT_FOUND')
 
     const messageHintObject = {

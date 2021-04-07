@@ -6,7 +6,6 @@ const { v4: uuidv4 } = require('uuid')
 const ToolLink = require('./ToolLink')
 const Database = require('../../../GlobalUtils/Database')
 const Keyset = require('../../../GlobalUtils/Keyset')
-const Auth = require('./Auth')
 
 // Helpers
 const validScopes = require('../../../GlobalUtils/Helpers/scopes')
@@ -291,6 +290,13 @@ class Tool {
   }
 
   /**
+   * @description Gets/Sets the tool redirection URIs.
+   */
+  async redirectionURIs () {
+    return this.#redirectionURIs
+  }
+
+  /**
    * @description Gets/Sets the tool scopes.
    */
   async scopes () {
@@ -369,26 +375,6 @@ class Tool {
   }
 
   /**
-   * @description Gets the tool access token or attempts to generate a new one.
-   * @param {String} scopes - String of scopes.
-   */
-  async accessToken (scopes) {
-    const result = await Database.get('accesstoken', { toolUrl: this.#url, clientId: this.#clientId, scopes: scopes }, true)
-    let token
-    if (!result || (Date.now() - result[0].createdAt) / 1000 > result[0].token.expires_in) {
-      consToolDebug('Valid access_token for ' + this.#url + ' not found')
-      consToolDebug('Attempting to generate new access_token for ' + this.#url)
-      consToolDebug('With scopes: ' + scopes)
-      token = await Auth.generateAccessToken(scopes, this)
-    } else {
-      consToolDebug('Access_token found')
-      token = result[0].token
-    }
-    token.token_type = token.token_type.charAt(0).toUpperCase() + token.token_type.slice(1)
-    return token
-  }
-
-  /**
    * @description Retrieves the tool information as a JSON object.
    */
   async toJSON () {
@@ -406,7 +392,7 @@ class Tool {
       scopes: this.#scopes,
       privacy: this.#privacy,
       customParameters: this.#customParameters,
-      publicKey: await this.toolPublicKey()
+      publicKey: await this.publicKey()
     }
     return JSON
   }

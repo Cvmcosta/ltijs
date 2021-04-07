@@ -4,7 +4,6 @@ const { v4: uuidv4 } = require('uuid')
 
 // Classes
 const Database = require('../../../GlobalUtils/Database')
-const Tool = require('./Tool')
 
 // Helpers
 const privacyLevels = require('../../../GlobalUtils/Helpers/privacy')
@@ -114,12 +113,12 @@ class ToolLink {
       }
 
       // Storing new toolLink
-      await Database.replace('toolLink', { clientId: toolLink.clientId }, { id: toolLink.id, clientId: toolLink.clientId, deploymentId: toolLink.deploymentId, url: toolLink.url, name: toolLink.name, description: toolLink.description, privacy: toolLink.privacy, customParameters: toolLink.customParameters })
+      await Database.replace('toollink', { clientId: toolLink.clientId }, { id: toolLink.id, clientId: toolLink.clientId, deploymentId: toolLink.deploymentId, url: toolLink.url, name: toolLink.name, description: toolLink.description, privacy: toolLink.privacy, customParameters: toolLink.customParameters })
 
       const _toolLink = new ToolLink(toolLink.id, toolLink.clientId, toolLink.deploymentId, toolLink.url, toolLink.name, toolLink.description, toolLink.privacy, toolLink.customParameters)
       return _toolLink
     } catch (err) {
-      if (toolLink.id) await Database.delete('toolLink', { id: toolLink.id })
+      if (toolLink.id) await Database.delete('toollink', { id: toolLink.id })
       consToolDebug(err.message)
       throw (err)
     }
@@ -177,14 +176,6 @@ class ToolLink {
 
   // Instance methods
   /**
-   * @description Gets the parent Tool.
-   * @returns {Promise<Tool>}
-   */
-  async parentTool () {
-    return Tool.getTool(this.#clientId)
-  }
-
-  /**
    * @description Gets the tool link client id.
    */
   async clientId () {
@@ -197,8 +188,9 @@ class ToolLink {
   async url () {
     if (this.#url) return this.#url
     else {
-      const tool = await this.parentTool()
-      return tool.url()
+      const result = await Database.get('tool', { clientId: this.#clientId })
+      const tool = result[0]
+      return tool.url
     }
   }
 
@@ -224,11 +216,9 @@ class ToolLink {
    * @description Retrieves the tool link information as a JSON object.
    */
   async toJSON () {
-    const toolObject = await this.parentTool()
-    const tool = await toolObject.toJSON()
     const JSON = {
       id: this.#id,
-      url: this.#url || tool.url,
+      url: await this.url(),
       clientId: this.#clientId,
       deploymentId: this.#deploymentId,
       name: this.#name,

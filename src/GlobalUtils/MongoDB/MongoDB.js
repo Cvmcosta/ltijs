@@ -6,6 +6,7 @@ const provDatabaseDebug = require('debug')('global:database')
 
 // Models
 const providerAdvantage = require('./Provider/Advantage')
+const consumerAdvantage = require('./Consumer/Advantage')
 
 /**
  * @description MongoDB database adapter.
@@ -51,6 +52,9 @@ class MongoDB {
     switch (options.type) {
       case 'PROVIDER':
         providerAdvantage.register()
+        break
+      case 'CONSUMER':
+        consumerAdvantage.register()
         break
     }
   }

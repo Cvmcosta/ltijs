@@ -1,2 +1,2 @@
 exports.Provider = require('./dist/Provider/Provider')
-// exports.Consumer = require("./Consumer/Consumer")
+exports.Consumer = require('./dist/Consumer/Consumer')
