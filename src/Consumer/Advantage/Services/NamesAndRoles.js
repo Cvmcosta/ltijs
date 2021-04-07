@@ -2,6 +2,7 @@
 const consMembershipsDebug = require('debug')('lti:memberships')
 
 // Helpers
+const privacyLevels = require('../../../GlobalUtils/Helpers/privacy')
 
 /**
  * @description LTI 1.3 NamesAndRoles service methods.
@@ -23,6 +24,16 @@ class NamesAndRoles {
       id: payload.endpoint,
       context: context,
       members: members
+    }
+
+    for (const member of members) {
+      if (payload.privacy < privacyLevels.EMAIL) member.email = undefined
+      if (payload.privacy < privacyLevels.NAME) {
+        member.given_name = undefined
+        member.family_name = undefined
+        member.middle_name = undefined
+        member.name = undefined
+      }
     }
 
     if (payload.params.limit) {
