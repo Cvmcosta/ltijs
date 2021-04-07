@@ -311,7 +311,7 @@ class Auth {
   static async buildIdTokenResponse (res, _idtoken, consumer) {
     if (!res.locals.payload) throw new Error('INVALID_CONTEXT')
     const idtokenForm = await Auth.buildIdTokenForm(res.locals.payload, _idtoken, consumer)
-    res.setHeader('Content-type', 'text/html')
+    res.set('Content-type', 'text/html')
     return res.send(idtokenForm)
   }
 
