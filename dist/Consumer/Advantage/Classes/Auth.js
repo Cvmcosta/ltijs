@@ -173,12 +173,13 @@ class Auth {
         user: obj.login_hint,
         toolLink: messageHint.toolLink,
         resource: messageHint.resource,
+        context: messageHint.context,
         type: messageHint.type,
         redirectUri: obj.redirect_uri,
         state: obj.state
       }
     };
-    if (messageHint.type === messageTypes.DEEPLINKING_LAUNCH) payload.dlState = crypto.randomBytes(16).toString('hex');
+    if (messageHint.type === messageTypes.DEEPLINKING_LAUNCH) payload.params.dlState = crypto.randomBytes(16).toString('hex');
     return payload;
   }
   /**
@@ -222,14 +223,14 @@ class Auth {
     const payload = {
       service: 'DEEPLINKING',
       clientId: verified.iss,
+      deploymentId: verified.deploymentId,
       params: {
-        deploymentId: verified.deploymentId,
         contentItems: verified['https://purl.imsglobal.org/spec/lti-dl/claim/content_items'],
         message: verified['https://purl.imsglobal.org/spec/lti-dl/claim/msg'],
         log: verified['https://purl.imsglobal.org/spec/lti-dl/claim/log'],
         error: verified['https://purl.imsglobal.org/spec/lti-dl/claim/errormsg'],
         errorLog: verified['https://purl.imsglobal.org/spec/lti-dl/claim/errorlog'],
-        contextId: query.contextId,
+        context: query.context,
         state: query.dlState
       }
     };
@@ -276,7 +277,7 @@ class Auth {
         hash: consumer.hash,
         pathname: consumer.deepLinkingRequestRoute,
         query: {
-          contextId: _idtoken.launch.context.id,
+          context: _idtoken.launch.context.id,
           dlState: payload.params.dlState
         }
       });

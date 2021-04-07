@@ -17,13 +17,14 @@ class Core {
    * @description LTI 1.3 Launch Core handler
    * @param {String} toolLinkId - Tool link Id being launched.
    * @param {String} userId - Id for current user.
-   * @param {String} [resourceId] - Identifier for resource holding toolLink in Platform.
+   * @param {String} resourceId - Identifier for resource holding toolLink in Platform.
    * @param {String} consumerUrl - Consumer URL.
    * @param {String} encryptionkey - Consumer encryption key.
    */
   static async launch (toolLinkId, userId, resourceId, consumerUrl, encryptionkey) {
     if (!toolLinkId) throw new Error('MISSING_CLIENT_ID_PARAMETER')
     if (!userId) throw new Error('MISSING_USER_ID_PARAMETER')
+    if (!resourceId) throw new Error('MISSING_RESOURCE_ID_PARAMETER')
     consCoreDebug('Generating Core launch form')
     const toolLink = await ToolLink.getToolLink(toolLinkId)
     if (!toolLink) throw new Error('TOOL_LINK_NOT_FOUND')

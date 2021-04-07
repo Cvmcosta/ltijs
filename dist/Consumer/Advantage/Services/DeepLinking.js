@@ -20,16 +20,18 @@ class DeepLinking {
    * @description LTI 1.3 Launch DeepLinking handler
    * @param {String} clientId - Client Id of Tool being launched.
    * @param {String} userId - Id for current user.
+   * @param {String} contextId - Identifier for the Deep Linking context.
    * @param {String} consumerUrl - Consumer URL.
    * @param {String} encryptionkey - Consumer encryption key.
    */
-  static async launch(clientId, userId, consumerUrl, encryptionkey) {
+  static async launch(clientId, userId, contextId, consumerUrl, encryptionkey) {
     if (!clientId) throw new Error('MISSING_CLIENT_ID_PARAMETER');
     if (!userId) throw new Error('MISSING_USER_ID_PARAMETER');
     consLaunchDebug('Generating Deep Linking launch form');
     const tool = await Tool.getTool(clientId);
     if (!tool) throw new Error('TOOL_NOT_FOUND');
     const messageHintObject = {
+      context: contextId,
       type: messageTypes.DEEPLINKING_LAUNCH
     };
     const messageHint = jwt.sign(messageHintObject, encryptionkey);

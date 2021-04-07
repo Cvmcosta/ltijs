@@ -531,7 +531,7 @@ class Consumer {
    * @description Generates Core launch self-submitting POST form
    * @param {String} toolLinkId - Tool link Id being launched.
    * @param {String} userId - Id for current user.
-   * @param {String} [resourceId] - Identifier for resource holding toolLink in Platform.
+   * @param {String} resourceId - Identifier for resource holding toolLink in Platform.
    */
 
 
@@ -542,11 +542,12 @@ class Consumer {
    * @description Generates DeepLinking launch self-submitting POST form
    * @param {String} clientId - Client Id of Tool being launched.
    * @param {String} userId - Id for current user.
+   * @param {String} contextId - Identifier for the Deep Linking context.
    */
 
 
-  async launchDeepLinking(clientId, userId) {
-    return DeepLinking.launch(clientId, userId, (0, _classPrivateFieldGet2.default)(this, _consumerUrl), (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
+  async launchDeepLinking(clientId, userId, contextId) {
+    return DeepLinking.launch(clientId, userId, contextId, (0, _classPrivateFieldGet2.default)(this, _consumerUrl), (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
   }
   /**
    * @description Redirects to self-submitting ID Token form.
