@@ -42,7 +42,7 @@ const DynamicRegistration = require('./Advantage/Services/DynamicRegistration');
 
 const Platform = require('./Advantage/Classes/Platform');
 
-const Server = require('../GlobalUtils/Server');
+const Server = require('./Advantage/Classes/Server');
 
 const Keyset = require('../GlobalUtils/Keyset'); // Database
 
@@ -590,9 +590,9 @@ class Provider {
       if (options && options.port) conf.port = options.port;
       if (options && options.silent) conf.silent = options.silent; // Starts server on given port
 
-      if (options && options.serverless) console.log('Ltijs started in serverless mode...');else {
+      if (options && options.serverless) console.log('Ltijs - Provider started in serverless mode...');else {
         await (0, _classPrivateFieldGet2.default)(this, _server).listen(conf.port);
-        provMainDebug('Ltijs started listening on port: ', conf.port); // Startup message
+        provMainDebug('Ltijs - Provider started listening on port: ', conf.port); // Startup message
 
         const message = 'LTI Provider is listening on port ' + conf.port + '!\n\n LTI provider config: \n >App Route: ' + (0, _classPrivateFieldGet2.default)(this, _appRoute) + '\n >Initiate Login Route: ' + (0, _classPrivateFieldGet2.default)(this, _loginRoute) + '\n >Keyset Route: ' + (0, _classPrivateFieldGet2.default)(this, _keysetRoute) + '\n >Dynamic Registration Route: ' + (0, _classPrivateFieldGet2.default)(this, _dynRegRoute);
 

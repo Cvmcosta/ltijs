@@ -298,6 +298,13 @@ class Tool {
   }
 
   /**
+   * @description Gets/Sets the tool privacy level.
+   */
+  async privacy () {
+    return this.#privacy
+  }
+
+  /**
    * @description Gets/Sets the tool deep linking url.
    */
   async deepLinkingUrl () {

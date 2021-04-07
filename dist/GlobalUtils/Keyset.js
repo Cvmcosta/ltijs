@@ -14,7 +14,7 @@ const Jwk = require('rasha');
 
 const crypto = require('crypto');
 
-const provKeysetDebug = require('debug')('provider:keyset'); // Classes
+const provKeysetDebug = require('debug')('global:keyset'); // Classes
 
 
 const Database = require('./Database');
@@ -52,7 +52,7 @@ class Keyset {
 
     while (await Database.get('publickey', {
       kid: kid
-    }, true)) {
+    }, false)) {
       /* istanbul ignore next */
       kid = crypto.randomBytes(16).toString('hex');
     }

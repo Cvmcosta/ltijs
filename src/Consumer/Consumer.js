@@ -9,8 +9,8 @@ const url = require('fast-url-parser')
 // Services
 const Core = require('./Advantage/Services/Core')
 const DeepLinking = require('./Advantage/Services/DeepLinking')
-/* const GradeService = require('./Advantage/Services/Grade')
-const NamesAndRolesService = require('./Advantage/Services/NamesAndRoles') */
+const NamesAndRoles = require('./Advantage/Services/NamesAndRoles')
+/* const GradeService = require('./Advantage/Services/Grade') */
 
 // Classes
 const Auth = require('./Advantage/Classes/Auth')
@@ -27,6 +27,7 @@ const MongoDB = require('../GlobalUtils/MongoDB/MongoDB')
 const messageTypes = require('../GlobalUtils/Helpers/messageTypes')
 const roles = require('../GlobalUtils/Helpers/roles')
 const scopes = require('../GlobalUtils/Helpers/scopes')
+const privacyLevels = require('../GlobalUtils/Helpers/privacy')
 
 /**
  * @descripttion LTI Consumer Class that implements the LTI 1.3 protocol and services.
@@ -44,6 +45,8 @@ class Consumer {
   #keysetRoute = '/keys'
 
   #deepLinkingResponseRoute = '/deeplinking'
+
+  #membershipsRoute = '/memberships'
 
   #ENCRYPTIONKEY
 
@@ -64,6 +67,10 @@ class Consumer {
 
   #deepLinkingResponseCallback = async (deepLinkingResponse, req, res) => {
     return res.status(500).send({ status: 500, error: 'Internal Server Error', details: { message: 'MISSING_DEEPLINKING_RESPONSE_CALLBACK' } })
+  }
+
+  #membershipsRequestCallback = async (serviceAction, req, res) => {
+    return res.status(500).send({ status: 500, error: 'Internal Server Error', details: { message: 'MISSING_MEMBERSHIPS_CALLBACK' } })
   }
 
   #invalidLoginRequestCallback = async (req, res) => {
@@ -95,7 +102,8 @@ class Consumer {
      * @param {String} [options.loginRoute = '/login'] - LTI Consumer login route. If no option is set '/login' is used.
      * @param {String} [options.accesstokenRoute = '/accesstoken'] - LTI Consumer access token generation endpoint.
      * @param {String} [options.keysetRoute = '/keys'] - LTI Consumer public jwk keyset route. If no option is set '/keys' is used.
-     * @param {String} [options.deepLinkingResponseRoute = '/deeplinking'] - LTI Consumer public jwk keyset route. If no option is set '/keys' is used.
+     * @param {String} [options.deepLinkingResponseRoute = '/deeplinking'] - LTI Consumer deep linking response route. If no option is set '/deeplinking' is used.
+     * @param {String} [options.membershipsRoute = '/memberships'] - LTI Consumer Memeberships route. If no option is set '/memberships' is used.
      * @param {Boolean} [options.https = false] - Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https and are planning to configure ssl through Express.
      * @param {Object} [options.ssl] - SSL certificate and key if https is enabled.
      * @param {String} [options.ssl.key] - SSL key.
@@ -117,6 +125,7 @@ class Consumer {
     if (options && options.keysetRoute) this.#keysetRoute = options.keysetRoute
     if (options && options.accesstokenRoute) this.#accesstokenRoute = options.accesstokenRoute
     if (options && options.deepLinkingResponseRoute) this.#deepLinkingResponseRoute = options.deepLinkingResponseRoute
+    if (options && options.membershipsRoute) this.#membershipsRoute = options.membershipsRoute
     if (options && options.legacy === true) this.#legacy = true
     if (options && options.tokenMaxAge !== undefined) this.#tokenMaxAge = options.tokenMaxAge
 
@@ -126,6 +135,7 @@ class Consumer {
     this.#consumer.url = this.#consumerUrl
     this.#consumer.accesstokenRoute = this.#accesstokenRoute
     this.#consumer.deepLinkingResponseRoute = this.#deepLinkingResponseRoute
+    this.#consumer.membershipsRoute = this.#membershipsRoute
 
     // Encryption Key
     this.#ENCRYPTIONKEY = encryptionkey
@@ -160,14 +170,19 @@ class Consumer {
     this.Roles = roles
 
     /**
+     * @description Privacy Levels Helper
+     */
+    this.PrivacyLevels = privacyLevels
+
+    /**
+     * @description NamesAndRoles Service
+     */
+    this.NamesAndRoles = NamesAndRoles
+
+    /**
      * @description Express server object.
      */
     this.app = this.#server.app
-
-    /**
-     * @description Deep Linking service.
-     */
-    this.DeepLinking = DeepLinking
 
     // Authentication request route
     this.app.all(this.#loginRoute, async (req, res, next) => {
@@ -239,6 +254,66 @@ class Consumer {
       } catch (err) {
         provMainDebug(err)
         return res.status(500).send({ status: 500, error: 'Internal Server Error', details: { message: err.message } })
+      }
+    })
+
+    // LTI Services
+    const validateAccessToken = async (authorization, scope, res) => {
+      try {
+        if (!authorization) throw new Error('MISSING_AUTHORIZATION_HEADER')
+        const parts = authorization.split(' ')
+        if (parts.length === 2 && (parts[0] === 'Bearer' || parts[0] === 'bearer')) {
+          return Auth.validateAccessToken(parts[1], scope, this.#ENCRYPTIONKEY)
+        }
+        throw new Error('INVALID_AUTHORIZATION_HEADER')
+      } catch (err) {
+        provMainDebug(err)
+        return res.status(401).send({
+          status: 401,
+          error: 'Unauthorized',
+          details: {
+            description: 'Invalid access token or scopes',
+            message: err.message
+          }
+        })
+      }
+    }
+    this.app.get(this.#membershipsRoute + '/:context', async (req, res, next) => {
+      try {
+        const accessToken = await validateAccessToken(req.headers.authorization, scopes.MEMBERSHIPS, res)
+        const serviceEndpoint = url.format({
+          protocol: this.#consumer.protocol,
+          hostname: this.#consumer.hostname,
+          port: this.#consumer.port,
+          auth: this.#consumer.auth,
+          hash: this.#consumer.hash,
+          pathname: this.#consumer.membershipsRoute + '/' + req.params.context
+        })
+        res.locals.serviceAction = {
+          service: 'MEMBERSHIPS',
+          action: 'GET',
+          endpoint: serviceEndpoint,
+          clientId: accessToken.clientId,
+          privacy: accessToken.privacy,
+          params: {
+            contextId: req.params.context,
+            role: req.query.role,
+            limit: req.query.limit,
+            next: req.query.next
+          }
+        }
+        return this.#membershipsRequestCallback(res.locals.serviceAction, req, res, next)
+      } catch (err) {
+        provMainDebug(err)
+        return res.status(400).send({
+          status: 400,
+          error: 'Bad Request',
+          details: {
+            description: 'Error validating access token request',
+            message: err.message,
+            bodyReceived: req.body
+          }
+        })
       }
     })
 
@@ -338,11 +413,10 @@ class Consumer {
   /**
    * @description Redirects to self-submitting ID Token form.
    * @param {Object} res - Express response object.
-   * @param {String} loginRequest - Valid login request object.
    * @param {String} idtoken - Information used to build the ID Token.
    */
-  async sendIdToken (res, loginRequest, idtoken) {
-    return Auth.buildIdTokenResponse(res, loginRequest, idtoken, this.#consumer)
+  async sendIdToken (res, idtoken) {
+    return Auth.buildIdTokenResponse(res, idtoken, this.#consumer)
   }
 
   /**
@@ -365,7 +439,7 @@ class Consumer {
 
   /**
    * @description Sets the callback function called whenever the Consumer receives a valid LTI 1.3 Core Login Request.
-   * @param {Function} onCoreLaunchCallback - Callback function called whenever the Consumer receives a valid Core LTI 1.3 Login Request.
+   * @param {Function} coreLaunchCallback - Callback function called whenever the Consumer receives a valid Core LTI 1.3 Login Request.
    * @returns {true}
    */
   onCoreLaunch (coreLaunchCallback) {
@@ -377,7 +451,7 @@ class Consumer {
 
   /**
    * @description Sets the callback function called whenever the Consumer receives a valid LTI 1.3 Deep Linking Login Request.
-   * @param {Function} onDeepLinkingLaunchCallback - Callback function called whenever the Consumer receives a valid Deep Linking LTI 1.3 Login Request.
+   * @param {Function} deepLinkingLaunchCallback - Callback function called whenever the Consumer receives a valid LTI 1.3 Deep Linking Login Request.
    * @returns {true}
    */
   onDeepLinkingLaunch (deepLinkingLaunchCallback) {
@@ -388,14 +462,26 @@ class Consumer {
   }
 
   /**
-   * @description Sets the callback function called whenever the Consumer receives a valid LTI 1.3 Deep Linking Response Request.
-   * @param {Function} onDeepLinkingResponseCallback - Callback function called whenever the Consumer receives a valid Deep Linking LTI 1.3 Response Request.
+   * @description Sets the callback function called whenever the Consumer receives a valid LTI 1.3 Deep Linking Response.
+   * @param {Function} deepLinkingResponseCallback - Callback function called whenever the Consumer receives a valid LTI 1.3 Deep Linking Response.
    * @returns {true}
    */
   onDeepLinkingResponse (deepLinkingResponseCallback) {
     /* istanbul ignore next */
     if (!deepLinkingResponseCallback) throw new Error('MISSING_CALLBACK')
     this.#deepLinkingResponseCallback = deepLinkingResponseCallback
+    return true
+  }
+
+  /**
+   * @description Sets the callback function called whenever the Consumer receives a valid LTI 1.3 Memberships Request.
+   * @param {Function} membershipsRequestCallback - Callback function called whenever the Consumer receives a valid LTI 1.3 Memberships Request.
+   * @returns {true}
+   */
+  onMembershipsRequest (membershipsRequestCallback) {
+    /* istanbul ignore next */
+    if (!membershipsRequestCallback) throw new Error('MISSING_CALLBACK')
+    this.#membershipsRequestCallback = membershipsRequestCallback
     return true
   }
 

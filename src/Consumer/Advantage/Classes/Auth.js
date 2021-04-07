@@ -263,6 +263,20 @@ class Auth {
         idtoken.name = _idtoken.user.name
       }
     }
+    if (tool.scopes.includes('MEMBERSHIPS')) {
+      const membershipsUrl = url.format({
+        protocol: consumer.protocol,
+        hostname: consumer.hostname,
+        port: consumer.port,
+        auth: consumer.auth,
+        hash: consumer.hash,
+        pathname: consumer.membershipsRoute + '/' + _idtoken.launch.context.id
+      })
+      idtoken['https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice'] = {
+        context_memberships_url: membershipsUrl,
+        service_versions: ['2.0']
+      }
+    }
     // Signing ID Token
     consAuthDebug('Signing ID Token')
     const token = jwt.sign(idtoken, await toolObject.privateKey(), { algorithm: 'RS256', expiresIn: '1h', keyid: tool.kid })
@@ -286,12 +300,12 @@ class Auth {
   /**
    * @description Creates self-submitting form containing signed ID Token.
    * @param {Object} res - Express response object.
-   * @param {Object} loginRequest - Valid login request object.
    * @param {Object} _idtoken - Information used to build the ID Token.
    * @param {Object} consumer - Consumer configurations.
    */
-  static async buildIdTokenResponse (res, loginRequest, _idtoken, consumer) {
-    const idtokenForm = await Auth.buildIdTokenForm(loginRequest, _idtoken, consumer)
+  static async buildIdTokenResponse (res, _idtoken, consumer) {
+    if (!res.locals.loginRequest) throw new Error('INVALID_CONTEXT')
+    const idtokenForm = await Auth.buildIdTokenForm(res.locals.loginRequest, _idtoken, consumer)
     res.setHeader('Content-type', 'text/html')
     return res.send(idtokenForm)
   }
@@ -356,9 +370,14 @@ class Auth {
    * @param {String} encryptionkey - Consumer encryption key.
    */
   static async validateAccessToken (token, scope, encryptionkey) {
-    const verified = jwt.verify(token, encryptionkey)
+    let verified
+    try {
+      verified = jwt.verify(token, encryptionkey)
+    } catch {
+      throw new Error('INVALID_ACCESS_TOKEN')
+    }
     const scopes = verified.scopes.split(' ')
-    if (!scopes.includes(scope)) throw new Error('UNAUTHORIZED_SCOPE')
+    if (!scopes.includes(scope)) throw new Error('INVALID_SCOPE_CLAIM. Details: Invalid or unauthorized scope: ' + scope)
 
     const tool = await Tool.getTool(verified.clientId)
     if (!tool) throw new Error('TOOL_NOT_FOUND')
@@ -366,7 +385,9 @@ class Auth {
     const code = getScopeCode(scope)
     if (!code || !toolScopes.includes(code)) throw new Error('INVALID_SCOPE_CLAIM. Details: Invalid or unauthorized scope: ' + scope)
 
-    return true
+    // Adding privacy level to accesstoken object
+    verified.privacy = await tool.privacy()
+    return verified
   }
 }
 

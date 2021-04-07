@@ -179,7 +179,7 @@ class Platform {
     const _platform = await Platform.getPlatform(platform.url, platform.clientId);
 
     if (!_platform) {
-      if (!platform.name || !platform.authenticationEndpoint || !platform.accesstokenEndpoint || !platform.authConfig) throw new Error('MISSING_PARAMS');
+      if (!platform.name || !platform.authenticationEndpoint || !platform.accesstokenEndpoint || !platform.authConfig) throw new Error('MISSING_REGISTRATION_PARAMETERS');
       if (platform.authConfig.method !== 'RSA_KEY' && platform.authConfig.method !== 'JWK_KEY' && platform.authConfig.method !== 'JWK_SET') throw new Error('INVALID_AUTHCONFIG_METHOD. Details: Valid methods are "RSA_KEY", "JWK_KEY", "JWK_SET".');
       if (!platform.authConfig.key) throw new Error('MISSING_AUTHCONFIG_KEY');
 
@@ -487,7 +487,7 @@ class Platform {
   /**
      * @description Sets/Gets the platform authorization configurations used to validate it's messages.
      * @param {string} method - Method of authorization "RSA_KEY" or "JWK_KEY" or "JWK_SET".
-     * @param {string} key - Either the RSA public key provided by the platform, or the JWK key, or the JWK keyset address.
+     * @param {string} key - Either the RSA public key provided by the platform, the JWK key, or the JWK keyset address.
      */
 
 
