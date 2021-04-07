@@ -1,7 +1,7 @@
 "use strict";
 
 // Dependencies
-const consMembershipsDebug = require('debug')('consumer:memberships'); // Helpers
+const consMembershipsDebug = require('debug')('lti:memberships'); // Helpers
 
 /**
  * @description LTI 1.3 NamesAndRoles service methods.

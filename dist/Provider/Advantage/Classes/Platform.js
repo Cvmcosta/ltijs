@@ -7,7 +7,7 @@ var _classPrivateFieldGet2 = _interopRequireDefault(require("@babel/runtime/help
 var _classPrivateFieldSet2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldSet"));
 
 // Dependencies
-const provPlatformDebug = require('debug')('provider:platform'); // Classes
+const provPlatformDebug = require('debug')('lti:platform'); // Classes
 
 
 const Database = require('../../../GlobalUtils/Database');

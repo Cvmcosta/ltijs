@@ -13,7 +13,7 @@ const cookieParser = require('cookie-parser');
 
 const cors = require('cors');
 
-const provAuthDebug = require('debug')('provider:auth');
+const provAuthDebug = require('debug')('lti:auth');
 
 class Server {
   constructor(https, ssl, ENCRYPTIONKEY, corsOpt, serverAddon) {

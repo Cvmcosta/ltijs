@@ -4,7 +4,7 @@ const Jwk = require('rasha')
 const got = require('got')
 const jwt = require('jsonwebtoken')
 const url = require('fast-url-parser')
-const consAuthDebug = require('debug')('consumer:auth')
+const consAuthDebug = require('debug')('lti:auth')
 
 // Classes
 const Tool = require('./Tool')

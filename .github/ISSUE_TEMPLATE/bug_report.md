@@ -15,7 +15,7 @@ A clear and concise description of what you expected to happen.
 
 **Provider logs**
 Copy of the relevant provider logs.
-1. Run code with debug flag: `DEBUG=provider:* npm start`.
+1. Run code with debug flag: `DEBUG=lti:* npm start`.
 2. Copy logs relevant to the issue.
 
 **Screenshots**

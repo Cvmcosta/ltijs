@@ -1872,10 +1872,10 @@ The Dynamic Registration Service documentation can be accessed [here](https://cv
 ## Debugging
 
 
-**Ltijs** uses [debug](https://www.npmjs.com/package/debug) to log various events to the console. Just append `DEBUG='provider:*'` before your node or npm command and it should work.
+**Ltijs** uses [debug](https://www.npmjs.com/package/debug) to log various events to the console. Just append `DEBUG='lti:*'` before your node or npm command and it should work.
 
 ```shell
-DEBUG='provider:*' npm start
+DEBUG='lti:*' npm start
 ```
 
 ---

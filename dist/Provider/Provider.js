@@ -22,11 +22,11 @@ const url = require('fast-url-parser');
 
 const jwt = require('jsonwebtoken');
 
-const provAuthDebug = require('debug')('provider:auth');
+const provAuthDebug = require('debug')('lti:auth');
 
-const provMainDebug = require('debug')('provider:main');
+const provMainDebug = require('debug')('lti:main');
 
-const provDynamicRegistrationDebug = require('debug')('provider:dynamicRegistrationService'); // Services
+const provDynamicRegistrationDebug = require('debug')('lti:dynamicRegistrationService'); // Services
 
 
 const Core = require('./Advantage/Services/Core');

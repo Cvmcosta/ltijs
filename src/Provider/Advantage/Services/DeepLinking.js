@@ -2,7 +2,7 @@
 
 // Dependencies
 const jwt = require('jsonwebtoken')
-const provDeepLinkingDebug = require('debug')('provider:deepLinkingService')
+const provDeepLinkingDebug = require('debug')('lti:deepLinkingService')
 
 // Classes
 const Platform = require('../Classes/Platform')

@@ -3,7 +3,7 @@
 // Dependencies
 const got = require('got')
 const parseLink = require('parse-link-header')
-const provNamesAndRolesServiceDebug = require('debug')('provider:namesAndRolesService')
+const provNamesAndRolesServiceDebug = require('debug')('lti:namesAndRolesService')
 
 // Classes
 const Platform = require('../Classes/Platform')

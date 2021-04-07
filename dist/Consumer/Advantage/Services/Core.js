@@ -1,7 +1,7 @@
 "use strict";
 
 // Dependencies
-const consCoreDebug = require('debug')('consumer:core');
+const consCoreDebug = require('debug')('lti:core');
 
 const jwt = require('jsonwebtoken'); // Classes
 

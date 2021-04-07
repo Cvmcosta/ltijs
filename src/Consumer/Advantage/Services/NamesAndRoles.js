@@ -1,5 +1,5 @@
 // Dependencies
-const consMembershipsDebug = require('debug')('consumer:memberships')
+const consMembershipsDebug = require('debug')('lti:memberships')
 
 // Helpers
 

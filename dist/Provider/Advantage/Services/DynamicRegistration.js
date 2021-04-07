@@ -14,7 +14,7 @@ const crypto = require('crypto');
 
 const _url = require('fast-url-parser');
 
-const provDynamicRegistrationDebug = require('debug')('provider:dynamicRegistrationService'); // Classes
+const provDynamicRegistrationDebug = require('debug')('lti:dynamicRegistrationService'); // Classes
 
 
 const Database = require('../../../GlobalUtils/Database');

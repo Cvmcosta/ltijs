@@ -12,7 +12,7 @@ var _classPrivateFieldGet2 = _interopRequireDefault(require("@babel/runtime/help
 
 /* Main class for the Consumer functionalities */
 // Dependencies
-const provMainDebug = require('debug')('consumer:main');
+const provMainDebug = require('debug')('lti:main');
 
 const url = require('fast-url-parser'); // Services
 

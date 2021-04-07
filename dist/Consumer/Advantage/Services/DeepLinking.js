@@ -1,7 +1,7 @@
 "use strict";
 
 // Dependencies
-const consLaunchDebug = require('debug')('consumer:launch');
+const consLaunchDebug = require('debug')('lti:launch');
 
 const jwt = require('jsonwebtoken'); // Classes
 

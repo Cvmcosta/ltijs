@@ -3,7 +3,7 @@
 // Dependencies
 const Jwk = require('rasha')
 const crypto = require('crypto')
-const provKeysetDebug = require('debug')('global:keyset')
+const provKeysetDebug = require('debug')('lti:keyset')
 
 // Classes
 const Database = require('./Database')

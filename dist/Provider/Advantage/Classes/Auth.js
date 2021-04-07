@@ -7,7 +7,7 @@ const got = require('got');
 
 const jwt = require('jsonwebtoken');
 
-const provAuthDebug = require('debug')('provider:auth'); // Classes
+const provAuthDebug = require('debug')('lti:auth'); // Classes
 
 
 const Database = require('../../../GlobalUtils/Database');

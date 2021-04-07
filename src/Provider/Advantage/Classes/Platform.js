@@ -1,5 +1,5 @@
 // Dependencies
-const provPlatformDebug = require('debug')('provider:platform')
+const provPlatformDebug = require('debug')('lti:platform')
 
 // Classes
 const Database = require('../../../GlobalUtils/Database')

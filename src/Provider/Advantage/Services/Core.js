@@ -2,9 +2,9 @@
 const crypto = require('crypto')
 const jwt = require('jsonwebtoken')
 const url = require('fast-url-parser')
-const provLoginDebug = require('debug')('provider:login')
-const provLaunchDebug = require('debug')('provider:launch')
-const provAccessDebug = require('debug')('provider:access')
+const provLoginDebug = require('debug')('lti:login')
+const provLaunchDebug = require('debug')('lti:launch')
+const provAccessDebug = require('debug')('lti:access')
 
 // Classes
 const Database = require('../../../GlobalUtils/Database')

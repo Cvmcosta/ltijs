@@ -6,7 +6,7 @@
 // Dependencies
 const got = require('got')
 const parseLink = require('parse-link-header')
-const provGradeServiceDebug = require('debug')('provider:gradeService')
+const provGradeServiceDebug = require('debug')('lti:gradeService')
 
 // Classes
 const Platform = require('../Classes/Platform')

@@ -1,5 +1,5 @@
 // Dependencies
-const consToolDebug = require('debug')('consumer:tool')
+const consToolDebug = require('debug')('lti:tool')
 const { v4: uuidv4 } = require('uuid')
 
 // Classes

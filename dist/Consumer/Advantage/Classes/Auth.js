@@ -19,7 +19,7 @@ const jwt = require('jsonwebtoken');
 
 const url = require('fast-url-parser');
 
-const consAuthDebug = require('debug')('consumer:auth'); // Classes
+const consAuthDebug = require('debug')('lti:auth'); // Classes
 
 
 const Tool = require('./Tool');

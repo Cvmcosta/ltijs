@@ -17,7 +17,7 @@ const mongoose = require('mongoose');
 
 const crypto = require('crypto');
 
-const provDatabaseDebug = require('debug')('global:database'); // Models
+const provDatabaseDebug = require('debug')('lti:database'); // Models
 
 
 const providerAdvantage = require('./Provider/Advantage');
