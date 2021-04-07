@@ -44,7 +44,7 @@ class Consumer {
 
   #keysetRoute = '/keys'
 
-  #deepLinkingResponseRoute = '/deeplinking'
+  #deepLinkingRequestRoute = '/deeplinking'
 
   #membershipsRoute = '/memberships'
 
@@ -55,27 +55,31 @@ class Consumer {
   // Setup flag
   #setup = false
 
-  #coreLaunchCallback = async (loginRequest, req, res) => {
+  #coreLaunchCallback = async (serviceAction, req, res) => {
     return res.status(500).send({ status: 500, error: 'Internal Server Error', details: { message: 'MISSING_CORE_LAUNCH_CALLBACK' } })
   }
 
-  #deepLinkingLaunchCallback = async (loginRequest, req, res) => {
+  #deepLinkingLaunchCallback = async (serviceAction, req, res) => {
     return res.status(500).send({ status: 500, error: 'Internal Server Error', details: { message: 'MISSING_DEEPLINKING_LAUNCH_CALLBACK' } })
   }
 
-  #deepLinkingResponseCallback = async (deepLinkingResponse, req, res) => {
-    return res.status(500).send({ status: 500, error: 'Internal Server Error', details: { message: 'MISSING_DEEPLINKING_RESPONSE_CALLBACK' } })
+  #deepLinkingRequestCallback = async (serviceAction, req, res) => {
+    return res.status(500).send({ status: 500, error: 'Internal Server Error', details: { message: 'MISSING_DEEPLINKING_REQUEST_CALLBACK' } })
   }
 
   #membershipsRequestCallback = async (serviceAction, req, res) => {
-    return res.status(500).send({ status: 500, error: 'Internal Server Error', details: { message: 'MISSING_MEMBERSHIPS_CALLBACK' } })
+    return res.status(500).send({ status: 500, error: 'Internal Server Error', details: { message: 'MISSING_MEMBERSHIPS_REQUEST_CALLBACK' } })
+  }
+
+  #gradesRequestCallback = async (serviceAction, req, res) => {
+    return res.status(500).send({ status: 500, error: 'Internal Server Error', details: { message: 'MISSING_GRADES_REQUEST_CALLBACK' } })
   }
 
   #invalidLoginRequestCallback = async (req, res) => {
     return res.status(401).send(res.locals.err)
   }
 
-  #invalidDeepLinkingResponseCallback = async (req, res) => {
+  #invalidDeepLinkingRequestCallback = async (req, res) => {
     return res.status(400).send(res.locals.err)
   }
 
@@ -100,7 +104,7 @@ class Consumer {
      * @param {String} [options.loginRoute = '/login'] - LTI Consumer login route. If no option is set '/login' is used.
      * @param {String} [options.accesstokenRoute = '/accesstoken'] - LTI Consumer access token generation endpoint.
      * @param {String} [options.keysetRoute = '/keys'] - LTI Consumer public jwk keyset route. If no option is set '/keys' is used.
-     * @param {String} [options.deepLinkingResponseRoute = '/deeplinking'] - LTI Consumer deep linking response route. If no option is set '/deeplinking' is used.
+     * @param {String} [options.deepLinkingRequestRoute = '/deeplinking'] - LTI Consumer deep linking request route. If no option is set '/deeplinking' is used.
      * @param {String} [options.membershipsRoute = '/memberships'] - LTI Consumer Memeberships route. If no option is set '/memberships' is used.
      * @param {Boolean} [options.https = false] - Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https and are planning to configure ssl through Express.
      * @param {Object} [options.ssl] - SSL certificate and key if https is enabled.
@@ -121,7 +125,7 @@ class Consumer {
     if (options && options.loginRoute) this.#loginRoute = options.loginRoute
     if (options && options.keysetRoute) this.#keysetRoute = options.keysetRoute
     if (options && options.accesstokenRoute) this.#accesstokenRoute = options.accesstokenRoute
-    if (options && options.deepLinkingResponseRoute) this.#deepLinkingResponseRoute = options.deepLinkingResponseRoute
+    if (options && options.deepLinkingRequestRoute) this.#deepLinkingRequestRoute = options.deepLinkingRequestRoute
     if (options && options.membershipsRoute) this.#membershipsRoute = options.membershipsRoute
     if (options && options.legacy === true) this.#legacy = true
 
@@ -130,7 +134,7 @@ class Consumer {
     this.#consumer = url.parse(this.#consumerUrl)
     this.#consumer.url = this.#consumerUrl
     this.#consumer.accesstokenRoute = this.#accesstokenRoute
-    this.#consumer.deepLinkingResponseRoute = this.#deepLinkingResponseRoute
+    this.#consumer.deepLinkingRequestRoute = this.#deepLinkingRequestRoute
     this.#consumer.membershipsRoute = this.#membershipsRoute
 
     // Encryption Key
@@ -183,9 +187,9 @@ class Consumer {
     // Authentication request route
     this.app.all(this.#loginRoute, async (req, res, next) => {
       try {
-        res.locals.loginRequest = await Auth.validateLoginRequest(req.query, this.#ENCRYPTIONKEY)
-        if (res.locals.loginRequest.type === messageTypes.DEEPLINKING_LAUNCH) return this.#deepLinkingLaunchCallback(res.locals.loginRequest, req, res, next)
-        return this.#coreLaunchCallback(res.locals.loginRequest, req, res, next)
+        res.locals.serviceAction = await Auth.validateLoginRequest(req.query, this.#ENCRYPTIONKEY)
+        if (res.locals.serviceAction.params.type === messageTypes.DEEPLINKING_LAUNCH) return this.#deepLinkingLaunchCallback(res.locals.serviceAction, req, res, next)
+        return this.#coreLaunchCallback(res.locals.serviceAction, req, res, next)
       } catch (err) {
         provMainDebug(err)
         res.locals.err = {
@@ -203,10 +207,10 @@ class Consumer {
     })
 
     // Deep Linking response route
-    this.app.post(this.#deepLinkingResponseRoute, async (req, res, next) => {
+    this.app.post(this.#deepLinkingRequestRoute, async (req, res, next) => {
       try {
-        res.locals.deepLinkingResponse = await Auth.validateDeepLinkingResponse(req.body, req.query, this.#consumer)
-        return this.#deepLinkingResponseCallback(res.locals.deepLinkingResponse, req, res, next)
+        res.locals.serviceAction = await Auth.validateDeepLinkingRequest(req.body, req.query, this.#consumer)
+        return this.#deepLinkingRequestCallback(res.locals.serviceAction, req, res, next)
       } catch (err) {
         provMainDebug(err)
         res.locals.err = {
@@ -218,7 +222,7 @@ class Consumer {
             bodyReceived: req.body
           }
         }
-        return this.#invalidDeepLinkingResponseCallback(req, res, next)
+        return this.#invalidDeepLinkingRequestCallback(req, res, next)
       }
     })
 
@@ -287,7 +291,6 @@ class Consumer {
         })
         res.locals.serviceAction = {
           service: 'MEMBERSHIPS',
-          action: 'GET',
           endpoint: serviceEndpoint,
           clientId: accessToken.clientId,
           privacy: accessToken.privacy,
@@ -346,7 +349,7 @@ class Consumer {
         provMainDebug('Ltijs - Consumer started listening on port: ', conf.port)
 
         // Startup message
-        const message = 'LTI Consumer is listening on port ' + conf.port + '!\n\n LTI provider config: \n >Main URL: ' + this.#consumerUrl + '\n >Login Request Route: ' + this.#loginRoute + '\n >Access Token Generation Route: ' + this.#accesstokenRoute + '\n >Deep Linking Response Route: ' + this.#deepLinkingResponseRoute + '\n >Keyset Route: ' + this.#keysetRoute
+        const message = 'LTI Consumer is listening on port ' + conf.port + '!\n\n LTI provider config: \n >Main URL: ' + this.#consumerUrl + '\n >Login Request Route: ' + this.#loginRoute + '\n >Access Token Generation Route: ' + this.#accesstokenRoute + '\n >Deep Linking Request Route: ' + this.#deepLinkingRequestRoute + '\n >Keyset Route: ' + this.#keysetRoute
 
         if (!conf.silent) {
           console.log('  _   _______ _____      _  _____\n' +
@@ -417,20 +420,20 @@ class Consumer {
 
   /**
    * @description Generates self-submitting ID Token form.
-   * @param {String} loginRequest - Valid login request object.
+   * @param {String} serviceAction - Valid login request object.
    * @param {String} idtoken - Information used to build the ID Token.
    */
-  async buildIdTokenForm (loginRequest, idtoken) {
-    return Auth.buildIdTokenForm(loginRequest, idtoken, this.#consumer)
+  async buildIdTokenForm (serviceAction, idtoken) {
+    return Auth.buildIdTokenForm(serviceAction, idtoken, this.#consumer)
   }
 
   /**
    * @description Generates ID Token.
-   * @param {String} loginRequest - Valid login request object.
+   * @param {String} serviceAction - Valid login request object.
    * @param {String} idtoken - Information used to build the ID Token.
    */
-  async buildIdToken (loginRequest, idtoken) {
-    return Auth.buildIdToken(loginRequest, idtoken, this.#consumer)
+  async buildIdToken (serviceAction, idtoken) {
+    return Auth.buildIdToken(serviceAction, idtoken, this.#consumer)
   }
 
   /**
@@ -459,13 +462,13 @@ class Consumer {
 
   /**
    * @description Sets the callback function called whenever the Consumer receives a valid LTI 1.3 Deep Linking Response.
-   * @param {Function} deepLinkingResponseCallback - Callback function called whenever the Consumer receives a valid LTI 1.3 Deep Linking Response.
+   * @param {Function} deepLinkingRequestCallback - Callback function called whenever the Consumer receives a valid LTI 1.3 Deep Linking Request.
    * @returns {true}
    */
-  onDeepLinkingResponse (deepLinkingResponseCallback) {
+  onDeepLinkingRequest (deepLinkingRequestCallback) {
     /* istanbul ignore next */
-    if (!deepLinkingResponseCallback) throw new Error('MISSING_CALLBACK')
-    this.#deepLinkingResponseCallback = deepLinkingResponseCallback
+    if (!deepLinkingRequestCallback) throw new Error('MISSING_CALLBACK')
+    this.#deepLinkingRequestCallback = deepLinkingRequestCallback
     return true
   }
 
@@ -498,10 +501,10 @@ class Consumer {
    * @param {Function} onInvalidLoginRequestCallback - Callback function called whenever the Consumer receives an invalid LTI 1.3 Deep Linking Response.
    * @returns {true}
    */
-  onInvalidDeepLinkingResponse (onInvalidDeepLinkingResponseCallback) {
+  onInvalidDeepLinkingRequest (onInvalidDeepLinkingRequestCallback) {
     /* istanbul ignore next */
-    if (!onInvalidDeepLinkingResponseCallback) throw new Error('MISSING_CALLBACK')
-    this.#invalidDeepLinkingResponseCallback = onInvalidDeepLinkingResponseCallback
+    if (!onInvalidDeepLinkingRequestCallback) throw new Error('MISSING_CALLBACK')
+    this.#invalidDeepLinkingRequestCallback = onInvalidDeepLinkingRequestCallback
     return true
   }
 
@@ -545,8 +548,8 @@ class Consumer {
    * @description Gets the deep linking response route that will be used to handle deep linking responses.
    * @returns {String}
    */
-  deepLinkingResponseRoute () {
-    return this.#deepLinkingResponseRoute
+  deepLinkingRequestRoute () {
+    return this.#deepLinkingRequestRoute
   }
 
   /**

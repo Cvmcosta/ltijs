@@ -64,7 +64,7 @@ var _accesstokenRoute = new WeakMap();
 
 var _keysetRoute = new WeakMap();
 
-var _deepLinkingResponseRoute = new WeakMap();
+var _deepLinkingRequestRoute = new WeakMap();
 
 var _membershipsRoute = new WeakMap();
 
@@ -78,13 +78,15 @@ var _coreLaunchCallback = new WeakMap();
 
 var _deepLinkingLaunchCallback = new WeakMap();
 
-var _deepLinkingResponseCallback = new WeakMap();
+var _deepLinkingRequestCallback = new WeakMap();
 
 var _membershipsRequestCallback = new WeakMap();
 
+var _gradesRequestCallback = new WeakMap();
+
 var _invalidLoginRequestCallback = new WeakMap();
 
-var _invalidDeepLinkingResponseCallback = new WeakMap();
+var _invalidDeepLinkingRequestCallback = new WeakMap();
 
 var _invalidAccessTokenRequestCallback = new WeakMap();
 
@@ -117,7 +119,7 @@ class Consumer {
       value: '/keys'
     });
 
-    _deepLinkingResponseRoute.set(this, {
+    _deepLinkingRequestRoute.set(this, {
       writable: true,
       value: '/deeplinking'
     });
@@ -144,7 +146,7 @@ class Consumer {
 
     _coreLaunchCallback.set(this, {
       writable: true,
-      value: async (loginRequest, req, res) => {
+      value: async (serviceAction, req, res) => {
         return res.status(500).send({
           status: 500,
           error: 'Internal Server Error',
@@ -157,7 +159,7 @@ class Consumer {
 
     _deepLinkingLaunchCallback.set(this, {
       writable: true,
-      value: async (loginRequest, req, res) => {
+      value: async (serviceAction, req, res) => {
         return res.status(500).send({
           status: 500,
           error: 'Internal Server Error',
@@ -168,14 +170,14 @@ class Consumer {
       }
     });
 
-    _deepLinkingResponseCallback.set(this, {
+    _deepLinkingRequestCallback.set(this, {
       writable: true,
-      value: async (deepLinkingResponse, req, res) => {
+      value: async (serviceAction, req, res) => {
         return res.status(500).send({
           status: 500,
           error: 'Internal Server Error',
           details: {
-            message: 'MISSING_DEEPLINKING_RESPONSE_CALLBACK'
+            message: 'MISSING_DEEPLINKING_REQUEST_CALLBACK'
           }
         });
       }
@@ -188,7 +190,20 @@ class Consumer {
           status: 500,
           error: 'Internal Server Error',
           details: {
-            message: 'MISSING_MEMBERSHIPS_CALLBACK'
+            message: 'MISSING_MEMBERSHIPS_REQUEST_CALLBACK'
+          }
+        });
+      }
+    });
+
+    _gradesRequestCallback.set(this, {
+      writable: true,
+      value: async (serviceAction, req, res) => {
+        return res.status(500).send({
+          status: 500,
+          error: 'Internal Server Error',
+          details: {
+            message: 'MISSING_GRADES_REQUEST_CALLBACK'
           }
         });
       }
@@ -201,7 +216,7 @@ class Consumer {
       }
     });
 
-    _invalidDeepLinkingResponseCallback.set(this, {
+    _invalidDeepLinkingRequestCallback.set(this, {
       writable: true,
       value: async (req, res) => {
         return res.status(400).send(res.locals.err);
@@ -236,7 +251,7 @@ class Consumer {
      * @param {String} [options.loginRoute = '/login'] - LTI Consumer login route. If no option is set '/login' is used.
      * @param {String} [options.accesstokenRoute = '/accesstoken'] - LTI Consumer access token generation endpoint.
      * @param {String} [options.keysetRoute = '/keys'] - LTI Consumer public jwk keyset route. If no option is set '/keys' is used.
-     * @param {String} [options.deepLinkingResponseRoute = '/deeplinking'] - LTI Consumer deep linking response route. If no option is set '/deeplinking' is used.
+     * @param {String} [options.deepLinkingRequestRoute = '/deeplinking'] - LTI Consumer deep linking request route. If no option is set '/deeplinking' is used.
      * @param {String} [options.membershipsRoute = '/memberships'] - LTI Consumer Memeberships route. If no option is set '/memberships' is used.
      * @param {Boolean} [options.https = false] - Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https and are planning to configure ssl through Express.
      * @param {Object} [options.ssl] - SSL certificate and key if https is enabled.
@@ -255,7 +270,7 @@ class Consumer {
     if (options && options.loginRoute) (0, _classPrivateFieldSet2.default)(this, _loginRoute, options.loginRoute);
     if (options && options.keysetRoute) (0, _classPrivateFieldSet2.default)(this, _keysetRoute, options.keysetRoute);
     if (options && options.accesstokenRoute) (0, _classPrivateFieldSet2.default)(this, _accesstokenRoute, options.accesstokenRoute);
-    if (options && options.deepLinkingResponseRoute) (0, _classPrivateFieldSet2.default)(this, _deepLinkingResponseRoute, options.deepLinkingResponseRoute);
+    if (options && options.deepLinkingRequestRoute) (0, _classPrivateFieldSet2.default)(this, _deepLinkingRequestRoute, options.deepLinkingRequestRoute);
     if (options && options.membershipsRoute) (0, _classPrivateFieldSet2.default)(this, _membershipsRoute, options.membershipsRoute);
     if (options && options.legacy === true) (0, _classPrivateFieldSet2.default)(this, _legacy, true); // Creating consumer configuration object
 
@@ -263,7 +278,7 @@ class Consumer {
     (0, _classPrivateFieldSet2.default)(this, _consumer, url.parse((0, _classPrivateFieldGet2.default)(this, _consumerUrl)));
     (0, _classPrivateFieldGet2.default)(this, _consumer).url = (0, _classPrivateFieldGet2.default)(this, _consumerUrl);
     (0, _classPrivateFieldGet2.default)(this, _consumer).accesstokenRoute = (0, _classPrivateFieldGet2.default)(this, _accesstokenRoute);
-    (0, _classPrivateFieldGet2.default)(this, _consumer).deepLinkingResponseRoute = (0, _classPrivateFieldGet2.default)(this, _deepLinkingResponseRoute);
+    (0, _classPrivateFieldGet2.default)(this, _consumer).deepLinkingRequestRoute = (0, _classPrivateFieldGet2.default)(this, _deepLinkingRequestRoute);
     (0, _classPrivateFieldGet2.default)(this, _consumer).membershipsRoute = (0, _classPrivateFieldGet2.default)(this, _membershipsRoute); // Encryption Key
 
     (0, _classPrivateFieldSet2.default)(this, _ENCRYPTIONKEY, encryptionkey); // Setup Databse
@@ -315,9 +330,9 @@ class Consumer {
 
     this.app.all((0, _classPrivateFieldGet2.default)(this, _loginRoute), async (req, res, next) => {
       try {
-        res.locals.loginRequest = await Auth.validateLoginRequest(req.query, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
-        if (res.locals.loginRequest.type === messageTypes.DEEPLINKING_LAUNCH) return (0, _classPrivateFieldGet2.default)(this, _deepLinkingLaunchCallback).call(this, res.locals.loginRequest, req, res, next);
-        return (0, _classPrivateFieldGet2.default)(this, _coreLaunchCallback).call(this, res.locals.loginRequest, req, res, next);
+        res.locals.serviceAction = await Auth.validateLoginRequest(req.query, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
+        if (res.locals.serviceAction.params.type === messageTypes.DEEPLINKING_LAUNCH) return (0, _classPrivateFieldGet2.default)(this, _deepLinkingLaunchCallback).call(this, res.locals.serviceAction, req, res, next);
+        return (0, _classPrivateFieldGet2.default)(this, _coreLaunchCallback).call(this, res.locals.serviceAction, req, res, next);
       } catch (err) {
         provMainDebug(err);
         res.locals.err = {
@@ -334,10 +349,10 @@ class Consumer {
       }
     }); // Deep Linking response route
 
-    this.app.post((0, _classPrivateFieldGet2.default)(this, _deepLinkingResponseRoute), async (req, res, next) => {
+    this.app.post((0, _classPrivateFieldGet2.default)(this, _deepLinkingRequestRoute), async (req, res, next) => {
       try {
-        res.locals.deepLinkingResponse = await Auth.validateDeepLinkingResponse(req.body, req.query, (0, _classPrivateFieldGet2.default)(this, _consumer));
-        return (0, _classPrivateFieldGet2.default)(this, _deepLinkingResponseCallback).call(this, res.locals.deepLinkingResponse, req, res, next);
+        res.locals.serviceAction = await Auth.validateDeepLinkingRequest(req.body, req.query, (0, _classPrivateFieldGet2.default)(this, _consumer));
+        return (0, _classPrivateFieldGet2.default)(this, _deepLinkingRequestCallback).call(this, res.locals.serviceAction, req, res, next);
       } catch (err) {
         provMainDebug(err);
         res.locals.err = {
@@ -349,7 +364,7 @@ class Consumer {
             bodyReceived: req.body
           }
         };
-        return (0, _classPrivateFieldGet2.default)(this, _invalidDeepLinkingResponseCallback).call(this, req, res, next);
+        return (0, _classPrivateFieldGet2.default)(this, _invalidDeepLinkingRequestCallback).call(this, req, res, next);
       }
     }); // Access token generation route
 
@@ -424,7 +439,6 @@ class Consumer {
         });
         res.locals.serviceAction = {
           service: 'MEMBERSHIPS',
-          action: 'GET',
           endpoint: serviceEndpoint,
           clientId: accessToken.clientId,
           privacy: accessToken.privacy,
@@ -479,7 +493,7 @@ class Consumer {
         await (0, _classPrivateFieldGet2.default)(this, _server).listen(conf.port);
         provMainDebug('Ltijs - Consumer started listening on port: ', conf.port); // Startup message
 
-        const message = 'LTI Consumer is listening on port ' + conf.port + '!\n\n LTI provider config: \n >Main URL: ' + (0, _classPrivateFieldGet2.default)(this, _consumerUrl) + '\n >Login Request Route: ' + (0, _classPrivateFieldGet2.default)(this, _loginRoute) + '\n >Access Token Generation Route: ' + (0, _classPrivateFieldGet2.default)(this, _accesstokenRoute) + '\n >Deep Linking Response Route: ' + (0, _classPrivateFieldGet2.default)(this, _deepLinkingResponseRoute) + '\n >Keyset Route: ' + (0, _classPrivateFieldGet2.default)(this, _keysetRoute);
+        const message = 'LTI Consumer is listening on port ' + conf.port + '!\n\n LTI provider config: \n >Main URL: ' + (0, _classPrivateFieldGet2.default)(this, _consumerUrl) + '\n >Login Request Route: ' + (0, _classPrivateFieldGet2.default)(this, _loginRoute) + '\n >Access Token Generation Route: ' + (0, _classPrivateFieldGet2.default)(this, _accesstokenRoute) + '\n >Deep Linking Request Route: ' + (0, _classPrivateFieldGet2.default)(this, _deepLinkingRequestRoute) + '\n >Keyset Route: ' + (0, _classPrivateFieldGet2.default)(this, _keysetRoute);
 
         if (!conf.silent) {
           console.log('  _   _______ _____      _  _____\n' + ' | | |__   __|_   _|    | |/ ____|\n' + ' | |    | |    | |      | | (___  \n' + ' | |    | |    | |  _   | |\\___ \\ \n' + ' | |____| |   _| |_| |__| |____) |\n' + ' |______|_|  |_____|\\____/|_____/ \n\n', message);
@@ -546,23 +560,23 @@ class Consumer {
   }
   /**
    * @description Generates self-submitting ID Token form.
-   * @param {String} loginRequest - Valid login request object.
+   * @param {String} serviceAction - Valid login request object.
    * @param {String} idtoken - Information used to build the ID Token.
    */
 
 
-  async buildIdTokenForm(loginRequest, idtoken) {
-    return Auth.buildIdTokenForm(loginRequest, idtoken, (0, _classPrivateFieldGet2.default)(this, _consumer));
+  async buildIdTokenForm(serviceAction, idtoken) {
+    return Auth.buildIdTokenForm(serviceAction, idtoken, (0, _classPrivateFieldGet2.default)(this, _consumer));
   }
   /**
    * @description Generates ID Token.
-   * @param {String} loginRequest - Valid login request object.
+   * @param {String} serviceAction - Valid login request object.
    * @param {String} idtoken - Information used to build the ID Token.
    */
 
 
-  async buildIdToken(loginRequest, idtoken) {
-    return Auth.buildIdToken(loginRequest, idtoken, (0, _classPrivateFieldGet2.default)(this, _consumer));
+  async buildIdToken(serviceAction, idtoken) {
+    return Auth.buildIdToken(serviceAction, idtoken, (0, _classPrivateFieldGet2.default)(this, _consumer));
   }
   /**
    * @description Sets the callback function called whenever the Consumer receives a valid LTI 1.3 Core Login Request.
@@ -592,15 +606,15 @@ class Consumer {
   }
   /**
    * @description Sets the callback function called whenever the Consumer receives a valid LTI 1.3 Deep Linking Response.
-   * @param {Function} deepLinkingResponseCallback - Callback function called whenever the Consumer receives a valid LTI 1.3 Deep Linking Response.
+   * @param {Function} deepLinkingRequestCallback - Callback function called whenever the Consumer receives a valid LTI 1.3 Deep Linking Request.
    * @returns {true}
    */
 
 
-  onDeepLinkingResponse(deepLinkingResponseCallback) {
+  onDeepLinkingRequest(deepLinkingRequestCallback) {
     /* istanbul ignore next */
-    if (!deepLinkingResponseCallback) throw new Error('MISSING_CALLBACK');
-    (0, _classPrivateFieldSet2.default)(this, _deepLinkingResponseCallback, deepLinkingResponseCallback);
+    if (!deepLinkingRequestCallback) throw new Error('MISSING_CALLBACK');
+    (0, _classPrivateFieldSet2.default)(this, _deepLinkingRequestCallback, deepLinkingRequestCallback);
     return true;
   }
   /**
@@ -636,10 +650,10 @@ class Consumer {
    */
 
 
-  onInvalidDeepLinkingResponse(onInvalidDeepLinkingResponseCallback) {
+  onInvalidDeepLinkingRequest(onInvalidDeepLinkingRequestCallback) {
     /* istanbul ignore next */
-    if (!onInvalidDeepLinkingResponseCallback) throw new Error('MISSING_CALLBACK');
-    (0, _classPrivateFieldSet2.default)(this, _invalidDeepLinkingResponseCallback, onInvalidDeepLinkingResponseCallback);
+    if (!onInvalidDeepLinkingRequestCallback) throw new Error('MISSING_CALLBACK');
+    (0, _classPrivateFieldSet2.default)(this, _invalidDeepLinkingRequestCallback, onInvalidDeepLinkingRequestCallback);
     return true;
   }
   /**
@@ -688,8 +702,8 @@ class Consumer {
    */
 
 
-  deepLinkingResponseRoute() {
-    return (0, _classPrivateFieldGet2.default)(this, _deepLinkingResponseRoute);
+  deepLinkingRequestRoute() {
+    return (0, _classPrivateFieldGet2.default)(this, _deepLinkingRequestRoute);
   }
   /**
      * @description Gets the keyset route that will be used to retrieve a public jwk keyset.

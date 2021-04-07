@@ -136,12 +136,6 @@ class Auth {
       throw new Error('INVALID_MESSAGE_HINT_CLAIM');
     }
 
-    const loginRequest = {
-      toolLink: messageHint.toolLink,
-      resource: messageHint.resource,
-      type: messageHint.type
-    };
-    if (loginRequest.type === messageTypes.DEEPLINKING_LAUNCH) loginRequest.dlState = crypto.randomBytes(16).toString('hex');
     consAuthDebug('Validating nonce claim');
     if (!obj.nonce) throw new Error('MISSING_NONCE_CLAIM');
     if (await Database.get('nonce', {
@@ -163,31 +157,39 @@ class Auth {
     if (!obj.client_id) throw new Error('MISSING_CLIENT_ID_CLAIM');
     const tool = await Tool.getTool(obj.client_id);
     if (!tool) throw new Error('INVALID_CLIENT_ID_CLAIM');
-    loginRequest.clientId = obj.client_id;
     consAuthDebug('Validating lti_deployment_id claim');
     if (!obj.lti_deployment_id) throw new Error('MISSING_LTI_DEPLOYMENT_ID_CLAIM');
     if ((await tool.deploymentId()) !== obj.lti_deployment_id) throw new Error('INVALID_LTI_DEPLOYMENT_ID_CLAIM');
-    loginRequest.deploymentId = obj.lti_deployment_id;
     consAuthDebug('Validating redirect_uri claim');
     if (!obj.redirect_uri) throw new Error('MISSING_REDIRECT_URI_CLAIM');
     if (!(await tool.redirectionURIs()).includes(obj.redirect_uri)) throw new Error('INVALID_REDIRECT_URI_CLAIM');
-    loginRequest.redirectUri = obj.redirect_uri;
     consAuthDebug('Validating login_hint claim');
     if (!obj.login_hint) throw new Error('MISSING_LOGIN_HINT_CLAIM');
-    loginRequest.user = obj.login_hint;
-    consAuthDebug('Retrieving state claim');
-    if (obj.state) loginRequest.state = obj.state;
-    return loginRequest;
+    const serviceAction = {
+      service: 'CORE',
+      clientId: obj.client_id,
+      deploymentId: obj.lti_deployment_id,
+      params: {
+        user: obj.login_hint,
+        toolLink: messageHint.toolLink,
+        resource: messageHint.resource,
+        type: messageHint.type,
+        redirectUri: obj.redirect_uri,
+        state: obj.state
+      }
+    };
+    if (messageHint.type === messageTypes.DEEPLINKING_LAUNCH) serviceAction.dlState = crypto.randomBytes(16).toString('hex');
+    return serviceAction;
   }
   /**
-   * @description Validates LTI 1.3 Deep Linking Response
-   * @param {Object} obj - Deep Linking response object.
+   * @description Validates LTI 1.3 Deep Linking ReQquest
+   * @param {Object} obj - Deep Linking request object.
    * @param {Object} query - Deep Linking query object.
    * @param {Object} consumer - Consumer configurations.
    */
 
 
-  static async validateDeepLinkingResponse(obj, query, consumer) {
+  static async validateDeepLinkingRequest(obj, query, consumer) {
     consAuthDebug('Validating deep linking response');
     if (!obj.JWT) throw new Error('MISSING_JWT_PARAMETER');
     const decoded = jwt.decode(obj.JWT, {
@@ -217,39 +219,42 @@ class Auth {
     if (verified['https://purl.imsglobal.org/spec/lti/claim/message_type'] !== messageTypes.DEEPLINKING_RESPONSE) throw new Error('INVALID_MESSAGE_TYPE_CLAIM');
     consAuthDebug('Validating version claim');
     if (verified['https://purl.imsglobal.org/spec/lti/claim/version'] !== '1.3.0') throw new Error('INVALID_VERSION_CLAIM');
-    const deepLinkingResponse = {
+    const serviceAction = {
+      service: 'DEEPLINKING',
       clientId: verified.iss,
-      deploymentId: verified.deploymentId,
-      contentItems: verified['https://purl.imsglobal.org/spec/lti-dl/claim/content_items'],
-      message: verified['https://purl.imsglobal.org/spec/lti-dl/claim/msg'],
-      log: verified['https://purl.imsglobal.org/spec/lti-dl/claim/log'],
-      error: verified['https://purl.imsglobal.org/spec/lti-dl/claim/errormsg'],
-      errorLog: verified['https://purl.imsglobal.org/spec/lti-dl/claim/errorlog'],
-      contextId: query.contextId,
-      state: query.dlState
+      params: {
+        deploymentId: verified.deploymentId,
+        contentItems: verified['https://purl.imsglobal.org/spec/lti-dl/claim/content_items'],
+        message: verified['https://purl.imsglobal.org/spec/lti-dl/claim/msg'],
+        log: verified['https://purl.imsglobal.org/spec/lti-dl/claim/log'],
+        error: verified['https://purl.imsglobal.org/spec/lti-dl/claim/errormsg'],
+        errorLog: verified['https://purl.imsglobal.org/spec/lti-dl/claim/errorlog'],
+        contextId: query.contextId,
+        state: query.dlState
+      }
     };
-    return deepLinkingResponse;
+    return serviceAction;
   }
   /**
    * @description Creates a signed ID Token JWT.
-   * @param {Object} loginRequest - Valid login request object.
+   * @param {Object} serviceAction - Valid login request object.
    * @param {Object} _idtoken - Information used to build the ID Token.
    * @param {Object} consumer - Consumer configurations.
    */
 
 
-  static async buildIdToken(loginRequest, _idtoken, consumer) {
-    if (!loginRequest) throw new Error('MISSING_LOGIN_REQUEST_PARAMETER');
+  static async buildIdToken(serviceAction, _idtoken, consumer) {
+    if (!serviceAction) throw new Error('MISSING_LOGIN_REQUEST_PARAMETER');
     if (!_idtoken) throw new Error('MISSING_IDTOKEN_PARAMETER');
     consAuthDebug('Building ID Token');
-    const toolObject = await Tool.getTool(loginRequest.clientId);
+    const toolObject = await Tool.getTool(serviceAction.clientId);
     if (!toolObject) throw new Error('INVALID_CLIENT_ID_CLAIM');
     const tool = await toolObject.toJSON();
     const idtoken = {
       iss: consumer.url,
-      aud: loginRequest.clientId,
-      'https://purl.imsglobal.org/spec/lti/claim/deployment_id': loginRequest.deploymentId,
-      sub: loginRequest.user,
+      aud: serviceAction.clientId,
+      'https://purl.imsglobal.org/spec/lti/claim/deployment_id': serviceAction.deploymentId,
+      sub: serviceAction.params.user,
       'https://purl.imsglobal.org/spec/lti/claim/roles': _idtoken.user.roles,
       'https://purl.imsglobal.org/spec/lti/claim/context': {
         id: _idtoken.launch.context.id,
@@ -260,19 +265,19 @@ class Auth {
       'https://purl.imsglobal.org/spec/lti/claim/version': '1.3.0',
       nonce: encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     };
-    idtoken['https://purl.imsglobal.org/spec/lti/claim/message_type'] = loginRequest.type;
+    idtoken['https://purl.imsglobal.org/spec/lti/claim/message_type'] = serviceAction.params.type;
 
-    if (loginRequest.type === messageTypes.DEEPLINKING_LAUNCH) {
+    if (serviceAction.params.type === messageTypes.DEEPLINKING_LAUNCH) {
       const deepLinkingReturnUrl = url.format({
         protocol: consumer.protocol,
         hostname: consumer.hostname,
         port: consumer.port,
         auth: consumer.auth,
         hash: consumer.hash,
-        pathname: consumer.deepLinkingResponseRoute,
+        pathname: consumer.deepLinkingRequestRoute,
         query: {
           contextId: _idtoken.launch.context.id,
-          dlState: loginRequest.dlState
+          dlState: serviceAction.params.dlState
         }
       });
       idtoken['https://purl.imsglobal.org/spec/lti/claim/custom'] = tool.customParameters;
@@ -292,7 +297,7 @@ class Auth {
         idtoken.name = _idtoken.user.name;
       }
     } else {
-      const toolLinkObject = await ToolLink.getToolLink(loginRequest.toolLink);
+      const toolLinkObject = await ToolLink.getToolLink(serviceAction.params.toolLink);
       if (!toolLinkObject) throw new Error('INVALID_TOOL_LINK_ID');
       const toolLink = await toolLinkObject.toJSON();
       idtoken['https://purl.imsglobal.org/spec/lti/claim/custom'] = _objectSpread(_objectSpread({}, tool.customParameters), toolLink.customParameters);
@@ -327,23 +332,23 @@ class Auth {
     consAuthDebug('Signing ID Token');
     const token = jwt.sign(idtoken, await toolObject.privateKey(), {
       algorithm: 'RS256',
-      expiresIn: '1h',
+      expiresIn: '24h',
       keyid: tool.kid
     });
     return token;
   }
   /**
    * @description Creates self-submitting form containing signed ID Token.
-   * @param {Object} loginRequest - Valid login request object.
+   * @param {Object} serviceAction - Valid login request object.
    * @param {Object} _idtoken - Information used to build the ID Token.
    * @param {Object} consumer - Consumer configurations.
    */
 
 
-  static async buildIdTokenForm(loginRequest, _idtoken, consumer) {
-    const idtoken = await Auth.buildIdToken(loginRequest, _idtoken, consumer);
-    let form = `<form id="ltiadv_authenticate" style="display: none;" action="${loginRequest.redirectUri}" method="POST">`;
-    if (loginRequest.state) form += `<input type="hidden" name="state" value="${loginRequest.state}"/>`;
+  static async buildIdTokenForm(serviceAction, _idtoken, consumer) {
+    const idtoken = await Auth.buildIdToken(serviceAction, _idtoken, consumer);
+    let form = `<form id="ltiadv_authenticate" style="display: none;" action="${serviceAction.params.redirectUri}" method="POST">`;
+    if (serviceAction.params.state) form += `<input type="hidden" name="state" value="${serviceAction.params.state}"/>`;
     form += `<input type="hidden" name="id_token" value="${idtoken}"/></form><script>document.getElementById("ltiadv_authenticate").submit()</script>`;
     return form;
   }
@@ -356,8 +361,8 @@ class Auth {
 
 
   static async buildIdTokenResponse(res, _idtoken, consumer) {
-    if (!res.locals.loginRequest) throw new Error('INVALID_CONTEXT');
-    const idtokenForm = await Auth.buildIdTokenForm(res.locals.loginRequest, _idtoken, consumer);
+    if (!res.locals.serviceAction) throw new Error('INVALID_CONTEXT');
+    const idtokenForm = await Auth.buildIdTokenForm(res.locals.serviceAction, _idtoken, consumer);
     res.setHeader('Content-type', 'text/html');
     return res.send(idtokenForm);
   }
