@@ -55,23 +55,23 @@ class Consumer {
   // Setup flag
   #setup = false
 
-  #coreLaunchCallback = async (serviceAction, req, res) => {
+  #coreLaunchCallback = async (payload, req, res) => {
     return res.status(500).send({ status: 500, error: 'Internal Server Error', details: { message: 'MISSING_CORE_LAUNCH_CALLBACK' } })
   }
 
-  #deepLinkingLaunchCallback = async (serviceAction, req, res) => {
+  #deepLinkingLaunchCallback = async (payload, req, res) => {
     return res.status(500).send({ status: 500, error: 'Internal Server Error', details: { message: 'MISSING_DEEPLINKING_LAUNCH_CALLBACK' } })
   }
 
-  #deepLinkingRequestCallback = async (serviceAction, req, res) => {
+  #deepLinkingRequestCallback = async (payload, req, res) => {
     return res.status(500).send({ status: 500, error: 'Internal Server Error', details: { message: 'MISSING_DEEPLINKING_REQUEST_CALLBACK' } })
   }
 
-  #membershipsRequestCallback = async (serviceAction, req, res) => {
+  #membershipsRequestCallback = async (payload, req, res) => {
     return res.status(500).send({ status: 500, error: 'Internal Server Error', details: { message: 'MISSING_MEMBERSHIPS_REQUEST_CALLBACK' } })
   }
 
-  #gradesRequestCallback = async (serviceAction, req, res) => {
+  #gradesRequestCallback = async (payload, req, res) => {
     return res.status(500).send({ status: 500, error: 'Internal Server Error', details: { message: 'MISSING_GRADES_REQUEST_CALLBACK' } })
   }
 
@@ -187,9 +187,9 @@ class Consumer {
     // Authentication request route
     this.app.all(this.#loginRoute, async (req, res, next) => {
       try {
-        res.locals.serviceAction = await Auth.validateLoginRequest(req.query, this.#ENCRYPTIONKEY)
-        if (res.locals.serviceAction.params.type === messageTypes.DEEPLINKING_LAUNCH) return this.#deepLinkingLaunchCallback(res.locals.serviceAction, req, res, next)
-        return this.#coreLaunchCallback(res.locals.serviceAction, req, res, next)
+        res.locals.payload = await Auth.validateLoginRequest(req.query, this.#ENCRYPTIONKEY)
+        if (res.locals.payload.params.type === messageTypes.DEEPLINKING_LAUNCH) return this.#deepLinkingLaunchCallback(res.locals.payload, req, res, next)
+        return this.#coreLaunchCallback(res.locals.payload, req, res, next)
       } catch (err) {
         provMainDebug(err)
         res.locals.err = {
@@ -209,8 +209,8 @@ class Consumer {
     // Deep Linking response route
     this.app.post(this.#deepLinkingRequestRoute, async (req, res, next) => {
       try {
-        res.locals.serviceAction = await Auth.validateDeepLinkingRequest(req.body, req.query, this.#consumer)
-        return this.#deepLinkingRequestCallback(res.locals.serviceAction, req, res, next)
+        res.locals.payload = await Auth.validateDeepLinkingRequest(req.body, req.query, this.#consumer)
+        return this.#deepLinkingRequestCallback(res.locals.payload, req, res, next)
       } catch (err) {
         provMainDebug(err)
         res.locals.err = {
@@ -289,7 +289,7 @@ class Consumer {
           hash: this.#consumer.hash,
           pathname: this.#consumer.membershipsRoute + '/' + req.params.context
         })
-        res.locals.serviceAction = {
+        res.locals.payload = {
           service: 'MEMBERSHIPS',
           endpoint: serviceEndpoint,
           clientId: accessToken.clientId,
@@ -301,7 +301,7 @@ class Consumer {
             next: req.query.next
           }
         }
-        return this.#membershipsRequestCallback(res.locals.serviceAction, req, res, next)
+        return this.#membershipsRequestCallback(res.locals.payload, req, res, next)
       } catch (err) {
         provMainDebug(err)
         return res.status(400).send({
@@ -420,20 +420,20 @@ class Consumer {
 
   /**
    * @description Generates self-submitting ID Token form.
-   * @param {String} serviceAction - Valid login request object.
+   * @param {String} payload - Valid login request object.
    * @param {String} idtoken - Information used to build the ID Token.
    */
-  async buildIdTokenForm (serviceAction, idtoken) {
-    return Auth.buildIdTokenForm(serviceAction, idtoken, this.#consumer)
+  async buildIdTokenForm (payload, idtoken) {
+    return Auth.buildIdTokenForm(payload, idtoken, this.#consumer)
   }
 
   /**
    * @description Generates ID Token.
-   * @param {String} serviceAction - Valid login request object.
+   * @param {String} payload - Valid login request object.
    * @param {String} idtoken - Information used to build the ID Token.
    */
-  async buildIdToken (serviceAction, idtoken) {
-    return Auth.buildIdToken(serviceAction, idtoken, this.#consumer)
+  async buildIdToken (payload, idtoken) {
+    return Auth.buildIdToken(payload, idtoken, this.#consumer)
   }
 
   /**

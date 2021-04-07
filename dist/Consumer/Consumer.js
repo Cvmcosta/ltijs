@@ -146,7 +146,7 @@ class Consumer {
 
     _coreLaunchCallback.set(this, {
       writable: true,
-      value: async (serviceAction, req, res) => {
+      value: async (payload, req, res) => {
         return res.status(500).send({
           status: 500,
           error: 'Internal Server Error',
@@ -159,7 +159,7 @@ class Consumer {
 
     _deepLinkingLaunchCallback.set(this, {
       writable: true,
-      value: async (serviceAction, req, res) => {
+      value: async (payload, req, res) => {
         return res.status(500).send({
           status: 500,
           error: 'Internal Server Error',
@@ -172,7 +172,7 @@ class Consumer {
 
     _deepLinkingRequestCallback.set(this, {
       writable: true,
-      value: async (serviceAction, req, res) => {
+      value: async (payload, req, res) => {
         return res.status(500).send({
           status: 500,
           error: 'Internal Server Error',
@@ -185,7 +185,7 @@ class Consumer {
 
     _membershipsRequestCallback.set(this, {
       writable: true,
-      value: async (serviceAction, req, res) => {
+      value: async (payload, req, res) => {
         return res.status(500).send({
           status: 500,
           error: 'Internal Server Error',
@@ -198,7 +198,7 @@ class Consumer {
 
     _gradesRequestCallback.set(this, {
       writable: true,
-      value: async (serviceAction, req, res) => {
+      value: async (payload, req, res) => {
         return res.status(500).send({
           status: 500,
           error: 'Internal Server Error',
@@ -330,9 +330,9 @@ class Consumer {
 
     this.app.all((0, _classPrivateFieldGet2.default)(this, _loginRoute), async (req, res, next) => {
       try {
-        res.locals.serviceAction = await Auth.validateLoginRequest(req.query, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
-        if (res.locals.serviceAction.params.type === messageTypes.DEEPLINKING_LAUNCH) return (0, _classPrivateFieldGet2.default)(this, _deepLinkingLaunchCallback).call(this, res.locals.serviceAction, req, res, next);
-        return (0, _classPrivateFieldGet2.default)(this, _coreLaunchCallback).call(this, res.locals.serviceAction, req, res, next);
+        res.locals.payload = await Auth.validateLoginRequest(req.query, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY));
+        if (res.locals.payload.params.type === messageTypes.DEEPLINKING_LAUNCH) return (0, _classPrivateFieldGet2.default)(this, _deepLinkingLaunchCallback).call(this, res.locals.payload, req, res, next);
+        return (0, _classPrivateFieldGet2.default)(this, _coreLaunchCallback).call(this, res.locals.payload, req, res, next);
       } catch (err) {
         provMainDebug(err);
         res.locals.err = {
@@ -351,8 +351,8 @@ class Consumer {
 
     this.app.post((0, _classPrivateFieldGet2.default)(this, _deepLinkingRequestRoute), async (req, res, next) => {
       try {
-        res.locals.serviceAction = await Auth.validateDeepLinkingRequest(req.body, req.query, (0, _classPrivateFieldGet2.default)(this, _consumer));
-        return (0, _classPrivateFieldGet2.default)(this, _deepLinkingRequestCallback).call(this, res.locals.serviceAction, req, res, next);
+        res.locals.payload = await Auth.validateDeepLinkingRequest(req.body, req.query, (0, _classPrivateFieldGet2.default)(this, _consumer));
+        return (0, _classPrivateFieldGet2.default)(this, _deepLinkingRequestCallback).call(this, res.locals.payload, req, res, next);
       } catch (err) {
         provMainDebug(err);
         res.locals.err = {
@@ -437,7 +437,7 @@ class Consumer {
           hash: (0, _classPrivateFieldGet2.default)(this, _consumer).hash,
           pathname: (0, _classPrivateFieldGet2.default)(this, _consumer).membershipsRoute + '/' + req.params.context
         });
-        res.locals.serviceAction = {
+        res.locals.payload = {
           service: 'MEMBERSHIPS',
           endpoint: serviceEndpoint,
           clientId: accessToken.clientId,
@@ -449,7 +449,7 @@ class Consumer {
             next: req.query.next
           }
         };
-        return (0, _classPrivateFieldGet2.default)(this, _membershipsRequestCallback).call(this, res.locals.serviceAction, req, res, next);
+        return (0, _classPrivateFieldGet2.default)(this, _membershipsRequestCallback).call(this, res.locals.payload, req, res, next);
       } catch (err) {
         provMainDebug(err);
         return res.status(400).send({
@@ -560,23 +560,23 @@ class Consumer {
   }
   /**
    * @description Generates self-submitting ID Token form.
-   * @param {String} serviceAction - Valid login request object.
+   * @param {String} payload - Valid login request object.
    * @param {String} idtoken - Information used to build the ID Token.
    */
 
 
-  async buildIdTokenForm(serviceAction, idtoken) {
-    return Auth.buildIdTokenForm(serviceAction, idtoken, (0, _classPrivateFieldGet2.default)(this, _consumer));
+  async buildIdTokenForm(payload, idtoken) {
+    return Auth.buildIdTokenForm(payload, idtoken, (0, _classPrivateFieldGet2.default)(this, _consumer));
   }
   /**
    * @description Generates ID Token.
-   * @param {String} serviceAction - Valid login request object.
+   * @param {String} payload - Valid login request object.
    * @param {String} idtoken - Information used to build the ID Token.
    */
 
 
-  async buildIdToken(serviceAction, idtoken) {
-    return Auth.buildIdToken(serviceAction, idtoken, (0, _classPrivateFieldGet2.default)(this, _consumer));
+  async buildIdToken(payload, idtoken) {
+    return Auth.buildIdToken(payload, idtoken, (0, _classPrivateFieldGet2.default)(this, _consumer));
   }
   /**
    * @description Sets the callback function called whenever the Consumer receives a valid LTI 1.3 Core Login Request.

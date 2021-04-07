@@ -165,7 +165,7 @@ class Auth {
     if (!(await tool.redirectionURIs()).includes(obj.redirect_uri)) throw new Error('INVALID_REDIRECT_URI_CLAIM');
     consAuthDebug('Validating login_hint claim');
     if (!obj.login_hint) throw new Error('MISSING_LOGIN_HINT_CLAIM');
-    const serviceAction = {
+    const payload = {
       service: 'CORE',
       clientId: obj.client_id,
       deploymentId: obj.lti_deployment_id,
@@ -178,8 +178,8 @@ class Auth {
         state: obj.state
       }
     };
-    if (messageHint.type === messageTypes.DEEPLINKING_LAUNCH) serviceAction.dlState = crypto.randomBytes(16).toString('hex');
-    return serviceAction;
+    if (messageHint.type === messageTypes.DEEPLINKING_LAUNCH) payload.dlState = crypto.randomBytes(16).toString('hex');
+    return payload;
   }
   /**
    * @description Validates LTI 1.3 Deep Linking ReQquest
@@ -219,7 +219,7 @@ class Auth {
     if (verified['https://purl.imsglobal.org/spec/lti/claim/message_type'] !== messageTypes.DEEPLINKING_RESPONSE) throw new Error('INVALID_MESSAGE_TYPE_CLAIM');
     consAuthDebug('Validating version claim');
     if (verified['https://purl.imsglobal.org/spec/lti/claim/version'] !== '1.3.0') throw new Error('INVALID_VERSION_CLAIM');
-    const serviceAction = {
+    const payload = {
       service: 'DEEPLINKING',
       clientId: verified.iss,
       params: {
@@ -233,28 +233,28 @@ class Auth {
         state: query.dlState
       }
     };
-    return serviceAction;
+    return payload;
   }
   /**
    * @description Creates a signed ID Token JWT.
-   * @param {Object} serviceAction - Valid login request object.
+   * @param {Object} payload - Valid login request object.
    * @param {Object} _idtoken - Information used to build the ID Token.
    * @param {Object} consumer - Consumer configurations.
    */
 
 
-  static async buildIdToken(serviceAction, _idtoken, consumer) {
-    if (!serviceAction) throw new Error('MISSING_LOGIN_REQUEST_PARAMETER');
+  static async buildIdToken(payload, _idtoken, consumer) {
+    if (!payload) throw new Error('MISSING_LOGIN_REQUEST_PARAMETER');
     if (!_idtoken) throw new Error('MISSING_IDTOKEN_PARAMETER');
     consAuthDebug('Building ID Token');
-    const toolObject = await Tool.getTool(serviceAction.clientId);
+    const toolObject = await Tool.getTool(payload.clientId);
     if (!toolObject) throw new Error('INVALID_CLIENT_ID_CLAIM');
     const tool = await toolObject.toJSON();
     const idtoken = {
       iss: consumer.url,
-      aud: serviceAction.clientId,
-      'https://purl.imsglobal.org/spec/lti/claim/deployment_id': serviceAction.deploymentId,
-      sub: serviceAction.params.user,
+      aud: payload.clientId,
+      'https://purl.imsglobal.org/spec/lti/claim/deployment_id': payload.deploymentId,
+      sub: payload.params.user,
       'https://purl.imsglobal.org/spec/lti/claim/roles': _idtoken.user.roles,
       'https://purl.imsglobal.org/spec/lti/claim/context': {
         id: _idtoken.launch.context.id,
@@ -265,9 +265,9 @@ class Auth {
       'https://purl.imsglobal.org/spec/lti/claim/version': '1.3.0',
       nonce: encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     };
-    idtoken['https://purl.imsglobal.org/spec/lti/claim/message_type'] = serviceAction.params.type;
+    idtoken['https://purl.imsglobal.org/spec/lti/claim/message_type'] = payload.params.type;
 
-    if (serviceAction.params.type === messageTypes.DEEPLINKING_LAUNCH) {
+    if (payload.params.type === messageTypes.DEEPLINKING_LAUNCH) {
       const deepLinkingReturnUrl = url.format({
         protocol: consumer.protocol,
         hostname: consumer.hostname,
@@ -277,7 +277,7 @@ class Auth {
         pathname: consumer.deepLinkingRequestRoute,
         query: {
           contextId: _idtoken.launch.context.id,
-          dlState: serviceAction.params.dlState
+          dlState: payload.params.dlState
         }
       });
       idtoken['https://purl.imsglobal.org/spec/lti/claim/custom'] = tool.customParameters;
@@ -297,7 +297,7 @@ class Auth {
         idtoken.name = _idtoken.user.name;
       }
     } else {
-      const toolLinkObject = await ToolLink.getToolLink(serviceAction.params.toolLink);
+      const toolLinkObject = await ToolLink.getToolLink(payload.params.toolLink);
       if (!toolLinkObject) throw new Error('INVALID_TOOL_LINK_ID');
       const toolLink = await toolLinkObject.toJSON();
       idtoken['https://purl.imsglobal.org/spec/lti/claim/custom'] = _objectSpread(_objectSpread({}, tool.customParameters), toolLink.customParameters);
@@ -339,16 +339,16 @@ class Auth {
   }
   /**
    * @description Creates self-submitting form containing signed ID Token.
-   * @param {Object} serviceAction - Valid login request object.
+   * @param {Object} payload - Valid login request object.
    * @param {Object} _idtoken - Information used to build the ID Token.
    * @param {Object} consumer - Consumer configurations.
    */
 
 
-  static async buildIdTokenForm(serviceAction, _idtoken, consumer) {
-    const idtoken = await Auth.buildIdToken(serviceAction, _idtoken, consumer);
-    let form = `<form id="ltiadv_authenticate" style="display: none;" action="${serviceAction.params.redirectUri}" method="POST">`;
-    if (serviceAction.params.state) form += `<input type="hidden" name="state" value="${serviceAction.params.state}"/>`;
+  static async buildIdTokenForm(payload, _idtoken, consumer) {
+    const idtoken = await Auth.buildIdToken(payload, _idtoken, consumer);
+    let form = `<form id="ltiadv_authenticate" style="display: none;" action="${payload.params.redirectUri}" method="POST">`;
+    if (payload.params.state) form += `<input type="hidden" name="state" value="${payload.params.state}"/>`;
     form += `<input type="hidden" name="id_token" value="${idtoken}"/></form><script>document.getElementById("ltiadv_authenticate").submit()</script>`;
     return form;
   }
@@ -361,8 +361,8 @@ class Auth {
 
 
   static async buildIdTokenResponse(res, _idtoken, consumer) {
-    if (!res.locals.serviceAction) throw new Error('INVALID_CONTEXT');
-    const idtokenForm = await Auth.buildIdTokenForm(res.locals.serviceAction, _idtoken, consumer);
+    if (!res.locals.payload) throw new Error('INVALID_CONTEXT');
+    const idtokenForm = await Auth.buildIdTokenForm(res.locals.payload, _idtoken, consumer);
     res.setHeader('Content-type', 'text/html');
     return res.send(idtokenForm);
   }

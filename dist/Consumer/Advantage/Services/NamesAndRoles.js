@@ -18,17 +18,17 @@ class NamesAndRoles {
    */
   static async sendMembers(res, context, members, next) {
     consMembershipsDebug('Sending memberships object');
-    const serviceAction = res.locals.serviceAction;
-    if (!serviceAction) throw new Error('INVALID_CONTEXT');
+    const payload = res.locals.payload;
+    if (!payload) throw new Error('INVALID_CONTEXT');
     const membershipsObject = {
-      id: serviceAction.endpoint,
+      id: payload.endpoint,
       context: context,
       members: members
     };
 
-    if (serviceAction.params.limit) {
-      let nextLink = serviceAction.endpoint + '?limit=' + serviceAction.params.limit + '&next=' + next;
-      if (serviceAction.params.role) nextLink += '&role=' + serviceAction.params.role;
+    if (payload.params.limit) {
+      let nextLink = payload.endpoint + '?limit=' + payload.params.limit + '&next=' + next;
+      if (payload.params.role) nextLink += '&role=' + payload.params.role;
       res.set('Link', '<' + nextLink + '>; rel="next"');
     }
 
