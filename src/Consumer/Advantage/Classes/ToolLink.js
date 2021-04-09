@@ -113,7 +113,7 @@ class ToolLink {
       }
 
       // Storing new toolLink
-      await Database.replace('toollink', { clientId: toolLink.clientId }, { id: toolLink.id, clientId: toolLink.clientId, deploymentId: toolLink.deploymentId, url: toolLink.url, name: toolLink.name, description: toolLink.description, privacy: toolLink.privacy, customParameters: toolLink.customParameters })
+      await Database.insert('toollink', { id: toolLink.id, clientId: toolLink.clientId, deploymentId: toolLink.deploymentId, url: toolLink.url, name: toolLink.name, description: toolLink.description, privacy: toolLink.privacy, customParameters: toolLink.customParameters })
 
       const _toolLink = new ToolLink(toolLink.id, toolLink.clientId, toolLink.deploymentId, toolLink.url, toolLink.name, toolLink.description, toolLink.privacy, toolLink.customParameters)
       return _toolLink

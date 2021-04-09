@@ -8,7 +8,6 @@ const consAuthDebug = require('debug')('lti:auth')
 
 // Classes
 const Tool = require('./Tool')
-const ToolLink = require('./ToolLink')
 const Database = require('../../../GlobalUtils/Database')
 
 // Helpers
@@ -255,7 +254,7 @@ class Auth {
         idtoken.name = _idtoken.user.name
       }
     } else {
-      const toolLinkObject = await ToolLink.getToolLink(payload.params.toolLink)
+      const toolLinkObject = await toolObject.getToolLink(payload.params.toolLink)
       if (!toolLinkObject) throw new Error('INVALID_TOOL_LINK_ID')
       const toolLink = await toolLinkObject.toJSON()
       idtoken['https://purl.imsglobal.org/spec/lti/claim/custom'] = { ...tool.customParameters, ...toolLink.customParameters }

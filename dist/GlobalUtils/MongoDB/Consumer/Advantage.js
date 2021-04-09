@@ -41,7 +41,7 @@ exports.register = () => {
     description: String,
     privacy: {
       type: Number,
-      enum: ['0', '1', '2', '3', '4']
+      enum: [0, 1, 2, 3, 4]
     },
     customParameters: JSON
   });

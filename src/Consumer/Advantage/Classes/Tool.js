@@ -254,6 +254,30 @@ class Tool {
   }
 
   /**
+   * @description Retrieves a toolLink.
+   * @param {String} id - Tool Link ID
+   * @returns {Promise<ToolLink>}
+   */
+  async getToolLink (id) {
+    return ToolLink.getToolLink(id)
+  }
+
+  /**
+   * @description Updates a toolLink.
+   * @param {string} id - Tool Link ID.
+   * @param {object} toolLinkInfo - Tool Link Information
+   * @param {string} toolLinkInfo.url - Tool Link url.
+   * @param {string} toolLinkInfo.name - Tool Link name.
+   * @param {string} toolLinkInfo.description - Tool Link description.
+   * @param {number} toolLinkInfo.privacy - Privacy level.
+   * @param {Object} tool.customParameters - Tool Link specific set custom parameters.
+   * @returns {Promise<ToolLink>}
+   */
+  async updateToolLink (id, toolLinkInfo) {
+    return ToolLink.getToolLink(id, toolLinkInfo)
+  }
+
+  /**
    * @description Gets all tool links related to this tool.
    * @returns {Promise<Array<ToolLink>>}
    */

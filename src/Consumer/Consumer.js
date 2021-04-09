@@ -392,12 +392,13 @@ class Consumer {
 
   /**
    * @description Generates Core launch self-submitting POST form
+   * @param {String} clientId - Client Id of Tool being launched.
    * @param {String} toolLinkId - Tool link Id being launched.
    * @param {String} userId - Id for current user.
    * @param {String} resourceId - Identifier for resource holding toolLink in Platform.
    */
-  async launchCore (toolLinkId, userId, resourceId) {
-    return Core.launch(toolLinkId, userId, resourceId, this.#consumerUrl, this.#ENCRYPTIONKEY)
+  async launchCore (clientId, toolLinkId, userId, resourceId) {
+    return Core.launch(clientId, toolLinkId, userId, resourceId, this.#consumerUrl, this.#ENCRYPTIONKEY)
   }
 
   /**

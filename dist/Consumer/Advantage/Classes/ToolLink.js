@@ -172,9 +172,7 @@ class ToolLink {
       } // Storing new toolLink
 
 
-      await Database.replace('toollink', {
-        clientId: toolLink.clientId
-      }, {
+      await Database.insert('toollink', {
         id: toolLink.id,
         clientId: toolLink.clientId,
         deploymentId: toolLink.deploymentId,
