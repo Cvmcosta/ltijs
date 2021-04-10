@@ -295,7 +295,7 @@ class Consumer {
           clientId: accessToken.clientId,
           privacy: accessToken.privacy,
           params: {
-            contextId: req.params.context,
+            context: req.params.context,
             role: req.query.role,
             limit: req.query.limit,
             next: req.query.next
