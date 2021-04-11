@@ -414,7 +414,7 @@ class Tool {
 
 
   async updateToolLink(id, toolLinkInfo) {
-    return ToolLink.getToolLink(id, toolLinkInfo);
+    return ToolLink.updateToolLink(id, toolLinkInfo);
   }
   /**
    * @description Gets all tool links related to this tool.

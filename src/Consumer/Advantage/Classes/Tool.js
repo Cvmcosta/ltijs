@@ -274,7 +274,7 @@ class Tool {
    * @returns {Promise<ToolLink>}
    */
   async updateToolLink (id, toolLinkInfo) {
-    return ToolLink.getToolLink(id, toolLinkInfo)
+    return ToolLink.updateToolLink(id, toolLinkInfo)
   }
 
   /**
