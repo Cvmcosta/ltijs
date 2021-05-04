@@ -108,8 +108,10 @@ class Core {
     const resourceId = valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'] ? valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'].id : 'NF'
     const clientId = valid.clientId
     const deploymentId = valid['https://purl.imsglobal.org/spec/lti/claim/deployment_id']
-    const contextId = encodeURIComponent(valid.iss + clientId + deploymentId + courseId + '_' + resourceId)
-    const platformCode = encodeURIComponent('lti' + Buffer.from(valid.iss + clientId + deploymentId).toString('base64'))
+    const platformCode = valid.platformId + '_' + deploymentId
+    const resourceCode = courseId + '_' + resourceId
+    const contextId = platformCode + '_' + resourceCode
+    const cookieCode = encodeURIComponent('lti' + platformCode)
 
     // Mount platform token
     const platformToken = {
@@ -154,13 +156,11 @@ class Core {
 
     provLaunchDebug('Generating ltik')
     const ltikObj = {
-      platformUrl: valid.iss,
-      clientId: clientId,
-      deploymentId: deploymentId,
-      platformCode: platformCode,
-      contextId: contextId,
-      user: valid.sub,
-      s: validationParameters.state // Added state to make unique ltiks
+      p_id: valid.platformId,
+      d_id: deploymentId,
+      r_code: resourceCode,
+      u: valid.sub,
+      s: validationParameters.state
     }
     // Signing context token
     const ltik = jwt.sign(ltikObj, validationParameters.encryptionkey)
@@ -168,7 +168,7 @@ class Core {
     return {
       token: platformToken,
       context: contextToken,
-      platformCode: platformCode,
+      cookieCode: cookieCode,
       ltik: ltik
     }
   }
@@ -180,17 +180,19 @@ class Core {
     const validLtik = jwt.verify(ltik, validationParameters.encryptionkey)
     provAccessDebug('Ltik successfully verified')
 
-    const platformUrl = validLtik.platformUrl
-    const platformCode = validLtik.platformCode
-    const clientId = validLtik.clientId
-    const deploymentId = validLtik.deploymentId
-    const contextId = validLtik.contextId
+    const platformId = validLtik.p_id
+    const deploymentId = validLtik.d_id
+    const resourceCode = validLtik.r_code
+    const platformCode = platformId + '_' + deploymentId
+    const contextId = platformCode + '_' + resourceCode
 
     provAccessDebug('Retrieving user session')
-    let user = validLtik.user
+    let user = validLtik.u
+
     if (!validationParameters.ltiaas) {
       provAccessDebug('Attempting to retrieve matching session cookie')
-      const cookieUser = validationParameters.cookies[platformCode]
+      const cookieCode = encodeURIComponent('lti' + platformCode)
+      const cookieUser = validationParameters.cookies[cookieCode]
       if (!cookieUser) {
         if (!validationParameters.devMode) user = false
         else { provAccessDebug('Dev Mode enabled: Missing session cookies will be ignored') }
@@ -201,7 +203,7 @@ class Core {
 
     provAccessDebug('Building ID Token')
     // Gets corresponding id token from database
-    const idTokenObject = await Database.get('idtoken', { iss: platformUrl, clientId: clientId, deploymentId: deploymentId, user: user })
+    const idTokenObject = await Database.get('idtoken', { platformId: platformId, deploymentId: deploymentId, user: user })
     if (!idTokenObject) throw new Error('IDTOKEN_NOT_FOUND_DB')
     const idToken = JSON.parse(JSON.stringify(idTokenObject[0]))
     // Gets correspondent context token from database

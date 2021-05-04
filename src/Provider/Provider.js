@@ -262,7 +262,7 @@ class Provider {
           }
 
           // Creates platform session cookie
-          res.cookie(launch.platformCode, launch.token.user, this.#cookieOptions)
+          res.cookie(launch.cookieCode, launch.token.user, this.#cookieOptions)
           // Appending query parameters
           const query = new URLSearchParams(req.query)
           if (savedQueries) {
