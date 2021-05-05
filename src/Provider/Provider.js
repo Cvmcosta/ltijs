@@ -10,7 +10,7 @@ const provMainDebug = require('debug')('lti:main')
 const provDynamicRegistrationDebug = require('debug')('lti:dynamicRegistrationService')
 
 // Services
-const Core = require('./Advantage/Services/Core')
+const CoreService = require('./Advantage/Services/Core')
 const GradeService = require('./Advantage/Services/Grade')
 const DeepLinkingService = require('./Advantage/Services/DeepLinking')
 const NamesAndRolesService = require('./Advantage/Services/NamesAndRoles')
@@ -241,7 +241,7 @@ class Provider {
             path: req.path
           }
           // Validating launch
-          const launch = await Core.launch(idtoken, validationParameters)
+          const launch = await CoreService.launch(idtoken, validationParameters)
 
           if (this.#ltiaas) {
             // Appending query parameters
@@ -283,7 +283,7 @@ class Provider {
           ltiaas: this.#ltiaas,
           encryptionkey: this.#ENCRYPTIONKEY
         }
-        const idToken = await Core.access(ltik, validationParameters)
+        const idToken = await CoreService.access(ltik, validationParameters)
         // Creating local variables
         res.locals.context = idToken.platformContext
         res.locals.token = idToken
@@ -340,7 +340,7 @@ class Provider {
         }
 
         // Creating login request
-        const login = await Core.login(platform, params, this.#ENCRYPTIONKEY)
+        const login = await CoreService.login(platform, params, this.#ENCRYPTIONKEY)
         // Setting up validation info
         const cookieOptions = JSON.parse(JSON.stringify(this.#cookieOptions))
         cookieOptions.maxAge = 60 * 1000 // Adding max age to state cookie = 1min
