@@ -144,7 +144,7 @@ class DynamicRegistration {
     await this.#Database.Insert(false, 'platformStatus', { id: await registered.platformId(), active: this.#autoActivate })
 
     // Returing message indicating the end of registration flow
-    return `<script>window.parent.postMessage({subject:"org.imsglobal.lti.close"}, "${configuration.issuer}");</script>`
+    return '<script>(window.opener || window.parent).postMessage({subject:"org.imsglobal.lti.close"}, "*");</script>'
   }
 }
 

@@ -235,7 +235,7 @@ class DynamicRegistration {
       active: (0, _classPrivateFieldGet2.default)(this, _autoActivate)
     }); // Returing message indicating the end of registration flow
 
-    return `<script>window.parent.postMessage({subject:"org.imsglobal.lti.close"}, "${configuration.issuer}");</script>`;
+    return '<script>(window.opener || window.parent).postMessage({subject:"org.imsglobal.lti.close"}, "*");</script>';
   }
 
 }
