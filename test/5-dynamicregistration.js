@@ -52,7 +52,7 @@ describe('Testing Dynamic registration Service', function () {
     return chai.request(lti.app).get(url).query(dynamicRegistrationRequest).then(async res => {
       expect(res).to.have.status(200)
       const response = res.text
-      expect(response).to.equal(`<script>window.parent.postMessage({subject:"org.imsglobal.lti.close"}, "${configurationInformation.issuer}");</script>`)
+      expect(response).to.equal('<script>(window.opener || window.parent).postMessage({subject:"org.imsglobal.lti.close"}, "*");</script>')
       const platform = await lti.getPlatform('http://localhost/moodledyn', '123456')
       expect(platform).to.be.instanceOf(Platform)
       await expect(platform.platformActive()).to.eventually.equal(false)
