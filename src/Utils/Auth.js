@@ -111,9 +111,8 @@ class Auth {
       case 'JWK_KEY': {
         provAuthDebug('Retrieving key from jwk_key')
         if (!authConfig.key) throw new Error('KEY_NOT_FOUND')
-
-        const key = Jwk.jwk2pem(authConfig.key)
-
+        provAuthDebug('Converting JWK key to PEM key')
+        const key = await Jwk.export({ jwk: authConfig.key })
         const verified = await this.verifyToken(token, key, validationParameters, platform, Database)
         return (verified)
       }
@@ -121,7 +120,6 @@ class Auth {
         provAuthDebug('Retrieving key from rsa_key')
         const key = authConfig.key
         if (!key) throw new Error('KEY_NOT_FOUND')
-
         const verified = await this.verifyToken(token, key, validationParameters, platform, Database)
         return (verified)
       }

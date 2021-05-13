@@ -9,6 +9,14 @@
 
 ### CHANGELOG
 
+#### V5.7.5
+> 2021-05-13
+> - Fix authentication flow using JWK_SET.
+
+#### V5.7.4
+> 2021-05-12
+> - Fix in Dynamic Registration when flow is started in a new page.
+
 #### V5.7.0
 > 2021-04-05
 > - Created new `authorizationServer` Platform registration field used as the `aud` claim for requesting access tokens. Platform methods usage is unchanged.
