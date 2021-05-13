@@ -140,8 +140,10 @@ class Auth {
           provAuthDebug('Retrieving key from jwk_key');
           if (!authConfig.key) throw new Error('KEY_NOT_FOUND');
           provAuthDebug('Converting JWK key to PEM key');
+          let jwk = authConfig.key;
+          if (typeof jwk === 'string') jwk = JSON.parse(jwk);
           const key = await Jwk.export({
-            jwk: authConfig.key
+            jwk: jwk
           });
           const verified = await this.verifyToken(token, key, validationParameters, platform, Database);
           return verified;
