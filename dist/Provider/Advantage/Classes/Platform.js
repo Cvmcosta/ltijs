@@ -20,19 +20,19 @@ const Auth = require('./Auth');
  */
 
 
-var _kid = new WeakMap();
+var _kid = /*#__PURE__*/new WeakMap();
 
-var _platformName = new WeakMap();
+var _platformName = /*#__PURE__*/new WeakMap();
 
-var _platformUrl = new WeakMap();
+var _platformUrl = /*#__PURE__*/new WeakMap();
 
-var _clientId = new WeakMap();
+var _clientId = /*#__PURE__*/new WeakMap();
 
-var _authenticationEndpoint = new WeakMap();
+var _authenticationEndpoint = /*#__PURE__*/new WeakMap();
 
-var _accesstokenEndpoint = new WeakMap();
+var _accesstokenEndpoint = /*#__PURE__*/new WeakMap();
 
-var _authConfig = new WeakMap();
+var _authConfig = /*#__PURE__*/new WeakMap();
 
 class Platform {
   /**

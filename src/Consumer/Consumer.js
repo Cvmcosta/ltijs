@@ -10,7 +10,7 @@ const url = require('fast-url-parser')
 const Core = require('./Advantage/Services/Core')
 const DeepLinking = require('./Advantage/Services/DeepLinking')
 const NamesAndRoles = require('./Advantage/Services/NamesAndRoles')
-/* const GradeService = require('./Advantage/Services/Grade') */
+const Grades = require('./Advantage/Services/Grades')
 
 // Classes
 const Auth = require('./Advantage/Classes/Auth')
@@ -48,6 +48,8 @@ class Consumer {
 
   #membershipsRoute = '/memberships'
 
+  #lineItemsRoute = '/lineitems'
+
   #ENCRYPTIONKEY
 
   #legacy = false
@@ -69,6 +71,14 @@ class Consumer {
 
   #membershipsRequestCallback = async (payload, req, res) => {
     return res.status(500).send({ status: 500, error: 'Internal Server Error', details: { message: 'MISSING_MEMBERSHIPS_REQUEST_CALLBACK' } })
+  }
+
+  #lineItemsRequestCallback = async (payload, req, res) => {
+    return res.status(500).send({ status: 500, error: 'Internal Server Error', details: { message: 'MISSING_LINEITEMS_REQUEST_CALLBACK' } })
+  }
+
+  #lineItemRequestCallback = async (payload, req, res) => {
+    return res.status(500).send({ status: 500, error: 'Internal Server Error', details: { message: 'MISSING_LINEITEM_REQUEST_CALLBACK' } })
   }
 
   #gradesRequestCallback = async (payload, req, res) => {
@@ -136,6 +146,25 @@ class Consumer {
     this.#consumer.accesstokenRoute = this.#accesstokenRoute
     this.#consumer.deepLinkingResponseRoute = this.#deepLinkingResponseRoute
     this.#consumer.membershipsRoute = this.#membershipsRoute
+    this.#consumer.lineItemsRoute = this.#lineItemsRoute
+
+    this.#consumer.membershipsUrl = url.format({
+      protocol: this.#consumer.protocol,
+      hostname: this.#consumer.hostname,
+      port: this.#consumer.port,
+      auth: this.#consumer.auth,
+      hash: this.#consumer.hash,
+      pathname: this.#membershipsRoute
+    })
+
+    this.#consumer.lineItemsUrl = url.format({
+      protocol: this.#consumer.protocol,
+      hostname: this.#consumer.hostname,
+      port: this.#consumer.port,
+      auth: this.#consumer.auth,
+      hash: this.#consumer.hash,
+      pathname: this.#lineItemsRoute
+    })
 
     // Encryption Key
     this.#ENCRYPTIONKEY = encryptionkey
@@ -178,6 +207,11 @@ class Consumer {
      * @description NamesAndRoles Service
      */
     this.NamesAndRoles = NamesAndRoles
+
+    /**
+     * @description Grades Service
+     */
+    this.Grades = Grades
 
     /**
      * @description Express server object.
@@ -281,24 +315,19 @@ class Consumer {
     this.app.get(this.#membershipsRoute + '/:context', async (req, res, next) => {
       try {
         const accessToken = await validateAccessToken(req.headers.authorization, scopes.MEMBERSHIPS, res)
-        const serviceEndpoint = url.format({
-          protocol: this.#consumer.protocol,
-          hostname: this.#consumer.hostname,
-          port: this.#consumer.port,
-          auth: this.#consumer.auth,
-          hash: this.#consumer.hash,
-          pathname: this.#consumer.membershipsRoute + '/' + req.params.context
-        })
+        const query = new URLSearchParams(req.query).toString()
+        const serviceEndpoint = this.#consumer.membershipsUrl + '/' + req.params.context + '?' + query
         res.locals.payload = { // Move to service class
           service: 'MEMBERSHIPS',
-          endpoint: serviceEndpoint, // Move down
           clientId: accessToken.clientId,
-          privacy: accessToken.privacy, // Move down
+          endpoint: serviceEndpoint,
           params: {
             context: req.params.context,
+            privacy: accessToken.privacy,
             role: req.query.role,
             limit: req.query.limit,
-            next: req.query.next
+            next: req.query.next,
+            resourceLinkId: req.query.rlid
           }
         }
         return this.#membershipsRequestCallback(res.locals.payload, req, res, next)
@@ -309,6 +338,150 @@ class Consumer {
           error: 'Bad Request',
           details: {
             description: 'Error validating access token request',
+            message: err.message,
+            bodyReceived: req.body
+          }
+        })
+      }
+    })
+    this.app.all(this.#lineItemsRoute + '/:context', async (req, res, next) => {
+      try {
+        let accessToken
+        if (req.method === 'GET') {
+          try {
+            accessToken = await validateAccessToken(req.headers.authorization, scopes.LINEITEM_READONLY, res)
+          } catch {
+            accessToken = await validateAccessToken(req.headers.authorization, scopes.LINEITEM, res)
+          }
+        } else if (req.method === 'POST') {
+          accessToken = await validateAccessToken(req.headers.authorization, scopes.LINEITEM, res)
+        } else {
+          return res.status(400).send({
+            status: 400,
+            error: 'Bad Request',
+            details: {
+              description: 'Invalid request method.'
+            }
+          })
+        }
+        // Creating payload
+        const serviceEndpoint = this.#consumer.lineItemsUrl + '/' + req.params.context
+        res.locals.payload = { // Move to service class
+          service: 'LINEITEMS',
+          action: req.method,
+          clientId: accessToken.clientId,
+          endpoint: serviceEndpoint,
+          params: {
+            context: req.params.context
+          }
+        }
+        if (req.method === 'GET') {
+          res.locals.payload.params.resource = req.query.resource_link_id
+          res.locals.payload.params.externalResource = req.query.resource_id
+          res.locals.payload.params.tag = req.query.tag
+          res.locals.payload.params.limit = req.query.limit
+        } else if (req.method === 'POST') res.locals.payload.params.lineItem = req.body
+        return this.#lineItemsRequestCallback(res.locals.payload, req, res, next)
+      } catch (err) {
+        provMainDebug(err)
+        return res.status(400).send({
+          status: 400,
+          error: 'Bad Request',
+          details: {
+            description: 'Error validating access token request',
+            message: err.message,
+            bodyReceived: req.body
+          }
+        })
+      }
+    })
+    this.app.all(this.#lineItemsRoute + '/:context/lineitem/:lineItem', async (req, res, next) => {
+      try {
+        let accessToken
+        if (req.method === 'GET') {
+          try {
+            accessToken = await validateAccessToken(req.headers.authorization, scopes.LINEITEM_READONLY, res)
+          } catch {
+            accessToken = await validateAccessToken(req.headers.authorization, scopes.LINEITEM, res)
+          }
+        } else if (req.method === 'PUT' || req.method === 'DELETE') {
+          accessToken = await validateAccessToken(req.headers.authorization, scopes.LINEITEM, res)
+        } else {
+          return res.status(400).send({
+            status: 400,
+            error: 'Bad Request',
+            details: {
+              description: 'Invalid request method.'
+            }
+          })
+        }
+        // Creating payload
+        const serviceEndpoint = this.#consumer.lineItemsUrl + '/' + req.params.context + '/lineitem/' + req.params.lineItem
+        res.locals.payload = { // Move to service class
+          service: 'LINEITEM',
+          action: req.method,
+          clientId: accessToken.clientId,
+          endpoint: serviceEndpoint,
+          params: {
+            context: req.params.context,
+            lineItem: req.params.lineItem
+          }
+        }
+        if (req.method === 'PUT') res.locals.payload.params.update = req.body
+        return this.#lineItemRequestCallback(res.locals.payload, req, res, next)
+      } catch (err) {
+        provMainDebug(err)
+        return res.status(400).send({
+          status: 400,
+          error: 'Bad Request',
+          details: {
+            description: 'Error validating access token request',
+            message: err.message,
+            bodyReceived: req.body
+          }
+        })
+      }
+    })
+    this.app.all(this.#lineItemsRoute + '/:context/lineitem/:lineItem/:service', async (req, res, next) => {
+      try {
+        let accessToken
+        if (req.method === 'GET' && req.params.service === 'results') {
+          accessToken = await validateAccessToken(req.headers.authorization, scopes.RESULTS, res)
+        } else if (req.method === 'POST' && req.params.service === 'scores') {
+          accessToken = await validateAccessToken(req.headers.authorization, scopes.SCORES, res)
+        } else {
+          return res.status(400).send({
+            status: 400,
+            error: 'Bad Request',
+            details: {
+              description: 'Invalid service URL or method.'
+            }
+          })
+        }
+        // Creating payload
+        const serviceEndpoint = this.#consumer.lineItemsUrl + '/' + req.params.context + '/lineitem/' + req.params.lineItem
+        res.locals.payload = { // Move to service class
+          service: 'GRADES',
+          action: req.method,
+          clientId: accessToken.clientId,
+          endpoint: serviceEndpoint,
+          params: {
+            context: req.params.context,
+            lineItem: req.params.lineItem
+          }
+        }
+        if (req.method === 'GET') {
+          res.locals.payload.params.user = req.query.user_id
+          res.locals.payload.params.limit = req.query.limit
+        } else if (req.method === 'POST') res.locals.payload.params.score = req.body
+        return this.#gradesRequestCallback(res.locals.payload, req, res, next)
+      } catch (err) {
+        provMainDebug(err)
+        return res.status(400).send({
+          status: 400,
+          error: 'Bad Request',
+          details: {
+            description: 'Error validating access token request.',
             message: err.message,
             bodyReceived: req.body
           }
@@ -483,6 +656,42 @@ class Consumer {
     /* istanbul ignore next */
     if (!membershipsRequestCallback) throw new Error('MISSING_CALLBACK')
     this.#membershipsRequestCallback = membershipsRequestCallback
+    return true
+  }
+
+  /**
+   * @description Sets the callback function called whenever the Consumer receives a valid LTI 1.3 Line Items Request.
+   * @param {Function} lineItemsRequestCallback - Callback function called whenever the Consumer receives a valid LTI 1.3 Line Items Request.
+   * @returns {true}
+   */
+  onLineItemsRequest (lineItemsRequestCallback) {
+    /* istanbul ignore next */
+    if (!lineItemsRequestCallback) throw new Error('MISSING_CALLBACK')
+    this.#lineItemsRequestCallback = lineItemsRequestCallback
+    return true
+  }
+
+  /**
+   * @description Sets the callback function called whenever the Consumer receives a valid LTI 1.3 Line Item Request.
+   * @param {Function} lineItemRequestCallback - Callback function called whenever the Consumer receives a valid LTI 1.3 Line Item Request.
+   * @returns {true}
+   */
+  onLineItemRequest (lineItemRequestCallback) {
+    /* istanbul ignore next */
+    if (!lineItemRequestCallback) throw new Error('MISSING_CALLBACK')
+    this.#lineItemRequestCallback = lineItemRequestCallback
+    return true
+  }
+
+  /**
+   * @description Sets the callback function called whenever the Consumer receives a valid LTI 1.3 Grades Request.
+   * @param {Function} gradesRequestCallback - Callback function called whenever the Consumer receives a valid LTI 1.3 Grades Request.
+   * @returns {true}
+   */
+  onGradesRequest (gradesRequestCallback) {
+    /* istanbul ignore next */
+    if (!gradesRequestCallback) throw new Error('MISSING_CALLBACK')
+    this.#gradesRequestCallback = gradesRequestCallback
     return true
   }
 

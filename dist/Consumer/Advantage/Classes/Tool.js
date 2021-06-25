@@ -29,31 +29,31 @@ const privacyLevels = require('../../../GlobalUtils/Helpers/privacy');
  */
 
 
-var _clientId = new WeakMap();
+var _clientId = /*#__PURE__*/new WeakMap();
 
-var _deploymentId = new WeakMap();
+var _deploymentId = /*#__PURE__*/new WeakMap();
 
-var _url = new WeakMap();
+var _url = /*#__PURE__*/new WeakMap();
 
-var _deepLinkingUrl = new WeakMap();
+var _deepLinkingUrl = /*#__PURE__*/new WeakMap();
 
-var _loginUrl = new WeakMap();
+var _loginUrl = /*#__PURE__*/new WeakMap();
 
-var _redirectionURIs = new WeakMap();
+var _redirectionURIs = /*#__PURE__*/new WeakMap();
 
-var _name = new WeakMap();
+var _name = /*#__PURE__*/new WeakMap();
 
-var _description = new WeakMap();
+var _description = /*#__PURE__*/new WeakMap();
 
-var _authConfig2 = new WeakMap();
+var _authConfig2 = /*#__PURE__*/new WeakMap();
 
-var _scopes = new WeakMap();
+var _scopes = /*#__PURE__*/new WeakMap();
 
-var _privacy = new WeakMap();
+var _privacy = /*#__PURE__*/new WeakMap();
 
-var _customParameters = new WeakMap();
+var _customParameters = /*#__PURE__*/new WeakMap();
 
-var _kid = new WeakMap();
+var _kid = /*#__PURE__*/new WeakMap();
 
 class Tool {
   /**

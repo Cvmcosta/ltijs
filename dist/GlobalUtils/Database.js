@@ -6,9 +6,9 @@ var _classPrivateFieldGet2 = _interopRequireDefault(require("@babel/runtime/help
 
 var _classPrivateFieldSet2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldSet"));
 
-var _encryptionkey = new WeakMap();
+var _encryptionkey = /*#__PURE__*/new WeakMap();
 
-var _deploy = new WeakMap();
+var _deploy = /*#__PURE__*/new WeakMap();
 
 // Database adapter
 class Database {

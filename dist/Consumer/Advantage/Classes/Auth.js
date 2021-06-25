@@ -4,7 +4,7 @@ var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefau
 
 var _defineProperty2 = _interopRequireDefault(require("@babel/runtime/helpers/defineProperty"));
 
-function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) { symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); } keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { (0, _defineProperty2.default)(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
@@ -181,14 +181,14 @@ class Auth {
     return payload;
   }
   /**
-   * @description Validates LTI 1.3 Deep Linking ReQquest
+   * @description Validates LTI 1.3 Deep Linking Response
    * @param {Object} obj - Deep Linking request object.
    * @param {Object} query - Deep Linking query object.
    * @param {Object} consumer - Consumer configurations.
    */
 
 
-  static async validateDeepLinkingRequest(obj, query, consumer) {
+  static async validateDeepLinkingResponse(obj, query, consumer) {
     consAuthDebug('Validating deep linking response');
     if (!obj.JWT) throw new Error('MISSING_JWT_PARAMETER');
     const decoded = jwt.decode(obj.JWT, {
@@ -273,7 +273,7 @@ class Auth {
         port: consumer.port,
         auth: consumer.auth,
         hash: consumer.hash,
-        pathname: consumer.deepLinkingRequestRoute,
+        pathname: consumer.deepLinkingResponseRoute,
         query: {
           context: _idtoken.launch.context.id,
           dlState: payload.params.dlState
@@ -310,21 +310,33 @@ class Auth {
         idtoken.family_name = _idtoken.user.family_name;
         idtoken.name = _idtoken.user.name;
       }
-    }
+    } // Handling Names and Roles claim
+
 
     if (tool.scopes.includes('MEMBERSHIPS')) {
-      const membershipsUrl = url.format({
-        protocol: consumer.protocol,
-        hostname: consumer.hostname,
-        port: consumer.port,
-        auth: consumer.auth,
-        hash: consumer.hash,
-        pathname: consumer.membershipsRoute + '/' + _idtoken.launch.context.id
-      });
+      const membershipsUrl = consumer.membershipsUrl + '/' + _idtoken.launch.context.id;
       idtoken['https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice'] = {
         context_memberships_url: membershipsUrl,
         service_versions: ['2.0']
       };
+    } // Handling Assignment and Grades claim
+
+
+    if (tool.scopes.includes('LINEITEM') || tool.scopes.includes('LINEITEM_READONLY') || tool.scopes.includes('SCORES') || tool.scopes.includes('RESULTS')) {
+      idtoken['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint'] = {
+        scope: []
+      };
+      if (tool.scopes.includes('LINEITEM')) idtoken['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint'].scope.push(validScopes.LINEITEM);
+      if (tool.scopes.includes('LINEITEM_READONLY')) idtoken['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint'].scope.push(validScopes.LINEITEM_READONLY);
+      if (tool.scopes.includes('SCORES')) idtoken['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint'].scope.push(validScopes.SCORES);
+      if (tool.scopes.includes('RESULTS')) idtoken['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint'].scope.push(validScopes.RESULTS);
+      const lineItemsUrl = consumer.lineItemsUrl + '/' + _idtoken.launch.context.id;
+      idtoken['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint'].lineitems = lineItemsUrl;
+
+      if (_idtoken.launch.resource && _idtoken.launch.resource.lineItem) {
+        const lineItemUrl = lineItemsUrl + '/lineitem/' + _idtoken.launch.resource.lineItem;
+        idtoken['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint'].lineitem = lineItemUrl;
+      }
     } // Signing ID Token
 
 

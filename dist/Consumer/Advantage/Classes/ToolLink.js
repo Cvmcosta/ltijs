@@ -23,21 +23,21 @@ const privacyLevels = require('../../../GlobalUtils/Helpers/privacy');
  */
 
 
-var _id = new WeakMap();
+var _id = /*#__PURE__*/new WeakMap();
 
-var _clientId = new WeakMap();
+var _clientId = /*#__PURE__*/new WeakMap();
 
-var _deploymentId = new WeakMap();
+var _deploymentId = /*#__PURE__*/new WeakMap();
 
-var _url = new WeakMap();
+var _url = /*#__PURE__*/new WeakMap();
 
-var _name = new WeakMap();
+var _name = /*#__PURE__*/new WeakMap();
 
-var _description = new WeakMap();
+var _description = /*#__PURE__*/new WeakMap();
 
-var _privacy = new WeakMap();
+var _privacy = /*#__PURE__*/new WeakMap();
 
-var _customParameters = new WeakMap();
+var _customParameters = /*#__PURE__*/new WeakMap();
 
 class ToolLink {
   /**

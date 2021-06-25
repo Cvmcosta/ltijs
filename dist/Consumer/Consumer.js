@@ -22,8 +22,8 @@ const Core = require('./Advantage/Services/Core');
 const DeepLinking = require('./Advantage/Services/DeepLinking');
 
 const NamesAndRoles = require('./Advantage/Services/NamesAndRoles');
-/* const GradeService = require('./Advantage/Services/Grade') */
-// Classes
+
+const Grades = require('./Advantage/Services/Grades'); // Classes
 
 
 const Auth = require('./Advantage/Classes/Auth');
@@ -54,43 +54,49 @@ const privacyLevels = require('../GlobalUtils/Helpers/privacy');
  */
 
 
-var _consumer = new WeakMap();
+var _consumer = /*#__PURE__*/new WeakMap();
 
-var _consumerUrl = new WeakMap();
+var _consumerUrl = /*#__PURE__*/new WeakMap();
 
-var _loginRoute = new WeakMap();
+var _loginRoute = /*#__PURE__*/new WeakMap();
 
-var _accesstokenRoute = new WeakMap();
+var _accesstokenRoute = /*#__PURE__*/new WeakMap();
 
-var _keysetRoute = new WeakMap();
+var _keysetRoute = /*#__PURE__*/new WeakMap();
 
-var _deepLinkingRequestRoute = new WeakMap();
+var _deepLinkingResponseRoute = /*#__PURE__*/new WeakMap();
 
-var _membershipsRoute = new WeakMap();
+var _membershipsRoute = /*#__PURE__*/new WeakMap();
 
-var _ENCRYPTIONKEY = new WeakMap();
+var _lineItemsRoute = /*#__PURE__*/new WeakMap();
 
-var _legacy = new WeakMap();
+var _ENCRYPTIONKEY = /*#__PURE__*/new WeakMap();
 
-var _setup = new WeakMap();
+var _legacy = /*#__PURE__*/new WeakMap();
 
-var _coreLaunchCallback = new WeakMap();
+var _setup = /*#__PURE__*/new WeakMap();
 
-var _deepLinkingLaunchCallback = new WeakMap();
+var _coreLaunchCallback = /*#__PURE__*/new WeakMap();
 
-var _deepLinkingRequestCallback = new WeakMap();
+var _deepLinkingLaunchCallback = /*#__PURE__*/new WeakMap();
 
-var _membershipsRequestCallback = new WeakMap();
+var _deepLinkingResponseCallback = /*#__PURE__*/new WeakMap();
 
-var _gradesRequestCallback = new WeakMap();
+var _membershipsRequestCallback = /*#__PURE__*/new WeakMap();
 
-var _invalidLoginRequestCallback = new WeakMap();
+var _lineItemsRequestCallback = /*#__PURE__*/new WeakMap();
 
-var _invalidDeepLinkingRequestCallback = new WeakMap();
+var _lineItemRequestCallback = /*#__PURE__*/new WeakMap();
 
-var _invalidAccessTokenRequestCallback = new WeakMap();
+var _gradesRequestCallback = /*#__PURE__*/new WeakMap();
 
-var _server = new WeakMap();
+var _invalidLoginRequestCallback = /*#__PURE__*/new WeakMap();
+
+var _invalidDeepLinkingResponseCallback = /*#__PURE__*/new WeakMap();
+
+var _invalidAccessTokenRequestCallback = /*#__PURE__*/new WeakMap();
+
+var _server = /*#__PURE__*/new WeakMap();
 
 class Consumer {
   constructor() {
@@ -119,7 +125,7 @@ class Consumer {
       value: '/keys'
     });
 
-    _deepLinkingRequestRoute.set(this, {
+    _deepLinkingResponseRoute.set(this, {
       writable: true,
       value: '/deeplinking'
     });
@@ -127,6 +133,11 @@ class Consumer {
     _membershipsRoute.set(this, {
       writable: true,
       value: '/memberships'
+    });
+
+    _lineItemsRoute.set(this, {
+      writable: true,
+      value: '/lineitems'
     });
 
     _ENCRYPTIONKEY.set(this, {
@@ -170,7 +181,7 @@ class Consumer {
       }
     });
 
-    _deepLinkingRequestCallback.set(this, {
+    _deepLinkingResponseCallback.set(this, {
       writable: true,
       value: async (payload, req, res) => {
         return res.status(500).send({
@@ -196,6 +207,32 @@ class Consumer {
       }
     });
 
+    _lineItemsRequestCallback.set(this, {
+      writable: true,
+      value: async (payload, req, res) => {
+        return res.status(500).send({
+          status: 500,
+          error: 'Internal Server Error',
+          details: {
+            message: 'MISSING_LINEITEMS_REQUEST_CALLBACK'
+          }
+        });
+      }
+    });
+
+    _lineItemRequestCallback.set(this, {
+      writable: true,
+      value: async (payload, req, res) => {
+        return res.status(500).send({
+          status: 500,
+          error: 'Internal Server Error',
+          details: {
+            message: 'MISSING_LINEITEM_REQUEST_CALLBACK'
+          }
+        });
+      }
+    });
+
     _gradesRequestCallback.set(this, {
       writable: true,
       value: async (payload, req, res) => {
@@ -216,7 +253,7 @@ class Consumer {
       }
     });
 
-    _invalidDeepLinkingRequestCallback.set(this, {
+    _invalidDeepLinkingResponseCallback.set(this, {
       writable: true,
       value: async (req, res) => {
         return res.status(400).send(res.locals.err);
@@ -251,7 +288,7 @@ class Consumer {
      * @param {String} [options.loginRoute = '/login'] - LTI Consumer login route. If no option is set '/login' is used.
      * @param {String} [options.accesstokenRoute = '/accesstoken'] - LTI Consumer access token generation endpoint.
      * @param {String} [options.keysetRoute = '/keys'] - LTI Consumer public jwk keyset route. If no option is set '/keys' is used.
-     * @param {String} [options.deepLinkingRequestRoute = '/deeplinking'] - LTI Consumer deep linking request route. If no option is set '/deeplinking' is used.
+     * @param {String} [options.deepLinkingResponseRoute = '/deeplinking'] - LTI Consumer deep linking response route. If no option is set '/deeplinking' is used.
      * @param {String} [options.membershipsRoute = '/memberships'] - LTI Consumer Memeberships route. If no option is set '/memberships' is used.
      * @param {Boolean} [options.https = false] - Set this as true in development if you are not using any web server to redirect to your tool (like Nginx) as https and are planning to configure ssl through Express.
      * @param {Object} [options.ssl] - SSL certificate and key if https is enabled.
@@ -270,7 +307,7 @@ class Consumer {
     if (options && options.loginRoute) (0, _classPrivateFieldSet2.default)(this, _loginRoute, options.loginRoute);
     if (options && options.keysetRoute) (0, _classPrivateFieldSet2.default)(this, _keysetRoute, options.keysetRoute);
     if (options && options.accesstokenRoute) (0, _classPrivateFieldSet2.default)(this, _accesstokenRoute, options.accesstokenRoute);
-    if (options && options.deepLinkingRequestRoute) (0, _classPrivateFieldSet2.default)(this, _deepLinkingRequestRoute, options.deepLinkingRequestRoute);
+    if (options && options.deepLinkingResponseRoute) (0, _classPrivateFieldSet2.default)(this, _deepLinkingResponseRoute, options.deepLinkingResponseRoute);
     if (options && options.membershipsRoute) (0, _classPrivateFieldSet2.default)(this, _membershipsRoute, options.membershipsRoute);
     if (options && options.legacy === true) (0, _classPrivateFieldSet2.default)(this, _legacy, true); // Creating consumer configuration object
 
@@ -278,8 +315,25 @@ class Consumer {
     (0, _classPrivateFieldSet2.default)(this, _consumer, url.parse((0, _classPrivateFieldGet2.default)(this, _consumerUrl)));
     (0, _classPrivateFieldGet2.default)(this, _consumer).url = (0, _classPrivateFieldGet2.default)(this, _consumerUrl);
     (0, _classPrivateFieldGet2.default)(this, _consumer).accesstokenRoute = (0, _classPrivateFieldGet2.default)(this, _accesstokenRoute);
-    (0, _classPrivateFieldGet2.default)(this, _consumer).deepLinkingRequestRoute = (0, _classPrivateFieldGet2.default)(this, _deepLinkingRequestRoute);
-    (0, _classPrivateFieldGet2.default)(this, _consumer).membershipsRoute = (0, _classPrivateFieldGet2.default)(this, _membershipsRoute); // Encryption Key
+    (0, _classPrivateFieldGet2.default)(this, _consumer).deepLinkingResponseRoute = (0, _classPrivateFieldGet2.default)(this, _deepLinkingResponseRoute);
+    (0, _classPrivateFieldGet2.default)(this, _consumer).membershipsRoute = (0, _classPrivateFieldGet2.default)(this, _membershipsRoute);
+    (0, _classPrivateFieldGet2.default)(this, _consumer).lineItemsRoute = (0, _classPrivateFieldGet2.default)(this, _lineItemsRoute);
+    (0, _classPrivateFieldGet2.default)(this, _consumer).membershipsUrl = url.format({
+      protocol: (0, _classPrivateFieldGet2.default)(this, _consumer).protocol,
+      hostname: (0, _classPrivateFieldGet2.default)(this, _consumer).hostname,
+      port: (0, _classPrivateFieldGet2.default)(this, _consumer).port,
+      auth: (0, _classPrivateFieldGet2.default)(this, _consumer).auth,
+      hash: (0, _classPrivateFieldGet2.default)(this, _consumer).hash,
+      pathname: (0, _classPrivateFieldGet2.default)(this, _membershipsRoute)
+    });
+    (0, _classPrivateFieldGet2.default)(this, _consumer).lineItemsUrl = url.format({
+      protocol: (0, _classPrivateFieldGet2.default)(this, _consumer).protocol,
+      hostname: (0, _classPrivateFieldGet2.default)(this, _consumer).hostname,
+      port: (0, _classPrivateFieldGet2.default)(this, _consumer).port,
+      auth: (0, _classPrivateFieldGet2.default)(this, _consumer).auth,
+      hash: (0, _classPrivateFieldGet2.default)(this, _consumer).hash,
+      pathname: (0, _classPrivateFieldGet2.default)(this, _lineItemsRoute)
+    }); // Encryption Key
 
     (0, _classPrivateFieldSet2.default)(this, _ENCRYPTIONKEY, encryptionkey); // Setup Databse
 
@@ -323,6 +377,11 @@ class Consumer {
 
     this.NamesAndRoles = NamesAndRoles;
     /**
+     * @description Grades Service
+     */
+
+    this.Grades = Grades;
+    /**
      * @description Express server object.
      */
 
@@ -349,10 +408,10 @@ class Consumer {
       }
     }); // Deep Linking response route
 
-    this.app.post((0, _classPrivateFieldGet2.default)(this, _deepLinkingRequestRoute), async (req, res, next) => {
+    this.app.post((0, _classPrivateFieldGet2.default)(this, _deepLinkingResponseRoute), async (req, res, next) => {
       try {
-        res.locals.payload = await Auth.validateDeepLinkingRequest(req.body, req.query, (0, _classPrivateFieldGet2.default)(this, _consumer));
-        return (0, _classPrivateFieldGet2.default)(this, _deepLinkingRequestCallback).call(this, res.locals.payload, req, res, next);
+        res.locals.payload = await Auth.validateDeepLinkingResponse(req.body, req.query, (0, _classPrivateFieldGet2.default)(this, _consumer));
+        return (0, _classPrivateFieldGet2.default)(this, _deepLinkingResponseCallback).call(this, res.locals.payload, req, res, next);
       } catch (err) {
         provMainDebug(err);
         res.locals.err = {
@@ -364,7 +423,7 @@ class Consumer {
             bodyReceived: req.body
           }
         };
-        return (0, _classPrivateFieldGet2.default)(this, _invalidDeepLinkingRequestCallback).call(this, req, res, next);
+        return (0, _classPrivateFieldGet2.default)(this, _invalidDeepLinkingResponseCallback).call(this, req, res, next);
       }
     }); // Access token generation route
 
@@ -429,24 +488,20 @@ class Consumer {
     this.app.get((0, _classPrivateFieldGet2.default)(this, _membershipsRoute) + '/:context', async (req, res, next) => {
       try {
         const accessToken = await validateAccessToken(req.headers.authorization, scopes.MEMBERSHIPS, res);
-        const serviceEndpoint = url.format({
-          protocol: (0, _classPrivateFieldGet2.default)(this, _consumer).protocol,
-          hostname: (0, _classPrivateFieldGet2.default)(this, _consumer).hostname,
-          port: (0, _classPrivateFieldGet2.default)(this, _consumer).port,
-          auth: (0, _classPrivateFieldGet2.default)(this, _consumer).auth,
-          hash: (0, _classPrivateFieldGet2.default)(this, _consumer).hash,
-          pathname: (0, _classPrivateFieldGet2.default)(this, _consumer).membershipsRoute + '/' + req.params.context
-        });
+        const query = new URLSearchParams(req.query).toString();
+        const serviceEndpoint = (0, _classPrivateFieldGet2.default)(this, _consumer).membershipsUrl + '/' + req.params.context + '?' + query;
         res.locals.payload = {
+          // Move to service class
           service: 'MEMBERSHIPS',
-          endpoint: serviceEndpoint,
           clientId: accessToken.clientId,
-          privacy: accessToken.privacy,
+          endpoint: serviceEndpoint,
           params: {
             context: req.params.context,
+            privacy: accessToken.privacy,
             role: req.query.role,
             limit: req.query.limit,
-            next: req.query.next
+            next: req.query.next,
+            resourceLinkId: req.query.rlid
           }
         };
         return (0, _classPrivateFieldGet2.default)(this, _membershipsRequestCallback).call(this, res.locals.payload, req, res, next);
@@ -457,6 +512,163 @@ class Consumer {
           error: 'Bad Request',
           details: {
             description: 'Error validating access token request',
+            message: err.message,
+            bodyReceived: req.body
+          }
+        });
+      }
+    });
+    this.app.all((0, _classPrivateFieldGet2.default)(this, _lineItemsRoute) + '/:context', async (req, res, next) => {
+      try {
+        let accessToken;
+
+        if (req.method === 'GET') {
+          try {
+            accessToken = await validateAccessToken(req.headers.authorization, scopes.LINEITEM_READONLY, res);
+          } catch (_unused) {
+            accessToken = await validateAccessToken(req.headers.authorization, scopes.LINEITEM, res);
+          }
+        } else if (req.method === 'POST') {
+          accessToken = await validateAccessToken(req.headers.authorization, scopes.LINEITEM, res);
+        } else {
+          return res.status(400).send({
+            status: 400,
+            error: 'Bad Request',
+            details: {
+              description: 'Invalid request method.'
+            }
+          });
+        } // Creating payload
+
+
+        const serviceEndpoint = (0, _classPrivateFieldGet2.default)(this, _consumer).lineItemsUrl + '/' + req.params.context;
+        res.locals.payload = {
+          // Move to service class
+          service: 'LINEITEMS',
+          action: req.method,
+          clientId: accessToken.clientId,
+          endpoint: serviceEndpoint,
+          params: {
+            context: req.params.context
+          }
+        };
+
+        if (req.method === 'GET') {
+          res.locals.payload.params.resource = req.query.resource_link_id;
+          res.locals.payload.params.externalResource = req.query.resource_id;
+          res.locals.payload.params.tag = req.query.tag;
+          res.locals.payload.params.limit = req.query.limit;
+        } else if (req.method === 'POST') res.locals.payload.params.lineItem = req.body;
+
+        return (0, _classPrivateFieldGet2.default)(this, _lineItemsRequestCallback).call(this, res.locals.payload, req, res, next);
+      } catch (err) {
+        provMainDebug(err);
+        return res.status(400).send({
+          status: 400,
+          error: 'Bad Request',
+          details: {
+            description: 'Error validating access token request',
+            message: err.message,
+            bodyReceived: req.body
+          }
+        });
+      }
+    });
+    this.app.all((0, _classPrivateFieldGet2.default)(this, _lineItemsRoute) + '/:context/lineitem/:lineItem', async (req, res, next) => {
+      try {
+        let accessToken;
+
+        if (req.method === 'GET') {
+          try {
+            accessToken = await validateAccessToken(req.headers.authorization, scopes.LINEITEM_READONLY, res);
+          } catch (_unused2) {
+            accessToken = await validateAccessToken(req.headers.authorization, scopes.LINEITEM, res);
+          }
+        } else if (req.method === 'PUT' || req.method === 'DELETE') {
+          accessToken = await validateAccessToken(req.headers.authorization, scopes.LINEITEM, res);
+        } else {
+          return res.status(400).send({
+            status: 400,
+            error: 'Bad Request',
+            details: {
+              description: 'Invalid request method.'
+            }
+          });
+        } // Creating payload
+
+
+        const serviceEndpoint = (0, _classPrivateFieldGet2.default)(this, _consumer).lineItemsUrl + '/' + req.params.context + '/lineitem/' + req.params.lineItem;
+        res.locals.payload = {
+          // Move to service class
+          service: 'LINEITEM',
+          action: req.method,
+          clientId: accessToken.clientId,
+          endpoint: serviceEndpoint,
+          params: {
+            context: req.params.context,
+            lineItem: req.params.lineItem
+          }
+        };
+        if (req.method === 'PUT') res.locals.payload.params.update = req.body;
+        return (0, _classPrivateFieldGet2.default)(this, _lineItemRequestCallback).call(this, res.locals.payload, req, res, next);
+      } catch (err) {
+        provMainDebug(err);
+        return res.status(400).send({
+          status: 400,
+          error: 'Bad Request',
+          details: {
+            description: 'Error validating access token request',
+            message: err.message,
+            bodyReceived: req.body
+          }
+        });
+      }
+    });
+    this.app.all((0, _classPrivateFieldGet2.default)(this, _lineItemsRoute) + '/:context/lineitem/:lineItem/:service', async (req, res, next) => {
+      try {
+        let accessToken;
+
+        if (req.method === 'GET' && req.params.service === 'results') {
+          accessToken = await validateAccessToken(req.headers.authorization, scopes.RESULTS, res);
+        } else if (req.method === 'POST' && req.params.service === 'scores') {
+          accessToken = await validateAccessToken(req.headers.authorization, scopes.SCORES, res);
+        } else {
+          return res.status(400).send({
+            status: 400,
+            error: 'Bad Request',
+            details: {
+              description: 'Invalid service URL or method.'
+            }
+          });
+        } // Creating payload
+
+
+        const serviceEndpoint = (0, _classPrivateFieldGet2.default)(this, _consumer).lineItemsUrl + '/' + req.params.context + '/lineitem/' + req.params.lineItem;
+        res.locals.payload = {
+          // Move to service class
+          service: 'GRADES',
+          action: req.method,
+          clientId: accessToken.clientId,
+          endpoint: serviceEndpoint,
+          params: {
+            context: req.params.context,
+            lineItem: req.params.lineItem
+          }
+        };
+
+        if (req.method === 'GET') {
+          res.locals.payload.params.user = req.query.user_id;
+          res.locals.payload.params.limit = req.query.limit;
+        } else if (req.method === 'POST') res.locals.payload.params.score = req.body;
+
+        return (0, _classPrivateFieldGet2.default)(this, _gradesRequestCallback).call(this, res.locals.payload, req, res, next);
+      } catch (err) {
+        provMainDebug(err);
+        return res.status(400).send({
+          status: 400,
+          error: 'Bad Request',
+          details: {
+            description: 'Error validating access token request.',
             message: err.message,
             bodyReceived: req.body
           }
@@ -493,7 +705,7 @@ class Consumer {
         await (0, _classPrivateFieldGet2.default)(this, _server).listen(conf.port);
         provMainDebug('Ltijs - Consumer started listening on port: ', conf.port); // Startup message
 
-        const message = 'LTI Consumer is listening on port ' + conf.port + '!\n\n LTI provider config: \n >Main URL: ' + (0, _classPrivateFieldGet2.default)(this, _consumerUrl) + '\n >Login Request Route: ' + (0, _classPrivateFieldGet2.default)(this, _loginRoute) + '\n >Access Token Generation Route: ' + (0, _classPrivateFieldGet2.default)(this, _accesstokenRoute) + '\n >Deep Linking Request Route: ' + (0, _classPrivateFieldGet2.default)(this, _deepLinkingRequestRoute) + '\n >Keyset Route: ' + (0, _classPrivateFieldGet2.default)(this, _keysetRoute);
+        const message = 'LTI Consumer is listening on port ' + conf.port + '!\n\n LTI provider config: \n >Main URL: ' + (0, _classPrivateFieldGet2.default)(this, _consumerUrl) + '\n >Login Request Route: ' + (0, _classPrivateFieldGet2.default)(this, _loginRoute) + '\n >Access Token Generation Route: ' + (0, _classPrivateFieldGet2.default)(this, _accesstokenRoute) + '\n >Deep Linking Request Route: ' + (0, _classPrivateFieldGet2.default)(this, _deepLinkingResponseRoute) + '\n >Keyset Route: ' + (0, _classPrivateFieldGet2.default)(this, _keysetRoute);
 
         if (!conf.silent) {
           console.log('  _   _______ _____      _  _____\n' + ' | | |__   __|_   _|    | |/ ____|\n' + ' | |    | |    | |      | | (___  \n' + ' | |    | |    | |  _   | |\\___ \\ \n' + ' | |____| |   _| |_| |__| |____) |\n' + ' |______|_|  |_____|\\____/|_____/ \n\n', message);
@@ -608,15 +820,15 @@ class Consumer {
   }
   /**
    * @description Sets the callback function called whenever the Consumer receives a valid LTI 1.3 Deep Linking Response.
-   * @param {Function} deepLinkingRequestCallback - Callback function called whenever the Consumer receives a valid LTI 1.3 Deep Linking Request.
+   * @param {Function} deepLinkingResponseCallback - Callback function called whenever the Consumer receives a valid LTI 1.3 Deep Linking Request.
    * @returns {true}
    */
 
 
-  onDeepLinkingRequest(deepLinkingRequestCallback) {
+  onDeepLinkingResponse(deepLinkingResponseCallback) {
     /* istanbul ignore next */
-    if (!deepLinkingRequestCallback) throw new Error('MISSING_CALLBACK');
-    (0, _classPrivateFieldSet2.default)(this, _deepLinkingRequestCallback, deepLinkingRequestCallback);
+    if (!deepLinkingResponseCallback) throw new Error('MISSING_CALLBACK');
+    (0, _classPrivateFieldSet2.default)(this, _deepLinkingResponseCallback, deepLinkingResponseCallback);
     return true;
   }
   /**
@@ -630,6 +842,45 @@ class Consumer {
     /* istanbul ignore next */
     if (!membershipsRequestCallback) throw new Error('MISSING_CALLBACK');
     (0, _classPrivateFieldSet2.default)(this, _membershipsRequestCallback, membershipsRequestCallback);
+    return true;
+  }
+  /**
+   * @description Sets the callback function called whenever the Consumer receives a valid LTI 1.3 Line Items Request.
+   * @param {Function} lineItemsRequestCallback - Callback function called whenever the Consumer receives a valid LTI 1.3 Line Items Request.
+   * @returns {true}
+   */
+
+
+  onLineItemsRequest(lineItemsRequestCallback) {
+    /* istanbul ignore next */
+    if (!lineItemsRequestCallback) throw new Error('MISSING_CALLBACK');
+    (0, _classPrivateFieldSet2.default)(this, _lineItemsRequestCallback, lineItemsRequestCallback);
+    return true;
+  }
+  /**
+   * @description Sets the callback function called whenever the Consumer receives a valid LTI 1.3 Line Item Request.
+   * @param {Function} lineItemRequestCallback - Callback function called whenever the Consumer receives a valid LTI 1.3 Line Item Request.
+   * @returns {true}
+   */
+
+
+  onLineItemRequest(lineItemRequestCallback) {
+    /* istanbul ignore next */
+    if (!lineItemRequestCallback) throw new Error('MISSING_CALLBACK');
+    (0, _classPrivateFieldSet2.default)(this, _lineItemRequestCallback, lineItemRequestCallback);
+    return true;
+  }
+  /**
+   * @description Sets the callback function called whenever the Consumer receives a valid LTI 1.3 Grades Request.
+   * @param {Function} gradesRequestCallback - Callback function called whenever the Consumer receives a valid LTI 1.3 Grades Request.
+   * @returns {true}
+   */
+
+
+  onGradesRequest(gradesRequestCallback) {
+    /* istanbul ignore next */
+    if (!gradesRequestCallback) throw new Error('MISSING_CALLBACK');
+    (0, _classPrivateFieldSet2.default)(this, _gradesRequestCallback, gradesRequestCallback);
     return true;
   }
   /**
@@ -652,10 +903,10 @@ class Consumer {
    */
 
 
-  onInvalidDeepLinkingRequest(onInvalidDeepLinkingRequestCallback) {
+  onInvalidDeepLinkingResponse(onInvalidDeepLinkingResponseCallback) {
     /* istanbul ignore next */
-    if (!onInvalidDeepLinkingRequestCallback) throw new Error('MISSING_CALLBACK');
-    (0, _classPrivateFieldSet2.default)(this, _invalidDeepLinkingRequestCallback, onInvalidDeepLinkingRequestCallback);
+    if (!onInvalidDeepLinkingResponseCallback) throw new Error('MISSING_CALLBACK');
+    (0, _classPrivateFieldSet2.default)(this, _invalidDeepLinkingResponseCallback, onInvalidDeepLinkingResponseCallback);
     return true;
   }
   /**
@@ -704,8 +955,8 @@ class Consumer {
    */
 
 
-  deepLinkingRequestRoute() {
-    return (0, _classPrivateFieldGet2.default)(this, _deepLinkingRequestRoute);
+  deepLinkingResponseRoute() {
+    return (0, _classPrivateFieldGet2.default)(this, _deepLinkingResponseRoute);
   }
   /**
      * @description Gets the keyset route that will be used to retrieve a public jwk keyset.

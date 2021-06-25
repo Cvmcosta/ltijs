@@ -43,7 +43,7 @@ class Server {
       this.app.options('*', cors())
     }
     this.app.use(express.urlencoded({ extended: false }))
-    this.app.use(express.json())
+    this.app.use(express.json({ type: 'application/*' }))
     this.app.use(express.raw())
     this.app.use(express.text())
     this.app.use(cookieParser(ENCRYPTIONKEY))

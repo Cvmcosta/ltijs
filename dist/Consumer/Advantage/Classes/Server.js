@@ -3,8 +3,6 @@
 // Express server
 const express = require('express');
 
-const bodyParser = require('body-parser');
-
 const https = require('https');
 
 const helmet = require('helmet');
@@ -53,12 +51,14 @@ class Server {
       this.app.options('*', cors());
     }
 
-    this.app.use(bodyParser.urlencoded({
+    this.app.use(express.urlencoded({
       extended: false
     }));
-    this.app.use(bodyParser.json());
-    this.app.use(bodyParser.raw());
-    this.app.use(bodyParser.text());
+    this.app.use(express.json({
+      type: 'application/*'
+    }));
+    this.app.use(express.raw());
+    this.app.use(express.text());
     this.app.use(cookieParser(ENCRYPTIONKEY)); // Executing server addon
 
     if (serverAddon) serverAddon(this.app);

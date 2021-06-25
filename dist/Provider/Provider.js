@@ -8,7 +8,7 @@ var _classPrivateFieldSet2 = _interopRequireDefault(require("@babel/runtime/help
 
 var _classPrivateFieldGet2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldGet"));
 
-function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) { symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); } keys.push.apply(keys, symbols); } return keys; }
 
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { (0, _defineProperty2.default)(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
@@ -29,7 +29,7 @@ const provMainDebug = require('debug')('lti:main');
 const provDynamicRegistrationDebug = require('debug')('lti:dynamicRegistrationService'); // Services
 
 
-const Core = require('./Advantage/Services/Core');
+const CoreService = require('./Advantage/Services/Core');
 
 const GradeService = require('./Advantage/Services/Grade');
 
@@ -55,43 +55,43 @@ const MongoDB = require('../GlobalUtils/MongoDB/MongoDB');
  */
 
 
-var _loginRoute = new WeakMap();
+var _loginRoute = /*#__PURE__*/new WeakMap();
 
-var _appRoute = new WeakMap();
+var _appRoute = /*#__PURE__*/new WeakMap();
 
-var _keysetRoute = new WeakMap();
+var _keysetRoute = /*#__PURE__*/new WeakMap();
 
-var _dynRegRoute = new WeakMap();
+var _dynRegRoute = /*#__PURE__*/new WeakMap();
 
-var _whitelistedRoutes = new WeakMap();
+var _whitelistedRoutes = /*#__PURE__*/new WeakMap();
 
-var _ENCRYPTIONKEY = new WeakMap();
+var _ENCRYPTIONKEY = /*#__PURE__*/new WeakMap();
 
-var _devMode = new WeakMap();
+var _devMode = /*#__PURE__*/new WeakMap();
 
-var _ltiaas = new WeakMap();
+var _ltiaas = /*#__PURE__*/new WeakMap();
 
-var _legacy = new WeakMap();
+var _legacy = /*#__PURE__*/new WeakMap();
 
-var _tokenMaxAge = new WeakMap();
+var _tokenMaxAge = /*#__PURE__*/new WeakMap();
 
-var _cookieOptions = new WeakMap();
+var _cookieOptions = /*#__PURE__*/new WeakMap();
 
-var _setup = new WeakMap();
+var _setup = /*#__PURE__*/new WeakMap();
 
-var _connectCallback = new WeakMap();
+var _connectCallback = /*#__PURE__*/new WeakMap();
 
-var _deepLinkingCallback = new WeakMap();
+var _deepLinkingCallback = /*#__PURE__*/new WeakMap();
 
-var _dynamicRegistrationCallback = new WeakMap();
+var _dynamicRegistrationCallback = /*#__PURE__*/new WeakMap();
 
-var _invalidTokenCallback = new WeakMap();
+var _invalidTokenCallback = /*#__PURE__*/new WeakMap();
 
-var _unregisteredPlatformCallback = new WeakMap();
+var _unregisteredPlatformCallback = /*#__PURE__*/new WeakMap();
 
-var _inactivePlatformCallback = new WeakMap();
+var _inactivePlatformCallback = /*#__PURE__*/new WeakMap();
 
-var _server = new WeakMap();
+var _server = /*#__PURE__*/new WeakMap();
 
 class Provider {
   constructor() {
@@ -403,7 +403,7 @@ class Provider {
             path: req.path
           }; // Validating launch
 
-          const launch = await Core.launch(idtoken, validationParameters);
+          const launch = await CoreService.launch(idtoken, validationParameters);
 
           if ((0, _classPrivateFieldGet2.default)(this, _ltiaas)) {
             // Appending query parameters
@@ -426,7 +426,7 @@ class Provider {
           } // Creates platform session cookie
 
 
-          res.cookie(launch.platformCode, launch.token.user, (0, _classPrivateFieldGet2.default)(this, _cookieOptions)); // Appending query parameters
+          res.cookie(launch.cookieCode, launch.token.user, (0, _classPrivateFieldGet2.default)(this, _cookieOptions)); // Appending query parameters
 
           const query = new URLSearchParams(req.query);
 
@@ -449,7 +449,7 @@ class Provider {
           ltiaas: (0, _classPrivateFieldGet2.default)(this, _ltiaas),
           encryptionkey: (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY)
         };
-        const idToken = await Core.access(ltik, validationParameters); // Creating local variables
+        const idToken = await CoreService.access(ltik, validationParameters); // Creating local variables
 
         res.locals.context = idToken.platformContext;
         res.locals.token = idToken;
@@ -516,7 +516,7 @@ class Provider {
         } // Creating login request
 
 
-        const login = await Core.login(platform, params, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY)); // Setting up validation info
+        const login = await CoreService.login(platform, params, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY)); // Setting up validation info
 
         const cookieOptions = JSON.parse(JSON.stringify((0, _classPrivateFieldGet2.default)(this, _cookieOptions)));
         cookieOptions.maxAge = 60 * 1000; // Adding max age to state cookie = 1min

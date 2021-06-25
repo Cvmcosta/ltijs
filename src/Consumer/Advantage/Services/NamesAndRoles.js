@@ -15,7 +15,7 @@ class NamesAndRoles {
    * @param {Object} members - Memberships list.
    * @param {Object} [next] - Value used as the next parameter.
    */
-  static async sendMembers (res, context, members, next) {
+  static async returnMembers (res, context, members, next) {
     consMembershipsDebug('Sending memberships object')
     const payload = res.locals.payload
     if (!payload) throw new Error('INVALID_CONTEXT')
@@ -36,11 +36,11 @@ class NamesAndRoles {
       }
     }
 
-    if (payload.params.limit) {
-      let nextLink = payload.endpoint + '?limit=' + payload.params.limit + '&next=' + next
-      if (payload.params.role) nextLink += '&role=' + payload.params.role
-      res.set('Link', '<' + nextLink + '>; rel="next"')
-    }
+    /*  if (payload.params.limit) {
+    let nextLink = payload.endpoint + '?limit=' + payload.params.limit + '&next=' + next
+    if (payload.params.role) nextLink += '&role=' + payload.params.role
+    res.set('Link', '<' + nextLink + '>; rel="next"')
+    } */
 
     return res.send(membershipsObject)
   }
