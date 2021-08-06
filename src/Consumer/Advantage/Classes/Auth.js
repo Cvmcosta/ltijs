@@ -115,10 +115,6 @@ class Auth {
     const tool = await Tool.getTool(obj.client_id)
     if (!tool) throw new Error('INVALID_CLIENT_ID_CLAIM')
 
-    consAuthDebug('Validating lti_deployment_id claim')
-    if (!obj.lti_deployment_id) throw new Error('MISSING_LTI_DEPLOYMENT_ID_CLAIM')
-    if ((await tool.deploymentId()) !== obj.lti_deployment_id) throw new Error('INVALID_LTI_DEPLOYMENT_ID_CLAIM')
-
     consAuthDebug('Validating redirect_uri claim')
     if (!obj.redirect_uri) throw new Error('MISSING_REDIRECT_URI_CLAIM')
     if (!((await tool.redirectionURIs()).includes(obj.redirect_uri))) throw new Error('INVALID_REDIRECT_URI_CLAIM')
