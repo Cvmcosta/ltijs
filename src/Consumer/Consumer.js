@@ -221,7 +221,7 @@ class Consumer {
     // Authentication request route
     this.app.all(this.#loginRoute, async (req, res, next) => {
       try {
-        res.locals.payload = await Auth.validateLoginRequest(req.query, this.#ENCRYPTIONKEY)
+        res.locals.payload = await Auth.validateLoginRequest({ ...req.query, ...req.body }, this.#ENCRYPTIONKEY)
         if (res.locals.payload.params.type === messageTypes.DEEPLINKING_LAUNCH) return this.#deepLinkingLaunchCallback(res.locals.payload, req, res, next)
         return this.#coreLaunchCallback(res.locals.payload, req, res, next)
       } catch (err) {
