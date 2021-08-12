@@ -125,7 +125,7 @@ class Auth {
     const payload = {
       service: 'CORE',
       clientId: obj.client_id,
-      deploymentId: obj.lti_deployment_id,
+      deploymentId: await tool.deploymentId(),
       params: {
         user: obj.login_hint,
         toolLink: messageHint.toolLink,
