@@ -290,7 +290,7 @@ class Auth {
     }
     // Signing ID Token
     consAuthDebug('Signing ID Token')
-    const token = jwt.sign(idtoken, await toolObject.privateKey(), { algorithm: 'RS256', expiresIn: '24h', keyid: tool.kid })
+    const token = jwt.sign(idtoken, await toolObject.privateKey(), { algorithm: 'RS256', expiresIn: '24h', notBefore: 0, keyid: tool.kid })
     return token
   }
 

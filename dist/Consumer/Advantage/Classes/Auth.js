@@ -341,6 +341,7 @@ class Auth {
     const token = jwt.sign(idtoken, await toolObject.privateKey(), {
       algorithm: 'RS256',
       expiresIn: '24h',
+      notBefore: 0,
       keyid: tool.kid
     });
     return token;
