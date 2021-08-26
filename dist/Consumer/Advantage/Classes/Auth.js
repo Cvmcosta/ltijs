@@ -208,7 +208,11 @@ class Auth {
     }
 
     consAuthDebug('Validating aud claim');
-    if (Array.isArray(verified.aud) && !verified.aud.includes(consumer.url)) throw new Error('INVALID_AUD_CLAIM');else if (verified.aud !== consumer.url) throw new Error('INVALID_AUD_CLAIM');
+
+    if (Array.isArray(verified.aud)) {
+      if (!verified.aud.includes(consumer.url)) throw new Error('INVALID_AUD_CLAIM');
+    } else if (verified.aud !== consumer.url) throw new Error('INVALID_AUD_CLAIM');
+
     consAuthDebug('Validating deployment ID claim');
     if (verified['https://purl.imsglobal.org/spec/lti/claim/deployment_id'] !== (await tool.deploymentId())) throw new Error('INVALID_DEPLOYMENT_ID_CLAIM');
     consAuthDebug('Validating message type claim');
@@ -414,7 +418,11 @@ class Auth {
       hash: consumer.hash,
       pathname: consumer.accesstokenRoute
     });
-    if (Array.isArray(decoded.payload.aud) && !decoded.payload.aud.includes(accesstokenURL)) throw new Error('INVALID_AUD_CLAIM');else if (decoded.payload.aud !== accesstokenURL) throw new Error('INVALID_AUD_CLAIM');
+
+    if (Array.isArray(decoded.payload.aud)) {
+      if (!decoded.payload.aud.includes(accesstokenURL)) throw new Error('INVALID_AUD_CLAIM');
+    } else if (decoded.payload.aud !== accesstokenURL) throw new Error('INVALID_AUD_CLAIM');
+
     await verifyToken(body.client_assertion, tool, decoded.header.alg, decoded.header.kid); // Building Access Token
 
     const accessTokenPayload = {
