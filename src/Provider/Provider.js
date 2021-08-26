@@ -572,8 +572,11 @@ class Provider {
       if (options && options.silent) conf.silent = options.silent
       // Starts server on given port
 
-      if (options && options.serverless) console.log('Ltijs started in serverless mode...')
-      else {
+      if (options && options.serverless) {
+        if (!conf.silent) {
+          console.log('Ltijs started in serverless mode...')
+        }
+      } else {
         await this.#server.listen(conf.port)
         provMainDebug('Ltijs started listening on port: ', conf.port)
 
