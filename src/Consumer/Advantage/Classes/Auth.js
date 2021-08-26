@@ -164,7 +164,8 @@ class Auth {
     }
 
     consAuthDebug('Validating aud claim')
-    if (verified.aud !== consumer.url) throw new Error('INVALID_AUD_CLAIM')
+    if (Array.isArray(verified.aud) && !verified.aud.includes(consumer.url)) throw new Error('INVALID_AUD_CLAIM')
+    else if (verified.aud !== consumer.url) throw new Error('INVALID_AUD_CLAIM')
     consAuthDebug('Validating deployment ID claim')
     if (verified['https://purl.imsglobal.org/spec/lti/claim/deployment_id'] !== (await tool.deploymentId())) throw new Error('INVALID_DEPLOYMENT_ID_CLAIM')
     consAuthDebug('Validating message type claim')
