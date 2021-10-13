@@ -17,11 +17,11 @@ const parseLink = require('parse-link-header');
 
 const provGradeServiceDebug = require('debug')('provider:gradeService');
 
-var _getPlatform = new WeakMap();
+var _getPlatform = /*#__PURE__*/new WeakMap();
 
-var _ENCRYPTIONKEY = new WeakMap();
+var _ENCRYPTIONKEY = /*#__PURE__*/new WeakMap();
 
-var _Database = new WeakMap();
+var _Database = /*#__PURE__*/new WeakMap();
 
 class Grade {
   constructor(getPlatform, ENCRYPTIONKEY, Database) {

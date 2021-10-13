@@ -1,6 +1,6 @@
 {
   "name": "ltijs",
-  "version": "5.8.1",
+  "version": "5.8.2",
   "description": "Easily turn your web application into a LTI 1.3 Learning Tool.",
   "main": "index.js",
   "engineStrict": true,
@@ -9,7 +9,7 @@
   },
   "scripts": {
     "test": "nyc mocha",
-    "build": "standard 'src/**/*.js' --fix && babel src -d dist",
+    "build": "babel src -d dist",
     "start": "node index.js"
   },
   "repository": {
@@ -31,36 +31,36 @@
   },
   "homepage": "https://cvmcosta.github.io/ltijs",
   "dependencies": {
-    "@babel/runtime": "^7.14.5",
+    "@babel/runtime": "^7.15.4",
     "body-parser": "^1.19.0",
     "cookie-parser": "^1.4.5",
     "cors": "^2.8.5",
-    "debug": "^4.3.1",
+    "debug": "^4.3.2",
     "express": "^4.17.1",
     "fast-url-parser": "^1.1.3",
     "got": "^11.8.2",
     "helmet": "^4.6.0",
     "jsonwebtoken": "^8.5.1",
-    "mongoose": "^5.12.3",
+    "mongoose": "^6.0.10",
     "parse-link-header": "^1.0.1",
     "rasha": "^1.2.5"
   },
   "devDependencies": {
-    "@babel/cli": "^7.14.5",
-    "@babel/core": "^7.14.5",
+    "@babel/cli": "^7.15.7",
+    "@babel/core": "^7.15.8",
     "@babel/plugin-proposal-class-properties": "^7.14.5",
-    "@babel/plugin-transform-runtime": "^7.14.5",
-    "@babel/preset-env": "^7.14.5",
-    "@babel/register": "^7.14.5",
+    "@babel/plugin-transform-runtime": "^7.15.8",
+    "@babel/preset-env": "^7.15.8",
+    "@babel/register": "^7.15.3",
     "babel-eslint": "^10.1.0",
     "chai": "^4.3.4",
     "chai-as-promised": "^7.1.1",
     "chai-http": "^4.3.0",
-    "eslint": "^7.28.0",
-    "mocha": "^9.0.0",
-    "nock": "^13.1.0",
+    "eslint": "^8.0.0",
+    "mocha": "^9.1.2",
+    "nock": "^13.1.3",
     "nyc": "^15.1.0",
-    "standard": "^16.0.3"
+    "standard": "^16.0.4"
   },
   "standard": {
     "parser": "babel-eslint",

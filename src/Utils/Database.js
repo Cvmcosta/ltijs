@@ -1,5 +1,4 @@
 const mongoose = require('mongoose')
-mongoose.set('useCreateIndex', true)
 const Schema = mongoose.Schema
 const crypto = require('crypto')
 const provDatabaseDebug = require('debug')('provider:database')

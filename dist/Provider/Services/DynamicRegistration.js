@@ -50,33 +50,33 @@ const getHostname = url => {
   return hostname;
 };
 
-var _name = new WeakMap();
+var _name = /*#__PURE__*/new WeakMap();
 
-var _redirectUris = new WeakMap();
+var _redirectUris = /*#__PURE__*/new WeakMap();
 
-var _customParameters = new WeakMap();
+var _customParameters = /*#__PURE__*/new WeakMap();
 
-var _autoActivate = new WeakMap();
+var _autoActivate = /*#__PURE__*/new WeakMap();
 
-var _logo = new WeakMap();
+var _logo = /*#__PURE__*/new WeakMap();
 
-var _description = new WeakMap();
+var _description = /*#__PURE__*/new WeakMap();
 
-var _hostname = new WeakMap();
+var _hostname = /*#__PURE__*/new WeakMap();
 
-var _appUrl = new WeakMap();
+var _appUrl = /*#__PURE__*/new WeakMap();
 
-var _loginUrl = new WeakMap();
+var _loginUrl = /*#__PURE__*/new WeakMap();
 
-var _keysetUrl = new WeakMap();
+var _keysetUrl = /*#__PURE__*/new WeakMap();
 
-var _getPlatform = new WeakMap();
+var _getPlatform = /*#__PURE__*/new WeakMap();
 
-var _registerPlatform = new WeakMap();
+var _registerPlatform = /*#__PURE__*/new WeakMap();
 
-var _ENCRYPTIONKEY = new WeakMap();
+var _ENCRYPTIONKEY = /*#__PURE__*/new WeakMap();
 
-var _Database = new WeakMap();
+var _Database = /*#__PURE__*/new WeakMap();
 
 class DynamicRegistration {
   constructor(options, routes, registerPlatform, getPlatform, ENCRYPTIONKEY, Database) {
