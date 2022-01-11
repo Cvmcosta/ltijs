@@ -42,7 +42,7 @@
     "helmet": "^4.6.0",
     "jsonwebtoken": "^8.5.1",
     "mongoose": "^6.0.10",
-    "parse-link-header": "^1.0.1",
+    "parse-link-header": "^2.0.0",
     "rasha": "^1.2.5"
   },
   "devDependencies": {
