@@ -34,6 +34,7 @@ Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps
 
 
 ---
+
 <div align="center">
 	<a href="https://ltiaas.com"><img width="330" src="https://raw.githubusercontent.com/Cvmcosta/ltijs/master/docs/ltiaas.svg"></img></a>
   <br>
