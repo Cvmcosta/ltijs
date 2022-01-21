@@ -152,7 +152,7 @@ lti.app.post('/lineitem', async (req, res) => {
 // Deleting lineitem
 lti.app.delete('/lineitem', async (req, res) => {
   // Deleting lineitem on a platform
-  await lti.Grade.deleteLineItems(res.localstoken, { tag: 'tag' })
+  await lti.Grade.deleteLineItems(res.locals.token, { tag: 'tag' })
   return res.sendSatus(204)
 })
 
