@@ -662,9 +662,10 @@ class Provider {
           }
         });
         const iss = params.iss;
-        provMainDebug('Receiving a login request from: ' + iss);
+        const clientId = params.client_id;
+        provMainDebug('Receiving a login request from: ' + iss + ', clientId: ' + clientId);
         let platform;
-        if (params.client_id) platform = await this.getPlatform(iss, params.client_id);else platform = (await this.getPlatform(iss))[0];
+        if (clientId) platform = await this.getPlatform(iss, clientId);else platform = (await this.getPlatform(iss))[0];
 
         if (platform) {
           const platformActive = await platform.platformActive();
@@ -716,7 +717,7 @@ class Provider {
             query: query
           }));
         } else {
-          provMainDebug('Unregistered platform attempting connection: ' + iss);
+          provMainDebug('Unregistered platform attempting connection: ' + iss + ', clientId: ' + clientId);
           return (0, _classPrivateFieldGet2.default)(this, _unregisteredPlatformCallback2).call(this, req, res);
         }
       } catch (err) {

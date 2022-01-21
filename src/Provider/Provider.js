@@ -475,10 +475,10 @@ class Provider {
       try {
         if (!params.iss || !params.login_hint || !params.target_link_uri) return res.status(400).send({ status: 400, error: 'Bad Request', details: { message: 'MISSING_LOGIN_PARAMETERS' } })
         const iss = params.iss
-        const client_id = params.client_id
-        provMainDebug('Receiving a login request from: ' + iss + ', client_id: ' + client_id)
+        const clientId = params.client_id
+        provMainDebug('Receiving a login request from: ' + iss + ', clientId: ' + clientId)
         let platform
-        if (client_id) platform = await this.getPlatform(iss, client_id)
+        if (clientId) platform = await this.getPlatform(iss, clientId)
         else platform = (await this.getPlatform(iss))[0]
 
         if (platform) {
@@ -522,7 +522,7 @@ class Provider {
             query: query
           }))
         } else {
-          provMainDebug('Unregistered platform attempting connection: ' + iss + ', client_id: ' + client_id)
+          provMainDebug('Unregistered platform attempting connection: ' + iss + ', clientId: ' + clientId)
           return this.#unregisteredPlatformCallback(req, res)
         }
       } catch (err) {
