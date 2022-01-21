@@ -41,6 +41,27 @@ Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps
 > - [Migrating from version 4](https://cvmcosta.github.io/ltijs/#/migration)
 > - [CHANGELOG](https://cvmcosta.github.io/ltijs/#/changelog)
 
+---
+<div align="center">
+	<a href="https://ltiaas.com"><img width="330" src="https://raw.githubusercontent.com/Cvmcosta/ltijs/master/docs/ltiaas.svg"></img></a>
+  <br>
+  <br>
+</div>
+
+> A ready-to-go SaaS LTI solution.
+
+If you need an enterprise-ready LTI deployment, LTIaaS can get you up and running in a matter of minutes. We offer a SaaS solution with a powerful, easy to use, API that gives you access to the entire functionality of the LTI protocol. And you only start paying once your product starts to grow.
+
+Through our consultation services we can help you design, build and maintain your LTI tool. The LTIaaS API is already being used to reach thousands of students across the entire world!
+
+> For more information visit [LTIaaS.com](https://ltiaas.com)
+> - [API Documentation](https://ltiaas.com/docs/)
+> - [Pricing information and simulator](https://ltiaas.com/pricing/)
+> - [Contact us](https://ltiaas.com/contact-us/)
+
+---
+
+
 ## Table of Contents
 
 - [Introduction](#introduction)

@@ -29,18 +29,30 @@ Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps
 > Ltijs is the first LTI Library to implement the new [LTI® Advantage Dynamic Registration Service](https://cvmcosta.me/ltijs/#/dynamicregistration), now supported by **Moodle 3.10**. 
 > The Dynamic Registration Service turns the LTI Tool registration flow into a fast, completely automatic process.
 
-> v5.7 - D2L Hotfix
-> - Created new `authorizationServer` Platform registration field used as the `aud` claim for requesting access tokens. Platform methods usage is unchanged.
-> - Create new `platformAuthorizationServer` Platform method to retrieve or set the authorization server. Value defaults to the access token endpoint.
-
-> v5.6 - Breaking Changes
-> - Removed `invalidToken` and `sessionTimeout` routes, Ltijs no longer redirects to error routes, it simply calls the handler methods `onInvalidToken` and `onSessionTimeout`.
-> - Error handlers sill work in the exact same way.
-> - Fixed a spelling error in the Dynamic Registration Service that caused Ltijs to be unable to identify the LMS Family. Big Thanks to @lselden for the pull request!
-
-
 > - [Migrating from version 4](https://cvmcosta.github.io/ltijs/#/migration)
 > - [CHANGELOG](https://cvmcosta.github.io/ltijs/#/changelog)
+
+
+---
+<div align="center">
+	<a href="https://ltiaas.com"><img width="330" src="https://raw.githubusercontent.com/Cvmcosta/ltijs/master/docs/ltiaas.svg"></img></a>
+  <br>
+  <br>
+</div>
+
+> A ready-to-go SaaS LTI solution.
+
+If you need an enterprise-ready LTI deployment, LTIaaS can get you up and running in a matter of minutes. We offer a SaaS solution with a powerful, easy to use, API that gives you access to the entire functionality of the LTI protocol. And you only start paying once your product starts to grow.
+
+Through our consultation services we can help you design, build and maintain your LTI tool. The LTIaaS API is already being used to reach thousands of students across the entire world!
+
+> For more information visit [LTIaaS.com](https://ltiaas.com)
+> - [API Documentation](https://ltiaas.com/docs/)
+> - [Pricing information and simulator](https://ltiaas.com/pricing/)
+> - [Contact us](https://ltiaas.com/contact-us/)
+
+---
+
 
 ## Table of Contents
 
