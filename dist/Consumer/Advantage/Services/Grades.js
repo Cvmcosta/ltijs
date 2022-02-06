@@ -71,7 +71,7 @@ class Grades {
       lineItem.id = payload.endpoint;
     } else if (payload.action === 'PUT') {
       status = 201;
-      lineItem.id = payload.endpoin;
+      lineItem.id = payload.endpoint;
     } else if (payload.action === 'POST') {
       status = 201;
       lineItem.id = payload.endpoint + '/lineitem/' + lineItem.id;

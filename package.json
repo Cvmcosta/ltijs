@@ -1,6 +1,6 @@
 {
   "name": "ltijs",
-  "version": "6.0.0-beta.8",
+  "version": "6.0.0-beta.9",
   "description": "Easily turn your web application into a LTI 1.3 Learning Tool.",
   "main": "index.js",
   "engineStrict": true,
@@ -41,7 +41,7 @@
     "helmet": "^4.6.0",
     "jsonwebtoken": "^8.5.1",
     "mongoose": "^5.12.3",
-    "parse-link-header": "^1.0.1",
+    "parse-link-header": "^2.0.0",
     "rasha": "^1.2.5",
     "uuid": "^8.3.2"
   },
@@ -57,10 +57,10 @@
     "chai-as-promised": "^7.1.1",
     "chai-http": "^4.3.0",
     "eslint": "^7.29.0",
-    "mocha": "^8.4.0",
+    "mocha": "^9.2.0",
     "nock": "^13.1.0",
     "nyc": "^15.1.0",
-    "standard": "^16.0.3"
+    "standard": "^16.0.4"
   },
   "standard": {
     "parser": "babel-eslint",
