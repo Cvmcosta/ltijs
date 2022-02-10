@@ -19,6 +19,8 @@ const jwt = require('jsonwebtoken');
 
 const url = require('fast-url-parser');
 
+const _url = require('url');
+
 const consAuthDebug = require('debug')('lti:auth'); // Classes
 
 
@@ -157,7 +159,12 @@ class Auth {
     if (!tool) throw new Error('INVALID_CLIENT_ID_CLAIM');
     consAuthDebug('Validating redirect_uri claim');
     if (!obj.redirect_uri) throw new Error('MISSING_REDIRECT_URI_CLAIM');
-    if (!(await tool.redirectionURIs()).includes(obj.redirect_uri)) throw new Error('INVALID_REDIRECT_URI_CLAIM');
+
+    const redirectUri = _url.format(new URL(obj.redirect_uri), {
+      search: false
+    });
+
+    if (!(await tool.redirectionURIs()).includes(redirectUri)) throw new Error('INVALID_REDIRECT_URI_CLAIM');
     consAuthDebug('Validating login_hint claim');
     if (!obj.login_hint) throw new Error('MISSING_LOGIN_HINT_CLAIM');
     const payload = {
