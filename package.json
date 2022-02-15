@@ -1,6 +1,6 @@
 {
   "name": "ltijs",
-  "version": "6.0.1-beta",
+  "version": "6.0.2-beta",
   "description": "Easily turn your web application into a LTI 1.3 Learning Tool.",
   "main": "index.js",
   "engineStrict": true,

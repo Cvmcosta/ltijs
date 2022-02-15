@@ -376,8 +376,8 @@ class Consumer {
           }
         }
         if (req.method === 'GET') {
-          res.locals.payload.params.resource = req.query.resource_link_id
-          res.locals.payload.params.externalResource = req.query.resource_id
+          res.locals.payload.params.resourceLinkId = req.query.resource_link_id
+          res.locals.payload.params.resourceId = req.query.resource_id
           res.locals.payload.params.tag = req.query.tag
           res.locals.payload.params.limit = req.query.limit
         } else if (req.method === 'POST') res.locals.payload.params.lineItem = req.body
