@@ -156,13 +156,9 @@ This package natively uses mongoDB by default to store and manage the server dat
 
 Ltijs can also be used with other databases through database plugins that use the same structure as the main database class.
 
-  -  [Sequelize Plugin](https://github.com/Cvmcosta/ltijs-sequelize)(MySQL, PostgreSQL)
+  -  [Firestore Plugin](https://github.com/examind-ai/ltijs-firestore)
 
-| Ltijs-sequelize version | Ltijs version |
-| --------- | --------- |
-| ^2.4.0 | ^5.7.0 |
-| ^2.3.0 | ^5.5.0 |
-| ^2.2.0 | ^5.3.0 |
+  -  [Sequelize Plugin](https://github.com/Cvmcosta/ltijs-sequelize)(MySQL, PostgreSQL)
 
 
 ---
@@ -1930,6 +1926,13 @@ And if you feel like it, you can donate any amount through paypal, it helps a lo
 
 > I would like to thank CourseKey for making the Certification process possible and allowing me to be an IMS Member through them, which will contribute immensely to the future of the project.
 
+
+<div align="center">
+<br>
+	<a href="https://www.examind.io/" target='_blank'><img width="180" src="https://raw.githubusercontent.com/Cvmcosta/ltijs/master/docs/examind-logo.png"></img></a>
+</div>
+
+> I would like to thank Examind for the amazing work on the Firestore database plugin. As well as the continuous help and support in the development of this project.
 
 
 ---
