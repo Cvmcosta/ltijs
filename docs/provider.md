@@ -1929,7 +1929,7 @@ And if you feel like it, you can donate any amount through paypal, it helps a lo
 
 <div align="center">
 <br>
-	<a href="https://www.examind.io/" target='_blank'><img width="180" src="https://raw.githubusercontent.com/Cvmcosta/ltijs/master/docs/examind-logo.png"></img></a>
+	<a href="https://www.examind.io/" target='_blank'><img width="280" src="https://raw.githubusercontent.com/Cvmcosta/ltijs/master/docs/examind-logo.png"></img></a>
 </div>
 
 > I would like to thank Examind for the amazing work on the Firestore database plugin. As well as the continuous help and support in the development of this project.

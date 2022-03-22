@@ -775,7 +775,11 @@ class Provider {
       if (options && options.port) conf.port = options.port;
       if (options && options.silent) conf.silent = options.silent; // Starts server on given port
 
-      if (options && options.serverless) console.log('Ltijs started in serverless mode...');else {
+      if (options && options.serverless) {
+        if (!conf.silent) {
+          console.log('Ltijs started in serverless mode...');
+        }
+      } else {
         await (0, _classPrivateFieldGet2.default)(this, _server).listen(conf.port);
         provMainDebug('Ltijs started listening on port: ', conf.port); // Startup message
 
@@ -785,6 +789,7 @@ class Provider {
           console.log('  _   _______ _____      _  _____\n' + ' | | |__   __|_   _|    | |/ ____|\n' + ' | |    | |    | |      | | (___  \n' + ' | |    | |    | |  _   | |\\___ \\ \n' + ' | |____| |   _| |_| |__| |____) |\n' + ' |______|_|  |_____|\\____/|_____/ \n\n', message);
         }
       }
+
       if ((0, _classPrivateFieldGet2.default)(this, _devMode) && !conf.silent) console.log('\nStarting in Dev Mode, state validation and session cookies will not be required. THIS SHOULD NOT BE USED IN A PRODUCTION ENVIRONMENT!'); // Sets up gracefull shutdown
 
       process.on('SIGINT', async () => {
