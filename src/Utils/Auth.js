@@ -141,7 +141,10 @@ class Auth {
      */
   static async verifyToken (token, key, validationParameters, platform, Database) {
     provAuthDebug('Attempting to verify JWT with the given key')
-    const verified = jwt.verify(token, key, { algorithms: [validationParameters.alg] })
+    const verified = jwt.verify(token, key, {
+      algorithms: [validationParameters.alg],
+      clockTimestamp: Date.now() / 1000
+    })
     await this.oidcValidation(verified, platform, validationParameters, Database)
     await this.claimValidation(verified)
 
