@@ -269,10 +269,10 @@ class Grade {
     const platformActive = await platform.platformActive()
     if (!platformActive) throw new Error('PLATFORM_NOT_ACTIVATED')
 
-    const shouldFetchScoreMaximum = score.scoreGiven !== undefined && score.scoreMaximum === undefined;
-    const scopes = ['https://purl.imsglobal.org/spec/lti-ags/scope/score'];
-    if(shouldFetchScoreMaximum) {
-      scopes.push('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem');
+    const shouldFetchScoreMaximum = score.scoreGiven !== undefined && score.scoreMaximum === undefined
+    const scopes = ['https://purl.imsglobal.org/spec/lti-ags/scope/score']
+    if (shouldFetchScoreMaximum) {
+      scopes.push('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem')
     }
 
     provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']')
