@@ -269,8 +269,14 @@ class Grade {
     const platformActive = await platform.platformActive()
     if (!platformActive) throw new Error('PLATFORM_NOT_ACTIVATED')
 
+    const shouldFetchScoreMaximum = score.scoreGiven !== undefined && score.scoreMaximum === undefined;
+    const scopes = ['https://purl.imsglobal.org/spec/lti-ags/scope/score'];
+    if(shouldFetchScoreMaximum) {
+      scopes.push('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem');
+    }
+
     provGradeServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']')
-    const accessToken = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-ags/scope/lineitem https://purl.imsglobal.org/spec/lti-ags/scope/score')
+    const accessToken = await platform.platformAccessToken(scopes.join(' '))
     provGradeServiceDebug('Access_token retrieved for [' + idtoken.iss + ']')
 
     // Creating scores URL
@@ -283,12 +289,14 @@ class Grade {
     }
 
     // Creating scoreMaximum if it is not present and scoreGiven exists
-    if (score.scoreGiven !== undefined && score.scoreMaximum === undefined) {
+    if (shouldFetchScoreMaximum) {
       const lineItem = await this.getLineItemById(idtoken, lineItemId, accessToken)
       score.scoreMaximum = lineItem.scoreMaximum
     }
+
     // If no user is specified, sends the score to the user that originated request
     if (score.userId === undefined) score.userId = idtoken.user
+
     // Creating timestamp
     score.timestamp = new Date(Date.now()).toISOString()
 
