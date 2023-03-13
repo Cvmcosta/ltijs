@@ -1,45 +1,37 @@
 "use strict";
 
 var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefault");
-
 var _classPrivateFieldGet2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldGet"));
-
 var _classPrivateFieldSet2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldSet"));
-
+function _classPrivateFieldInitSpec(obj, privateMap, value) { _checkPrivateRedeclaration(obj, privateMap); privateMap.set(obj, value); }
+function _checkPrivateRedeclaration(obj, privateCollection) { if (privateCollection.has(obj)) { throw new TypeError("Cannot initialize the same private elements twice on an object"); } }
 /* Names and Roles Provisioning Service */
+
 const got = require('got');
-
 const parseLink = require('parse-link-header');
-
 const provNamesAndRolesServiceDebug = require('debug')('provider:namesAndRolesService');
-
 var _getPlatform = /*#__PURE__*/new WeakMap();
-
 var _ENCRYPTIONKEY = /*#__PURE__*/new WeakMap();
-
 var _Database = /*#__PURE__*/new WeakMap();
-
 class NamesAndRoles {
   constructor(getPlatform, ENCRYPTIONKEY, Database) {
-    _getPlatform.set(this, {
+    _classPrivateFieldInitSpec(this, _getPlatform, {
       writable: true,
       value: null
     });
-
-    _ENCRYPTIONKEY.set(this, {
+    _classPrivateFieldInitSpec(this, _ENCRYPTIONKEY, {
       writable: true,
       value: ''
     });
-
-    _Database.set(this, {
+    _classPrivateFieldInitSpec(this, _Database, {
       writable: true,
       value: void 0
     });
-
     (0, _classPrivateFieldSet2.default)(this, _getPlatform, getPlatform);
     (0, _classPrivateFieldSet2.default)(this, _ENCRYPTIONKEY, ENCRYPTIONKEY);
     (0, _classPrivateFieldSet2.default)(this, _Database, Database);
   }
+
   /**
    * @description Retrieves members from platform.
    * @param {Object} idtoken - Idtoken for the user.
@@ -50,39 +42,31 @@ class NamesAndRoles {
    * @param {String} [options.url] - Retrieve memberships from a specific URL. Usually retrieved from the `next` link header of a previous request.
    * @param {Boolean} [options.resourceLinkId = false] - If set to true, retrieves resource Link level memberships.
    */
-
-
   async getMembers(idtoken, options) {
     if (!idtoken) {
       provNamesAndRolesServiceDebug('Missing IdToken object.');
       throw new Error('MISSING_ID_TOKEN');
     }
-
     provNamesAndRolesServiceDebug('Attempting to retrieve memberships');
     provNamesAndRolesServiceDebug('Target platform: ' + idtoken.iss);
     const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, idtoken.clientId, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database));
-
     if (!platform) {
       provNamesAndRolesServiceDebug('Platform not found');
       throw new Error('PLATFORM_NOT_FOUND');
     }
-
     const platformActive = await platform.platformActive();
     if (!platformActive) throw new Error('PLATFORM_NOT_ACTIVATED');
     provNamesAndRolesServiceDebug('Attempting to retrieve platform access_token for [' + idtoken.iss + ']');
     const tokenRes = await platform.platformAccessToken('https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly');
     provNamesAndRolesServiceDebug('Access_token retrieved for [' + idtoken.iss + ']');
     let pages = 1; // Page limit
-
     let query = [];
     let next = idtoken.platformContext.namesRoles.context_memberships_url;
-
     if (options) {
       if (options.pages || options.pages === false) {
         provNamesAndRolesServiceDebug('Maximum number of pages retrieved: ' + options.pages);
         pages = options.pages;
       }
-
       if (options.url) {
         next = options.url;
         query = false;
@@ -91,30 +75,25 @@ class NamesAndRoles {
           provNamesAndRolesServiceDebug('Adding role parameter with value: ' + options.role);
           query.push(['role', options.role]);
         }
-
         if (options.limit) {
           provNamesAndRolesServiceDebug('Adding limit parameter with value: ' + options.limit);
           query.push(['limit', options.limit]);
         }
-
         if (options.resourceLinkId) {
           provNamesAndRolesServiceDebug('Adding rlid parameter with value: ' + idtoken.platformContext.resource.id);
           query.push(['rlid', idtoken.platformContext.resource.id]);
         }
       }
     }
-
     if (query && query.length > 0) query = new URLSearchParams(query);else query = false;
     let differences;
     let result;
     let curPage = 1;
-
     do {
       if (pages && curPage > pages) {
         if (next) result.next = next;
         break;
       }
-
       let response;
       provNamesAndRolesServiceDebug('Member pages found: ', curPage);
       provNamesAndRolesServiceDebug('Current member page: ', next);
@@ -135,19 +114,16 @@ class NamesAndRoles {
       if (!result) result = JSON.parse(JSON.stringify(body));else {
         result.members = [...result.members, ...body.members];
       }
-      const parsedLinks = parseLink(headers.link); // Trying to find "rel=differences" header
-
-      if (parsedLinks && parsedLinks.differences) differences = parsedLinks.differences.url; // Trying to find "rel=next" header, indicating additional pages
-
+      const parsedLinks = parseLink(headers.link);
+      // Trying to find "rel=differences" header
+      if (parsedLinks && parsedLinks.differences) differences = parsedLinks.differences.url;
+      // Trying to find "rel=next" header, indicating additional pages
       if (parsedLinks && parsedLinks.next) next = parsedLinks.next.url;else next = false;
       curPage++;
     } while (next);
-
     if (differences) result.differences = differences;
     provNamesAndRolesServiceDebug('Memberships retrieved');
     return result;
   }
-
 }
-
 module.exports = NamesAndRoles;

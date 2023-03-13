@@ -242,11 +242,11 @@ class Provider {
             const valid = await Auth.validateToken(idtoken, this.#devMode, validationParameters, this.getPlatform, this.#ENCRYPTIONKEY, this.Database)
 
             // Retrieve State object from Database
-            const savedState = await this.Database.Get(false, 'state', { state: state })
+            const savedState = await this.Database.Get(false, 'state', { state })
 
             // Deletes state validation cookie and Database entry
             res.clearCookie('state' + state, this.#cookieOptions)
-            if (savedState) this.Database.Delete('state', { state: state })
+            if (savedState) this.Database.Delete('state', { state })
 
             provAuthDebug('Successfully validated token!')
 
@@ -276,11 +276,11 @@ class Provider {
             }
 
             // Store idToken in database
-            await this.Database.Replace(false, 'idtoken', { iss: valid.iss, clientId: clientId, deploymentId: deploymentId, user: valid.sub }, platformToken)
+            await this.Database.Replace(false, 'idtoken', { iss: valid.iss, clientId, deploymentId, user: valid.sub }, platformToken)
 
             // Mount context token
             const contextToken = {
-              contextId: contextId,
+              contextId,
               path: req.path,
               user: valid.sub,
               roles: valid['https://purl.imsglobal.org/spec/lti/claim/roles'],
@@ -298,7 +298,7 @@ class Provider {
             }
 
             // Store contextToken in database
-            await this.Database.Replace(false, 'contexttoken', { contextId: contextId, user: valid.sub }, contextToken)
+            await this.Database.Replace(false, 'contexttoken', { contextId, user: valid.sub }, contextToken)
 
             // Creates platform session cookie
             if (!this.#ltiaas) res.cookie(platformCode, valid.sub, this.#cookieOptions)
@@ -306,10 +306,10 @@ class Provider {
             provMainDebug('Generating ltik')
             const newLtikObj = {
               platformUrl: valid.iss,
-              clientId: clientId,
-              deploymentId: deploymentId,
-              platformCode: platformCode,
-              contextId: contextId,
+              clientId,
+              deploymentId,
+              platformCode,
+              contextId,
               user: valid.sub,
               s: state // Added state to make unique ltiks
             }
@@ -350,9 +350,9 @@ class Provider {
             const state = req.body.state
             if (state) {
               provMainDebug('Deleting state cookie and Database entry')
-              const savedState = await this.Database.Get(false, 'state', { state: state })
+              const savedState = await this.Database.Get(false, 'state', { state })
               res.clearCookie('state' + state, this.#cookieOptions)
-              if (savedState) this.Database.Delete('state', { state: state })
+              if (savedState) this.Database.Delete('state', { state })
             }
 
             if (this.#whitelistedRoutes.find(r => {
@@ -413,13 +413,13 @@ class Provider {
         if (user) {
           provAuthDebug('Valid session found')
           // Gets corresponding id token from database
-          let idTokenRes = await this.Database.Get(false, 'idtoken', { iss: platformUrl, clientId: clientId, deploymentId: deploymentId, user: user })
+          let idTokenRes = await this.Database.Get(false, 'idtoken', { iss: platformUrl, clientId, deploymentId, user })
           if (!idTokenRes) throw new Error('IDTOKEN_NOT_FOUND_DB')
           idTokenRes = idTokenRes[0]
           const idToken = JSON.parse(JSON.stringify(idTokenRes))
 
           // Gets correspondent context token from database
-          let contextToken = await this.Database.Get(false, 'contexttoken', { contextId: contextId, user: user })
+          let contextToken = await this.Database.Get(false, 'contexttoken', { contextId, user })
           if (!contextToken) throw new Error('CONTEXTTOKEN_NOT_FOUND_DB')
           contextToken = contextToken[0]
           idToken.platformContext = JSON.parse(JSON.stringify(contextToken))
@@ -448,9 +448,9 @@ class Provider {
         const state = req.body.state
         if (state) {
           provMainDebug('Deleting state cookie and Database entry')
-          const savedState = await this.Database.Get(false, 'state', { state: state })
+          const savedState = await this.Database.Get(false, 'state', { state })
           res.clearCookie('state' + state, this.#cookieOptions)
-          if (savedState) this.Database.Delete('state', { state: state })
+          if (savedState) this.Database.Delete('state', { state })
         }
 
         provAuthDebug(err)
@@ -496,7 +496,7 @@ class Provider {
             // Retrieve raw queries
             const rawQueries = new URLSearchParams('?' + params.target_link_uri.split('?')[1])
             // Check if state is unique
-            while (await this.Database.Get(false, 'state', { state: state })) state = encodeURIComponent(crypto.randomBytes(25).toString('hex'))
+            while (await this.Database.Get(false, 'state', { state })) state = encodeURIComponent(crypto.randomBytes(25).toString('hex'))
             provMainDebug('Generated state: ', state)
             // Assemble queries object
             const queries = {}
@@ -505,7 +505,7 @@ class Provider {
             provMainDebug('Query parameters found: ', queries)
             provMainDebug('Final Redirect URI: ', params.target_link_uri)
             // Store state and query parameters on database
-            await this.Database.Insert(false, 'state', { state: state, query: queries })
+            await this.Database.Insert(false, 'state', { state, query: queries })
           }
 
           // Setting up validation info
@@ -519,7 +519,7 @@ class Provider {
           provMainDebug(query)
           res.redirect(url.format({
             pathname: await platform.platformAuthEndpoint(),
-            query: query
+            query
           }))
         } else {
           provMainDebug('Unregistered platform attempting connection: ' + iss + ', clientId: ' + clientId)
@@ -779,7 +779,7 @@ class Provider {
       if (isObject) {
         if (!route.route || !route.method) throw new Error('WRONG_FORMAT. Details: Expects string ("/route") or object ({ route: "/route", method: "POST" })')
         formattedRoutes.push({ route: route.route, method: route.method.toUpperCase() })
-      } else formattedRoutes.push({ route: route, method: 'ALL' })
+      } else formattedRoutes.push({ route, method: 'ALL' })
     }
     this.#whitelistedRoutes = [
       ...this.#whitelistedRoutes,
@@ -826,12 +826,12 @@ class Provider {
         provMainDebug('Registering new platform')
         provMainDebug('Platform Url: ' + platform.url)
         provMainDebug('Platform ClientId: ' + platform.clientId)
-        await _Database.Replace(false, 'platform', { platformUrl: platform.url, clientId: platform.clientId }, { platformName: platform.name, platformUrl: platform.url, clientId: platform.clientId, authEndpoint: platform.authenticationEndpoint, accesstokenEndpoint: platform.accesstokenEndpoint, authorizationServer: platform.authorizationServer, kid: kid, authConfig: platform.authConfig })
+        await _Database.Replace(false, 'platform', { platformUrl: platform.url, clientId: platform.clientId }, { platformName: platform.name, platformUrl: platform.url, clientId: platform.clientId, authEndpoint: platform.authenticationEndpoint, accesstokenEndpoint: platform.accesstokenEndpoint, authorizationServer: platform.authorizationServer, kid, authConfig: platform.authConfig })
 
         return plat
       } catch (err) {
-        await _Database.Delete('publickey', { kid: kid })
-        await _Database.Delete('privatekey', { kid: kid })
+        await _Database.Delete('publickey', { kid })
+        await _Database.Delete('privatekey', { kid })
         await _Database.Delete('platform', { platformUrl: platform.url, clientId: platform.clientId })
         provMainDebug(err.message)
         throw (err)
@@ -856,7 +856,7 @@ class Provider {
     const _ENCRYPTIONKEY = ENCRYPTIONKEY || this.#ENCRYPTIONKEY
 
     if (clientId) {
-      const result = await _Database.Get(false, 'platform', { platformUrl: url, clientId: clientId })
+      const result = await _Database.Get(false, 'platform', { platformUrl: url, clientId })
       if (!result) return false
       const plat = result[0]
       const platform = new Platform(plat.platformName, plat.platformUrl, plat.clientId, plat.authEndpoint, plat.accesstokenEndpoint, plat.authorizationServer, plat.kid, _ENCRYPTIONKEY, plat.authConfig, _Database)
@@ -1019,7 +1019,7 @@ class Provider {
     // Updates path variable if this is a new resource
     if ((options && (options.newResource || options.isNewResource))) {
       provMainDebug('Changing context token path to: ' + path)
-      await this.Database.Modify(false, 'contexttoken', { contextId: token.platformContext.contextId, user: res.locals.token.user }, { path: path })
+      await this.Database.Modify(false, 'contexttoken', { contextId: token.platformContext.contextId, user: res.locals.token.user }, { path })
     }
 
     // Formatting path with queries

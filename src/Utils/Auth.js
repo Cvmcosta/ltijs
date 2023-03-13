@@ -17,7 +17,7 @@ class Auth {
   static async generatePlatformKeyPair (ENCRYPTIONKEY, Database, platformUrl, platformClientId) {
     let kid = crypto.randomBytes(16).toString('hex')
 
-    while (await Database.Get(false, 'publickey', { kid: kid })) {
+    while (await Database.Get(false, 'publickey', { kid })) {
       /* istanbul ignore next */
       kid = crypto.randomBytes(16).toString('hex')
     }
@@ -38,15 +38,15 @@ class Auth {
 
     const pubkeyobj = {
       key: publicKey,
-      kid: kid
+      kid
     }
     const privkeyobj = {
       key: privateKey,
-      kid: kid
+      kid
     }
 
-    await Database.Replace(ENCRYPTIONKEY, 'publickey', { platformUrl: platformUrl, clientId: platformClientId }, pubkeyobj, { kid: kid, platformUrl: platformUrl, clientId: platformClientId })
-    await Database.Replace(ENCRYPTIONKEY, 'privatekey', { platformUrl: platformUrl, clientId: platformClientId }, privkeyobj, { kid: kid, platformUrl: platformUrl, clientId: platformClientId })
+    await Database.Replace(ENCRYPTIONKEY, 'publickey', { platformUrl, clientId: platformClientId }, pubkeyobj, { kid, platformUrl, clientId: platformClientId })
+    await Database.Replace(ENCRYPTIONKEY, 'privatekey', { platformUrl, clientId: platformClientId }, privkeyobj, { kid, platformUrl, clientId: platformClientId })
 
     return kid
   }
@@ -104,7 +104,7 @@ class Auth {
         })
         if (!jwk) throw new Error('KEY_NOT_FOUND')
         provAuthDebug('Converting JWK key to PEM key')
-        const key = await Jwk.export({ jwk: jwk })
+        const key = await Jwk.export({ jwk })
         const verified = await this.verifyToken(token, key, validationParameters, platform, Database)
         return (verified)
       }
@@ -114,7 +114,7 @@ class Auth {
         provAuthDebug('Converting JWK key to PEM key')
         let jwk = authConfig.key
         if (typeof jwk === 'string') jwk = JSON.parse(jwk)
-        const key = await Jwk.export({ jwk: jwk })
+        const key = await Jwk.export({ jwk })
         const verified = await this.verifyToken(token, key, validationParameters, platform, Database)
         return (verified)
       }
@@ -292,7 +292,7 @@ class Auth {
     const access = await got.post(await platform.platformAccessTokenEndpoint(), { form: message }).json()
     provAuthDebug('Successfully generated new access_token')
 
-    await Database.Replace(ENCRYPTIONKEY, 'accesstoken', { platformUrl: platformUrl, clientId: clientId, scopes: scopes }, { token: access }, { platformUrl: platformUrl, clientId: clientId, scopes: scopes })
+    await Database.Replace(ENCRYPTIONKEY, 'accesstoken', { platformUrl, clientId, scopes }, { token: access }, { platformUrl, clientId, scopes })
     return access
   }
 }

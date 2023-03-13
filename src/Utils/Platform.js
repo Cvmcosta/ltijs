@@ -101,7 +101,7 @@ class Platform {
       if (!platformStatus || platformStatus[0].active) return true
       else return false
     }
-    await this.#Database.Replace(false, 'platformStatus', { id: this.#kid }, { id: this.#kid, active: active })
+    await this.#Database.Replace(false, 'platformStatus', { id: this.#kid }, { id: this.#kid, active })
     return active
   }
 
@@ -138,7 +138,7 @@ class Platform {
       key: key || this.#authConfig.key
     }
 
-    await this.#Database.Modify(false, 'platform', { platformUrl: this.#platformUrl, clientId: this.#clientId }, { authConfig: authConfig })
+    await this.#Database.Modify(false, 'platform', { platformUrl: this.#platformUrl, clientId: this.#clientId }, { authConfig })
     this.#authConfig = authConfig
     return authConfig
   }
@@ -160,7 +160,7 @@ class Platform {
      */
   async platformAccessTokenEndpoint (accesstokenEndpoint) {
     if (!accesstokenEndpoint) return this.#accesstokenEndpoint
-    await this.#Database.Modify(false, 'platform', { platformUrl: this.#platformUrl, clientId: this.#clientId }, { accesstokenEndpoint: accesstokenEndpoint })
+    await this.#Database.Modify(false, 'platform', { platformUrl: this.#platformUrl, clientId: this.#clientId }, { accesstokenEndpoint })
     this.#accesstokenEndpoint = accesstokenEndpoint
     return accesstokenEndpoint
   }
@@ -171,7 +171,7 @@ class Platform {
    */
   async platformAuthorizationServer (authorizationServer) {
     if (!authorizationServer) return this.#authorizationServer || this.#accesstokenEndpoint
-    await this.#Database.Modify(false, 'platform', { platformUrl: this.#platformUrl, clientId: this.#clientId }, { authorizationServer: authorizationServer })
+    await this.#Database.Modify(false, 'platform', { platformUrl: this.#platformUrl, clientId: this.#clientId }, { authorizationServer })
     this.#authorizationServer = authorizationServer
     return authorizationServer
   }
@@ -181,7 +181,7 @@ class Platform {
      * @param {String} scopes - String of scopes.
      */
   async platformAccessToken (scopes) {
-    const result = await this.#Database.Get(this.#ENCRYPTIONKEY, 'accesstoken', { platformUrl: this.#platformUrl, clientId: this.#clientId, scopes: scopes })
+    const result = await this.#Database.Get(this.#ENCRYPTIONKEY, 'accesstoken', { platformUrl: this.#platformUrl, clientId: this.#clientId, scopes })
     let token
     if (!result || (Date.now() - result[0].createdAt) / 1000 > result[0].token.expires_in) {
       provPlatformDebug('Valid access_token for ' + this.#platformUrl + ' not found')

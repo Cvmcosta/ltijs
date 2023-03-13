@@ -4,6 +4,7 @@
 const chai = require('chai')
 const chaiHttp = require('chai-http')
 const chaiAsPromised = require('chai-as-promised')
+const { MongoMemoryServer } = require('mongodb-memory-server')
 chai.use(chaiAsPromised)
 chai.use(chaiHttp)
 
@@ -20,8 +21,21 @@ const loginRoute = '/loginroute'
 const keysetRoute = '/keysetroute'
 const dynRegRoute = '/register'
 
+let mongoServer
+let mongoUri =
+
+before(async function () {
+  this.timeout(20000)
+  mongoServer = await MongoMemoryServer.create()
+  mongoUri = mongoServer.getUri()
+})
+
+after(async function () {
+  await mongoServer.stop()
+})
+
 describe('Testing Provider', function () {
-  this.timeout(10000)
+  this.timeout(20000)
 
   // Testing setup flag
   it('Provider.deploy expected to throw error when Provider not setup', async () => {
@@ -32,12 +46,12 @@ describe('Testing Provider', function () {
   it('Provider.setup expected to not throw Error', () => {
     const fn = () => {
       lti.setup('LTIKEY',
-        { url: 'mongodb://127.0.0.1/testdatabase' },
+        { url: mongoUri },
         {
-          appRoute: appRoute,
-          loginRoute: loginRoute,
-          keysetRoute: keysetRoute,
-          dynRegRoute: dynRegRoute,
+          appRoute,
+          loginRoute,
+          keysetRoute,
+          dynRegRoute,
           staticPath: path.join(__dirname, '/views/'),
           devMode: false,
           dynReg: { url: 'https://tool.example.com', name: 'Tool Name', logo: 'https://tool.example.com/assets/logo.svg', customParameters: { a: 'b' }, redirectUris: ['https://tool.example.com/launch'] }
@@ -51,10 +65,10 @@ describe('Testing Provider', function () {
       lti.setup('LTIKEY',
         { url: 'mongodb://127.0.0.1/testdatabase' },
         {
-          appRoute: appRoute,
-          loginRoute: loginRoute,
-          keysetRoute: keysetRoute,
-          dynRegRoute: dynRegRoute,
+          appRoute,
+          loginRoute,
+          keysetRoute,
+          dynRegRoute,
           staticPath: path.join(__dirname, '/views/'),
           devMode: false
         })
@@ -131,7 +145,7 @@ describe('Testing Provider', function () {
     const plat = await lti.registerPlatform({
       url: 'http://localhost/moodle',
       clientId: 'ClientId1',
-      name: name
+      name
     })
     return expect(plat.platformName()).to.eventually.become(name)
   })

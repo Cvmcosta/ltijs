@@ -1,47 +1,32 @@
 "use strict";
 
 var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefault");
-
-var _defineProperty2 = _interopRequireDefault(require("@babel/runtime/helpers/defineProperty"));
-
 var _classPrivateFieldGet2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldGet"));
-
 var _classPrivateFieldSet2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldSet"));
-
-function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) { symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); } keys.push.apply(keys, symbols); } return keys; }
-
-function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { (0, _defineProperty2.default)(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
-
+function _classPrivateFieldInitSpec(obj, privateMap, value) { _checkPrivateRedeclaration(obj, privateMap); privateMap.set(obj, value); }
+function _checkPrivateRedeclaration(obj, privateCollection) { if (privateCollection.has(obj)) { throw new TypeError("Cannot initialize the same private elements twice on an object"); } }
 const mongoose = require('mongoose');
-
 const Schema = mongoose.Schema;
-
 const crypto = require('crypto');
-
 const provDatabaseDebug = require('debug')('provider:database');
+
 /**
  * @description Collection of static methods to manipulate the database.
  */
-
-
 var _dbUrl = /*#__PURE__*/new WeakMap();
-
 var _dbConnection = /*#__PURE__*/new WeakMap();
-
 var _deploy = /*#__PURE__*/new WeakMap();
-
 class Database {
   /**
    * @description Mongodb configuration setup
    * @param {Object} database - Configuration object
    */
   constructor(database) {
-    _dbUrl.set(this, {
+    _classPrivateFieldInitSpec(this, _dbUrl, {
       writable: true,
       value: void 0
     });
-
-    _dbConnection.set(this, {
+    _classPrivateFieldInitSpec(this, _dbConnection, {
       writable: true,
       value: {
         useNewUrlParser: true,
@@ -51,18 +36,21 @@ class Database {
         useUnifiedTopology: true
       }
     });
-
-    _deploy.set(this, {
+    _classPrivateFieldInitSpec(this, _deploy, {
       writable: true,
       value: false
     });
+    if (!database || !database.url) throw new Error('MISSING_DATABASE_CONFIG');
 
-    if (!database || !database.url) throw new Error('MISSING_DATABASE_CONFIG'); // Configures database connection
-
+    // Configures database connection
     (0, _classPrivateFieldSet2.default)(this, _dbUrl, database.url);
     if (database.debug) mongoose.set('debug', true);
-    (0, _classPrivateFieldSet2.default)(this, _dbConnection, _objectSpread(_objectSpread({}, (0, _classPrivateFieldGet2.default)(this, _dbConnection)), database.connection)); // Creating database schemas
+    (0, _classPrivateFieldSet2.default)(this, _dbConnection, {
+      ...(0, _classPrivateFieldGet2.default)(this, _dbConnection),
+      ...database.connection
+    });
 
+    // Creating database schemas
     const idTokenSchema = new Schema({
       iss: String,
       user: String,
@@ -204,7 +192,6 @@ class Database {
     }, {
       unique: true
     });
-
     try {
       mongoose.model('idtoken', idTokenSchema);
       mongoose.model('contexttoken', contextTokenSchema);
@@ -218,14 +205,12 @@ class Database {
     } catch (err) {
       provDatabaseDebug('Model already registered. Continuing');
     }
-
     this.db = mongoose.connection;
   }
+
   /**
    * @description Opens connection to database
    */
-
-
   async setup() {
     this.db.on('connected', async () => {
       provDatabaseDebug('Database connected');
@@ -255,44 +240,41 @@ class Database {
     if (this.db.readyState === 0) await mongoose.connect((0, _classPrivateFieldGet2.default)(this, _dbUrl), (0, _classPrivateFieldGet2.default)(this, _dbConnection));
     (0, _classPrivateFieldSet2.default)(this, _deploy, true);
     return true;
-  } // Closes connection to the database
+  }
 
-
+  // Closes connection to the database
   async Close() {
     mongoose.connection.removeAllListeners();
     await mongoose.connection.close();
     (0, _classPrivateFieldSet2.default)(this, _deploy, false);
     return true;
   }
+
   /**
      * @description Get item or entire database.
      * @param {String} ENCRYPTIONKEY - Encryptionkey of the database, false if none
      * @param {String} collection - The collection to be accessed inside the database.
      * @param {Object} [query] - Query for the item you are looking for in the format {type: "type1"}.
      */
-
-
   async Get(ENCRYPTIONKEY, collection, query) {
     if (!(0, _classPrivateFieldGet2.default)(this, _deploy)) throw new Error('PROVIDER_NOT_DEPLOYED');
     if (!collection) throw new Error('MISSING_COLLECTION');
     const Model = mongoose.model(collection);
     const result = await Model.find(query).select('-__v -_id');
-
     if (ENCRYPTIONKEY) {
       for (const i in result) {
         const temp = result[i];
         result[i] = JSON.parse(await this.Decrypt(result[i].data, result[i].iv, ENCRYPTIONKEY));
-
         if (temp.createdAt) {
           const createdAt = Date.parse(temp.createdAt);
           result[i].createdAt = createdAt;
         }
       }
     }
-
     if (result.length === 0) return false;
     return result;
   }
+
   /**
      * @description Insert item in database.
      * @param {String} ENCRYPTIONKEY - Encryptionkey of the database, false if none.
@@ -300,26 +282,24 @@ class Database {
      * @param {Object} item - The item Object you want to insert in the database.
      * @param {Object} [index] - Key that should be used as index in case of Encrypted document.
      */
-
-
   async Insert(ENCRYPTIONKEY, collection, item, index) {
     if (!(0, _classPrivateFieldGet2.default)(this, _deploy)) throw new Error('PROVIDER_NOT_DEPLOYED');
     if (!collection || !item || ENCRYPTIONKEY && !index) throw new Error('MISSING_PARAMS');
     const Model = mongoose.model(collection);
     let newDocData = item;
-
     if (ENCRYPTIONKEY) {
       const encrypted = await this.Encrypt(JSON.stringify(item), ENCRYPTIONKEY);
-      newDocData = _objectSpread(_objectSpread({}, index), {}, {
+      newDocData = {
+        ...index,
         iv: encrypted.iv,
         data: encrypted.data
-      });
+      };
     }
-
     const newDoc = new Model(newDocData);
     await newDoc.save();
     return true;
   }
+
   /**
    * @description Replace item in database. Creates a new document if it does not exist.
    * @param {String} ENCRYPTIONKEY - Encryptionkey of the database, false if none.
@@ -328,27 +308,25 @@ class Database {
    * @param {Object} item - The item Object you want to insert in the database.
    * @param {Object} [index] - Key that should be used as index in case of Encrypted document.
    */
-
-
   async Replace(ENCRYPTIONKEY, collection, query, item, index) {
     if (!(0, _classPrivateFieldGet2.default)(this, _deploy)) throw new Error('PROVIDER_NOT_DEPLOYED');
     if (!collection || !item || ENCRYPTIONKEY && !index) throw new Error('MISSING_PARAMS');
     const Model = mongoose.model(collection);
     let newDocData = item;
-
     if (ENCRYPTIONKEY) {
       const encrypted = await this.Encrypt(JSON.stringify(item), ENCRYPTIONKEY);
-      newDocData = _objectSpread(_objectSpread({}, index), {}, {
+      newDocData = {
+        ...index,
         iv: encrypted.iv,
         data: encrypted.data
-      });
+      };
     }
-
     await Model.replaceOne(query, newDocData, {
       upsert: true
     });
     return true;
   }
+
   /**
      * @description Assign value to item in database
      * @param {String} ENCRYPTIONKEY - Encryptionkey of the database, false if none.
@@ -356,34 +334,28 @@ class Database {
      * @param {Object} query - The entry you want to modify in the format {type: "type1"}.
      * @param {Object} modification - The modification you want to make in the format {type: "type2"}.
      */
-
-
   async Modify(ENCRYPTIONKEY, collection, query, modification) {
     if (!(0, _classPrivateFieldGet2.default)(this, _deploy)) throw new Error('PROVIDER_NOT_DEPLOYED');
     if (!collection || !query || !modification) throw new Error('MISSING_PARAMS');
     const Model = mongoose.model(collection);
     let newMod = modification;
-
     if (ENCRYPTIONKEY) {
       let result = await Model.findOne(query);
-
       if (result) {
         result = JSON.parse(await this.Decrypt(result.data, result.iv, ENCRYPTIONKEY));
         result[Object.keys(modification)[0]] = Object.values(modification)[0];
         newMod = await this.Encrypt(JSON.stringify(result), ENCRYPTIONKEY);
       }
     }
-
     await Model.updateOne(query, newMod);
     return true;
   }
+
   /**
      * @description Delete item in database
      * @param {String} collection - The collection to be accessed inside the database.
      * @param {Object} query - The entry you want to delete in the format {type: "type1"}.
      */
-
-
   async Delete(collection, query) {
     if (!(0, _classPrivateFieldGet2.default)(this, _deploy)) throw new Error('PROVIDER_NOT_DEPLOYED');
     if (!collection || !query) throw new Error('MISSING_PARAMS');
@@ -391,13 +363,12 @@ class Database {
     await Model.deleteMany(query);
     return true;
   }
+
   /**
    * @description Encrypts data.
    * @param {String} data - Data to be encrypted
    * @param {String} secret - Secret used in the encryption
    */
-
-
   async Encrypt(data, secret) {
     const hash = crypto.createHash('sha256');
     hash.update(secret);
@@ -411,14 +382,13 @@ class Database {
       data: encrypted.toString('hex')
     };
   }
+
   /**
    * @description Decrypts data.
    * @param {String} data - Data to be decrypted
    * @param {String} _iv - Encryption iv
    * @param {String} secret - Secret used in the encryption
    */
-
-
   async Decrypt(data, _iv, secret) {
     const hash = crypto.createHash('sha256');
     hash.update(secret);
@@ -430,7 +400,5 @@ class Database {
     decrypted = Buffer.concat([decrypted, decipher.final()]);
     return decrypted.toString();
   }
-
 }
-
 module.exports = Database;

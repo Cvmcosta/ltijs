@@ -1,20 +1,15 @@
 "use strict";
 
 const crypto = require('crypto');
-
 const Jwk = require('rasha');
-
 const got = require('got');
-
 const jwt = require('jsonwebtoken');
-
-const provAuthDebug = require('debug')('provider:auth'); // const cons_authdebug = require('debug')('consumer:auth')
+const provAuthDebug = require('debug')('provider:auth');
+// const cons_authdebug = require('debug')('consumer:auth')
 
 /**
  * @description Authentication class manages RSA keys and validation of tokens.
  */
-
-
 class Auth {
   /**
      * @description Generates a new keypair for a platform.
@@ -23,14 +18,12 @@ class Auth {
      */
   static async generatePlatformKeyPair(ENCRYPTIONKEY, Database, platformUrl, platformClientId) {
     let kid = crypto.randomBytes(16).toString('hex');
-
     while (await Database.Get(false, 'publickey', {
-      kid: kid
+      kid
     })) {
       /* istanbul ignore next */
       kid = crypto.randomBytes(16).toString('hex');
     }
-
     const keys = crypto.generateKeyPairSync('rsa', {
       modulusLength: 4096,
       publicKeyEncoding: {
@@ -48,30 +41,31 @@ class Auth {
     } = keys;
     const pubkeyobj = {
       key: publicKey,
-      kid: kid
+      kid
     };
     const privkeyobj = {
       key: privateKey,
-      kid: kid
+      kid
     };
     await Database.Replace(ENCRYPTIONKEY, 'publickey', {
-      platformUrl: platformUrl,
+      platformUrl,
       clientId: platformClientId
     }, pubkeyobj, {
-      kid: kid,
-      platformUrl: platformUrl,
+      kid,
+      platformUrl,
       clientId: platformClientId
     });
     await Database.Replace(ENCRYPTIONKEY, 'privatekey', {
-      platformUrl: platformUrl,
+      platformUrl,
       clientId: platformClientId
     }, privkeyobj, {
-      kid: kid,
-      platformUrl: platformUrl,
+      kid,
+      platformUrl,
       clientId: platformClientId
     });
     return kid;
   }
+
   /**
      * @description Resolves a promisse if the token is valid following LTI 1.3 standards.
      * @param {String} token - JWT token to be verified.
@@ -81,8 +75,6 @@ class Auth {
      * @param {String} ENCRYPTIONKEY - Encription key.
      * @returns {Promise}
      */
-
-
   static async validateToken(token, devMode, validationParameters, getPlatform, ENCRYPTIONKEY, Database) {
     const decoded = jwt.decode(token, {
       complete: true
@@ -93,13 +85,11 @@ class Auth {
     provAuthDebug('Attempting to validate iss claim');
     provAuthDebug('Request Iss claim: ' + validationParameters.iss);
     provAuthDebug('Response Iss claim: ' + decoded.payload.iss);
-
     if (!validationParameters.iss) {
       if (!devMode) throw new Error('MISSING_VALIDATION_COOKIE');else {
         provAuthDebug('Dev Mode enabled: Missing state validation cookies will be ignored');
       }
     } else if (validationParameters.iss !== decoded.payload.iss) throw new Error('ISS_CLAIM_DOES_NOT_MATCH');
-
     provAuthDebug('Attempting to retrieve registered platform');
     let platform;
     if (!Array.isArray(decoded.payload.aud)) platform = await getPlatform(decoded.payload.iss, decoded.payload.aud, ENCRYPTIONKEY, Database);else {
@@ -113,7 +103,6 @@ class Auth {
     if (!platformActive) throw new Error('PLATFORM_NOT_ACTIVATED');
     const authConfig = await platform.platformAuthConfig();
     /* istanbul ignore next */
-
     switch (authConfig.method) {
       case 'JWK_SET':
         {
@@ -129,12 +118,11 @@ class Auth {
           if (!jwk) throw new Error('KEY_NOT_FOUND');
           provAuthDebug('Converting JWK key to PEM key');
           const key = await Jwk.export({
-            jwk: jwk
+            jwk
           });
           const verified = await this.verifyToken(token, key, validationParameters, platform, Database);
           return verified;
         }
-
       case 'JWK_KEY':
         {
           provAuthDebug('Retrieving key from jwk_key');
@@ -143,12 +131,11 @@ class Auth {
           let jwk = authConfig.key;
           if (typeof jwk === 'string') jwk = JSON.parse(jwk);
           const key = await Jwk.export({
-            jwk: jwk
+            jwk
           });
           const verified = await this.verifyToken(token, key, validationParameters, platform, Database);
           return verified;
         }
-
       case 'RSA_KEY':
         {
           provAuthDebug('Retrieving key from rsa_key');
@@ -157,7 +144,6 @@ class Auth {
           const verified = await this.verifyToken(token, key, validationParameters, platform, Database);
           return verified;
         }
-
       default:
         {
           provAuthDebug('No auth configuration found for platform');
@@ -165,6 +151,7 @@ class Auth {
         }
     }
   }
+
   /**
      * @description Verifies a token.
      * @param {Object} token - Token to be verified.
@@ -172,8 +159,6 @@ class Auth {
      * @param {Object} validationParameters - Validation Parameters.
      * @param {Platform} platform - Issuer platform.
      */
-
-
   static async verifyToken(token, key, validationParameters, platform, Database) {
     provAuthDebug('Attempting to verify JWT with the given key');
     const verified = jwt.verify(token, key, {
@@ -181,20 +166,20 @@ class Auth {
       clockTimestamp: Date.now() / 1000
     });
     await this.oidcValidation(verified, platform, validationParameters, Database);
-    await this.claimValidation(verified); // Adding clientId and platformId information to token
+    await this.claimValidation(verified);
 
+    // Adding clientId and platformId information to token
     verified.clientId = await platform.platformClientId();
     verified.platformId = await platform.platformKid();
     return verified;
   }
+
   /**
      * @description Validates de token based on the OIDC specifications.
      * @param {Object} token - Id token you wish to validate.
      * @param {Platform} platform - Platform object.
      * @param {Object} validationParameters - Validation parameters.
      */
-
-
   static async oidcValidation(token, platform, validationParameters, Database) {
     provAuthDebug('Token signature verified');
     provAuthDebug('Initiating OIDC aditional validation steps');
@@ -204,43 +189,38 @@ class Auth {
     const nonce = this.validateNonce(token, Database);
     return Promise.all([aud, alg, maxAge, nonce]);
   }
+
   /**
      * @description Validates Aud.
      * @param {Object} token - Id token you wish to validate.
      * @param {Platform} platform - Platform object.
      */
-
-
   static async validateAud(token, platform) {
     provAuthDebug("Validating if aud (Audience) claim matches the value of the tool's clientId given by the platform");
     provAuthDebug('Aud claim: ' + token.aud);
     provAuthDebug("Tool's clientId: " + (await platform.platformClientId()));
-
     if (Array.isArray(token.aud)) {
       provAuthDebug('More than one aud listed, searching for azp claim');
       if (token.azp && token.azp !== (await platform.platformClientId())) throw new Error('AZP_DOES_NOT_MATCH_CLIENTID');
     }
-
     return true;
   }
+
   /**
      * @description Validates Aug.
      * @param {String} alg - Algorithm used.
      */
-
-
   static async validateAlg(alg) {
     provAuthDebug('Checking alg claim. Alg: ' + alg);
     if (alg !== 'RS256') throw new Error('ALG_NOT_RS256');
     return true;
   }
+
   /**
      * @description Validates token max age.
      * @param {Object} token - Id token you wish to validate.
      * @param {Number} maxAge - Max age allowed for the token.
      */
-
-
   static async validateMaxAge(token, maxAge) {
     provAuthDebug('Max age parameter: ', maxAge);
     if (!maxAge) return true;
@@ -254,12 +234,11 @@ class Auth {
     if (timePassed > maxAge) throw new Error('TOKEN_TOO_OLD');
     return true;
   }
+
   /**
      * @description Validates Nonce.
      * @param {Object} token - Id token you wish to validate.
      */
-
-
   static async validateNonce(token, Database) {
     provAuthDebug('Validating nonce');
     provAuthDebug('Nonce: ' + token.nonce);
@@ -272,24 +251,21 @@ class Auth {
     });
     return true;
   }
+
   /**
    * @description Validates de token based on the LTI 1.3 core claims specifications.
    * @param {Object} token - Id token you wish to validate.
    */
-
-
   static async claimValidation(token) {
     provAuthDebug('Initiating LTI 1.3 core claims validation');
     provAuthDebug('Checking Message type claim');
     if (token['https://purl.imsglobal.org/spec/lti/claim/message_type'] !== 'LtiResourceLinkRequest' && token['https://purl.imsglobal.org/spec/lti/claim/message_type'] !== 'LtiDeepLinkingRequest') throw new Error('NO_MESSAGE_TYPE_CLAIM');
-
     if (token['https://purl.imsglobal.org/spec/lti/claim/message_type'] === 'LtiResourceLinkRequest') {
       provAuthDebug('Checking Target Link Uri claim');
       if (!token['https://purl.imsglobal.org/spec/lti/claim/target_link_uri']) throw new Error('NO_TARGET_LINK_URI_CLAIM');
       provAuthDebug('Checking Resource Link Id claim');
       if (!token['https://purl.imsglobal.org/spec/lti/claim/resource_link'] || !token['https://purl.imsglobal.org/spec/lti/claim/resource_link'].id) throw new Error('NO_RESOURCE_LINK_ID_CLAIM');
     }
-
     provAuthDebug('Checking LTI Version claim');
     if (!token['https://purl.imsglobal.org/spec/lti/claim/version']) throw new Error('NO_LTI_VERSION_CLAIM');
     if (token['https://purl.imsglobal.org/spec/lti/claim/version'] !== '1.3.0') throw new Error('WRONG_LTI_VERSION_CLAIM');
@@ -300,13 +276,12 @@ class Auth {
     provAuthDebug('Checking Roles claim');
     if (!token['https://purl.imsglobal.org/spec/lti/claim/roles']) throw new Error('NO_ROLES_CLAIM');
   }
+
   /**
      * @description Gets a new access token from the platform.
      * @param {String} scopes - Request scopes
      * @param {Platform} platform - Platform object of the platform you want to access.
      */
-
-
   static async getAccessToken(scopes, platform, ENCRYPTIONKEY, Database) {
     const platformUrl = await platform.platformUrl();
     const clientId = await platform.platformClientId();
@@ -333,19 +308,17 @@ class Auth {
     }).json();
     provAuthDebug('Successfully generated new access_token');
     await Database.Replace(ENCRYPTIONKEY, 'accesstoken', {
-      platformUrl: platformUrl,
-      clientId: clientId,
-      scopes: scopes
+      platformUrl,
+      clientId,
+      scopes
     }, {
       token: access
     }, {
-      platformUrl: platformUrl,
-      clientId: clientId,
-      scopes: scopes
+      platformUrl,
+      clientId,
+      scopes
     });
     return access;
   }
-
 }
-
 module.exports = Auth;

@@ -2,9 +2,7 @@
 
 /* Handle jwk keyset generation */
 const Jwk = require('rasha');
-
 const provKeysetDebug = require('debug')('provider:keyset');
-
 class Keyset {
   /**
      * @description Handles the creation of jwk keyset.
@@ -15,7 +13,6 @@ class Keyset {
     const keyset = {
       keys: []
     };
-
     for (const key of keys) {
       const jwk = await Jwk.import({
         pem: key.key
@@ -25,10 +22,7 @@ class Keyset {
       jwk.use = 'sig';
       keyset.keys.push(jwk);
     }
-
     return keyset;
   }
-
 }
-
 module.exports = Keyset;

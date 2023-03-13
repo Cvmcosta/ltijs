@@ -1,33 +1,25 @@
 "use strict";
 
 var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefault");
-
 var _classPrivateFieldGet2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldGet"));
-
 var _classPrivateFieldSet2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldSet"));
-
+function _classPrivateFieldInitSpec(obj, privateMap, value) { _checkPrivateRedeclaration(obj, privateMap); privateMap.set(obj, value); }
+function _checkPrivateRedeclaration(obj, privateCollection) { if (privateCollection.has(obj)) { throw new TypeError("Cannot initialize the same private elements twice on an object"); } }
 /* Provider Dynamic Registration Service */
 const got = require('got');
-
 const crypto = require('crypto');
-
 const _url = require('fast-url-parser');
+const provDynamicRegistrationDebug = require('debug')('provider:dynamicRegistrationService');
 
-const provDynamicRegistrationDebug = require('debug')('provider:dynamicRegistrationService'); // Helper method to build URLs
-
-
+// Helper method to build URLs
 const buildUrl = (url, path) => {
   if (path === '/') return url;
-
   const pathParts = _url.parse(url);
-
   const portMatch = pathParts.pathname.match(/:[0-9]*/);
-
   if (portMatch) {
     pathParts.port = portMatch[0].split(':')[1];
     pathParts.pathname = pathParts.pathname.split(portMatch[0]).join('');
   }
-
   const formattedUrl = _url.format({
     protocol: pathParts.protocol,
     hostname: pathParts.hostname,
@@ -37,119 +29,88 @@ const buildUrl = (url, path) => {
     hash: pathParts.hash,
     search: pathParts.search
   });
-
   return formattedUrl;
-}; // Helper method to get the url hostname
+};
 
-
+// Helper method to get the url hostname
 const getHostname = url => {
   const pathParts = _url.parse(url);
-
   let hostname = pathParts.hostname;
   if (pathParts.port) hostname += ':' + pathParts.port;
   return hostname;
 };
-
 var _name = /*#__PURE__*/new WeakMap();
-
 var _redirectUris = /*#__PURE__*/new WeakMap();
-
 var _customParameters = /*#__PURE__*/new WeakMap();
-
 var _autoActivate = /*#__PURE__*/new WeakMap();
-
 var _logo = /*#__PURE__*/new WeakMap();
-
 var _description = /*#__PURE__*/new WeakMap();
-
 var _hostname = /*#__PURE__*/new WeakMap();
-
 var _appUrl = /*#__PURE__*/new WeakMap();
-
 var _loginUrl = /*#__PURE__*/new WeakMap();
-
 var _keysetUrl = /*#__PURE__*/new WeakMap();
-
 var _getPlatform = /*#__PURE__*/new WeakMap();
-
 var _registerPlatform = /*#__PURE__*/new WeakMap();
-
 var _ENCRYPTIONKEY = /*#__PURE__*/new WeakMap();
-
 var _Database = /*#__PURE__*/new WeakMap();
-
 class DynamicRegistration {
   constructor(options, routes, registerPlatform, getPlatform, ENCRYPTIONKEY, Database) {
-    _name.set(this, {
+    _classPrivateFieldInitSpec(this, _name, {
       writable: true,
       value: void 0
     });
-
-    _redirectUris.set(this, {
+    _classPrivateFieldInitSpec(this, _redirectUris, {
       writable: true,
       value: void 0
     });
-
-    _customParameters.set(this, {
+    _classPrivateFieldInitSpec(this, _customParameters, {
       writable: true,
       value: void 0
     });
-
-    _autoActivate.set(this, {
+    _classPrivateFieldInitSpec(this, _autoActivate, {
       writable: true,
       value: void 0
     });
-
-    _logo.set(this, {
+    _classPrivateFieldInitSpec(this, _logo, {
       writable: true,
       value: void 0
     });
-
-    _description.set(this, {
+    _classPrivateFieldInitSpec(this, _description, {
       writable: true,
       value: void 0
     });
-
-    _hostname.set(this, {
+    _classPrivateFieldInitSpec(this, _hostname, {
       writable: true,
       value: void 0
     });
-
-    _appUrl.set(this, {
+    _classPrivateFieldInitSpec(this, _appUrl, {
       writable: true,
       value: void 0
     });
-
-    _loginUrl.set(this, {
+    _classPrivateFieldInitSpec(this, _loginUrl, {
       writable: true,
       value: void 0
     });
-
-    _keysetUrl.set(this, {
+    _classPrivateFieldInitSpec(this, _keysetUrl, {
       writable: true,
       value: void 0
     });
-
-    _getPlatform.set(this, {
+    _classPrivateFieldInitSpec(this, _getPlatform, {
       writable: true,
       value: void 0
     });
-
-    _registerPlatform.set(this, {
+    _classPrivateFieldInitSpec(this, _registerPlatform, {
       writable: true,
       value: void 0
     });
-
-    _ENCRYPTIONKEY.set(this, {
+    _classPrivateFieldInitSpec(this, _ENCRYPTIONKEY, {
       writable: true,
       value: ''
     });
-
-    _Database.set(this, {
+    _classPrivateFieldInitSpec(this, _Database, {
       writable: true,
       value: void 0
     });
-
     (0, _classPrivateFieldSet2.default)(this, _name, options.name);
     (0, _classPrivateFieldSet2.default)(this, _redirectUris, options.redirectUris || []);
     (0, _classPrivateFieldSet2.default)(this, _customParameters, options.customParameters || {});
@@ -165,21 +126,20 @@ class DynamicRegistration {
     (0, _classPrivateFieldSet2.default)(this, _ENCRYPTIONKEY, ENCRYPTIONKEY);
     (0, _classPrivateFieldSet2.default)(this, _Database, Database);
   }
+
   /**
    * @description Performs dynamic registration flow.
    * @param {String} openidConfiguration - OpenID configuration URL. Retrieved from req.query.openid_configuration.
    * @param {String} [registrationToken] - Registration Token. Retrieved from req.query.registration_token.
    * @param {Object} [options] - Replacements or extensions to default registration options.
    */
-
-
   async register(openidConfiguration, registrationToken, options) {
     if (!openidConfiguration) throw new Error('MISSING_OPENID_CONFIGURATION');
-    provDynamicRegistrationDebug('Starting dynamic registration process'); // Get Platform registration configurations
-
+    provDynamicRegistrationDebug('Starting dynamic registration process');
+    // Get Platform registration configurations
     const configuration = await got.get(openidConfiguration).json();
-    provDynamicRegistrationDebug('Attempting to register Platform with issuer: ', configuration.issuer); // Building registration object
-
+    provDynamicRegistrationDebug('Attempting to register Platform with issuer: ', configuration.issuer);
+    // Building registration object
     const registration = {
       application_type: 'web',
       response_types: ['id_token'],
@@ -212,8 +172,9 @@ class DynamicRegistration {
       headers: registrationToken ? {
         Authorization: 'Bearer ' + registrationToken
       } : undefined
-    }).json(); // Registering Platform
+    }).json();
 
+    // Registering Platform
     const platformName = (configuration['https://purl.imsglobal.org/spec/lti-platform-configuration'] ? configuration['https://purl.imsglobal.org/spec/lti-platform-configuration'].product_family_code : 'Platform') + '_DynReg_' + crypto.randomBytes(16).toString('hex');
     if (await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, configuration.issuer, registrationResponse.client_id, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database))) throw new Error('PLATFORM_ALREADY_REGISTERED');
     provDynamicRegistrationDebug('Registering Platform');
@@ -233,11 +194,10 @@ class DynamicRegistration {
     await (0, _classPrivateFieldGet2.default)(this, _Database).Insert(false, 'platformStatus', {
       id: await registered.platformId(),
       active: (0, _classPrivateFieldGet2.default)(this, _autoActivate)
-    }); // Returing message indicating the end of registration flow
+    });
 
+    // Returing message indicating the end of registration flow
     return '<script>(window.opener || window.parent).postMessage({subject:"org.imsglobal.lti.close"}, "*");</script>';
   }
-
 }
-
 module.exports = DynamicRegistration;

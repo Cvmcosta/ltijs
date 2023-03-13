@@ -364,7 +364,7 @@ class Grade {
       searchParams = new URLSearchParams(searchParams)
 
       provGradeServiceDebug('Requesting scores from: ' + resultsUrl)
-      response = await got.get(resultsUrl, { searchParams: searchParams, headers: { Authorization: accessToken.token_type + ' ' + accessToken.access_token, Accept: 'application/vnd.ims.lis.v2.resultcontainer+json' } })
+      response = await got.get(resultsUrl, { searchParams, headers: { Authorization: accessToken.token_type + ' ' + accessToken.access_token, Accept: 'application/vnd.ims.lis.v2.resultcontainer+json' } })
     }
 
     const headers = response.headers
@@ -608,11 +608,11 @@ class Grade {
         let searchParams = [...queryParams, ...query]
         searchParams = new URLSearchParams(searchParams)
         provGradeServiceDebug('Requesting results from: ' + resultsUrl)
-        const results = await got.get(resultsUrl, { searchParams: searchParams, headers: { Authorization: accessToken.token_type + ' ' + accessToken.access_token, Accept: 'application/vnd.ims.lis.v2.resultcontainer+json' } }).json()
+        const results = await got.get(resultsUrl, { searchParams, headers: { Authorization: accessToken.token_type + ' ' + accessToken.access_token, Accept: 'application/vnd.ims.lis.v2.resultcontainer+json' } }).json()
 
         resultsArray.push({
           lineitem: lineitem.id,
-          results: results
+          results
         })
       } catch (err) {
         provGradeServiceDebug(err.message)

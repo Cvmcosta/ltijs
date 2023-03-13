@@ -17,7 +17,7 @@ class Request {
       login_hint: request.login_hint,
       nonce: encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``),
       prompt: 'none',
-      state: state
+      state
     }
     if (request.lti_message_hint) query.lti_message_hint = request.lti_message_hint
     if (request.lti_deployment_id) query.lti_deployment_id = request.lti_deployment_id
