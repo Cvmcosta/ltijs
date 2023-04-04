@@ -255,8 +255,22 @@ class Provider {
 
             const clientId = valid.clientId
             const deploymentId = valid['https://purl.imsglobal.org/spec/lti/claim/deployment_id']
+                        
+            const additionalContextProperties = {
+              path: req.path,
+              roles: valid['https://purl.imsglobal.org/spec/lti/claim/roles'],
+              targetLinkUri: valid['https://purl.imsglobal.org/spec/lti/claim/target_link_uri'],
+              custom: valid['https://purl.imsglobal.org/spec/lti/claim/custom'],
+              launchPresentation: valid['https://purl.imsglobal.org/spec/lti/claim/launch_presentation'],
+              endpoint: valid['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint'],
+              namesRoles: valid['https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice'],
+            }
 
-            const contextId = encodeURIComponent(valid.iss + clientId + deploymentId + courseId + '_' + resourceId)
+            const hashOfAdditionalContextProperties = crypto.createHash('sha256').update(JSON.stringify(additionalContextProperties)).digest('hex')
+            
+            // Appending hashOfContextProperties is a temporary fix to prevent overwriting existing database entries in some scenarios. See: https://github.com/Cvmcosta/ltijs/issues/181 
+            const contextId = encodeURIComponent(valid.iss + clientId + deploymentId + courseId + '_' + resourceId + "_" + hashOfAdditionalContextProperties)
+
             const platformCode = encodeURIComponent('lti' + Buffer.from(valid.iss + clientId + deploymentId).toString('base64'))
 
             // Mount platform token
@@ -281,20 +295,14 @@ class Provider {
             // Mount context token
             const contextToken = {
               contextId,
-              path: req.path,
               user: valid.sub,
-              roles: valid['https://purl.imsglobal.org/spec/lti/claim/roles'],
-              targetLinkUri: valid['https://purl.imsglobal.org/spec/lti/claim/target_link_uri'],
               context: valid['https://purl.imsglobal.org/spec/lti/claim/context'],
               resource: valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'],
-              custom: valid['https://purl.imsglobal.org/spec/lti/claim/custom'],
-              launchPresentation: valid['https://purl.imsglobal.org/spec/lti/claim/launch_presentation'],
               messageType: valid['https://purl.imsglobal.org/spec/lti/claim/message_type'],
               version: valid['https://purl.imsglobal.org/spec/lti/claim/version'],
               deepLinkingSettings: valid['https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings'],
               lis: valid['https://purl.imsglobal.org/spec/lti/claim/lis'],
-              endpoint: valid['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint'],
-              namesRoles: valid['https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice']
+              ...additionalContextProperties
             }
 
             // Store contextToken in database
