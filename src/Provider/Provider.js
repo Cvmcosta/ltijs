@@ -255,7 +255,7 @@ class Provider {
 
             const clientId = valid.clientId
             const deploymentId = valid['https://purl.imsglobal.org/spec/lti/claim/deployment_id']
-                        
+
             const additionalContextProperties = {
               path: req.path,
               roles: valid['https://purl.imsglobal.org/spec/lti/claim/roles'],
@@ -263,13 +263,13 @@ class Provider {
               custom: valid['https://purl.imsglobal.org/spec/lti/claim/custom'],
               launchPresentation: valid['https://purl.imsglobal.org/spec/lti/claim/launch_presentation'],
               endpoint: valid['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint'],
-              namesRoles: valid['https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice'],
+              namesRoles: valid['https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice']
             }
 
             const hashOfAdditionalContextProperties = crypto.createHash('sha256').update(JSON.stringify(additionalContextProperties)).digest('hex')
-            
-            // Appending hashOfContextProperties is a temporary fix to prevent overwriting existing database entries in some scenarios. See: https://github.com/Cvmcosta/ltijs/issues/181 
-            const contextId = encodeURIComponent(valid.iss + clientId + deploymentId + courseId + '_' + resourceId + "_" + hashOfAdditionalContextProperties)
+
+            // Appending hashOfContextProperties is a temporary fix to prevent overwriting existing database entries in some scenarios. See: https://github.com/Cvmcosta/ltijs/issues/181
+            const contextId = encodeURIComponent(valid.iss + clientId + deploymentId + courseId + '_' + resourceId + '_' + hashOfAdditionalContextProperties)
 
             const platformCode = encodeURIComponent('lti' + Buffer.from(valid.iss + clientId + deploymentId).toString('base64'))
 
