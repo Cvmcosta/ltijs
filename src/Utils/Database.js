@@ -112,7 +112,7 @@ class Database {
 
     const nonceSchema = new Schema({
       nonce: String,
-      createdAt: { type: Date, expires: 10, default: Date.now }
+      createdAt: { type: Date, expires: 3600, default: Date.now }
     })
     nonceSchema.index({ nonce: 1 })
 

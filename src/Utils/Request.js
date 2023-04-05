@@ -6,7 +6,7 @@ class Request {
      * @param {object} platform - Platform Object.
      * @param {String} state - State parameter, used to validate the response.
      */
-  static async ltiAdvantageLogin (request, platform, state) {
+  static async ltiAdvantageLogin (request, platform, state, nonce) {
     const query = {
       response_type: 'id_token',
       response_mode: 'form_post',
@@ -15,7 +15,7 @@ class Request {
       client_id: request.client_id || await platform.platformClientId(),
       redirect_uri: request.target_link_uri,
       login_hint: request.login_hint,
-      nonce: encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``),
+      nonce: nonce,
       prompt: 'none',
       state
     }
