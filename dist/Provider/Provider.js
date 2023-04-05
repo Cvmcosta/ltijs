@@ -637,19 +637,20 @@ class Provider {
           // Setting up validation info
           const cookieOptions = JSON.parse(JSON.stringify((0, _classPrivateFieldGet2.default)(this, _cookieOptions)));
           cookieOptions.maxAge = 60 * 1000; // Adding max age to state cookie = 1min
-          res.cookie('state' + state, iss, cookieOptions); // Create nonce parameter used to prevent replay attack
+          res.cookie('state' + state, iss, cookieOptions);
 
-          const nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``); // Check if nonce is unique
-
+          // Create nonce parameter used to prevent replay attack
+          const nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``);
+          // Check if nonce is unique
           while (await this.Database.Get(false, 'nonce', {
             nonce: nonce
-          })) nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``); //Store nonce
-
-
+          })) nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``);
+          //Store nonce
           await this.Database.Insert(false, 'nonce', {
             nonce
-          }); // Redirect to authentication endpoint
+          });
 
+          // Redirect to authentication endpoint
           const query = await Request.ltiAdvantageLogin(params, platform, state, nonce);
           provMainDebug('Login request: ');
           provMainDebug(query);

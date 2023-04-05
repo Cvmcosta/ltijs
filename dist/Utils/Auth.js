@@ -245,12 +245,10 @@ class Auth {
     const savedNonce = await Database.Get(false, 'nonce', {
       nonce: token.nonce
     });
-
     if (!savedNonce) {
       provAuthDebug('Nonce have been Deleted Before, nonce not found in Database');
       throw new Error('NONCE_ALREADY_RECEIVED');
     }
-
     provAuthDebug('Deleting validated nonce');
     Database.Delete('nonce', {
       nonce: token.nonce
