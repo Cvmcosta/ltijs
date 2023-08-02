@@ -40,6 +40,7 @@ var _devMode = /*#__PURE__*/new WeakMap();
 var _ltiaas = /*#__PURE__*/new WeakMap();
 var _tokenMaxAge = /*#__PURE__*/new WeakMap();
 var _cookieOptions = /*#__PURE__*/new WeakMap();
+var _bodyParserOptions = /*#__PURE__*/new WeakMap();
 var _setup = /*#__PURE__*/new WeakMap();
 var _connectCallback2 = /*#__PURE__*/new WeakMap();
 var _deepLinkingCallback2 = /*#__PURE__*/new WeakMap();
@@ -95,6 +96,17 @@ class Provider {
         secure: false,
         httpOnly: true,
         signed: true
+      }
+    });
+    _classPrivateFieldInitSpec(this, _bodyParserOptions, {
+      writable: true,
+      value: {
+        json: {},
+        raw: {},
+        text: {},
+        urlencoded: {
+          extended: false
+        }
       }
     });
     // Setup flag
@@ -274,8 +286,16 @@ class Provider {
       if (options.cookies.sameSite) (0, _classPrivateFieldGet2.default)(this, _cookieOptions).sameSite = options.cookies.sameSite;
       if (options.cookies.domain) (0, _classPrivateFieldGet2.default)(this, _cookieOptions).domain = options.cookies.domain;
     }
+
+    // BodyParser options
+    if (options && options.bodyParserOpt) {
+      if (options.bodyParserOpt.json) (0, _classPrivateFieldGet2.default)(this, _bodyParserOptions).json = options.bodyParserOpt.json;
+      if (options.bodyParserOpt.raw) (0, _classPrivateFieldGet2.default)(this, _bodyParserOptions).raw = options.bodyParserOpt.raw;
+      if (options.bodyParserOpt.text) (0, _classPrivateFieldGet2.default)(this, _bodyParserOptions).text = options.bodyParserOpt.text;
+      if (options.bodyParserOpt.urlencoded) (0, _classPrivateFieldGet2.default)(this, _bodyParserOptions).urlencoded = options.bodyParserOpt.urlencoded;
+    }
     (0, _classPrivateFieldSet2.default)(this, _ENCRYPTIONKEY2, encryptionkey);
-    (0, _classPrivateFieldSet2.default)(this, _server, new Server(options ? options.https : false, options ? options.ssl : false, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), options ? options.cors : true, options ? options.serverAddon : false, options ? options.bodyParserOpt : {}));
+    (0, _classPrivateFieldSet2.default)(this, _server, new Server(options ? options.https : false, options ? options.ssl : false, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), options ? options.cors : true, options ? options.serverAddon : false, options ? options.bodyParserOpt : (0, _classPrivateFieldGet2.default)(this, _bodyParserOptions)));
 
     /**
      * @description Express server object.
