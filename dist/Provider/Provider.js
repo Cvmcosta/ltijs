@@ -243,6 +243,10 @@ class Provider {
      * @param {Array<String>} [options.dynReg.redirectUris] - Additional redirect URIs. (Ex: ['https://tool.example.com/launch'])
      * @param {Object} [options.dynReg.customParameters] - Custom parameters object. (Ex: { key: 'value' })
      * @param {Boolean} [options.dynReg.autoActivate = false] - Platform auto activation flag. If true, every Platform registered dynamically is immediately activated. Defaults to false.
+     * @param {Object} [options.bodyParserOpt.json = {}] - Parameters object to configure bodyParserOpt.json. (See documentation @ https://github.com/expressjs/body-parser#bodyparserjsonoptions)
+     * @param {Object} [options.bodyParserOpt.raw = {}] - Parameters object to configure bodyParserOpt.json. (See documentation @ https://github.com/expressjs/body-parser#bodyparserrawoptions)
+     * @param {Object} [options.bodyParserOpt.text = {}] - Parameters object to configure bodyParserOpt.json. (See documentation @ https://github.com/expressjs/body-parser#bodyparsertextoptions)
+     * @param {Object} [options.bodyParserOpt.urlencoded = { extended: false }] - Parameters object to configure bodyParserOpt.json. (See documentation @ https://github.com/expressjs/body-parser#bodyparserurlencodedoptions)
      */
   setup(encryptionkey, database, options) {
     if ((0, _classPrivateFieldGet2.default)(this, _setup)) throw new Error('PROVIDER_ALREADY_SETUP');
@@ -271,7 +275,7 @@ class Provider {
       if (options.cookies.domain) (0, _classPrivateFieldGet2.default)(this, _cookieOptions).domain = options.cookies.domain;
     }
     (0, _classPrivateFieldSet2.default)(this, _ENCRYPTIONKEY2, encryptionkey);
-    (0, _classPrivateFieldSet2.default)(this, _server, new Server(options ? options.https : false, options ? options.ssl : false, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), options ? options.cors : true, options ? options.serverAddon : false));
+    (0, _classPrivateFieldSet2.default)(this, _server, new Server(options ? options.https : false, options ? options.ssl : false, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), options ? options.cors : true, options ? options.serverAddon : false, options ? options.bodyParserOpt : {}));
 
     /**
      * @description Express server object.
