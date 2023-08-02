@@ -173,7 +173,7 @@ class Provider {
 
     this.#ENCRYPTIONKEY = encryptionkey
 
-    this.#server = new Server(options ? options.https : false, options ? options.ssl : false, this.#ENCRYPTIONKEY, options ? options.cors : true, options ? options.serverAddon : false )
+    this.#server = new Server(options ? options.https : false, options ? options.ssl : false, this.#ENCRYPTIONKEY, options ? options.cors : true, options ? options.serverAddon : false, options ? options.bodyParserOpt : {})
 
     /**
      * @description Express server object.
