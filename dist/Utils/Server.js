@@ -51,12 +51,12 @@ class Server {
     }
 
     // Ingest body parser options for each parsertype
-    this.app.use(bodyParser.urlencoded(bodyParserOpt.urlencoded || {
+    this.app.use(bodyParser.urlencoded(bodyParserOpt && bodyParserOpt.urlencoded ? bodyParserOpt.urlencoded : {
       extended: false
     }));
-    this.app.use(bodyParser.json(bodyParserOpt.json || {}));
-    this.app.use(bodyParser.raw(bodyParserOpt.raw || {}));
-    this.app.use(bodyParser.text(bodyParserOpt.text || {}));
+    this.app.use(bodyParser.json(bodyParserOpt && bodyParserOpt.json ? bodyParserOpt.json : {}));
+    this.app.use(bodyParser.raw(bodyParserOpt && bodyParserOpt.raw ? bodyParserOpt.raw : {}));
+    this.app.use(bodyParser.text(bodyParserOpt && bodyParserOpt.text ? bodyParserOpt.text : {}));
     this.app.use(cookieParser(ENCRYPTIONKEY));
     this.app.use(async (req, res, next) => {
       // Creating Authorization schema LTIK-AUTH-V1
