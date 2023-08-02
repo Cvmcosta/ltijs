@@ -51,6 +51,13 @@ class Provider {
     signed: true
   }
 
+  #bodyParserOptions = {
+    json: {},
+    raw: {},
+    text: {},
+    urlencoded: { extended: false }
+  }
+
   // Setup flag
   #setup = false
 
@@ -171,9 +178,17 @@ class Provider {
       if (options.cookies.domain) this.#cookieOptions.domain = options.cookies.domain
     }
 
+    // BodyParser options
+    if (options && options.bodyParserOpt) {
+      if (options.bodyParserOpt.json) this.#bodyParserOptions.json = options.bodyParserOpt.json;
+      if (options.bodyParserOpt.raw) this.#bodyParserOptions.raw = options.bodyParserOpt.raw;
+      if (options.bodyParserOpt.text) this.#bodyParserOptions.text = options.bodyParserOpt.text;
+      if (options.bodyParserOpt.urlencoded) this.#bodyParserOptions.urlencoded = options.bodyParserOpt.urlencoded;
+    }
+
     this.#ENCRYPTIONKEY = encryptionkey
 
-    this.#server = new Server(options ? options.https : false, options ? options.ssl : false, this.#ENCRYPTIONKEY, options ? options.cors : true, options ? options.serverAddon : false )
+    this.#server = new Server(options ? options.https : false, options ? options.ssl : false, this.#ENCRYPTIONKEY, options ? options.cors : true, options ? options.serverAddon : false ? options.bodyParserOpt : this.#bodyParserOptions)
 
     /**
      * @description Express server object.
