@@ -8,7 +8,7 @@ const cors = require('cors')
 const provAuthDebug = require('debug')('provider:auth')
 
 class Server {
-  constructor (https, ssl, ENCRYPTIONKEY, corsOpt, serverAddon) {
+  constructor (https, ssl, ENCRYPTIONKEY, corsOpt, serverAddon, bodyParserOpt) {
     this.app = express()
 
     this.server = false
@@ -43,10 +43,12 @@ class Server {
       }))
       this.app.options('*', cors())
     }
-    this.app.use(bodyParser.urlencoded({ extended: false }))
-    this.app.use(bodyParser.json())
-    this.app.use(bodyParser.raw())
-    this.app.use(bodyParser.text())
+
+    // Ingest body parser options for each parsertype
+    this.app.use(bodyParser.urlencoded(bodyParserOpt.urlencoded || { extended: false }))
+    this.app.use(bodyParser.json(bodyParserOpt.json || { }))
+    this.app.use(bodyParser.raw(bodyParserOpt.raw || { }))
+    this.app.use(bodyParser.text(bodyParserOpt.text || { }))
     this.app.use(cookieParser(ENCRYPTIONKEY))
     this.app.use(async (req, res, next) => {
       // Creating Authorization schema LTIK-AUTH-V1

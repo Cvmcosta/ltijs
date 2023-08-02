@@ -51,6 +51,13 @@ class Provider {
     signed: true
   }
 
+  #bodyParserOptions = {
+    json: {},
+    raw: {},
+    text: {},
+    urlencoded: { extended: false }
+  }
+
   // Setup flag
   #setup = false
 
@@ -136,6 +143,10 @@ class Provider {
      * @param {Array<String>} [options.dynReg.redirectUris] - Additional redirect URIs. (Ex: ['https://tool.example.com/launch'])
      * @param {Object} [options.dynReg.customParameters] - Custom parameters object. (Ex: { key: 'value' })
      * @param {Boolean} [options.dynReg.autoActivate = false] - Platform auto activation flag. If true, every Platform registered dynamically is immediately activated. Defaults to false.
+     * @param {Object} [options.bodyParserOpt.json = {}] - Parameters object to configure bodyParserOpt.json. (See documentation @ https://github.com/expressjs/body-parser#bodyparserjsonoptions)
+     * @param {Object} [options.bodyParserOpt.raw = {}] - Parameters object to configure bodyParserOpt.json. (See documentation @ https://github.com/expressjs/body-parser#bodyparserrawoptions)
+     * @param {Object} [options.bodyParserOpt.text = {}] - Parameters object to configure bodyParserOpt.json. (See documentation @ https://github.com/expressjs/body-parser#bodyparsertextoptions)
+     * @param {Object} [options.bodyParserOpt.urlencoded = { extended: false }] - Parameters object to configure bodyParserOpt.json. (See documentation @ https://github.com/expressjs/body-parser#bodyparserurlencodedoptions)
      */
   setup (encryptionkey, database, options) {
     if (this.#setup) throw new Error('PROVIDER_ALREADY_SETUP')
@@ -167,9 +178,17 @@ class Provider {
       if (options.cookies.domain) this.#cookieOptions.domain = options.cookies.domain
     }
 
+    // BodyParser options
+    if (options && options.bodyParserOpt) {
+      if (options.bodyParserOpt.json) this.#bodyParserOptions.json = options.bodyParserOpt.json;
+      if (options.bodyParserOpt.raw) this.#bodyParserOptions.raw = options.bodyParserOpt.raw;
+      if (options.bodyParserOpt.text) this.#bodyParserOptions.text = options.bodyParserOpt.text;
+      if (options.bodyParserOpt.urlencoded) this.#bodyParserOptions.urlencoded = options.bodyParserOpt.urlencoded;
+    }
+
     this.#ENCRYPTIONKEY = encryptionkey
 
-    this.#server = new Server(options ? options.https : false, options ? options.ssl : false, this.#ENCRYPTIONKEY, options ? options.cors : true, options ? options.serverAddon : false)
+    this.#server = new Server(options ? options.https : false, options ? options.ssl : false, this.#ENCRYPTIONKEY, options ? options.cors : true, options ? options.serverAddon : false ? options.bodyParserOpt : this.#bodyParserOptions)
 
     /**
      * @description Express server object.
