@@ -33,7 +33,7 @@ Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps
 ---
 
 <div align="center">
-	<a href="https://ltiaas.com"><img width="400" src="https://raw.githubusercontent.com/Cvmcosta/ltijs/master/docs/ltiaas.png"></img></a>
+	<a href="https://ltiaas.com"><img width="550" src="https://raw.githubusercontent.com/Cvmcosta/ltijs/master/docs/ltiaas.png"></img></a>
   <br>
   <br>
 </div>
@@ -50,6 +50,7 @@ Through our consultation services we can help you design, build and maintain you
 > - [Contact us](https://ltiaas.com/contact-us/)
 
 ---
+
 
 ## Table of Contents
 
