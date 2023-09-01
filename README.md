@@ -33,7 +33,7 @@ Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps
 ---
 
 <div align="center">
-	<a href="https://ltiaas.com"><img width="330" src="https://raw.githubusercontent.com/Cvmcosta/ltijs/master/docs/ltiaas.svg"></img></a>
+	<a href="https://ltiaas.com"><img width="400" src="https://raw.githubusercontent.com/Cvmcosta/ltijs/master/docs/ltiaas.png"></img></a>
   <br>
   <br>
 </div>
@@ -45,7 +45,7 @@ If you need an enterprise-ready LTI deployment, LTIaaS can get you up and runnin
 Through our consultation services we can help you design, build and maintain your LTI tool. The LTIaaS API is already being used to reach thousands of students across the entire world!
 
 > For more information visit [LTIaaS.com](https://ltiaas.com)
-> - [API Documentation](https://ltiaas.com/docs/)
+> - [Documentation and Guides](https://ltiaas.com/guides/introduction)
 > - [Pricing information and simulator](https://ltiaas.com/pricing/)
 > - [Contact us](https://ltiaas.com/contact-us/)
 
