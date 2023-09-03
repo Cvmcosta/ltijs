@@ -81,7 +81,7 @@ class DeepLinking {
     // Adding messaging options
     if (options) {
       if (options.message) jwtBody['https://purl.imsglobal.org/spec/lti-dl/claim/msg'] = options.message
-      if (options.errMessage || options.errmessage) jwtBody['https://purl.imsglobal.org/spec/lti-dl/claim/errormsg '] = options.errMessage || options.errmessage
+      if (options.errMessage || options.errmessage) jwtBody['https://purl.imsglobal.org/spec/lti-dl/claim/errormsg'] = options.errMessage || options.errmessage
       if (options.log) jwtBody['https://purl.imsglobal.org/spec/lti-dl/claim/log'] = options.log
       if (options.errLog || options.errlog) jwtBody['https://purl.imsglobal.org/spec/lti-dl/claim/errorlog'] = options.errLog || options.errlog
     }
