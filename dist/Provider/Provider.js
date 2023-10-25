@@ -684,7 +684,9 @@ class Provider {
 
     // Main app
     this.app.all((0, _classPrivateFieldGet2.default)(this, _appRoute), async (req, res, next) => {
+      provMainDebug("Handling appRoute " + (0, _classPrivateFieldGet2.default)(this, _appRoute));
       if (res.locals.context && res.locals.context.messageType === 'LtiDeepLinkingRequest') return (0, _classPrivateFieldGet2.default)(this, _deepLinkingCallback2).call(this, res.locals.token, req, res, next);
+      provMainDebug("Calling connectCallback ");
       return (0, _classPrivateFieldGet2.default)(this, _connectCallback2).call(this, res.locals.token, req, res, next);
     });
     (0, _classPrivateFieldSet2.default)(this, _setup, true);
