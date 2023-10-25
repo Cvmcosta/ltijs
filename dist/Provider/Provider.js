@@ -689,6 +689,7 @@ class Provider {
       provMainDebug("Calling connectCallback ");
       return (0, _classPrivateFieldGet2.default)(this, _connectCallback2).call(this, res.locals.token, req, res, next);
     });
+    provMainDebug("this.#appRoute = " + (0, _classPrivateFieldGet2.default)(this, _appRoute));
     (0, _classPrivateFieldSet2.default)(this, _setup, true);
     return this;
   }

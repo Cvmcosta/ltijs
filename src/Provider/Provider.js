@@ -559,7 +559,7 @@ class Provider {
       
       return this.#connectCallback(res.locals.token, req, res, next)
     })
-
+    provMainDebug("this.#appRoute = "+this.#appRoute);
     this.#setup = true
     return this
   }
