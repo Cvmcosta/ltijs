@@ -353,7 +353,7 @@ class Provider {
             }
             query.append('ltik', newLtik)
             const urlSearchParams = query.toString()
-            provMainDebug('Redirecting to endpoint with ltik')
+            provMainDebug('Redirecting to endpoint with ltik '+this.#prefix + req.baseUrl + req.path + "?" + urlSearchParams)
             return res.redirect(
               this.#prefix + req.baseUrl + req.path + "?" + urlSearchParams
             );
