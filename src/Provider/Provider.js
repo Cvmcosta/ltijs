@@ -42,7 +42,7 @@ class Provider {
 
   #devMode = false
   #ltiaas = false
-
+  #prefix = "";
   #tokenMaxAge = 10
 
   #cookieOptions = {
@@ -143,7 +143,8 @@ class Provider {
     if (!encryptionkey) throw new Error('MISSING_ENCRYPTION_KEY')
     if (!database) throw new Error('MISSING_DATABASE_CONFIGURATION')
     if (options && options.dynReg && (!options.dynReg.url || !options.dynReg.name)) throw new Error('MISSING_DYNREG_CONFIGURATION')
-
+    if (options && options.prefix) this.#prefix = options.prefix;
+    
     /**
      * @description Database object.
      */
@@ -353,7 +354,9 @@ class Provider {
             query.append('ltik', newLtik)
             const urlSearchParams = query.toString()
             provMainDebug('Redirecting to endpoint with ltik')
-            return res.redirect(req.baseUrl + req.path + '?' + urlSearchParams)
+            return res.redirect(
+              this.#prefix + req.baseUrl + req.path + "?" + urlSearchParams
+            );
           } else {
             const state = req.body.state
             if (state) {
