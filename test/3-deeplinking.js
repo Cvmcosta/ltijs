@@ -118,8 +118,6 @@ const signToken = (token, kid) => {
 
 const lti = require('../dist/Provider/Provider')
 
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
-
 describe('Testing Deep Linking Service', function () {
   this.timeout(10000)
 

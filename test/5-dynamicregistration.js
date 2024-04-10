@@ -37,8 +37,6 @@ const registrationResponse = { client_id: '123456' }
 
 const lti = require('../dist/Provider/Provider')
 
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
-
 describe('Testing Dynamic registration Service', function () {
   this.timeout(10000)
 

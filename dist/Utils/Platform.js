@@ -1,10 +1,10 @@
 "use strict";
 
-var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefault");
-var _classPrivateFieldGet2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldGet"));
-var _classPrivateFieldSet2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldSet"));
 function _classPrivateFieldInitSpec(obj, privateMap, value) { _checkPrivateRedeclaration(obj, privateMap); privateMap.set(obj, value); }
 function _checkPrivateRedeclaration(obj, privateCollection) { if (privateCollection.has(obj)) { throw new TypeError("Cannot initialize the same private elements twice on an object"); } }
+function _classPrivateFieldGet(s, a) { return s.get(_assertClassBrand(s, a)); }
+function _classPrivateFieldSet(s, a, r) { return s.set(_assertClassBrand(s, a), r), r; }
+function _assertClassBrand(e, t, n) { if ("function" == typeof e ? e === t : e.has(t)) return arguments.length < 3 ? t : n; throw new TypeError("Private element is not present on this object"); }
 // Utis
 const Auth = require('./Auth');
 const provPlatformDebug = require('debug')('provider:platform');
@@ -35,70 +35,40 @@ class Platform {
      * @param {Object} _authConfig - Authentication configurations for the platform.
      */
   constructor(name, platformUrl, clientId, authenticationEndpoint, accesstokenEndpoint, authorizationServer, kid, _ENCRYPTIONKEY, _authConfig, Database) {
-    _classPrivateFieldInitSpec(this, _platformName, {
-      writable: true,
-      value: void 0
-    });
-    _classPrivateFieldInitSpec(this, _platformUrl, {
-      writable: true,
-      value: void 0
-    });
-    _classPrivateFieldInitSpec(this, _clientId, {
-      writable: true,
-      value: void 0
-    });
-    _classPrivateFieldInitSpec(this, _authenticationEndpoint, {
-      writable: true,
-      value: void 0
-    });
-    _classPrivateFieldInitSpec(this, _authConfig2, {
-      writable: true,
-      value: void 0
-    });
-    _classPrivateFieldInitSpec(this, _ENCRYPTIONKEY2, {
-      writable: true,
-      value: void 0
-    });
-    _classPrivateFieldInitSpec(this, _accesstokenEndpoint, {
-      writable: true,
-      value: void 0
-    });
-    _classPrivateFieldInitSpec(this, _authorizationServer, {
-      writable: true,
-      value: void 0
-    });
-    _classPrivateFieldInitSpec(this, _kid, {
-      writable: true,
-      value: void 0
-    });
-    _classPrivateFieldInitSpec(this, _Database, {
-      writable: true,
-      value: void 0
-    });
-    (0, _classPrivateFieldSet2.default)(this, _authConfig2, _authConfig);
-    (0, _classPrivateFieldSet2.default)(this, _ENCRYPTIONKEY2, _ENCRYPTIONKEY);
-    (0, _classPrivateFieldSet2.default)(this, _platformName, name);
-    (0, _classPrivateFieldSet2.default)(this, _platformUrl, platformUrl);
-    (0, _classPrivateFieldSet2.default)(this, _clientId, clientId);
-    (0, _classPrivateFieldSet2.default)(this, _authenticationEndpoint, authenticationEndpoint);
-    (0, _classPrivateFieldSet2.default)(this, _accesstokenEndpoint, accesstokenEndpoint);
-    (0, _classPrivateFieldSet2.default)(this, _authorizationServer, authorizationServer);
-    (0, _classPrivateFieldSet2.default)(this, _kid, kid);
-    (0, _classPrivateFieldSet2.default)(this, _Database, Database);
+    _classPrivateFieldInitSpec(this, _platformName, void 0);
+    _classPrivateFieldInitSpec(this, _platformUrl, void 0);
+    _classPrivateFieldInitSpec(this, _clientId, void 0);
+    _classPrivateFieldInitSpec(this, _authenticationEndpoint, void 0);
+    _classPrivateFieldInitSpec(this, _authConfig2, void 0);
+    _classPrivateFieldInitSpec(this, _ENCRYPTIONKEY2, void 0);
+    _classPrivateFieldInitSpec(this, _accesstokenEndpoint, void 0);
+    _classPrivateFieldInitSpec(this, _authorizationServer, void 0);
+    _classPrivateFieldInitSpec(this, _kid, void 0);
+    _classPrivateFieldInitSpec(this, _Database, void 0);
+    _classPrivateFieldSet(_authConfig2, this, _authConfig);
+    _classPrivateFieldSet(_ENCRYPTIONKEY2, this, _ENCRYPTIONKEY);
+    _classPrivateFieldSet(_platformName, this, name);
+    _classPrivateFieldSet(_platformUrl, this, platformUrl);
+    _classPrivateFieldSet(_clientId, this, clientId);
+    _classPrivateFieldSet(_authenticationEndpoint, this, authenticationEndpoint);
+    _classPrivateFieldSet(_accesstokenEndpoint, this, accesstokenEndpoint);
+    _classPrivateFieldSet(_authorizationServer, this, authorizationServer);
+    _classPrivateFieldSet(_kid, this, kid);
+    _classPrivateFieldSet(_Database, this, Database);
   }
 
   /**
    * @description Gets the platform url.
    */
   async platformUrl() {
-    return (0, _classPrivateFieldGet2.default)(this, _platformUrl);
+    return _classPrivateFieldGet(_platformUrl, this);
   }
 
   /**
    * @description Gets the platform client id.
    */
   async platformClientId() {
-    return (0, _classPrivateFieldGet2.default)(this, _clientId);
+    return _classPrivateFieldGet(_clientId, this);
   }
 
   /**
@@ -106,14 +76,14 @@ class Platform {
      * @param {string} [name] - Platform name.
      */
   async platformName(name) {
-    if (!name) return (0, _classPrivateFieldGet2.default)(this, _platformName);
-    await (0, _classPrivateFieldGet2.default)(this, _Database).Modify(false, 'platform', {
-      platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl),
-      clientId: (0, _classPrivateFieldGet2.default)(this, _clientId)
+    if (!name) return _classPrivateFieldGet(_platformName, this);
+    await _classPrivateFieldGet(_Database, this).Modify(false, 'platform', {
+      platformUrl: _classPrivateFieldGet(_platformUrl, this),
+      clientId: _classPrivateFieldGet(_clientId, this)
     }, {
       platformName: name
     });
-    (0, _classPrivateFieldSet2.default)(this, _platformName, name);
+    _classPrivateFieldSet(_platformName, this, name);
     return name;
   }
 
@@ -121,14 +91,14 @@ class Platform {
      * @description Gets the platform Id.
      */
   async platformId() {
-    return (0, _classPrivateFieldGet2.default)(this, _kid);
+    return _classPrivateFieldGet(_kid, this);
   }
 
   /**
    * @description Gets the platform key_id.
    */
   async platformKid() {
-    return (0, _classPrivateFieldGet2.default)(this, _kid);
+    return _classPrivateFieldGet(_kid, this);
   }
 
   /**
@@ -138,15 +108,15 @@ class Platform {
   async platformActive(active) {
     if (active === undefined) {
       // Get platform status
-      const platformStatus = await (0, _classPrivateFieldGet2.default)(this, _Database).Get(false, 'platformStatus', {
-        id: (0, _classPrivateFieldGet2.default)(this, _kid)
+      const platformStatus = await _classPrivateFieldGet(_Database, this).Get(false, 'platformStatus', {
+        id: _classPrivateFieldGet(_kid, this)
       });
       if (!platformStatus || platformStatus[0].active) return true;else return false;
     }
-    await (0, _classPrivateFieldGet2.default)(this, _Database).Replace(false, 'platformStatus', {
-      id: (0, _classPrivateFieldGet2.default)(this, _kid)
+    await _classPrivateFieldGet(_Database, this).Replace(false, 'platformStatus', {
+      id: _classPrivateFieldGet(_kid, this)
     }, {
-      id: (0, _classPrivateFieldGet2.default)(this, _kid),
+      id: _classPrivateFieldGet(_kid, this),
       active
     });
     return active;
@@ -157,8 +127,8 @@ class Platform {
      *
      */
   async platformPublicKey() {
-    const key = await (0, _classPrivateFieldGet2.default)(this, _Database).Get((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), 'publickey', {
-      kid: (0, _classPrivateFieldGet2.default)(this, _kid)
+    const key = await _classPrivateFieldGet(_Database, this).Get(_classPrivateFieldGet(_ENCRYPTIONKEY2, this), 'publickey', {
+      kid: _classPrivateFieldGet(_kid, this)
     });
     return key[0].key;
   }
@@ -168,8 +138,8 @@ class Platform {
      *
      */
   async platformPrivateKey() {
-    const key = await (0, _classPrivateFieldGet2.default)(this, _Database).Get((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), 'privatekey', {
-      kid: (0, _classPrivateFieldGet2.default)(this, _kid)
+    const key = await _classPrivateFieldGet(_Database, this).Get(_classPrivateFieldGet(_ENCRYPTIONKEY2, this), 'privatekey', {
+      kid: _classPrivateFieldGet(_kid, this)
     });
     return key[0].key;
   }
@@ -180,19 +150,19 @@ class Platform {
      * @param {string} key - Either the RSA public key provided by the platform, or the JWK key, or the JWK keyset address.
      */
   async platformAuthConfig(method, key) {
-    if (!method && !key) return (0, _classPrivateFieldGet2.default)(this, _authConfig2);
+    if (!method && !key) return _classPrivateFieldGet(_authConfig2, this);
     if (method && method !== 'RSA_KEY' && method !== 'JWK_KEY' && method !== 'JWK_SET') throw new Error('INVALID_METHOD. Details: Valid methods are "RSA_KEY", "JWK_KEY", "JWK_SET".');
     const authConfig = {
-      method: method || (0, _classPrivateFieldGet2.default)(this, _authConfig2).method,
-      key: key || (0, _classPrivateFieldGet2.default)(this, _authConfig2).key
+      method: method || _classPrivateFieldGet(_authConfig2, this).method,
+      key: key || _classPrivateFieldGet(_authConfig2, this).key
     };
-    await (0, _classPrivateFieldGet2.default)(this, _Database).Modify(false, 'platform', {
-      platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl),
-      clientId: (0, _classPrivateFieldGet2.default)(this, _clientId)
+    await _classPrivateFieldGet(_Database, this).Modify(false, 'platform', {
+      platformUrl: _classPrivateFieldGet(_platformUrl, this),
+      clientId: _classPrivateFieldGet(_clientId, this)
     }, {
       authConfig
     });
-    (0, _classPrivateFieldSet2.default)(this, _authConfig2, authConfig);
+    _classPrivateFieldSet(_authConfig2, this, authConfig);
     return authConfig;
   }
 
@@ -201,14 +171,14 @@ class Platform {
    * @param {string} [authenticationEndpoint - Platform authentication endpoint.
    */
   async platformAuthenticationEndpoint(authenticationEndpoint) {
-    if (!authenticationEndpoint) return (0, _classPrivateFieldGet2.default)(this, _authenticationEndpoint);
-    await (0, _classPrivateFieldGet2.default)(this, _Database).Modify(false, 'platform', {
-      platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl),
-      clientId: (0, _classPrivateFieldGet2.default)(this, _clientId)
+    if (!authenticationEndpoint) return _classPrivateFieldGet(_authenticationEndpoint, this);
+    await _classPrivateFieldGet(_Database, this).Modify(false, 'platform', {
+      platformUrl: _classPrivateFieldGet(_platformUrl, this),
+      clientId: _classPrivateFieldGet(_clientId, this)
     }, {
       authEndpoint: authenticationEndpoint
     });
-    (0, _classPrivateFieldSet2.default)(this, _authenticationEndpoint, authenticationEndpoint);
+    _classPrivateFieldSet(_authenticationEndpoint, this, authenticationEndpoint);
     return authenticationEndpoint;
   }
 
@@ -217,14 +187,14 @@ class Platform {
      * @param {string} [accesstokenEndpoint] - Platform access token endpoint.
      */
   async platformAccessTokenEndpoint(accesstokenEndpoint) {
-    if (!accesstokenEndpoint) return (0, _classPrivateFieldGet2.default)(this, _accesstokenEndpoint);
-    await (0, _classPrivateFieldGet2.default)(this, _Database).Modify(false, 'platform', {
-      platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl),
-      clientId: (0, _classPrivateFieldGet2.default)(this, _clientId)
+    if (!accesstokenEndpoint) return _classPrivateFieldGet(_accesstokenEndpoint, this);
+    await _classPrivateFieldGet(_Database, this).Modify(false, 'platform', {
+      platformUrl: _classPrivateFieldGet(_platformUrl, this),
+      clientId: _classPrivateFieldGet(_clientId, this)
     }, {
       accesstokenEndpoint
     });
-    (0, _classPrivateFieldSet2.default)(this, _accesstokenEndpoint, accesstokenEndpoint);
+    _classPrivateFieldSet(_accesstokenEndpoint, this, accesstokenEndpoint);
     return accesstokenEndpoint;
   }
 
@@ -233,14 +203,14 @@ class Platform {
    * @param {string} [authorizationServer] - authorization server identifier.
    */
   async platformAuthorizationServer(authorizationServer) {
-    if (!authorizationServer) return (0, _classPrivateFieldGet2.default)(this, _authorizationServer) || (0, _classPrivateFieldGet2.default)(this, _accesstokenEndpoint);
-    await (0, _classPrivateFieldGet2.default)(this, _Database).Modify(false, 'platform', {
-      platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl),
-      clientId: (0, _classPrivateFieldGet2.default)(this, _clientId)
+    if (!authorizationServer) return _classPrivateFieldGet(_authorizationServer, this) || _classPrivateFieldGet(_accesstokenEndpoint, this);
+    await _classPrivateFieldGet(_Database, this).Modify(false, 'platform', {
+      platformUrl: _classPrivateFieldGet(_platformUrl, this),
+      clientId: _classPrivateFieldGet(_clientId, this)
     }, {
       authorizationServer
     });
-    (0, _classPrivateFieldSet2.default)(this, _authorizationServer, authorizationServer);
+    _classPrivateFieldSet(_authorizationServer, this, authorizationServer);
     return authorizationServer;
   }
 
@@ -249,17 +219,17 @@ class Platform {
      * @param {String} scopes - String of scopes.
      */
   async platformAccessToken(scopes) {
-    const result = await (0, _classPrivateFieldGet2.default)(this, _Database).Get((0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), 'accesstoken', {
-      platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl),
-      clientId: (0, _classPrivateFieldGet2.default)(this, _clientId),
+    const result = await _classPrivateFieldGet(_Database, this).Get(_classPrivateFieldGet(_ENCRYPTIONKEY2, this), 'accesstoken', {
+      platformUrl: _classPrivateFieldGet(_platformUrl, this),
+      clientId: _classPrivateFieldGet(_clientId, this),
       scopes
     });
     let token;
     if (!result || (Date.now() - result[0].createdAt) / 1000 > result[0].token.expires_in) {
-      provPlatformDebug('Valid access_token for ' + (0, _classPrivateFieldGet2.default)(this, _platformUrl) + ' not found');
-      provPlatformDebug('Attempting to generate new access_token for ' + (0, _classPrivateFieldGet2.default)(this, _platformUrl));
+      provPlatformDebug('Valid access_token for ' + _classPrivateFieldGet(_platformUrl, this) + ' not found');
+      provPlatformDebug('Attempting to generate new access_token for ' + _classPrivateFieldGet(_platformUrl, this));
       provPlatformDebug('With scopes: ' + scopes);
-      token = await Auth.getAccessToken(scopes, this, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), (0, _classPrivateFieldGet2.default)(this, _Database));
+      token = await Auth.getAccessToken(scopes, this, _classPrivateFieldGet(_ENCRYPTIONKEY2, this), _classPrivateFieldGet(_Database, this));
     } else {
       provPlatformDebug('Access_token found');
       token = result[0].token;
@@ -273,14 +243,14 @@ class Platform {
    */
   async platformJSON() {
     const platformJSON = {
-      id: (0, _classPrivateFieldGet2.default)(this, _kid),
-      url: (0, _classPrivateFieldGet2.default)(this, _platformUrl),
-      clientId: (0, _classPrivateFieldGet2.default)(this, _clientId),
-      name: (0, _classPrivateFieldGet2.default)(this, _platformName),
-      authenticationEndpoint: (0, _classPrivateFieldGet2.default)(this, _authenticationEndpoint),
-      accesstokenEndpoint: (0, _classPrivateFieldGet2.default)(this, _accesstokenEndpoint),
-      authorizationServer: (0, _classPrivateFieldGet2.default)(this, _authorizationServer) || (0, _classPrivateFieldGet2.default)(this, _accesstokenEndpoint),
-      authConfig: (0, _classPrivateFieldGet2.default)(this, _authConfig2),
+      id: _classPrivateFieldGet(_kid, this),
+      url: _classPrivateFieldGet(_platformUrl, this),
+      clientId: _classPrivateFieldGet(_clientId, this),
+      name: _classPrivateFieldGet(_platformName, this),
+      authenticationEndpoint: _classPrivateFieldGet(_authenticationEndpoint, this),
+      accesstokenEndpoint: _classPrivateFieldGet(_accesstokenEndpoint, this),
+      authorizationServer: _classPrivateFieldGet(_authorizationServer, this) || _classPrivateFieldGet(_accesstokenEndpoint, this),
+      authConfig: _classPrivateFieldGet(_authConfig2, this),
       publicKey: await this.platformPublicKey(),
       active: await this.platformActive()
     };
@@ -291,18 +261,18 @@ class Platform {
    * @description Deletes a registered platform.
    */
   async delete() {
-    await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('platform', {
-      platformUrl: (0, _classPrivateFieldGet2.default)(this, _platformUrl),
-      clientId: (0, _classPrivateFieldGet2.default)(this, _clientId)
+    await _classPrivateFieldGet(_Database, this).Delete('platform', {
+      platformUrl: _classPrivateFieldGet(_platformUrl, this),
+      clientId: _classPrivateFieldGet(_clientId, this)
     });
-    await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('platformStatus', {
-      id: (0, _classPrivateFieldGet2.default)(this, _kid)
+    await _classPrivateFieldGet(_Database, this).Delete('platformStatus', {
+      id: _classPrivateFieldGet(_kid, this)
     });
-    await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('publickey', {
-      kid: (0, _classPrivateFieldGet2.default)(this, _kid)
+    await _classPrivateFieldGet(_Database, this).Delete('publickey', {
+      kid: _classPrivateFieldGet(_kid, this)
     });
-    await (0, _classPrivateFieldGet2.default)(this, _Database).Delete('privatekey', {
-      kid: (0, _classPrivateFieldGet2.default)(this, _kid)
+    await _classPrivateFieldGet(_Database, this).Delete('privatekey', {
+      kid: _classPrivateFieldGet(_kid, this)
     });
     return true;
   }

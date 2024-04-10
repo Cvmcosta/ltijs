@@ -1,10 +1,10 @@
 "use strict";
 
-var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefault");
-var _classPrivateFieldGet2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldGet"));
-var _classPrivateFieldSet2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldSet"));
 function _classPrivateFieldInitSpec(obj, privateMap, value) { _checkPrivateRedeclaration(obj, privateMap); privateMap.set(obj, value); }
 function _checkPrivateRedeclaration(obj, privateCollection) { if (privateCollection.has(obj)) { throw new TypeError("Cannot initialize the same private elements twice on an object"); } }
+function _classPrivateFieldGet(s, a) { return s.get(_assertClassBrand(s, a)); }
+function _classPrivateFieldSet(s, a, r) { return s.set(_assertClassBrand(s, a), r), r; }
+function _assertClassBrand(e, t, n) { if ("function" == typeof e ? e === t : e.has(t)) return arguments.length < 3 ? t : n; throw new TypeError("Private element is not present on this object"); }
 /* eslint-disable require-atomic-updates */
 /* eslint-disable no-useless-escape */
 
@@ -18,21 +18,12 @@ var _ENCRYPTIONKEY = /*#__PURE__*/new WeakMap();
 var _Database = /*#__PURE__*/new WeakMap();
 class Grade {
   constructor(getPlatform, ENCRYPTIONKEY, Database) {
-    _classPrivateFieldInitSpec(this, _getPlatform, {
-      writable: true,
-      value: null
-    });
-    _classPrivateFieldInitSpec(this, _ENCRYPTIONKEY, {
-      writable: true,
-      value: ''
-    });
-    _classPrivateFieldInitSpec(this, _Database, {
-      writable: true,
-      value: void 0
-    });
-    (0, _classPrivateFieldSet2.default)(this, _getPlatform, getPlatform);
-    (0, _classPrivateFieldSet2.default)(this, _ENCRYPTIONKEY, ENCRYPTIONKEY);
-    (0, _classPrivateFieldSet2.default)(this, _Database, Database);
+    _classPrivateFieldInitSpec(this, _getPlatform, null);
+    _classPrivateFieldInitSpec(this, _ENCRYPTIONKEY, '');
+    _classPrivateFieldInitSpec(this, _Database, void 0);
+    _classPrivateFieldSet(_getPlatform, this, getPlatform);
+    _classPrivateFieldSet(_ENCRYPTIONKEY, this, ENCRYPTIONKEY);
+    _classPrivateFieldSet(_Database, this, Database);
   }
 
   /**
@@ -54,7 +45,7 @@ class Grade {
     }
     provGradeServiceDebug('Target platform: ' + idtoken.iss);
     if (!accessToken) {
-      const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, idtoken.clientId, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database)); // Remove and use DB instead
+      const platform = await _classPrivateFieldGet(_getPlatform, this).call(this, idtoken.iss, idtoken.clientId, _classPrivateFieldGet(_ENCRYPTIONKEY, this), _classPrivateFieldGet(_Database, this)); // Remove and use DB instead
 
       /* istanbul ignore next */
       if (!platform) {
@@ -145,7 +136,7 @@ class Grade {
     if (options && options.resourceLinkId) lineItem.resourceLinkId = idtoken.platformContext.resource.id;
     provGradeServiceDebug('Target platform: ' + idtoken.iss);
     if (!accessToken) {
-      const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, idtoken.clientId, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database));
+      const platform = await _classPrivateFieldGet(_getPlatform, this).call(this, idtoken.iss, idtoken.clientId, _classPrivateFieldGet(_ENCRYPTIONKEY, this), _classPrivateFieldGet(_Database, this));
 
       /* istanbul ignore next */
       if (!platform) {
@@ -188,7 +179,7 @@ class Grade {
     }
     provGradeServiceDebug('Target platform: ' + idtoken.iss);
     if (!accessToken) {
-      const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, idtoken.clientId, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database)); // Remove and use DB instead
+      const platform = await _classPrivateFieldGet(_getPlatform, this).call(this, idtoken.iss, idtoken.clientId, _classPrivateFieldGet(_ENCRYPTIONKEY, this), _classPrivateFieldGet(_Database, this)); // Remove and use DB instead
 
       /* istanbul ignore next */
       if (!platform) {
@@ -233,7 +224,7 @@ class Grade {
       throw new Error('MISSING_LINEITEM');
     }
     provGradeServiceDebug('Target platform: ' + idtoken.iss);
-    const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, idtoken.clientId, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database));
+    const platform = await _classPrivateFieldGet(_getPlatform, this).call(this, idtoken.iss, idtoken.clientId, _classPrivateFieldGet(_ENCRYPTIONKEY, this), _classPrivateFieldGet(_Database, this));
 
     /* istanbul ignore next */
     if (!platform) {
@@ -274,7 +265,7 @@ class Grade {
       throw new Error('MISSING_LINEITEM_ID');
     }
     provGradeServiceDebug('Target platform: ' + idtoken.iss);
-    const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, idtoken.clientId, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database));
+    const platform = await _classPrivateFieldGet(_getPlatform, this).call(this, idtoken.iss, idtoken.clientId, _classPrivateFieldGet(_ENCRYPTIONKEY, this), _classPrivateFieldGet(_Database, this));
 
     /* istanbul ignore next */
     if (!platform) {
@@ -317,7 +308,7 @@ class Grade {
       throw new Error('MISSING_SCORE');
     }
     provGradeServiceDebug('Target platform: ' + idtoken.iss);
-    const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, idtoken.clientId, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database));
+    const platform = await _classPrivateFieldGet(_getPlatform, this).call(this, idtoken.iss, idtoken.clientId, _classPrivateFieldGet(_ENCRYPTIONKEY, this), _classPrivateFieldGet(_Database, this));
 
     /* istanbul ignore next */
     if (!platform) {
@@ -387,7 +378,7 @@ class Grade {
       throw new Error('MISSING_LINEITEM_ID');
     }
     provGradeServiceDebug('Target platform: ' + idtoken.iss);
-    const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, idtoken.clientId, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database));
+    const platform = await _classPrivateFieldGet(_getPlatform, this).call(this, idtoken.iss, idtoken.clientId, _classPrivateFieldGet(_ENCRYPTIONKEY, this), _classPrivateFieldGet(_Database, this));
 
     /* istanbul ignore next */
     if (!platform) {
@@ -472,7 +463,7 @@ class Grade {
       throw new Error('MISSING_ID_TOKEN');
     }
     provGradeServiceDebug('Target platform: ' + idtoken.iss);
-    const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, idtoken.clientId, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database));
+    const platform = await _classPrivateFieldGet(_getPlatform, this).call(this, idtoken.iss, idtoken.clientId, _classPrivateFieldGet(_ENCRYPTIONKEY, this), _classPrivateFieldGet(_Database, this));
     if (!platform) {
       provGradeServiceDebug('Platform not found');
       throw new Error('PLATFORM_NOT_FOUND');
@@ -539,7 +530,7 @@ class Grade {
       throw new Error('MISSING_SCORE');
     }
     provGradeServiceDebug('Target platform: ' + idtoken.iss);
-    const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, idtoken.clientId, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database));
+    const platform = await _classPrivateFieldGet(_getPlatform, this).call(this, idtoken.iss, idtoken.clientId, _classPrivateFieldGet(_ENCRYPTIONKEY, this), _classPrivateFieldGet(_Database, this));
     if (!platform) {
       provGradeServiceDebug('Platform not found');
       throw new Error('PLATFORM_NOT_FOUND');
@@ -634,7 +625,7 @@ class Grade {
       throw new Error('MISSING_ID_TOKEN');
     }
     provGradeServiceDebug('Target platform: ' + idtoken.iss);
-    const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, idtoken.clientId, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database));
+    const platform = await _classPrivateFieldGet(_getPlatform, this).call(this, idtoken.iss, idtoken.clientId, _classPrivateFieldGet(_ENCRYPTIONKEY, this), _classPrivateFieldGet(_Database, this));
     if (!platform) {
       provGradeServiceDebug('Platform not found');
       throw new Error('PLATFORM_NOT_FOUND');

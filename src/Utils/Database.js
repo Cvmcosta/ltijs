@@ -11,8 +11,6 @@ class Database {
 
   #dbConnection = {
     useNewUrlParser: true,
-    keepAlive: true,
-    keepAliveInitialDelay: 300000,
     connectTimeoutMS: 300000,
     useUnifiedTopology: true
   }
