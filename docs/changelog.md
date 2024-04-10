@@ -9,6 +9,13 @@
 
 ### CHANGELOG
 
+#### V5.9.4
+> 2024-04-10
+> - Updated dependencies.
+> - Added `useDeepLinking` option to dynamic registration configurations. Allowing tools to disable deep linking when registering with platforms.
+
+*I am finally back to work on this library, planning to migrate it to Typescript and add some missing features like cookieless login. - CVM*
+
 #### V5.7.5
 > 2021-05-13
 > - Fix authentication flow using JWK_SET.

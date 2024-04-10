@@ -43,6 +43,8 @@ class DynamicRegistration {
 
   #autoActivate
 
+  #useDeepLinking
+
   #logo
 
   #description
@@ -68,6 +70,7 @@ class DynamicRegistration {
     this.#redirectUris = options.redirectUris || []
     this.#customParameters = options.customParameters || {}
     this.#autoActivate = options.autoActivate
+    this.#useDeepLinking = options.useDeepLinking === undefined ? true : options.useDeepLinking
     this.#logo = options.logo
     this.#description = options.description
     this.#hostname = getHostname(options.url)
@@ -94,6 +97,8 @@ class DynamicRegistration {
     const configuration = await got.get(openidConfiguration).json()
     provDynamicRegistrationDebug('Attempting to register Platform with issuer: ', configuration.issuer)
     // Building registration object
+    const messages = [{ type: 'LtiResourceLink' }]
+    if (this.#useDeepLinking) messages.push({ type: 'LtiDeepLinkingRequest' })
     const registration = {
       application_type: 'web',
       response_types: ['id_token'],
@@ -111,10 +116,7 @@ class DynamicRegistration {
         target_link_uri: this.#appUrl,
         custom_parameters: this.#customParameters,
         claims: configuration.claims_supported,
-        messages: [
-          { type: 'LtiDeepLinkingRequest' },
-          { type: 'LtiResourceLink' }
-        ]
+        messages
       }
     }
     provDynamicRegistrationDebug('Tool registration request:')

@@ -14,8 +14,6 @@ const path = require('path')
 const lti = require('../dist/Provider/Provider')
 const Platform = require('../dist/Utils/Platform')
 
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
-
 const appRoute = '/approute'
 const loginRoute = '/loginroute'
 const keysetRoute = '/keysetroute'

@@ -1,10 +1,10 @@
 "use strict";
 
-var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefault");
-var _classPrivateFieldGet2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldGet"));
-var _classPrivateFieldSet2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldSet"));
 function _classPrivateFieldInitSpec(obj, privateMap, value) { _checkPrivateRedeclaration(obj, privateMap); privateMap.set(obj, value); }
 function _checkPrivateRedeclaration(obj, privateCollection) { if (privateCollection.has(obj)) { throw new TypeError("Cannot initialize the same private elements twice on an object"); } }
+function _classPrivateFieldGet(s, a) { return s.get(_assertClassBrand(s, a)); }
+function _classPrivateFieldSet(s, a, r) { return s.set(_assertClassBrand(s, a), r), r; }
+function _assertClassBrand(e, t, n) { if ("function" == typeof e ? e === t : e.has(t)) return arguments.length < 3 ? t : n; throw new TypeError("Private element is not present on this object"); }
 /* Provider Deep Linking Service */
 
 const jwt = require('jsonwebtoken');
@@ -14,21 +14,12 @@ var _ENCRYPTIONKEY = /*#__PURE__*/new WeakMap();
 var _Database = /*#__PURE__*/new WeakMap();
 class DeepLinking {
   constructor(getPlatform, ENCRYPTIONKEY, Database) {
-    _classPrivateFieldInitSpec(this, _getPlatform, {
-      writable: true,
-      value: null
-    });
-    _classPrivateFieldInitSpec(this, _ENCRYPTIONKEY, {
-      writable: true,
-      value: ''
-    });
-    _classPrivateFieldInitSpec(this, _Database, {
-      writable: true,
-      value: void 0
-    });
-    (0, _classPrivateFieldSet2.default)(this, _getPlatform, getPlatform);
-    (0, _classPrivateFieldSet2.default)(this, _ENCRYPTIONKEY, ENCRYPTIONKEY);
-    (0, _classPrivateFieldSet2.default)(this, _Database, Database);
+    _classPrivateFieldInitSpec(this, _getPlatform, null);
+    _classPrivateFieldInitSpec(this, _ENCRYPTIONKEY, '');
+    _classPrivateFieldInitSpec(this, _Database, void 0);
+    _classPrivateFieldSet(_getPlatform, this, getPlatform);
+    _classPrivateFieldSet(_ENCRYPTIONKEY, this, ENCRYPTIONKEY);
+    _classPrivateFieldSet(_Database, this, Database);
   }
 
   /**
@@ -78,7 +69,7 @@ class DeepLinking {
     if (!Array.isArray(contentItems)) contentItems = [contentItems];
 
     // Gets platform
-    const platform = await (0, _classPrivateFieldGet2.default)(this, _getPlatform).call(this, idtoken.iss, idtoken.clientId, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY), (0, _classPrivateFieldGet2.default)(this, _Database));
+    const platform = await _classPrivateFieldGet(_getPlatform, this).call(this, idtoken.iss, idtoken.clientId, _classPrivateFieldGet(_ENCRYPTIONKEY, this), _classPrivateFieldGet(_Database, this));
     if (!platform) {
       provDeepLinkingDebug('Platform not found');
       throw new Error('PLATFORM_NOT_FOUND');
