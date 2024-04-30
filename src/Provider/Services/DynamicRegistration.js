@@ -43,6 +43,8 @@ class DynamicRegistration {
 
   #autoActivate
 
+  #useDeepLinking
+
   #logo
 
   #description
@@ -68,6 +70,7 @@ class DynamicRegistration {
     this.#redirectUris = options.redirectUris || []
     this.#customParameters = options.customParameters || {}
     this.#autoActivate = options.autoActivate
+    this.#useDeepLinking = options.useDeepLinking === undefined ? true : options.useDeepLinking
     this.#logo = options.logo
     this.#description = options.description
     this.#hostname = getHostname(options.url)
@@ -89,11 +92,15 @@ class DynamicRegistration {
    */
   async register (openidConfiguration, registrationToken, options) {
     if (!openidConfiguration) throw new Error('MISSING_OPENID_CONFIGURATION')
-    provDynamicRegistrationDebug('Starting dynamic registration process')
+    provDynamicRegistrationDebug('Starting dynamic registration process', openidConfiguration)
     // Get Platform registration configurations
     const configuration = await got.get(openidConfiguration).json()
+    provDynamicRegistrationDebug('got configuration', configuration)
+    
     provDynamicRegistrationDebug('Attempting to register Platform with issuer: ', configuration.issuer)
     // Building registration object
+    const messages = [{ type: 'LtiResourceLink' }]
+    if (this.#useDeepLinking) messages.push({ type: 'LtiDeepLinkingRequest' })
     const registration = {
       application_type: 'web',
       response_types: ['id_token'],
@@ -111,16 +118,16 @@ class DynamicRegistration {
         target_link_uri: this.#appUrl,
         custom_parameters: this.#customParameters,
         claims: configuration.claims_supported,
-        messages: [
-          { type: 'LtiDeepLinkingRequest' },
-          { type: 'LtiResourceLink' }
-        ]
+        messages
       }
     }
     provDynamicRegistrationDebug('Tool registration request:')
     provDynamicRegistrationDebug(registration)
     provDynamicRegistrationDebug('Sending Tool registration request')
-    const registrationResponse = await got.post(configuration.registration_endpoint, { json: registration, headers: registrationToken ? { Authorization: 'Bearer ' + registrationToken } : undefined }).json()
+    const body = { json: registration, headers: registrationToken ? { Authorization: 'Bearer ' + registrationToken } : undefined }
+    provDynamicRegistrationDebug('Posting to '+configuration.registration_endpoint,body )
+    
+    const registrationResponse = await got.post(configuration.registration_endpoint, body).json()
 
     // Registering Platform
     const platformName = (configuration['https://purl.imsglobal.org/spec/lti-platform-configuration'] ? configuration['https://purl.imsglobal.org/spec/lti-platform-configuration'].product_family_code : 'Platform') + '_DynReg_' + crypto.randomBytes(16).toString('hex')

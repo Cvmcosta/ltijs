@@ -136,6 +136,7 @@ class Provider {
      * @param {Array<String>} [options.dynReg.redirectUris] - Additional redirect URIs. (Ex: ['https://tool.example.com/launch'])
      * @param {Object} [options.dynReg.customParameters] - Custom parameters object. (Ex: { key: 'value' })
      * @param {Boolean} [options.dynReg.autoActivate = false] - Platform auto activation flag. If true, every Platform registered dynamically is immediately activated. Defaults to false.
+     * @param {Boolean} [options.dynReg.useDeepLinking = true] - Deep Linking usage flag. If true, sets up deep linking in the platform. Defaults to true.
      */
   setup (encryptionkey, database, options) {
     if (this.#setup) throw new Error('PROVIDER_ALREADY_SETUP')
@@ -143,8 +144,7 @@ class Provider {
     if (!encryptionkey) throw new Error('MISSING_ENCRYPTION_KEY')
     if (!database) throw new Error('MISSING_DATABASE_CONFIGURATION')
     if (options && options.dynReg && (!options.dynReg.url || !options.dynReg.name)) throw new Error('MISSING_DYNREG_CONFIGURATION')
-    if (options && options.prefix) this.#prefix = options.prefix;
-    
+
     /**
      * @description Database object.
      */
@@ -553,13 +553,10 @@ class Provider {
 
     // Main app
     this.app.all(this.#appRoute, async (req, res, next) => {
-      provMainDebug("Handling appRoute "+this.#appRoute);
       if (res.locals.context && res.locals.context.messageType === 'LtiDeepLinkingRequest') return this.#deepLinkingCallback(res.locals.token, req, res, next)
-      provMainDebug("Calling connectCallback ");
-      
       return this.#connectCallback(res.locals.token, req, res, next)
     })
-    provMainDebug("this.#appRoute = "+this.#appRoute);
+
     this.#setup = true
     return this
   }
