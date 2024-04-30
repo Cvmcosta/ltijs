@@ -1,10 +1,10 @@
 "use strict";
 
-var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefault");
-var _classPrivateFieldSet2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldSet"));
-var _classPrivateFieldGet2 = _interopRequireDefault(require("@babel/runtime/helpers/classPrivateFieldGet"));
 function _classPrivateFieldInitSpec(obj, privateMap, value) { _checkPrivateRedeclaration(obj, privateMap); privateMap.set(obj, value); }
 function _checkPrivateRedeclaration(obj, privateCollection) { if (privateCollection.has(obj)) { throw new TypeError("Cannot initialize the same private elements twice on an object"); } }
+function _classPrivateFieldSet(s, a, r) { return s.set(_assertClassBrand(s, a), r), r; }
+function _classPrivateFieldGet(s, a) { return s.get(_assertClassBrand(s, a)); }
+function _assertClassBrand(e, t, n) { if ("function" == typeof e ? e === t : e.has(t)) return arguments.length < 3 ? t : n; throw new TypeError("Private element is not present on this object"); }
 /* eslint-disable require-atomic-updates */
 /* eslint-disable no-useless-escape */
 
@@ -54,163 +54,100 @@ var _server = /*#__PURE__*/new WeakMap();
 class Provider {
   constructor() {
     // Pre-initiated variables
-    _classPrivateFieldInitSpec(this, _loginRoute, {
-      writable: true,
-      value: '/login'
-    });
-    _classPrivateFieldInitSpec(this, _appRoute, {
-      writable: true,
-      value: '/'
-    });
-    _classPrivateFieldInitSpec(this, _keysetRoute, {
-      writable: true,
-      value: '/keys'
-    });
-    _classPrivateFieldInitSpec(this, _dynRegRoute, {
-      writable: true,
-      value: '/register'
-    });
-    _classPrivateFieldInitSpec(this, _whitelistedRoutes, {
-      writable: true,
-      value: []
-    });
-    _classPrivateFieldInitSpec(this, _ENCRYPTIONKEY2, {
-      writable: true,
-      value: void 0
-    });
-    _classPrivateFieldInitSpec(this, _devMode, {
-      writable: true,
-      value: false
-    });
-    _classPrivateFieldInitSpec(this, _ltiaas, {
-      writable: true,
-      value: false
-    });
-    _classPrivateFieldInitSpec(this, _prefix, {
-      writable: true,
-      value: ""
-    });
-    _classPrivateFieldInitSpec(this, _tokenMaxAge, {
-      writable: true,
-      value: 10
-    });
+    _classPrivateFieldInitSpec(this, _loginRoute, '/login');
+    _classPrivateFieldInitSpec(this, _appRoute, '/');
+    _classPrivateFieldInitSpec(this, _keysetRoute, '/keys');
+    _classPrivateFieldInitSpec(this, _dynRegRoute, '/register');
+    _classPrivateFieldInitSpec(this, _whitelistedRoutes, []);
+    _classPrivateFieldInitSpec(this, _ENCRYPTIONKEY2, void 0);
+    _classPrivateFieldInitSpec(this, _devMode, false);
+    _classPrivateFieldInitSpec(this, _ltiaas, false);
+    _classPrivateFieldInitSpec(this, _prefix, "");
+    _classPrivateFieldInitSpec(this, _tokenMaxAge, 10);
     _classPrivateFieldInitSpec(this, _cookieOptions, {
-      writable: true,
-      value: {
-        secure: false,
-        httpOnly: true,
-        signed: true
-      }
+      secure: false,
+      httpOnly: true,
+      signed: true
     });
     // Setup flag
-    _classPrivateFieldInitSpec(this, _setup, {
-      writable: true,
-      value: false
+    _classPrivateFieldInitSpec(this, _setup, false);
+    _classPrivateFieldInitSpec(this, _connectCallback2, async (token, req, res, next) => {
+      return next();
     });
-    _classPrivateFieldInitSpec(this, _connectCallback2, {
-      writable: true,
-      value: async (token, req, res, next) => {
-        return next();
-      }
+    _classPrivateFieldInitSpec(this, _deepLinkingCallback2, async (token, req, res, next) => {
+      return next();
     });
-    _classPrivateFieldInitSpec(this, _deepLinkingCallback2, {
-      writable: true,
-      value: async (token, req, res, next) => {
-        return next();
-      }
-    });
-    _classPrivateFieldInitSpec(this, _dynamicRegistrationCallback2, {
-      writable: true,
-      value: async (req, res, next) => {
-        try {
-          if (!req.query.openid_configuration) return res.status(400).send({
-            status: 400,
-            error: 'Bad Request',
-            details: {
-              message: 'Missing parameter: "openid_configuration".'
-            }
-          });
-          const message = await this.DynamicRegistration.register(req.query.openid_configuration, req.query.registration_token);
-          res.setHeader('Content-type', 'text/html');
-          res.send(message);
-        } catch (err) {
-          provDynamicRegistrationDebug(err);
-          if (err.message === 'PLATFORM_ALREADY_REGISTERED') return res.status(403).send({
-            status: 403,
-            error: 'Forbidden',
-            details: {
-              message: 'Platform already registered.'
-            }
-          });
-          return res.status(500).send({
-            status: 500,
-            error: 'Internal Server Error',
-            details: {
-              message: err.message
-            }
-          });
-        }
-      }
-    });
-    _classPrivateFieldInitSpec(this, _sessionTimeoutCallback2, {
-      writable: true,
-      value: async (req, res) => {
-        return res.status(401).send(res.locals.err);
-      }
-    });
-    _classPrivateFieldInitSpec(this, _invalidTokenCallback2, {
-      writable: true,
-      value: async (req, res) => {
-        return res.status(401).send(res.locals.err);
-      }
-    });
-    _classPrivateFieldInitSpec(this, _unregisteredPlatformCallback2, {
-      writable: true,
-      value: async (req, res) => {
-        return res.status(400).send({
+    _classPrivateFieldInitSpec(this, _dynamicRegistrationCallback2, async (req, res, next) => {
+      try {
+        if (!req.query.openid_configuration) return res.status(400).send({
           status: 400,
           error: 'Bad Request',
           details: {
-            message: 'UNREGISTERED_PLATFORM'
+            message: 'Missing parameter: "openid_configuration".'
+          }
+        });
+        const message = await this.DynamicRegistration.register(req.query.openid_configuration, req.query.registration_token);
+        res.setHeader('Content-type', 'text/html');
+        res.send(message);
+      } catch (err) {
+        provDynamicRegistrationDebug(err);
+        if (err.message === 'PLATFORM_ALREADY_REGISTERED') return res.status(403).send({
+          status: 403,
+          error: 'Forbidden',
+          details: {
+            message: 'Platform already registered.'
+          }
+        });
+        return res.status(500).send({
+          status: 500,
+          error: 'Internal Server Error',
+          details: {
+            message: err.message
           }
         });
       }
     });
-    _classPrivateFieldInitSpec(this, _inactivePlatformCallback2, {
-      writable: true,
-      value: async (req, res) => {
-        return res.status(401).send({
-          status: 401,
-          error: 'Unauthorized',
-          details: {
-            message: 'PLATFORM_NOT_ACTIVATED'
-          }
-        });
-      }
+    _classPrivateFieldInitSpec(this, _sessionTimeoutCallback2, async (req, res) => {
+      return res.status(401).send(res.locals.err);
+    });
+    _classPrivateFieldInitSpec(this, _invalidTokenCallback2, async (req, res) => {
+      return res.status(401).send(res.locals.err);
+    });
+    _classPrivateFieldInitSpec(this, _unregisteredPlatformCallback2, async (req, res) => {
+      return res.status(400).send({
+        status: 400,
+        error: 'Bad Request',
+        details: {
+          message: 'UNREGISTERED_PLATFORM'
+        }
+      });
+    });
+    _classPrivateFieldInitSpec(this, _inactivePlatformCallback2, async (req, res) => {
+      return res.status(401).send({
+        status: 401,
+        error: 'Unauthorized',
+        details: {
+          message: 'PLATFORM_NOT_ACTIVATED'
+        }
+      });
     });
     // Assembles and sends keyset
-    _classPrivateFieldInitSpec(this, _keyset, {
-      writable: true,
-      value: async (req, res) => {
-        try {
-          const keyset = await Keyset.build(this.Database, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2));
-          return res.status(200).send(keyset);
-        } catch (err) {
-          provMainDebug(err);
-          return res.status(500).send({
-            status: 500,
-            error: 'Internal Server Error',
-            details: {
-              message: err.message
-            }
-          });
-        }
+    _classPrivateFieldInitSpec(this, _keyset, async (req, res) => {
+      try {
+        const keyset = await Keyset.build(this.Database, _classPrivateFieldGet(_ENCRYPTIONKEY2, this));
+        return res.status(200).send(keyset);
+      } catch (err) {
+        provMainDebug(err);
+        return res.status(500).send({
+          status: 500,
+          error: 'Internal Server Error',
+          details: {
+            message: err.message
+          }
+        });
       }
     });
-    _classPrivateFieldInitSpec(this, _server, {
-      writable: true,
-      value: void 0
-    });
+    _classPrivateFieldInitSpec(this, _server, void 0);
   }
   /**
      * @description Provider configuration method.
@@ -248,74 +185,74 @@ class Provider {
      * @param {Array<String>} [options.dynReg.redirectUris] - Additional redirect URIs. (Ex: ['https://tool.example.com/launch'])
      * @param {Object} [options.dynReg.customParameters] - Custom parameters object. (Ex: { key: 'value' })
      * @param {Boolean} [options.dynReg.autoActivate = false] - Platform auto activation flag. If true, every Platform registered dynamically is immediately activated. Defaults to false.
+     * @param {Boolean} [options.dynReg.useDeepLinking = true] - Deep Linking usage flag. If true, sets up deep linking in the platform. Defaults to true.
      */
   setup(encryptionkey, database, options) {
-    if ((0, _classPrivateFieldGet2.default)(this, _setup)) throw new Error('PROVIDER_ALREADY_SETUP');
+    if (_classPrivateFieldGet(_setup, this)) throw new Error('PROVIDER_ALREADY_SETUP');
     if (options && options.https && (!options.ssl || !options.ssl.key || !options.ssl.cert)) throw new Error('MISSING_SSL_KEY_CERTIFICATE');
     if (!encryptionkey) throw new Error('MISSING_ENCRYPTION_KEY');
     if (!database) throw new Error('MISSING_DATABASE_CONFIGURATION');
     if (options && options.dynReg && (!options.dynReg.url || !options.dynReg.name)) throw new Error('MISSING_DYNREG_CONFIGURATION');
-    if (options && options.prefix) (0, _classPrivateFieldSet2.default)(this, _prefix, options.prefix);
 
     /**
      * @description Database object.
      */
     this.Database = null;
     if (!database.plugin) this.Database = new DB(database);else this.Database = database.plugin;
-    if (options && (options.appRoute || options.appUrl)) (0, _classPrivateFieldSet2.default)(this, _appRoute, options.appRoute || options.appUrl);
-    if (options && (options.loginRoute || options.loginUrl)) (0, _classPrivateFieldSet2.default)(this, _loginRoute, options.loginRoute || options.loginUrl);
-    if (options && (options.keysetRoute || options.keysetUrl)) (0, _classPrivateFieldSet2.default)(this, _keysetRoute, options.keysetRoute || options.keysetUrl);
-    if (options && options.dynRegRoute) (0, _classPrivateFieldSet2.default)(this, _dynRegRoute, options.dynRegRoute);
-    if (options && options.devMode === true) (0, _classPrivateFieldSet2.default)(this, _devMode, true);
-    if (options && options.ltiaas === true) (0, _classPrivateFieldSet2.default)(this, _ltiaas, true);
-    if (options && options.tokenMaxAge !== undefined) (0, _classPrivateFieldSet2.default)(this, _tokenMaxAge, options.tokenMaxAge);
+    if (options && (options.appRoute || options.appUrl)) _classPrivateFieldSet(_appRoute, this, options.appRoute || options.appUrl);
+    if (options && (options.loginRoute || options.loginUrl)) _classPrivateFieldSet(_loginRoute, this, options.loginRoute || options.loginUrl);
+    if (options && (options.keysetRoute || options.keysetUrl)) _classPrivateFieldSet(_keysetRoute, this, options.keysetRoute || options.keysetUrl);
+    if (options && options.dynRegRoute) _classPrivateFieldSet(_dynRegRoute, this, options.dynRegRoute);
+    if (options && options.devMode === true) _classPrivateFieldSet(_devMode, this, true);
+    if (options && options.ltiaas === true) _classPrivateFieldSet(_ltiaas, this, true);
+    if (options && options.tokenMaxAge !== undefined) _classPrivateFieldSet(_tokenMaxAge, this, options.tokenMaxAge);
 
     // Cookie options
     if (options && options.cookies) {
-      if (options.cookies.secure === true) (0, _classPrivateFieldGet2.default)(this, _cookieOptions).secure = true;
-      if (options.cookies.sameSite) (0, _classPrivateFieldGet2.default)(this, _cookieOptions).sameSite = options.cookies.sameSite;
-      if (options.cookies.domain) (0, _classPrivateFieldGet2.default)(this, _cookieOptions).domain = options.cookies.domain;
+      if (options.cookies.secure === true) _classPrivateFieldGet(_cookieOptions, this).secure = true;
+      if (options.cookies.sameSite) _classPrivateFieldGet(_cookieOptions, this).sameSite = options.cookies.sameSite;
+      if (options.cookies.domain) _classPrivateFieldGet(_cookieOptions, this).domain = options.cookies.domain;
     }
-    (0, _classPrivateFieldSet2.default)(this, _ENCRYPTIONKEY2, encryptionkey);
-    (0, _classPrivateFieldSet2.default)(this, _server, new Server(options ? options.https : false, options ? options.ssl : false, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), options ? options.cors : true, options ? options.serverAddon : false));
+    _classPrivateFieldSet(_ENCRYPTIONKEY2, this, encryptionkey);
+    _classPrivateFieldSet(_server, this, new Server(options ? options.https : false, options ? options.ssl : false, _classPrivateFieldGet(_ENCRYPTIONKEY2, this), options ? options.cors : true, options ? options.serverAddon : false));
 
     /**
      * @description Express server object.
      */
-    this.app = (0, _classPrivateFieldGet2.default)(this, _server).app;
+    this.app = _classPrivateFieldGet(_server, this).app;
 
     /**
      * @description Grading service.
      */
-    this.Grade = new GradeService(this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), this.Database);
+    this.Grade = new GradeService(this.getPlatform, _classPrivateFieldGet(_ENCRYPTIONKEY2, this), this.Database);
 
     /**
      * @description Deep Linking service.
      */
-    this.DeepLinking = new DeepLinkingService(this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), this.Database);
+    this.DeepLinking = new DeepLinkingService(this.getPlatform, _classPrivateFieldGet(_ENCRYPTIONKEY2, this), this.Database);
 
     /**
      * @description Names and Roles service.
      */
-    this.NamesAndRoles = new NamesAndRolesService(this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), this.Database);
+    this.NamesAndRoles = new NamesAndRolesService(this.getPlatform, _classPrivateFieldGet(_ENCRYPTIONKEY2, this), this.Database);
     if (options && options.dynReg) {
       const routes = {
-        appRoute: (0, _classPrivateFieldGet2.default)(this, _appRoute),
-        loginRoute: (0, _classPrivateFieldGet2.default)(this, _loginRoute),
-        keysetRoute: (0, _classPrivateFieldGet2.default)(this, _keysetRoute)
+        appRoute: _classPrivateFieldGet(_appRoute, this),
+        loginRoute: _classPrivateFieldGet(_loginRoute, this),
+        keysetRoute: _classPrivateFieldGet(_keysetRoute, this)
       };
       /**
        * @description Dynamic Registration service.
        */
-      this.DynamicRegistration = new DynamicRegistration(options.dynReg, routes, this.registerPlatform, this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), this.Database);
+      this.DynamicRegistration = new DynamicRegistration(options.dynReg, routes, this.registerPlatform, this.getPlatform, _classPrivateFieldGet(_ENCRYPTIONKEY2, this), this.Database);
     }
-    if (options && options.staticPath) (0, _classPrivateFieldGet2.default)(this, _server).setStaticPath(options.staticPath);
+    if (options && options.staticPath) _classPrivateFieldGet(_server, this).setStaticPath(options.staticPath);
 
     // Registers main athentication and routing middleware
     const sessionValidator = async (req, res, next) => {
       provMainDebug('Receiving request at path: ' + req.baseUrl + req.path);
       // Ckeck if request is attempting to initiate oidc login flow or access reserved routes
-      if (req.path === (0, _classPrivateFieldGet2.default)(this, _loginRoute) || req.path === (0, _classPrivateFieldGet2.default)(this, _keysetRoute) || req.path === (0, _classPrivateFieldGet2.default)(this, _dynRegRoute)) return next();
+      if (req.path === _classPrivateFieldGet(_loginRoute, this) || req.path === _classPrivateFieldGet(_keysetRoute, this) || req.path === _classPrivateFieldGet(_dynRegRoute, this)) return next();
       provMainDebug('Path does not match reserved endpoints');
       try {
         // Retrieving ltik token
@@ -338,9 +275,9 @@ class Provider {
             const validationCookie = cookies['state' + state];
             const validationParameters = {
               iss: validationCookie,
-              maxAge: (0, _classPrivateFieldGet2.default)(this, _tokenMaxAge)
+              maxAge: _classPrivateFieldGet(_tokenMaxAge, this)
             };
-            const valid = await Auth.validateToken(idtoken, (0, _classPrivateFieldGet2.default)(this, _devMode), validationParameters, this.getPlatform, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), this.Database);
+            const valid = await Auth.validateToken(idtoken, _classPrivateFieldGet(_devMode, this), validationParameters, this.getPlatform, _classPrivateFieldGet(_ENCRYPTIONKEY2, this), this.Database);
 
             // Retrieve State object from Database
             const savedState = await this.Database.Get(false, 'state', {
@@ -348,7 +285,7 @@ class Provider {
             });
 
             // Deletes state validation cookie and Database entry
-            res.clearCookie('state' + state, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
+            res.clearCookie('state' + state, _classPrivateFieldGet(_cookieOptions, this));
             if (savedState) this.Database.Delete('state', {
               state
             });
@@ -416,7 +353,7 @@ class Provider {
             }, contextToken);
 
             // Creates platform session cookie
-            if (!(0, _classPrivateFieldGet2.default)(this, _ltiaas)) res.cookie(platformCode, valid.sub, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
+            if (!_classPrivateFieldGet(_ltiaas, this)) res.cookie(platformCode, valid.sub, _classPrivateFieldGet(_cookieOptions, this));
             provMainDebug('Generating ltik');
             const newLtikObj = {
               platformUrl: valid.iss,
@@ -428,8 +365,8 @@ class Provider {
               s: state // Added state to make unique ltiks
             };
             // Signing context token
-            const newLtik = jwt.sign(newLtikObj, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2));
-            if ((0, _classPrivateFieldGet2.default)(this, _ltiaas)) {
+            const newLtik = jwt.sign(newLtikObj, _classPrivateFieldGet(_ENCRYPTIONKEY2, this));
+            if (_classPrivateFieldGet(_ltiaas, this)) {
               // Appending query parameters
               res.locals.query = {};
               if (savedState) {
@@ -457,8 +394,8 @@ class Provider {
             }
             query.append('ltik', newLtik);
             const urlSearchParams = query.toString();
-            provMainDebug('Redirecting to endpoint with ltik ' + (0, _classPrivateFieldGet2.default)(this, _prefix) + req.baseUrl + req.path + "?" + urlSearchParams);
-            return res.redirect((0, _classPrivateFieldGet2.default)(this, _prefix) + req.baseUrl + req.path + "?" + urlSearchParams);
+            provMainDebug('Redirecting to endpoint with ltik ' + _classPrivateFieldGet(_prefix, this) + req.baseUrl + req.path + "?" + urlSearchParams);
+            return res.redirect(_classPrivateFieldGet(_prefix, this) + req.baseUrl + req.path + "?" + urlSearchParams);
           } else {
             const state = req.body.state;
             if (state) {
@@ -466,12 +403,12 @@ class Provider {
               const savedState = await this.Database.Get(false, 'state', {
                 state
               });
-              res.clearCookie('state' + state, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
+              res.clearCookie('state' + state, _classPrivateFieldGet(_cookieOptions, this));
               if (savedState) this.Database.Delete('state', {
                 state
               });
             }
-            if ((0, _classPrivateFieldGet2.default)(this, _whitelistedRoutes).find(r => {
+            if (_classPrivateFieldGet(_whitelistedRoutes, this).find(r => {
               if (r.route instanceof RegExp && r.route.test(req.path) || r.route === req.path) return r.method === 'ALL' || r.method === req.method.toUpperCase();
               return false;
             })) {
@@ -490,15 +427,15 @@ class Provider {
                 bodyReceived: req.body
               }
             };
-            return (0, _classPrivateFieldGet2.default)(this, _invalidTokenCallback2).call(this, req, res, next);
+            return _classPrivateFieldGet(_invalidTokenCallback2, this).call(this, req, res, next);
           }
         }
         provMainDebug('Ltik found');
         let validLtik;
         try {
-          validLtik = jwt.verify(ltik, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2));
+          validLtik = jwt.verify(ltik, _classPrivateFieldGet(_ENCRYPTIONKEY2, this));
         } catch (err) {
-          if ((0, _classPrivateFieldGet2.default)(this, _whitelistedRoutes).find(r => {
+          if (_classPrivateFieldGet(_whitelistedRoutes, this).find(r => {
             if (r.route instanceof RegExp && r.route.test(req.path) || r.route === req.path) return r.method === 'ALL' || r.method === req.method.toUpperCase();
             return false;
           })) {
@@ -514,11 +451,11 @@ class Provider {
         const deploymentId = validLtik.deploymentId;
         const contextId = validLtik.contextId;
         let user = validLtik.user;
-        if (!(0, _classPrivateFieldGet2.default)(this, _ltiaas)) {
+        if (!_classPrivateFieldGet(_ltiaas, this)) {
           provMainDebug('Attempting to retrieve matching session cookie');
           const cookieUser = cookies[platformCode];
           if (!cookieUser) {
-            if (!(0, _classPrivateFieldGet2.default)(this, _devMode)) user = false;else {
+            if (!_classPrivateFieldGet(_devMode, this)) user = false;else {
               provMainDebug('Dev Mode enabled: Missing session cookies will be ignored');
             }
           } else if (user.toString() !== cookieUser.toString()) user = false;
@@ -562,7 +499,7 @@ class Provider {
               message: 'Session not found.'
             }
           };
-          return (0, _classPrivateFieldGet2.default)(this, _sessionTimeoutCallback2).call(this, req, res, next);
+          return _classPrivateFieldGet(_sessionTimeoutCallback2, this).call(this, req, res, next);
         }
       } catch (err) {
         const state = req.body.state;
@@ -571,7 +508,7 @@ class Provider {
           const savedState = await this.Database.Get(false, 'state', {
             state
           });
-          res.clearCookie('state' + state, (0, _classPrivateFieldGet2.default)(this, _cookieOptions));
+          res.clearCookie('state' + state, _classPrivateFieldGet(_cookieOptions, this));
           if (savedState) this.Database.Delete('state', {
             state
           });
@@ -586,11 +523,11 @@ class Provider {
             message: err.message
           }
         };
-        return (0, _classPrivateFieldGet2.default)(this, _invalidTokenCallback2).call(this, req, res, next);
+        return _classPrivateFieldGet(_invalidTokenCallback2, this).call(this, req, res, next);
       }
     };
     this.app.use(sessionValidator);
-    this.app.all((0, _classPrivateFieldGet2.default)(this, _loginRoute), async (req, res) => {
+    this.app.all(_classPrivateFieldGet(_loginRoute, this), async (req, res) => {
       const params = {
         ...req.query,
         ...req.body
@@ -610,7 +547,7 @@ class Provider {
         if (clientId) platform = await this.getPlatform(iss, clientId);else platform = (await this.getPlatform(iss))[0];
         if (platform) {
           const platformActive = await platform.platformActive();
-          if (!platformActive) return (0, _classPrivateFieldGet2.default)(this, _inactivePlatformCallback2).call(this, req, res);
+          if (!platformActive) return _classPrivateFieldGet(_inactivePlatformCallback2, this).call(this, req, res);
           provMainDebug('Redirecting to platform authentication endpoint');
           // Create state parameter used to validade authentication response
           let state = encodeURIComponent(crypto.randomBytes(25).toString('hex'));
@@ -641,7 +578,7 @@ class Provider {
           }
 
           // Setting up validation info
-          const cookieOptions = JSON.parse(JSON.stringify((0, _classPrivateFieldGet2.default)(this, _cookieOptions)));
+          const cookieOptions = JSON.parse(JSON.stringify(_classPrivateFieldGet(_cookieOptions, this)));
           cookieOptions.maxAge = 60 * 1000; // Adding max age to state cookie = 1min
           res.cookie('state' + state, iss, cookieOptions);
 
@@ -655,7 +592,7 @@ class Provider {
           }));
         } else {
           provMainDebug('Unregistered platform attempting connection: ' + iss + ', clientId: ' + clientId);
-          return (0, _classPrivateFieldGet2.default)(this, _unregisteredPlatformCallback2).call(this, req, res);
+          return _classPrivateFieldGet(_unregisteredPlatformCallback2, this).call(this, req, res);
         }
       } catch (err) {
         provMainDebug(err);
@@ -668,11 +605,11 @@ class Provider {
         });
       }
     });
-    this.app.get((0, _classPrivateFieldGet2.default)(this, _keysetRoute), async (req, res, next) => {
-      return (0, _classPrivateFieldGet2.default)(this, _keyset).call(this, req, res, next);
+    this.app.get(_classPrivateFieldGet(_keysetRoute, this), async (req, res, next) => {
+      return _classPrivateFieldGet(_keyset, this).call(this, req, res, next);
     });
-    this.app.all((0, _classPrivateFieldGet2.default)(this, _dynRegRoute), async (req, res, next) => {
-      if (this.DynamicRegistration) return (0, _classPrivateFieldGet2.default)(this, _dynamicRegistrationCallback2).call(this, req, res, next);
+    this.app.all(_classPrivateFieldGet(_dynRegRoute, this), async (req, res, next) => {
+      if (this.DynamicRegistration) return _classPrivateFieldGet(_dynamicRegistrationCallback2, this).call(this, req, res, next);
       return res.status(403).send({
         status: 403,
         error: 'Forbidden',
@@ -683,14 +620,11 @@ class Provider {
     });
 
     // Main app
-    this.app.all((0, _classPrivateFieldGet2.default)(this, _appRoute), async (req, res, next) => {
-      provMainDebug("Handling appRoute " + (0, _classPrivateFieldGet2.default)(this, _appRoute));
-      if (res.locals.context && res.locals.context.messageType === 'LtiDeepLinkingRequest') return (0, _classPrivateFieldGet2.default)(this, _deepLinkingCallback2).call(this, res.locals.token, req, res, next);
-      provMainDebug("Calling connectCallback ");
-      return (0, _classPrivateFieldGet2.default)(this, _connectCallback2).call(this, res.locals.token, req, res, next);
+    this.app.all(_classPrivateFieldGet(_appRoute, this), async (req, res, next) => {
+      if (res.locals.context && res.locals.context.messageType === 'LtiDeepLinkingRequest') return _classPrivateFieldGet(_deepLinkingCallback2, this).call(this, res.locals.token, req, res, next);
+      return _classPrivateFieldGet(_connectCallback2, this).call(this, res.locals.token, req, res, next);
     });
-    provMainDebug("this.#appRoute = " + (0, _classPrivateFieldGet2.default)(this, _appRoute));
-    (0, _classPrivateFieldSet2.default)(this, _setup, true);
+    _classPrivateFieldSet(_setup, this, true);
     return this;
   }
 
@@ -703,7 +637,7 @@ class Provider {
      * @returns {Promise<true>}
      */
   async deploy(options) {
-    if (!(0, _classPrivateFieldGet2.default)(this, _setup)) throw new Error('PROVIDER_NOT_SETUP');
+    if (!_classPrivateFieldGet(_setup, this)) throw new Error('PROVIDER_NOT_SETUP');
     provMainDebug('Attempting to connect to database');
     try {
       await this.Database.setup();
@@ -720,16 +654,16 @@ class Provider {
           console.log('Ltijs started in serverless mode...');
         }
       } else {
-        await (0, _classPrivateFieldGet2.default)(this, _server).listen(conf.port);
+        await _classPrivateFieldGet(_server, this).listen(conf.port);
         provMainDebug('Ltijs started listening on port: ', conf.port);
 
         // Startup message
-        const message = 'LTI Provider is listening on port ' + conf.port + '!\n\n LTI provider config: \n >App Route: ' + (0, _classPrivateFieldGet2.default)(this, _appRoute) + '\n >Initiate Login Route: ' + (0, _classPrivateFieldGet2.default)(this, _loginRoute) + '\n >Keyset Route: ' + (0, _classPrivateFieldGet2.default)(this, _keysetRoute) + '\n >Dynamic Registration Route: ' + (0, _classPrivateFieldGet2.default)(this, _dynRegRoute);
+        const message = 'LTI Provider is listening on port ' + conf.port + '!\n\n LTI provider config: \n >App Route: ' + _classPrivateFieldGet(_appRoute, this) + '\n >Initiate Login Route: ' + _classPrivateFieldGet(_loginRoute, this) + '\n >Keyset Route: ' + _classPrivateFieldGet(_keysetRoute, this) + '\n >Dynamic Registration Route: ' + _classPrivateFieldGet(_dynRegRoute, this);
         if (!conf.silent) {
           console.log('  _   _______ _____      _  _____\n' + ' | | |__   __|_   _|    | |/ ____|\n' + ' | |    | |    | |      | | (___  \n' + ' | |    | |    | |  _   | |\\___ \\ \n' + ' | |____| |   _| |_| |__| |____) |\n' + ' |______|_|  |_____|\\____/|_____/ \n\n', message);
         }
       }
-      if ((0, _classPrivateFieldGet2.default)(this, _devMode) && !conf.silent) console.log('\nStarting in Dev Mode, state validation and session cookies will not be required. THIS SHOULD NOT BE USED IN A PRODUCTION ENVIRONMENT!');
+      if (_classPrivateFieldGet(_devMode, this) && !conf.silent) console.log('\nStarting in Dev Mode, state validation and session cookies will not be required. THIS SHOULD NOT BE USED IN A PRODUCTION ENVIRONMENT!');
 
       // Sets up gracefull shutdown
       process.on('SIGINT', async () => {
@@ -752,7 +686,7 @@ class Provider {
    */
   async close(options) {
     if (!options || options.silent !== true) console.log('\nClosing server...');
-    await (0, _classPrivateFieldGet2.default)(this, _server).close();
+    await _classPrivateFieldGet(_server, this).close();
     if (!options || options.silent !== true) console.log('Closing connection to the database...');
     await this.Database.Close();
     if (!options || options.silent !== true) console.log('Shutdown complete.');
@@ -771,15 +705,15 @@ class Provider {
       if (options.sameSite || options.secure) console.log('Deprecation Warning: The optional parameters of the onConnect() method are now deprecated and will be removed in the 6.0 release. Cookie parameters can be found in the main Ltijs constructor options: ... { cookies: { secure: true, sameSite: \'None\' }.');
       if (options.sessionTimeout || options.invalidToken) console.log('Deprecation Warning: The optional parameters of the onConnect() method are now deprecated and will be removed in the 6.0 release. Invalid token and Session Timeout methods can now be set with the onSessionTimeout() and onInvalidToken() methods.');
       if (options.sameSite) {
-        (0, _classPrivateFieldGet2.default)(this, _cookieOptions).sameSite = options.sameSite;
-        if (options.sameSite.toLowerCase() === 'none') (0, _classPrivateFieldGet2.default)(this, _cookieOptions).secure = true;
+        _classPrivateFieldGet(_cookieOptions, this).sameSite = options.sameSite;
+        if (options.sameSite.toLowerCase() === 'none') _classPrivateFieldGet(_cookieOptions, this).secure = true;
       }
-      if (options.secure === true) (0, _classPrivateFieldGet2.default)(this, _cookieOptions).secure = true;
-      if (options.sessionTimeout) (0, _classPrivateFieldSet2.default)(this, _sessionTimeoutCallback2, options.sessionTimeout);
-      if (options.invalidToken) (0, _classPrivateFieldSet2.default)(this, _invalidTokenCallback2, options.invalidToken);
+      if (options.secure === true) _classPrivateFieldGet(_cookieOptions, this).secure = true;
+      if (options.sessionTimeout) _classPrivateFieldSet(_sessionTimeoutCallback2, this, options.sessionTimeout);
+      if (options.invalidToken) _classPrivateFieldSet(_invalidTokenCallback2, this, options.invalidToken);
     }
     if (_connectCallback) {
-      (0, _classPrivateFieldSet2.default)(this, _connectCallback2, _connectCallback);
+      _classPrivateFieldSet(_connectCallback2, this, _connectCallback);
       return true;
     }
     throw new Error('MISSING_CALLBACK');
@@ -793,7 +727,7 @@ class Provider {
    */
   onDeepLinking(_deepLinkingCallback) {
     if (_deepLinkingCallback) {
-      (0, _classPrivateFieldSet2.default)(this, _deepLinkingCallback2, _deepLinkingCallback);
+      _classPrivateFieldSet(_deepLinkingCallback2, this, _deepLinkingCallback);
       return true;
     }
     throw new Error('MISSING_CALLBACK');
@@ -805,7 +739,7 @@ class Provider {
    */
   onDynamicRegistration(_dynamicRegistrationCallback) {
     if (_dynamicRegistrationCallback) {
-      (0, _classPrivateFieldSet2.default)(this, _dynamicRegistrationCallback2, _dynamicRegistrationCallback);
+      _classPrivateFieldSet(_dynamicRegistrationCallback2, this, _dynamicRegistrationCallback);
       return true;
     }
     throw new Error('MISSING_CALLBACK');
@@ -819,7 +753,7 @@ class Provider {
    */
   onSessionTimeout(_sessionTimeoutCallback) {
     if (_sessionTimeoutCallback) {
-      (0, _classPrivateFieldSet2.default)(this, _sessionTimeoutCallback2, _sessionTimeoutCallback);
+      _classPrivateFieldSet(_sessionTimeoutCallback2, this, _sessionTimeoutCallback);
       return true;
     }
     throw new Error('MISSING_CALLBACK');
@@ -833,7 +767,7 @@ class Provider {
    */
   onInvalidToken(_invalidTokenCallback) {
     if (_invalidTokenCallback) {
-      (0, _classPrivateFieldSet2.default)(this, _invalidTokenCallback2, _invalidTokenCallback);
+      _classPrivateFieldSet(_invalidTokenCallback2, this, _invalidTokenCallback);
       return true;
     }
     throw new Error('MISSING_CALLBACK');
@@ -847,7 +781,7 @@ class Provider {
    */
   onUnregisteredPlatform(_unregisteredPlatformCallback) {
     if (_unregisteredPlatformCallback) {
-      (0, _classPrivateFieldSet2.default)(this, _unregisteredPlatformCallback2, _unregisteredPlatformCallback);
+      _classPrivateFieldSet(_unregisteredPlatformCallback2, this, _unregisteredPlatformCallback);
       return true;
     }
     throw new Error('MISSING_CALLBACK');
@@ -861,7 +795,7 @@ class Provider {
    */
   onInactivePlatform(_inactivePlatformCallback) {
     if (_inactivePlatformCallback) {
-      (0, _classPrivateFieldSet2.default)(this, _inactivePlatformCallback2, _inactivePlatformCallback);
+      _classPrivateFieldSet(_inactivePlatformCallback2, this, _inactivePlatformCallback);
       return true;
     }
     throw new Error('MISSING_CALLBACK');
@@ -872,7 +806,7 @@ class Provider {
    * @returns {String}
    */
   appRoute() {
-    return (0, _classPrivateFieldGet2.default)(this, _appRoute);
+    return _classPrivateFieldGet(_appRoute, this);
   }
 
   /**
@@ -880,7 +814,7 @@ class Provider {
    * @returns {String}
    */
   loginRoute() {
-    return (0, _classPrivateFieldGet2.default)(this, _loginRoute);
+    return _classPrivateFieldGet(_loginRoute, this);
   }
 
   /**
@@ -888,7 +822,7 @@ class Provider {
      * @returns {String}
      */
   keysetRoute() {
-    return (0, _classPrivateFieldGet2.default)(this, _keysetRoute);
+    return _classPrivateFieldGet(_keysetRoute, this);
   }
 
   /**
@@ -896,7 +830,7 @@ class Provider {
    * @returns {String}
    */
   dynRegRoute() {
-    return (0, _classPrivateFieldGet2.default)(this, _dynRegRoute);
+    return _classPrivateFieldGet(_dynRegRoute, this);
   }
 
   /**
@@ -904,7 +838,7 @@ class Provider {
    * @param {String} routes - Routes to be whitelisted
    */
   whitelist(...routes) {
-    if (!routes) return (0, _classPrivateFieldGet2.default)(this, _whitelistedRoutes);
+    if (!routes) return _classPrivateFieldGet(_whitelistedRoutes, this);
     const formattedRoutes = [];
     for (const route of routes) {
       const isObject = !(route instanceof RegExp) && route === Object(route);
@@ -919,8 +853,8 @@ class Provider {
         method: 'ALL'
       });
     }
-    (0, _classPrivateFieldSet2.default)(this, _whitelistedRoutes, [...(0, _classPrivateFieldGet2.default)(this, _whitelistedRoutes), ...formattedRoutes]);
-    return (0, _classPrivateFieldGet2.default)(this, _whitelistedRoutes);
+    _classPrivateFieldSet(_whitelistedRoutes, this, [..._classPrivateFieldGet(_whitelistedRoutes, this), ...formattedRoutes]);
+    return _classPrivateFieldGet(_whitelistedRoutes, this);
   }
 
   /**
@@ -940,7 +874,7 @@ class Provider {
   async registerPlatform(platform, getPlatform, ENCRYPTIONKEY, Database) {
     if (!platform || !platform.url || !platform.clientId) throw new Error('MISSING_PLATFORM_URL_OR_CLIENTID');
     const _Database = Database || this.Database;
-    const _ENCRYPTIONKEY = ENCRYPTIONKEY || (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2);
+    const _ENCRYPTIONKEY = ENCRYPTIONKEY || _classPrivateFieldGet(_ENCRYPTIONKEY2, this);
     const _getPlatform = getPlatform || this.getPlatform;
     let kid;
     const _platform = await _getPlatform(platform.url, platform.clientId, _ENCRYPTIONKEY, _Database);
@@ -1009,7 +943,7 @@ class Provider {
   async getPlatform(url, clientId, ENCRYPTIONKEY, Database) {
     if (!url) throw new Error('MISSING_PLATFORM_URL');
     const _Database = Database || this.Database;
-    const _ENCRYPTIONKEY = ENCRYPTIONKEY || (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2);
+    const _ENCRYPTIONKEY = ENCRYPTIONKEY || _classPrivateFieldGet(_ENCRYPTIONKEY2, this);
     if (clientId) {
       const result = await _Database.Get(false, 'platform', {
         platformUrl: url,
@@ -1044,7 +978,7 @@ class Provider {
     });
     if (!result) return false;
     const plat = result[0];
-    const platform = new Platform(plat.platformName, plat.platformUrl, plat.clientId, plat.authEndpoint, plat.accesstokenEndpoint, plat.authorizationServer, plat.kid, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), plat.authConfig, this.Database);
+    const platform = new Platform(plat.platformName, plat.platformUrl, plat.clientId, plat.authEndpoint, plat.accesstokenEndpoint, plat.authorizationServer, plat.kid, _classPrivateFieldGet(_ENCRYPTIONKEY2, this), plat.authConfig, this.Database);
     return platform;
   }
 
@@ -1123,7 +1057,7 @@ class Provider {
         authorizationServer: update.authorizationServer,
         authConfig: update.authConfig
       });
-      const platform = new Platform(update.name, update.url, update.clientId, update.authenticationEndpoint, update.accesstokenEndpoint, update.authorizationServer, platformId, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), update.authConfig, this.Database);
+      const platform = new Platform(update.name, update.url, update.clientId, update.authenticationEndpoint, update.accesstokenEndpoint, update.authorizationServer, platformId, _classPrivateFieldGet(_ENCRYPTIONKEY2, this), update.authConfig, this.Database);
       return platform;
     } catch (err) {
       if (alteredUrlClientIdFlag) {
@@ -1178,7 +1112,7 @@ class Provider {
     const platforms = [];
     const result = await this.Database.Get(false, 'platform');
     if (result) {
-      for (const plat of result) platforms.push(new Platform(plat.platformName, plat.platformUrl, plat.clientId, plat.authEndpoint, plat.accesstokenEndpoint, plat.authorizationServer, plat.kid, (0, _classPrivateFieldGet2.default)(this, _ENCRYPTIONKEY2), plat.authConfig, this.Database));
+      for (const plat of result) platforms.push(new Platform(plat.platformName, plat.platformUrl, plat.clientId, plat.authEndpoint, plat.accesstokenEndpoint, plat.authorizationServer, plat.kid, _classPrivateFieldGet(_ENCRYPTIONKEY2, this), plat.authConfig, this.Database));
       return platforms;
     }
     return [];
