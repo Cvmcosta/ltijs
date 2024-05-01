@@ -11,6 +11,40 @@ const crypto = require('crypto');
 const _url = require('fast-url-parser');
 const provDynamicRegistrationDebug = require('debug')('provider:dynamicRegistrationService');
 
+/**
+ * Simple object check. taken from https://stackoverflow.com/a/34749873
+ * @param item
+ * @returns {boolean}
+ */
+function isObject(item) {
+  return item && typeof item === 'object' && !Array.isArray(item);
+}
+
+/**
+ * Deep merge two objects. taken from https://stackoverflow.com/a/34749873
+ * @param target
+ * @param ...sources
+ */
+function mergeDeep(target, ...sources) {
+  if (!sources.length) return target;
+  const source = sources.shift();
+  if (isObject(target) && isObject(source)) {
+    for (const key in source) {
+      if (isObject(source[key])) {
+        if (!target[key]) Object.assign(target, {
+          [key]: {}
+        });
+        mergeDeep(target[key], source[key]);
+      } else {
+        Object.assign(target, {
+          [key]: source[key]
+        });
+      }
+    }
+  }
+  return mergeDeep(target, ...sources);
+}
+
 // Helper method to build URLs
 const buildUrl = (url, path) => {
   if (path === '/') return url;
@@ -94,7 +128,7 @@ class DynamicRegistration {
    * @param {String} [registrationToken] - Registration Token. Retrieved from req.query.registration_token.
    * @param {Object} [options] - Replacements or extensions to default registration options.
    */
-  async register(openidConfiguration, registrationToken, options) {
+  async register(openidConfiguration, registrationToken, options = {}) {
     if (!openidConfiguration) throw new Error('MISSING_OPENID_CONFIGURATION');
     provDynamicRegistrationDebug('Starting dynamic registration process');
     // Get Platform registration configurations
@@ -107,7 +141,7 @@ class DynamicRegistration {
     if (_classPrivateFieldGet(_useDeepLinking, this)) messages.push({
       type: 'LtiDeepLinkingRequest'
     });
-    const registration = {
+    const registration = mergeDeep({
       application_type: 'web',
       response_types: ['id_token'],
       grant_types: ['implicit', 'client_credentials'],
@@ -126,7 +160,7 @@ class DynamicRegistration {
         claims: configuration.claims_supported,
         messages
       }
-    };
+    }, options);
     provDynamicRegistrationDebug('Tool registration request:');
     provDynamicRegistrationDebug(registration);
     provDynamicRegistrationDebug('Sending Tool registration request');
