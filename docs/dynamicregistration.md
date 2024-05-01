@@ -123,6 +123,7 @@ The registration can be finalized by calling the `lti.DynamicRegistration.regist
 
 The following example is a representation of the default Dynamic Registration flow:
 
+
 ```javascript
 lti.onDynamicRegistration(async (req, res, next) => {
   try {
@@ -137,6 +138,32 @@ lti.onDynamicRegistration(async (req, res, next) => {
 })
 ```
 
+
+You can also pass a third parameter to `lti.DynamicRegistration.register` containing overrides for the default dynamic registration options.
+
+The following example is a representation of the default Dynamic Registration flow with added custom parameters:
+
+
+```javascript
+lti.onDynamicRegistration(async (req, res, next) => {
+  try {
+    if (!req.query.openid_configuration) return res.status(400).send({ status: 400, error: 'Bad Request', details: { message: 'Missing parameter: "openid_configuration".' } })
+    const message = await lti.DynamicRegistration.register(req.query.openid_configuration, req.query.registration_token, {
+      'https://purl.imsglobal.org/spec/lti-tool-configuration': {
+        custom_parameters: {
+          'custom1': 'value1',
+          'custom2': 'value2'
+        }
+      }
+    })
+    res.setHeader('Content-type', 'text/html')
+    res.send(message)
+  } catch (err) {
+    if (err.message === 'PLATFORM_ALREADY_REGISTERED') return res.status(403).send({ status: 403, error: 'Forbidden', details: { message: 'Platform already registered.' } })
+    return res.status(500).send({ status: 500, error: 'Internal Server Error', details: { message: err.message } })
+  }
+})
+```
 
 ### Moodle LMS
 

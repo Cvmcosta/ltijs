@@ -9,6 +9,13 @@
 
 ### CHANGELOG
 
+#### V5.9.5
+> 2024-05-01
+> - A few improvements to dynamic registration.
+> - Fixed the regular LTI launch message type. This was not causing any issues, as the regular launch is always implied when performing dynamic registration.
+> - Added ability to modify dynamic registration options when creating a custom handler. Thank you @pfgray for the contribution!
+
+
 #### V5.9.4
 > 2024-04-10
 > - Updated dependencies.
