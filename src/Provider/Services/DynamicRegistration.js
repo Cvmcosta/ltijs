@@ -5,66 +5,7 @@ const _url = require('fast-url-parser')
 
 const provDynamicRegistrationDebug = require('debug')('provider:dynamicRegistrationService')
 
-/**
- * Simple object check. taken from https://stackoverflow.com/a/34749873
- * @param item
- * @returns {boolean}
- */
-function isObject(item) {
-  return (item && typeof item === 'object' && !Array.isArray(item));
-}
-
-/**
- * Deep merge two objects. taken from https://stackoverflow.com/a/34749873
- * @param target
- * @param ...sources
- */
-function mergeDeep(target, ...sources) {
-  if (!sources.length) return target;
-  const source = sources.shift();
-
-  if (isObject(target) && isObject(source)) {
-    for (const key in source) {
-      if (isObject(source[key])) {
-        if (!target[key]) Object.assign(target, { [key]: {} });
-        mergeDeep(target[key], source[key]);
-      } else {
-        Object.assign(target, { [key]: source[key] });
-      }
-    }
-  }
-
-  return mergeDeep(target, ...sources);
-}
-
-// Helper method to build URLs
-const buildUrl = (url, path) => {
-  if (path === '/') return url
-  const pathParts = _url.parse(url)
-  const portMatch = pathParts.pathname.match(/:[0-9]*/)
-  if (portMatch) {
-    pathParts.port = portMatch[0].split(':')[1]
-    pathParts.pathname = pathParts.pathname.split(portMatch[0]).join('')
-  }
-  const formattedUrl = _url.format({
-    protocol: pathParts.protocol,
-    hostname: pathParts.hostname,
-    pathname: (pathParts.pathname + path).replace('//', '/'),
-    port: pathParts.port,
-    auth: pathParts.auth,
-    hash: pathParts.hash,
-    search: pathParts.search
-  })
-  return formattedUrl
-}
-
-// Helper method to get the url hostname
-const getHostname = (url) => {
-  const pathParts = _url.parse(url)
-  let hostname = pathParts.hostname
-  if (pathParts.port) hostname += ':' + pathParts.port
-  return hostname
-}
+const Objects = require('../../Utils/Objects')
 
 class DynamicRegistration {
   #name
@@ -105,15 +46,44 @@ class DynamicRegistration {
     this.#useDeepLinking = options.useDeepLinking === undefined ? true : options.useDeepLinking
     this.#logo = options.logo
     this.#description = options.description
-    this.#hostname = getHostname(options.url)
-    this.#appUrl = buildUrl(options.url, routes.appRoute)
-    this.#loginUrl = buildUrl(options.url, routes.loginRoute)
-    this.#keysetUrl = buildUrl(options.url, routes.keysetRoute)
+    this.#hostname = this.#getHostname(options.url)
+    this.#appUrl = this.#buildUrl(options.url, routes.appRoute)
+    this.#loginUrl = this.#buildUrl(options.url, routes.loginRoute)
+    this.#keysetUrl = this.#buildUrl(options.url, routes.keysetRoute)
     this.#getPlatform = getPlatform
     this.#registerPlatform = registerPlatform
 
     this.#ENCRYPTIONKEY = ENCRYPTIONKEY
     this.#Database = Database
+  }
+
+  // Helper method to build URLs
+  #buildUrl (url, path) {
+    if (path === '/') return url
+    const pathParts = _url.parse(url)
+    const portMatch = pathParts.pathname.match(/:[0-9]*/)
+    if (portMatch) {
+      pathParts.port = portMatch[0].split(':')[1]
+      pathParts.pathname = pathParts.pathname.split(portMatch[0]).join('')
+    }
+    const formattedUrl = _url.format({
+      protocol: pathParts.protocol,
+      hostname: pathParts.hostname,
+      pathname: (pathParts.pathname + path).replace('//', '/'),
+      port: pathParts.port,
+      auth: pathParts.auth,
+      hash: pathParts.hash,
+      search: pathParts.search
+    })
+    return formattedUrl
+  }
+
+  // Helper method to get the url hostname
+  #getHostname (url) {
+    const pathParts = _url.parse(url)
+    let hostname = pathParts.hostname
+    if (pathParts.port) hostname += ':' + pathParts.port
+    return hostname
   }
 
   /**
@@ -131,7 +101,7 @@ class DynamicRegistration {
     // Building registration object
     const messages = [{ type: 'LtiResourceLinkRequest' }]
     if (this.#useDeepLinking) messages.push({ type: 'LtiDeepLinkingRequest' })
-    const registration = mergeDeep({
+    const registration = Objects.deepMergeObjects({
       application_type: 'web',
       response_types: ['id_token'],
       grant_types: ['implicit', 'client_credentials'],

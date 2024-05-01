@@ -1,5 +1,6 @@
 "use strict";
 
+function _classPrivateMethodInitSpec(obj, privateSet) { _checkPrivateRedeclaration(obj, privateSet); privateSet.add(obj); }
 function _classPrivateFieldInitSpec(obj, privateMap, value) { _checkPrivateRedeclaration(obj, privateMap); privateMap.set(obj, value); }
 function _checkPrivateRedeclaration(obj, privateCollection) { if (privateCollection.has(obj)) { throw new TypeError("Cannot initialize the same private elements twice on an object"); } }
 function _classPrivateFieldGet(s, a) { return s.get(_assertClassBrand(s, a)); }
@@ -10,69 +11,7 @@ const got = require('got');
 const crypto = require('crypto');
 const _url = require('fast-url-parser');
 const provDynamicRegistrationDebug = require('debug')('provider:dynamicRegistrationService');
-
-/**
- * Simple object check. taken from https://stackoverflow.com/a/34749873
- * @param item
- * @returns {boolean}
- */
-function isObject(item) {
-  return item && typeof item === 'object' && !Array.isArray(item);
-}
-
-/**
- * Deep merge two objects. taken from https://stackoverflow.com/a/34749873
- * @param target
- * @param ...sources
- */
-function mergeDeep(target, ...sources) {
-  if (!sources.length) return target;
-  const source = sources.shift();
-  if (isObject(target) && isObject(source)) {
-    for (const key in source) {
-      if (isObject(source[key])) {
-        if (!target[key]) Object.assign(target, {
-          [key]: {}
-        });
-        mergeDeep(target[key], source[key]);
-      } else {
-        Object.assign(target, {
-          [key]: source[key]
-        });
-      }
-    }
-  }
-  return mergeDeep(target, ...sources);
-}
-
-// Helper method to build URLs
-const buildUrl = (url, path) => {
-  if (path === '/') return url;
-  const pathParts = _url.parse(url);
-  const portMatch = pathParts.pathname.match(/:[0-9]*/);
-  if (portMatch) {
-    pathParts.port = portMatch[0].split(':')[1];
-    pathParts.pathname = pathParts.pathname.split(portMatch[0]).join('');
-  }
-  const formattedUrl = _url.format({
-    protocol: pathParts.protocol,
-    hostname: pathParts.hostname,
-    pathname: (pathParts.pathname + path).replace('//', '/'),
-    port: pathParts.port,
-    auth: pathParts.auth,
-    hash: pathParts.hash,
-    search: pathParts.search
-  });
-  return formattedUrl;
-};
-
-// Helper method to get the url hostname
-const getHostname = url => {
-  const pathParts = _url.parse(url);
-  let hostname = pathParts.hostname;
-  if (pathParts.port) hostname += ':' + pathParts.port;
-  return hostname;
-};
+const Objects = require('../../Utils/Objects');
 var _name = /*#__PURE__*/new WeakMap();
 var _redirectUris = /*#__PURE__*/new WeakMap();
 var _customParameters = /*#__PURE__*/new WeakMap();
@@ -88,8 +27,11 @@ var _getPlatform = /*#__PURE__*/new WeakMap();
 var _registerPlatform = /*#__PURE__*/new WeakMap();
 var _ENCRYPTIONKEY = /*#__PURE__*/new WeakMap();
 var _Database = /*#__PURE__*/new WeakMap();
+var _DynamicRegistration_brand = /*#__PURE__*/new WeakSet();
 class DynamicRegistration {
   constructor(options, routes, registerPlatform, getPlatform, ENCRYPTIONKEY, Database) {
+    // Helper method to build URLs
+    _classPrivateMethodInitSpec(this, _DynamicRegistration_brand);
     _classPrivateFieldInitSpec(this, _name, void 0);
     _classPrivateFieldInitSpec(this, _redirectUris, void 0);
     _classPrivateFieldInitSpec(this, _customParameters, void 0);
@@ -112,16 +54,15 @@ class DynamicRegistration {
     _classPrivateFieldSet(_useDeepLinking, this, options.useDeepLinking === undefined ? true : options.useDeepLinking);
     _classPrivateFieldSet(_logo, this, options.logo);
     _classPrivateFieldSet(_description, this, options.description);
-    _classPrivateFieldSet(_hostname, this, getHostname(options.url));
-    _classPrivateFieldSet(_appUrl, this, buildUrl(options.url, routes.appRoute));
-    _classPrivateFieldSet(_loginUrl, this, buildUrl(options.url, routes.loginRoute));
-    _classPrivateFieldSet(_keysetUrl, this, buildUrl(options.url, routes.keysetRoute));
+    _classPrivateFieldSet(_hostname, this, _assertClassBrand(_DynamicRegistration_brand, this, _getHostname).call(this, options.url));
+    _classPrivateFieldSet(_appUrl, this, _assertClassBrand(_DynamicRegistration_brand, this, _buildUrl).call(this, options.url, routes.appRoute));
+    _classPrivateFieldSet(_loginUrl, this, _assertClassBrand(_DynamicRegistration_brand, this, _buildUrl).call(this, options.url, routes.loginRoute));
+    _classPrivateFieldSet(_keysetUrl, this, _assertClassBrand(_DynamicRegistration_brand, this, _buildUrl).call(this, options.url, routes.keysetRoute));
     _classPrivateFieldSet(_getPlatform, this, getPlatform);
     _classPrivateFieldSet(_registerPlatform, this, registerPlatform);
     _classPrivateFieldSet(_ENCRYPTIONKEY, this, ENCRYPTIONKEY);
     _classPrivateFieldSet(_Database, this, Database);
   }
-
   /**
    * @description Performs dynamic registration flow.
    * @param {String} openidConfiguration - OpenID configuration URL. Retrieved from req.query.openid_configuration.
@@ -136,12 +77,12 @@ class DynamicRegistration {
     provDynamicRegistrationDebug('Attempting to register Platform with issuer: ', configuration.issuer);
     // Building registration object
     const messages = [{
-      type: 'LtiResourceLink'
+      type: 'LtiResourceLinkRequest'
     }];
     if (_classPrivateFieldGet(_useDeepLinking, this)) messages.push({
       type: 'LtiDeepLinkingRequest'
     });
-    const registration = mergeDeep({
+    const registration = Objects.deepMergeObjects({
       application_type: 'web',
       response_types: ['id_token'],
       grant_types: ['implicit', 'client_credentials'],
@@ -196,5 +137,31 @@ class DynamicRegistration {
     // Returing message indicating the end of registration flow
     return '<script>(window.opener || window.parent).postMessage({subject:"org.imsglobal.lti.close"}, "*");</script>';
   }
+}
+function _buildUrl(url, path) {
+  if (path === '/') return url;
+  const pathParts = _url.parse(url);
+  const portMatch = pathParts.pathname.match(/:[0-9]*/);
+  if (portMatch) {
+    pathParts.port = portMatch[0].split(':')[1];
+    pathParts.pathname = pathParts.pathname.split(portMatch[0]).join('');
+  }
+  const formattedUrl = _url.format({
+    protocol: pathParts.protocol,
+    hostname: pathParts.hostname,
+    pathname: (pathParts.pathname + path).replace('//', '/'),
+    port: pathParts.port,
+    auth: pathParts.auth,
+    hash: pathParts.hash,
+    search: pathParts.search
+  });
+  return formattedUrl;
+}
+// Helper method to get the url hostname
+function _getHostname(url) {
+  const pathParts = _url.parse(url);
+  let hostname = pathParts.hostname;
+  if (pathParts.port) hostname += ':' + pathParts.port;
+  return hostname;
 }
 module.exports = DynamicRegistration;
