@@ -30,6 +30,8 @@ Please ⭐️ us on [GitHub](https://github.com/Cvmcosta/ltijs), it always helps
 
 ---
 
+## LTI As A Service
+
 <div align="center">
 	<a href="https://ltiaas.com"><img width="550" src="https://raw.githubusercontent.com/Cvmcosta/ltijs/master/docs/ltiaas.png"></img></a>
   <br>
@@ -46,7 +48,7 @@ Through our consultation services we can help you design, build and maintain you
 > - [Documentation and Guides](https://ltiaas.com/guides/introduction)
 > - [Pricing information and simulator](https://ltiaas.com/pricing/)
 > - [Contact us](https://ltiaas.com/contact-us/)
-
+> - [ltijs vs LTIaaS](https://github.com/Cvmcosta/ltijs/blob/master/docs/ltijs_vs_ltiaas.md)
 ---
 
 
