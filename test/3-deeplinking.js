@@ -4,6 +4,8 @@
 const jwt = require('jsonwebtoken')
 const nock = require('nock')
 
+const cheerio = require('cheerio');
+
 const chai = require('chai')
 const chaiHttp = require('chai-http')
 const chaiAsPromised = require('chai-as-promised')
@@ -219,9 +221,27 @@ describe('Testing Deep Linking Service', function () {
 
     return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;', 'ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(async res => {
       expect(res).to.have.status(200)
-      expect(res.text.includes('<form id="ltijs_submit" style="display: none;" action="https://ltiadvantagevalidator.imsglobal.org/ltitool/deeplinkresponse.html" method="POST"><input type="hidden" name="JWT"')).to.equal(true)
-      expect(res.text.includes('<script>document.getElementById("ltijs_submit").submit()</script>')).to.equal(true)
-      const _payload = res.text.split('<form id="ltijs_submit" style="display: none;" action="https://ltiadvantagevalidator.imsglobal.org/ltitool/deeplinkresponse.html" method="POST"><input type="hidden" name="JWT" value="')[1].split('" /></form><script>document.getElementById("ltijs_submit").submit()</script>')[0]
+
+      const $ = cheerio.load(res.text)
+      
+      // Verify the form tag and its attributes
+      const form = $('#ltijs_submit')
+      expect(form).to.have.lengthOf(1)
+      expect(form.attr('style')).to.equal('display: none;')
+      expect(form.attr('action')).to.equal('https://ltiadvantagevalidator.imsglobal.org/ltitool/deeplinkresponse.html')
+      expect(form.attr('method')).to.equal('POST')
+
+      // Verify the input tag and its attributes
+      const input = form.find('input[name="JWT"]')
+      expect(input).to.have.lengthOf(1)
+      const _payload = input.attr('value')
+
+      // Verify the script tag
+      const script = $('script')
+      expect(script).to.have.lengthOf(1)
+      expect(script.html().trim()).to.equal('document.getElementById("ltijs_submit").submit()')
+
+      // Verify the payload
       const payload = jwt.verify(_payload, await plat.platformPublicKey())
       expect(payload['https://purl.imsglobal.org/spec/lti-dl/claim/content_items']).to.deep.include(item)
       expect(payload.iss).to.equal(await plat.platformClientId())
