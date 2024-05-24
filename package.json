@@ -9,7 +9,9 @@
   },
   "scripts": {
     "test": "MONGOMS_VERSION=7.0.3 NODE_TLS_REJECT_UNAUTHORIZED=0 nyc mocha",
-    "build": "babel src -d dist",
+    "build:js": "babel src -d dist",
+    "build:html": "node copy-html-files.js",
+    "build": "npm run build:js && npm run build:html",
     "start": "node index.js"
   },
   "repository": {
