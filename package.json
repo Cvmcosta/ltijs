@@ -43,7 +43,8 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^7.6.10",
     "parse-link-header": "^2.0.0",
-    "rasha": "^1.2.5"
+    "rasha": "^1.2.5",
+    "sprightly": "^2.0.1"
   },
   "devDependencies": {
     "@babel/cli": "^7.24.1",
