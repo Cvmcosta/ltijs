@@ -18,10 +18,16 @@ const DynamicRegistration = require('./Services/DynamicRegistration')
 const url = require('fast-url-parser')
 const jwt = require('jsonwebtoken')
 const crypto = require('crypto')
+const { sign, unsign } = require('cookie-signature')
+const path = require('path')
+const { sprightly } = require('sprightly')
 
 const provAuthDebug = require('debug')('provider:auth')
 const provMainDebug = require('debug')('provider:main')
 const provDynamicRegistrationDebug = require('debug')('provider:dynamicRegistrationService')
+
+const loginRedirect = path.join(__dirname, '../Templates', 'LoginRedirect.html')
+const signedStateForm = path.join(__dirname, '../Templates', 'SignedStateForm.html')
 
 /**
  * @descripttion LTI Provider Class that implements the LTI 1.3 protocol and services.
@@ -102,7 +108,7 @@ class Provider {
 
   /**
      * @description Provider configuration method.
-     * @param {String} encryptionkey - Secret used to sign cookies and encrypt other info.
+     * @param {String} encryptionkey - Secret used to sign session cookies and encrypt other info.
      * @param {Object} database - Database configuration.
      * @param {String} database.url - Database Url (Ex: mongodb://localhost/applicationdb).
      * @param {Object} [database.plugin] - If set, must be the Database object of the desired database plugin.
@@ -126,7 +132,7 @@ class Provider {
      * @param {Boolean} [options.cookies.secure = false] - Cookie secure parameter. If true, only allows cookies to be passed over https.
      * @param {String} [options.cookies.sameSite = 'Lax'] - Cookie sameSite parameter. If cookies are going to be set across domains, set this parameter to 'None'.
      * @param {String} [options.cookies.domain] - Cookie domain parameter. This parameter can be used to specify a domain so that the cookies set by Ltijs can be shared between subdomains.
-     * @param {Boolean} [options.devMode = false] - If true, does not require state and session cookies to be present (If present, they are still validated). This allows ltijs to work on development environments where cookies cannot be set. THIS SHOULD NOT BE USED IN A PRODUCTION ENVIRONMENT.
+     * @param {Boolean} [options.devMode = false] - If true, does not require session cookies to be present (If present, they are still validated). This allows ltijs to work on development environments where cookies cannot be set. THIS SHOULD NOT BE USED IN A PRODUCTION ENVIRONMENT.
      * @param {Number} [options.tokenMaxAge = 10] - Sets the idToken max age allowed in seconds. Defaults to 10 seconds. If false, disables max age validation.
      * @param {Object} [options.dynReg] - Setup for the Dynamic Registration Service.
      * @param {String} [options.dynReg.url] - Tool Provider main URL. (Ex: 'https://tool.example.com')
@@ -217,26 +223,33 @@ class Provider {
       try {
         // Retrieving ltik token
         const ltik = req.token
-        // Retrieving cookies
-        const cookies = req.signedCookies
-        provMainDebug('Cookies received: ')
-        provMainDebug(cookies)
 
         if (!ltik) {
-          const idtoken = req.body.id_token
-          if (idtoken) {
+          if (req.body.id_token && req.body.state) {
             // No ltik found but request contains an idtoken
             provMainDebug('Received idtoken for validation')
-
-            // Retrieves state
+            const idtoken = req.body.id_token
             const state = req.body.state
-
-            // Retrieving validation parameters from cookies
+            const signedState = req.body.signed_state
+            
             provAuthDebug('Response state: ' + state)
-            const validationCookie = cookies['state' + state]
+
+            if (!signedState) {
+              // Missing signed state, so render template to retrieve it from local storage
+              return res.send(sprightly(signedStateForm, {
+                id_token: idtoken,
+                state,
+                key: `state_${state}`
+              }))
+            }
+
+            if (unsign(signedState, this.#ENCRYPTIONKEY) !== state) {
+              throw new Error('INVALID_STATE')
+            }
 
             const validationParameters = {
-              iss: validationCookie,
+              // TODO: iss was previously stored in state cookie but we're not doing the same with localStorage
+              iss: '',
               maxAge: this.#tokenMaxAge
             }
 
@@ -245,8 +258,7 @@ class Provider {
             // Retrieve State object from Database
             const savedState = await this.Database.Get(false, 'state', { state })
 
-            // Deletes state validation cookie and Database entry
-            res.clearCookie('state' + state, this.#cookieOptions)
+            // Delete state Database entry
             if (savedState) this.Database.Delete('state', { state })
 
             provAuthDebug('Successfully validated token!')
@@ -358,9 +370,8 @@ class Provider {
           } else {
             const state = req.body.state
             if (state) {
-              provMainDebug('Deleting state cookie and Database entry')
+              provMainDebug('Deleting state Database entry')
               const savedState = await this.Database.Get(false, 'state', { state })
-              res.clearCookie('state' + state, this.#cookieOptions)
               if (savedState) this.Database.Delete('state', { state })
             }
 
@@ -412,6 +423,11 @@ class Provider {
 
         if (!this.#ltiaas) {
           provMainDebug('Attempting to retrieve matching session cookie')
+
+          const cookies = req.signedCookies
+          provMainDebug('Cookies received: ')
+          provMainDebug(cookies)
+
           const cookieUser = cookies[platformCode]
           if (!cookieUser) {
             if (!this.#devMode) user = false
@@ -456,9 +472,8 @@ class Provider {
       } catch (err) {
         const state = req.body.state
         if (state) {
-          provMainDebug('Deleting state cookie and Database entry')
+          provMainDebug('Deleting state Database entry')
           const savedState = await this.Database.Get(false, 'state', { state })
-          res.clearCookie('state' + state, this.#cookieOptions)
           if (savedState) this.Database.Delete('state', { state })
         }
 
@@ -517,18 +532,19 @@ class Provider {
             await this.Database.Insert(false, 'state', { state, query: queries })
           }
 
-          // Setting up validation info
-          const cookieOptions = JSON.parse(JSON.stringify(this.#cookieOptions))
-          cookieOptions.maxAge = 60 * 1000 // Adding max age to state cookie = 1min
-          res.cookie('state' + state, iss, cookieOptions)
-
           // Redirect to authentication endpoint
           const query = await Request.ltiAdvantageLogin(params, platform, state)
           provMainDebug('Login request: ')
           provMainDebug(query)
-          res.redirect(url.format({
+          const targetUrl = url.format({
             pathname: await platform.platformAuthEndpoint(),
             query
+          })
+
+          return res.send(sprightly(loginRedirect, {
+            targetUrl,
+            key: `state_${state}`,
+            value: sign(state, this.#ENCRYPTIONKEY)
           }))
         } else {
           provMainDebug('Unregistered platform attempting connection: ' + iss + ', clientId: ' + clientId)
@@ -602,7 +618,7 @@ class Provider {
                       ' |______|_|  |_____|\\____/|_____/ \n\n', message)
         }
       }
-      if (this.#devMode && !conf.silent) console.log('\nStarting in Dev Mode, state validation and session cookies will not be required. THIS SHOULD NOT BE USED IN A PRODUCTION ENVIRONMENT!')
+      if (this.#devMode && !conf.silent) console.log('\nStarting in Dev Mode, session cookies will not be required. THIS SHOULD NOT BE USED IN A PRODUCTION ENVIRONMENT!')
 
       // Sets up gracefull shutdown
       process.on('SIGINT', async () => {
