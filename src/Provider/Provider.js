@@ -639,22 +639,7 @@ class Provider {
      * @example .onConnect((token, request, response)=>{response.send('OK')})
      * @returns {true}
      */
-  onConnect (_connectCallback, options) {
-    /* istanbul ignore next */
-    if (options) {
-      if (options.sameSite || options.secure) console.log('Deprecation Warning: The optional parameters of the onConnect() method are now deprecated and will be removed in the 6.0 release. Cookie parameters can be found in the main Ltijs constructor options: ... { cookies: { secure: true, sameSite: \'None\' }.')
-
-      if (options.sessionTimeout || options.invalidToken) console.log('Deprecation Warning: The optional parameters of the onConnect() method are now deprecated and will be removed in the 6.0 release. Invalid token and Session Timeout methods can now be set with the onSessionTimeout() and onInvalidToken() methods.')
-
-      if (options.sameSite) {
-        this.#cookieOptions.sameSite = options.sameSite
-        if (options.sameSite.toLowerCase() === 'none') this.#cookieOptions.secure = true
-      }
-      if (options.secure === true) this.#cookieOptions.secure = true
-      if (options.sessionTimeout) this.#sessionTimeoutCallback = options.sessionTimeout
-      if (options.invalidToken) this.#invalidTokenCallback = options.invalidToken
-    }
-
+  onConnect (_connectCallback) {
     if (_connectCallback) {
       this.#connectCallback = _connectCallback
       return true
