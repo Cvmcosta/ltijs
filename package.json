@@ -59,6 +59,7 @@
     "chai": "^4.3.10",
     "chai-as-promised": "^7.1.1",
     "chai-http": "^4.4.0",
+    "cheerio": "^1.0.0-rc.12",
     "eslint": "^8.36.0",
     "mocha": "^10.4.0",
     "mongodb-memory-server": "^9.1.8",
