@@ -3,6 +3,9 @@
 
 const jwt = require('jsonwebtoken')
 const nock = require('nock')
+const { sign } = require('cookie-signature')
+
+const cheerio = require('cheerio');
 
 const chai = require('chai')
 const chaiHttp = require('chai-http')
@@ -119,8 +122,14 @@ describe('Testing LTI 1.3 flow', function () {
     const url = lti.loginRoute()
     nock('http://localhost/moodle').get(/\/AuthorizationUrl?.*/).reply(200)
     return chai.request(lti.app).post(url).send({ iss: 'http://localhost/moodle', login_hint: '2', target_link_uri: 'http://localhost:3000/' }).then(res => {
-      expect(res).to.redirectTo(/^http:\/\/localhost\/moodle\/AuthorizationUrl.*/)
       expect(res).to.have.status(200)
+      expect(res).to.be.html
+
+      const $ = cheerio.load(res.text)
+      const scriptContent = $('script').html().trim()
+      const scriptLines = scriptContent.split('\n').map(line => line.trim())
+      expect(scriptLines[0]).to.match(/localStorage\.setItem\('state_.*', '.*'\);/)
+      expect(scriptLines[1]).to.match(/window\.location\.href = 'http:\/\/localhost\/moodle\/AuthorizationUrl.*/)
     })
   })
 
@@ -128,8 +137,14 @@ describe('Testing LTI 1.3 flow', function () {
     const url = lti.loginRoute()
     nock('http://localhost/moodle').get(/\/AuthorizationUrl?.*/).reply(200)
     return chai.request(lti.app).get(url).query({ iss: 'http://localhost/moodle', login_hint: '2', target_link_uri: 'http://localhost:3000/' }).then(res => {
-      expect(res).to.redirectTo(/^http:\/\/localhost\/moodle\/AuthorizationUrl.*/)
       expect(res).to.have.status(200)
+      expect(res).to.be.html
+
+      const $ = cheerio.load(res.text)
+      const scriptContent = $('script').html().trim()
+      const scriptLines = scriptContent.split('\n').map(line => line.trim())
+      expect(scriptLines[0]).to.match(/localStorage\.setItem\('state_.*', '.*'\);/)
+      expect(scriptLines[1]).to.match(/window\.location\.href = 'http:\/\/localhost\/moodle\/AuthorizationUrl.*/)
     })
   })
 
@@ -198,6 +213,7 @@ describe('Testing LTI 1.3 flow', function () {
     token.nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     const payload = signToken(token, '123456')
     const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const signedState = sign(state, 'LTIKEY')
     const url = await lti.appRoute()
 
     nock('http://localhost/moodle').get('/keyset').reply(200, {
@@ -205,7 +221,7 @@ describe('Testing LTI 1.3 flow', function () {
         { kty: 'RSA', e: 'AQAB', kid: '123456', n: 'VrJSr-xli8NfuAdk_Wem5BARmmW4BpJvXBx3MbFY_0grH9Cd7OxBwVYSwI4P4yhL27upa1_FCRwLi3raOPSJOkHEDvFwtyYZMvdYcpDYTv6JRVqbgEyZtHa-vjL1wBqqW75yPDRoyZdnA8MWrfyRUOak53ZVWHRKgBnP53oXm7M' }
       ]
     })
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
+    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).then(res => {
       expect(res.statusCode).to.equal(401)
       expect(res.body.details.message).to.equal('UNREGISTERED_PLATFORM')
     })
@@ -216,6 +232,7 @@ describe('Testing LTI 1.3 flow', function () {
     token.nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     const payload = signToken(token, '123456')
     const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const signedState = sign(state, 'LTIKEY')
     const url = await lti.appRoute()
 
     nock('http://localhost/moodle').get('/keyset').reply(200, {
@@ -223,7 +240,7 @@ describe('Testing LTI 1.3 flow', function () {
         { kty: 'RSA', e: 'AQAB', kid: '123456', n: 'VrJSr-xli8NfuAdk_Wem5BARmmW4BpJvXBx3MbFY_0grH9Cd7OxBwVYSwI4P4yhL27upa1_FCRwLi3raOPSJOkHEDvFwtyYZMvdYcpDYTv6JRVqbgEyZtHa-vjL1wBqqW75yPDRoyZdnA8MWrfyRUOak53ZVWHRKgBnP53oXm7M' }
       ]
     })
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
+    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).then(res => {
       expect(res.statusCode).to.equal(401)
       expect(res.body.details.message).to.equal('UNREGISTERED_PLATFORM')
     })
@@ -235,6 +252,7 @@ describe('Testing LTI 1.3 flow', function () {
     token.nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
     const payload = signToken(token, '123456')
     const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const signedState = sign(state, 'LTIKEY')
     const url = await lti.appRoute()
 
     nock('http://localhost/moodle').get('/keyset').reply(200, {
@@ -242,7 +260,7 @@ describe('Testing LTI 1.3 flow', function () {
         { kty: 'RSA', e: 'AQAB', kid: '123456', n: 'VrJSr-xli8NfuAdk_Wem5BARmmW4BpJvXBx3MbFY_0grH9Cd7OxBwVYSwI4P4yhL27upa1_FCRwLi3raOPSJOkHEDvFwtyYZMvdYcpDYTv6JRVqbgEyZtHa-vjL1wBqqW75yPDRoyZdnA8MWrfyRUOak53ZVWHRKgBnP53oXm7M' }
       ]
     })
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
+    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).then(res => {
       expect(res.statusCode).to.equal(401)
       expect(res.body.details.message).to.equal('AZP_DOES_NOT_MATCH_CLIENTID')
     })
@@ -251,9 +269,10 @@ describe('Testing LTI 1.3 flow', function () {
   it('BadPayload - No KID sent in JWT header. Expected to redirect to invalid token route', async () => {
     const payload = signToken(tokenValid)
     const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const signedState = sign(state, 'LTIKEY')
     const url = await lti.appRoute()
 
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
+    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).then(res => {
       expect(res.statusCode).to.equal(401)
       expect(res.body.details.message).to.equal('KID_NOT_FOUND')
     })
@@ -261,6 +280,7 @@ describe('Testing LTI 1.3 flow', function () {
   it('BadPayload - Incorrect KID in JWT header. Expected to redirect to invalid token route', async () => {
     const payload = signToken(tokenValid, 'WRONGKID')
     const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const signedState = sign(state, 'LTIKEY')
     const url = await lti.appRoute()
 
     nock('http://localhost/moodle').get('/keyset').reply(200, {
@@ -268,7 +288,7 @@ describe('Testing LTI 1.3 flow', function () {
         { kty: 'RSA', e: 'AQAB', kid: '123456', n: 'VrJSr-xli8NfuAdk_Wem5BARmmW4BpJvXBx3MbFY_0grH9Cd7OxBwVYSwI4P4yhL27upa1_FCRwLi3raOPSJOkHEDvFwtyYZMvdYcpDYTv6JRVqbgEyZtHa-vjL1wBqqW75yPDRoyZdnA8MWrfyRUOak53ZVWHRKgBnP53oXm7M' }
       ]
     })
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
+    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).then(res => {
       expect(res.statusCode).to.equal(401)
       expect(res.body.details.message).to.equal('KEY_NOT_FOUND')
     })
@@ -279,6 +299,7 @@ describe('Testing LTI 1.3 flow', function () {
     token['https://purl.imsglobal.org/spec/lti/claim/version'] = '2.3'
     const payload = signToken(token, '123456')
     const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const signedState = sign(state, 'LTIKEY')
     const url = await lti.appRoute()
 
     nock('http://localhost/moodle').get('/keyset').reply(200, {
@@ -286,7 +307,7 @@ describe('Testing LTI 1.3 flow', function () {
         { kty: 'RSA', e: 'AQAB', kid: '123456', n: 'VrJSr-xli8NfuAdk_Wem5BARmmW4BpJvXBx3MbFY_0grH9Cd7OxBwVYSwI4P4yhL27upa1_FCRwLi3raOPSJOkHEDvFwtyYZMvdYcpDYTv6JRVqbgEyZtHa-vjL1wBqqW75yPDRoyZdnA8MWrfyRUOak53ZVWHRKgBnP53oXm7M' }
       ]
     })
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
+    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).then(res => {
       expect(res.statusCode).to.equal(401)
       expect(res.body.details.message).to.equal('WRONG_LTI_VERSION_CLAIM')
     })
@@ -297,6 +318,7 @@ describe('Testing LTI 1.3 flow', function () {
     delete token['https://purl.imsglobal.org/spec/lti/claim/version']
     const payload = signToken(token, '123456')
     const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const signedState = sign(state, 'LTIKEY')
     const url = await lti.appRoute()
 
     nock('http://localhost/moodle').get('/keyset').reply(200, {
@@ -304,7 +326,7 @@ describe('Testing LTI 1.3 flow', function () {
         { kty: 'RSA', e: 'AQAB', kid: '123456', n: 'VrJSr-xli8NfuAdk_Wem5BARmmW4BpJvXBx3MbFY_0grH9Cd7OxBwVYSwI4P4yhL27upa1_FCRwLi3raOPSJOkHEDvFwtyYZMvdYcpDYTv6JRVqbgEyZtHa-vjL1wBqqW75yPDRoyZdnA8MWrfyRUOak53ZVWHRKgBnP53oXm7M' }
       ]
     })
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
+    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).then(res => {
       expect(res.statusCode).to.equal(401)
       expect(res.body.details.message).to.equal('NO_LTI_VERSION_CLAIM')
     })
@@ -314,8 +336,9 @@ describe('Testing LTI 1.3 flow', function () {
       name: 'badltilaunch'
     }
     const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const signedState = sign(state, 'LTIKEY')
     const url = await lti.appRoute()
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
+    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).then(res => {
       expect(res.statusCode).to.equal(401)
       expect(res.body.details.message).to.equal('INVALID_JWT_RECEIVED')
     })
@@ -326,6 +349,7 @@ describe('Testing LTI 1.3 flow', function () {
     delete token['https://purl.imsglobal.org/spec/lti/claim/message_type']
     const payload = signToken(token, '123456')
     const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const signedState = sign(state, 'LTIKEY')
     const url = await lti.appRoute()
 
     nock('http://localhost/moodle').get('/keyset').reply(200, {
@@ -333,7 +357,7 @@ describe('Testing LTI 1.3 flow', function () {
         { kty: 'RSA', e: 'AQAB', kid: '123456', n: 'VrJSr-xli8NfuAdk_Wem5BARmmW4BpJvXBx3MbFY_0grH9Cd7OxBwVYSwI4P4yhL27upa1_FCRwLi3raOPSJOkHEDvFwtyYZMvdYcpDYTv6JRVqbgEyZtHa-vjL1wBqqW75yPDRoyZdnA8MWrfyRUOak53ZVWHRKgBnP53oXm7M' }
       ]
     })
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
+    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).then(res => {
       expect(res.statusCode).to.equal(401)
       expect(res.body.details.message).to.equal('NO_MESSAGE_TYPE_CLAIM')
     })
@@ -345,6 +369,7 @@ describe('Testing LTI 1.3 flow', function () {
     token.exp = 22222
     const payload = signToken(token, '123456')
     const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const signedState = sign(state, 'LTIKEY')
     const url = await lti.appRoute()
 
     nock('http://localhost/moodle').get('/keyset').reply(200, {
@@ -352,7 +377,7 @@ describe('Testing LTI 1.3 flow', function () {
         { kty: 'RSA', e: 'AQAB', kid: '123456', n: 'VrJSr-xli8NfuAdk_Wem5BARmmW4BpJvXBx3MbFY_0grH9Cd7OxBwVYSwI4P4yhL27upa1_FCRwLi3raOPSJOkHEDvFwtyYZMvdYcpDYTv6JRVqbgEyZtHa-vjL1wBqqW75yPDRoyZdnA8MWrfyRUOak53ZVWHRKgBnP53oXm7M' }
       ]
     })
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
+    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).then(res => {
       expect(res.statusCode).to.equal(401)
       expect(res.body.details.message).to.equal('jwt expired')
     })
@@ -363,6 +388,7 @@ describe('Testing LTI 1.3 flow', function () {
     delete token['https://purl.imsglobal.org/spec/lti/claim/message_type']
     const payload = signToken(token, '123456')
     const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const signedState = sign(state, 'LTIKEY')
     const url = await lti.appRoute()
 
     nock('http://localhost/moodle').get('/keyset').reply(200, {
@@ -370,7 +396,7 @@ describe('Testing LTI 1.3 flow', function () {
         { kty: 'RSA', e: 'AQAB', kid: '123456', n: 'VrJSr-xli8NfuAdk_Wem5BARmmW4BpJvXBx3MbFY_0grH9Cd7OxBwVYSwI4P4yhL27upa1_FCRwLi3raOPSJOkHEDvFwtyYZMvdYcpDYTv6JRVqbgEyZtHa-vjL1wBqqW75yPDRoyZdnA8MWrfyRUOak53ZVWHRKgBnP53oXm7M' }
       ]
     })
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
+    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).then(res => {
       expect(res.statusCode).to.equal(401)
       expect(res.body.details.message).to.equal('NO_MESSAGE_TYPE_CLAIM')
     })
@@ -381,6 +407,7 @@ describe('Testing LTI 1.3 flow', function () {
     delete token['https://purl.imsglobal.org/spec/lti/claim/roles']
     const payload = signToken(token, '123456')
     const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const signedState = sign(state, 'LTIKEY')
     const url = await lti.appRoute()
 
     nock('http://localhost/moodle').get('/keyset').reply(200, {
@@ -388,7 +415,7 @@ describe('Testing LTI 1.3 flow', function () {
         { kty: 'RSA', e: 'AQAB', kid: '123456', n: 'VrJSr-xli8NfuAdk_Wem5BARmmW4BpJvXBx3MbFY_0grH9Cd7OxBwVYSwI4P4yhL27upa1_FCRwLi3raOPSJOkHEDvFwtyYZMvdYcpDYTv6JRVqbgEyZtHa-vjL1wBqqW75yPDRoyZdnA8MWrfyRUOak53ZVWHRKgBnP53oXm7M' }
       ]
     })
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
+    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).then(res => {
       expect(res.statusCode).to.equal(401)
       expect(res.body.details.message).to.equal('NO_ROLES_CLAIM')
     })
@@ -399,6 +426,7 @@ describe('Testing LTI 1.3 flow', function () {
     delete token['https://purl.imsglobal.org/spec/lti/claim/deployment_id']
     const payload = signToken(token, '123456')
     const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const signedState = sign(state, 'LTIKEY')
     const url = await lti.appRoute()
 
     nock('http://localhost/moodle').get('/keyset').reply(200, {
@@ -406,7 +434,7 @@ describe('Testing LTI 1.3 flow', function () {
         { kty: 'RSA', e: 'AQAB', kid: '123456', n: 'VrJSr-xli8NfuAdk_Wem5BARmmW4BpJvXBx3MbFY_0grH9Cd7OxBwVYSwI4P4yhL27upa1_FCRwLi3raOPSJOkHEDvFwtyYZMvdYcpDYTv6JRVqbgEyZtHa-vjL1wBqqW75yPDRoyZdnA8MWrfyRUOak53ZVWHRKgBnP53oXm7M' }
       ]
     })
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
+    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).then(res => {
       expect(res.statusCode).to.equal(401)
       expect(res.body.details.message).to.equal('NO_DEPLOYMENT_ID_CLAIM')
     })
@@ -417,6 +445,7 @@ describe('Testing LTI 1.3 flow', function () {
     delete token['https://purl.imsglobal.org/spec/lti/claim/resource_link'].id
     const payload = signToken(token, '123456')
     const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const signedState = sign(state, 'LTIKEY')
     const url = await lti.appRoute()
 
     nock('http://localhost/moodle').get('/keyset').reply(200, {
@@ -424,7 +453,7 @@ describe('Testing LTI 1.3 flow', function () {
         { kty: 'RSA', e: 'AQAB', kid: '123456', n: 'VrJSr-xli8NfuAdk_Wem5BARmmW4BpJvXBx3MbFY_0grH9Cd7OxBwVYSwI4P4yhL27upa1_FCRwLi3raOPSJOkHEDvFwtyYZMvdYcpDYTv6JRVqbgEyZtHa-vjL1wBqqW75yPDRoyZdnA8MWrfyRUOak53ZVWHRKgBnP53oXm7M' }
       ]
     })
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
+    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).then(res => {
       expect(res.statusCode).to.equal(401)
       expect(res.body.details.message).to.equal('NO_RESOURCE_LINK_ID_CLAIM')
     })
@@ -435,6 +464,7 @@ describe('Testing LTI 1.3 flow', function () {
     delete token.sub
     const payload = signToken(token, '123456')
     const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const signedState = sign(state, 'LTIKEY')
     const url = await lti.appRoute()
 
     nock('http://localhost/moodle').get('/keyset').reply(200, {
@@ -442,7 +472,7 @@ describe('Testing LTI 1.3 flow', function () {
         { kty: 'RSA', e: 'AQAB', kid: '123456', n: 'VrJSr-xli8NfuAdk_Wem5BARmmW4BpJvXBx3MbFY_0grH9Cd7OxBwVYSwI4P4yhL27upa1_FCRwLi3raOPSJOkHEDvFwtyYZMvdYcpDYTv6JRVqbgEyZtHa-vjL1wBqqW75yPDRoyZdnA8MWrfyRUOak53ZVWHRKgBnP53oXm7M' }
       ]
     })
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
+    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).then(res => {
       expect(res.statusCode).to.equal(401)
       expect(res.body.details.message).to.equal('NO_SUB_CLAIM')
     })
@@ -453,6 +483,7 @@ describe('Testing LTI 1.3 flow', function () {
 
     const payload = signToken(token, '123456')
     const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const signedState = sign(state, 'LTIKEY')
     const url = await lti.appRoute()
 
     nock('http://localhost/moodle').get('/keyset').reply(200, {
@@ -460,7 +491,7 @@ describe('Testing LTI 1.3 flow', function () {
         { kty: 'RSA', e: 'AQAB', kid: '123456', n: 'VrJSr-xli8NfuAdk_Wem5BARmmW4BpJvXBx3MbFY_0grH9Cd7OxBwVYSwI4P4yhL27upa1_FCRwLi3raOPSJOkHEDvFwtyYZMvdYcpDYTv6JRVqbgEyZtHa-vjL1wBqqW75yPDRoyZdnA8MWrfyRUOak53ZVWHRKgBnP53oXm7M' }
       ]
     })
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;', 'ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
+    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).set('Cookie', ['ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
       expect(res).to.have.status(200)
     })
   })
@@ -471,6 +502,7 @@ describe('Testing LTI 1.3 flow', function () {
 
     const payload = signToken(token, '123456')
     const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const signedState = sign(state, 'LTIKEY')
     const url = await lti.appRoute()
 
     nock('http://localhost/moodle').get('/keyset').reply(200, {
@@ -478,7 +510,7 @@ describe('Testing LTI 1.3 flow', function () {
         { kty: 'RSA', e: 'AQAB', kid: '123456', n: 'VrJSr-xli8NfuAdk_Wem5BARmmW4BpJvXBx3MbFY_0grH9Cd7OxBwVYSwI4P4yhL27upa1_FCRwLi3raOPSJOkHEDvFwtyYZMvdYcpDYTv6JRVqbgEyZtHa-vjL1wBqqW75yPDRoyZdnA8MWrfyRUOak53ZVWHRKgBnP53oXm7M' }
       ]
     })
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;', 'ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
+    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).set('Cookie', ['ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
       expect(res).to.have.status(200)
     })
   })
@@ -488,6 +520,7 @@ describe('Testing LTI 1.3 flow', function () {
 
     const payload = signToken(token, '123456')
     const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const signedState = sign(state, 'LTIKEY')
     const url = await lti.appRoute()
 
     lti.onConnect((token, req, res) => {
@@ -499,7 +532,7 @@ describe('Testing LTI 1.3 flow', function () {
         { kty: 'RSA', e: 'AQAB', kid: '123456', n: 'VrJSr-xli8NfuAdk_Wem5BARmmW4BpJvXBx3MbFY_0grH9Cd7OxBwVYSwI4P4yhL27upa1_FCRwLi3raOPSJOkHEDvFwtyYZMvdYcpDYTv6JRVqbgEyZtHa-vjL1wBqqW75yPDRoyZdnA8MWrfyRUOak53ZVWHRKgBnP53oXm7M' }
       ]
     })
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;', 'ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
+    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).set('Cookie', ['ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
       expect(res.res.req.path.includes('ltik')).to.equal(true)
       expect(res).to.redirectTo(/\/finalRoute/)
     })
@@ -510,6 +543,7 @@ describe('Testing LTI 1.3 flow', function () {
 
     const payload = signToken(token, '123456')
     const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const signedState = sign(state, 'LTIKEY')
     const url = await lti.appRoute()
 
     lti.onConnect((token, req, res) => {
@@ -521,7 +555,7 @@ describe('Testing LTI 1.3 flow', function () {
         { kty: 'RSA', e: 'AQAB', kid: '123456', n: 'VrJSr-xli8NfuAdk_Wem5BARmmW4BpJvXBx3MbFY_0grH9Cd7OxBwVYSwI4P4yhL27upa1_FCRwLi3raOPSJOkHEDvFwtyYZMvdYcpDYTv6JRVqbgEyZtHa-vjL1wBqqW75yPDRoyZdnA8MWrfyRUOak53ZVWHRKgBnP53oXm7M' }
       ]
     })
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;', 'ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(async res => {
+    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).set('Cookie', ['ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(async res => {
       const platform = await lti.getPlatform(tokenValid.iss, tokenValid.aud)
       const platformId = await platform.platformId()
       return expect(res.text).to.equal(platformId)
