@@ -207,6 +207,7 @@ describe('Testing LTI 1.3 flow', function () {
     })
     return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
       expect(res.statusCode).to.equal(401)
+      expect(res.body.details.message).to.equal('UNREGISTERED_PLATFORM')
     })
   })
   it('BadPayload - Wrong multiple aud claim. Expected to redirect to invalid token route', async () => {
@@ -224,6 +225,7 @@ describe('Testing LTI 1.3 flow', function () {
     })
     return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
       expect(res.statusCode).to.equal(401)
+      expect(res.body.details.message).to.equal('UNREGISTERED_PLATFORM')
     })
   })
   it('BadPayload - Multiple aud claim, wrong azp claim. Expected to redirect to invalid token route', async () => {
@@ -242,6 +244,7 @@ describe('Testing LTI 1.3 flow', function () {
     })
     return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
       expect(res.statusCode).to.equal(401)
+      expect(res.body.details.message).to.equal('AZP_DOES_NOT_MATCH_CLIENTID')
     })
   })
   // IMS Certification tests
@@ -252,6 +255,7 @@ describe('Testing LTI 1.3 flow', function () {
 
     return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
       expect(res.statusCode).to.equal(401)
+      expect(res.body.details.message).to.equal('KID_NOT_FOUND')
     })
   })
   it('BadPayload - Incorrect KID in JWT header. Expected to redirect to invalid token route', async () => {
@@ -266,6 +270,7 @@ describe('Testing LTI 1.3 flow', function () {
     })
     return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
       expect(res.statusCode).to.equal(401)
+      expect(res.body.details.message).to.equal('KEY_NOT_FOUND')
     })
   })
   it('BadPayload - Wrong LTI Version. Expected to redirect to invalid token route', async () => {
@@ -283,6 +288,7 @@ describe('Testing LTI 1.3 flow', function () {
     })
     return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
       expect(res.statusCode).to.equal(401)
+      expect(res.body.details.message).to.equal('WRONG_LTI_VERSION_CLAIM')
     })
   })
   it('BadPayload - No LTI Version. Expected to redirect to invalid token route', async () => {
@@ -300,6 +306,7 @@ describe('Testing LTI 1.3 flow', function () {
     })
     return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
       expect(res.statusCode).to.equal(401)
+      expect(res.body.details.message).to.equal('NO_LTI_VERSION_CLAIM')
     })
   })
   it('BadPayload - Invalid LTI message. Expected to redirect to invalid token route', async () => {
@@ -310,6 +317,7 @@ describe('Testing LTI 1.3 flow', function () {
     const url = await lti.appRoute()
     return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
       expect(res.statusCode).to.equal(401)
+      expect(res.body.details.message).to.equal('INVALID_JWT_RECEIVED')
     })
   })
   it('BadPayload - Missing LTI Claims. Expected to redirect to invalid token route', async () => {
@@ -327,6 +335,7 @@ describe('Testing LTI 1.3 flow', function () {
     })
     return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
       expect(res.statusCode).to.equal(401)
+      expect(res.body.details.message).to.equal('NO_MESSAGE_TYPE_CLAIM')
     })
   })
   it('BadPayload - Timestamps Incorrect. Expected to redirect to invalid token route', async () => {
@@ -345,6 +354,7 @@ describe('Testing LTI 1.3 flow', function () {
     })
     return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
       expect(res.statusCode).to.equal(401)
+      expect(res.body.details.message).to.equal('jwt expired')
     })
   })
   it('BadPayload - Messsage Type Claim Missing. Expected to redirect to invalid token route', async () => {
@@ -362,6 +372,7 @@ describe('Testing LTI 1.3 flow', function () {
     })
     return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
       expect(res.statusCode).to.equal(401)
+      expect(res.body.details.message).to.equal('NO_MESSAGE_TYPE_CLAIM')
     })
   })
   it('BadPayload - Role Claim Missing. Expected to redirect to invalid token route', async () => {
@@ -379,6 +390,7 @@ describe('Testing LTI 1.3 flow', function () {
     })
     return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
       expect(res.statusCode).to.equal(401)
+      expect(res.body.details.message).to.equal('NO_ROLES_CLAIM')
     })
   })
   it('BadPayload - Deployment Id Claim Missing. Expected to redirect to invalid token route', async () => {
@@ -396,6 +408,7 @@ describe('Testing LTI 1.3 flow', function () {
     })
     return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
       expect(res.statusCode).to.equal(401)
+      expect(res.body.details.message).to.equal('NO_DEPLOYMENT_ID_CLAIM')
     })
   })
   it('BadPayload - Resource Link Id Claim Missing. Expected to redirect to invalid token route', async () => {
@@ -413,6 +426,7 @@ describe('Testing LTI 1.3 flow', function () {
     })
     return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
       expect(res.statusCode).to.equal(401)
+      expect(res.body.details.message).to.equal('NO_RESOURCE_LINK_ID_CLAIM')
     })
   })
   it('BadPayload - User Claim Missing. Expected to redirect to invalid token route', async () => {
@@ -430,6 +444,7 @@ describe('Testing LTI 1.3 flow', function () {
     })
     return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;']).then(res => {
       expect(res.statusCode).to.equal(401)
+      expect(res.body.details.message).to.equal('NO_SUB_CLAIM')
     })
   })
   it('ValidPayload. Expected to return status 200', async () => {
