@@ -248,12 +248,10 @@ class Provider {
             }
 
             const validationParameters = {
-              // TODO: iss was previously stored in state cookie but we're not doing the same with localStorage
-              iss: '',
               maxAge: this.#tokenMaxAge
             }
 
-            const valid = await Auth.validateToken(idtoken, this.#devMode, validationParameters, this.getPlatform, this.#ENCRYPTIONKEY, this.Database)
+            const valid = await Auth.validateToken(idtoken, validationParameters, this.getPlatform, this.#ENCRYPTIONKEY, this.Database)
 
             // Retrieve State object from Database
             const savedState = await this.Database.Get(false, 'state', { state })
