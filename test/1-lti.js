@@ -477,6 +477,25 @@ describe('Testing LTI 1.3 flow', function () {
       expect(res.body.details.message).to.equal('NO_SUB_CLAIM')
     })
   })
+  it('BadPayload - Invalid Signed State. Expected to redirect to invalid token route', async () => {
+    const token = JSON.parse(JSON.stringify(tokenValid))
+    token.nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+
+    const payload = signToken(token, '123456')
+    const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const signedState = sign(state, 'WRONGKEY')
+    const url = await lti.appRoute()
+
+    nock('http://localhost/moodle').get('/keyset').reply(200, {
+      keys: [
+        { kty: 'RSA', e: 'AQAB', kid: '123456', n: 'VrJSr-xli8NfuAdk_Wem5BARmmW4BpJvXBx3MbFY_0grH9Cd7OxBwVYSwI4P4yhL27upa1_FCRwLi3raOPSJOkHEDvFwtyYZMvdYcpDYTv6JRVqbgEyZtHa-vjL1wBqqW75yPDRoyZdnA8MWrfyRUOak53ZVWHRKgBnP53oXm7M' }
+      ]
+    })
+    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).set('Cookie', ['ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
+      expect(res.statusCode).to.equal(401)
+      expect(res.body.details.message).to.equal('INVALID_STATE')
+    })
+  })
   it('ValidPayload. Expected to return status 200', async () => {
     const token = JSON.parse(JSON.stringify(tokenValid))
     token.nonce = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
