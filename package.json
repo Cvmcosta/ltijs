@@ -9,7 +9,9 @@
   },
   "scripts": {
     "test": "MONGOMS_VERSION=7.0.3 NODE_TLS_REJECT_UNAUTHORIZED=0 nyc mocha",
-    "build": "babel src -d dist",
+    "build:js": "babel src -d dist",
+    "build:html": "node copy-html-files.js",
+    "build": "npm run build:js && npm run build:html",
     "start": "node index.js"
   },
   "repository": {
@@ -43,7 +45,8 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^7.6.10",
     "parse-link-header": "^2.0.0",
-    "rasha": "^1.2.5"
+    "rasha": "^1.2.5",
+    "sprightly": "^2.0.1"
   },
   "devDependencies": {
     "@babel/cli": "^7.24.1",
@@ -56,6 +59,7 @@
     "chai": "^4.3.10",
     "chai-as-promised": "^7.1.1",
     "chai-http": "^4.4.0",
+    "cheerio": "^1.0.0-rc.12",
     "eslint": "^8.36.0",
     "mocha": "^10.4.0",
     "mongodb-memory-server": "^9.1.8",

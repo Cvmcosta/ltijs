@@ -9,6 +9,11 @@ function _assertClassBrand(e, t, n) { if ("function" == typeof e ? e === t : e.h
 
 const jwt = require('jsonwebtoken');
 const provDeepLinkingDebug = require('debug')('provider:deepLinkingService');
+const path = require('path');
+const {
+  sprightly
+} = require('sprightly');
+const deepLinkSubmissionForm = path.join(__dirname, '../../Templates', 'DeepLinkSubmissionForm.html');
 var _getPlatform = /*#__PURE__*/new WeakMap();
 var _ENCRYPTIONKEY = /*#__PURE__*/new WeakMap();
 var _Database = /*#__PURE__*/new WeakMap();
@@ -36,7 +41,10 @@ class DeepLinking {
     const message = await this.createDeepLinkingMessage(idtoken, contentItems, options);
 
     // Creating auto submitting form
-    const form = '<form id="ltijs_submit" style="display: none;" action="' + idtoken.platformContext.deepLinkingSettings.deep_link_return_url + '" method="POST">' + '<input type="hidden" name="JWT" value="' + message + '" />' + '</form>' + '<script>' + 'document.getElementById("ltijs_submit").submit()' + '</script>';
+    const form = sprightly(deepLinkSubmissionForm, {
+      action: idtoken.platformContext.deepLinkingSettings.deep_link_return_url,
+      message
+    });
     return form;
   }
 
