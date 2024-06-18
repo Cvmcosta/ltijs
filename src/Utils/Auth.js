@@ -54,26 +54,17 @@ class Auth {
   /**
      * @description Resolves a promisse if the token is valid following LTI 1.3 standards.
      * @param {String} token - JWT token to be verified.
-     * @param {Boolean} devMode - DevMode option.
      * @param {Object} validationParameters - Stored validation parameters retrieved from database.
      * @param {Function} getPlatform - getPlatform function to get the platform that originated the token.
      * @param {String} ENCRYPTIONKEY - Encription key.
      * @returns {Promise}
      */
-  static async validateToken (token, devMode, validationParameters, getPlatform, ENCRYPTIONKEY, Database) {
+  static async validateToken (token, validationParameters, getPlatform, ENCRYPTIONKEY, Database) {
     const decoded = jwt.decode(token, { complete: true })
     if (!decoded) throw new Error('INVALID_JWT_RECEIVED')
 
     const kid = decoded.header.kid
     validationParameters.alg = decoded.header.alg
-
-    provAuthDebug('Attempting to validate iss claim')
-    provAuthDebug('Request Iss claim: ' + validationParameters.iss)
-    provAuthDebug('Response Iss claim: ' + decoded.payload.iss)
-    if (!validationParameters.iss) {
-      if (!devMode) throw new Error('MISSING_VALIDATION_COOKIE')
-      else { provAuthDebug('Dev Mode enabled: Missing state validation cookies will be ignored') }
-    } else if (validationParameters.iss !== decoded.payload.iss) throw new Error('ISS_CLAIM_DOES_NOT_MATCH')
 
     provAuthDebug('Attempting to retrieve registered platform')
     let platform

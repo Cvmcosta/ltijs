@@ -3,6 +3,7 @@
 
 const jwt = require('jsonwebtoken')
 const nock = require('nock')
+const { sign } = require('cookie-signature')
 
 const cheerio = require('cheerio');
 
@@ -129,6 +130,7 @@ describe('Testing Deep Linking Service', function () {
 
     const payload = signToken(token, '123456')
     const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const signedState = sign(state, 'LTIKEY')
     const url = await lti.appRoute()
 
     nock('http://localhost/moodle').get('/keyset').reply(200, {
@@ -141,7 +143,7 @@ describe('Testing Deep Linking Service', function () {
       return res.sendStatus(200)
     })
 
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;', 'ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
+    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).set('Cookie', ['ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
       expect(res).to.have.status(200)
     })
   })
@@ -151,6 +153,7 @@ describe('Testing Deep Linking Service', function () {
 
     const payload = signToken(token, '123456')
     const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const signedState = sign(state, 'LTIKEY')
     const url = await lti.appRoute()
 
     const plat = await lti.getPlatform(token.iss, token.aud)
@@ -178,7 +181,7 @@ describe('Testing Deep Linking Service', function () {
       }
     })
 
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;', 'ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(async res => {
+    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).set('Cookie', ['ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(async res => {
       expect(res).to.have.status(200)
       const payload = jwt.verify(res.text, await plat.platformPublicKey())
       expect(payload['https://purl.imsglobal.org/spec/lti-dl/claim/content_items']).to.deep.include(item)
@@ -192,6 +195,7 @@ describe('Testing Deep Linking Service', function () {
 
     const payload = signToken(token, '123456')
     const state = encodeURIComponent([...Array(25)].map(_ => (Math.random() * 36 | 0).toString(36)).join``)
+    const signedState = sign(state, 'LTIKEY')
     const url = await lti.appRoute()
 
     const plat = await lti.getPlatform(token.iss, token.aud)
@@ -219,7 +223,7 @@ describe('Testing Deep Linking Service', function () {
       }
     })
 
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state }).set('Cookie', ['state' + state + '=s%3Ahttp%3A%2F%2Flocalhost%2Fmoodle.fsJogjTuxtbJwvJcuG4esveQAlih67sfEltuwRM6MX0; Path=/; HttpOnly;', 'ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(async res => {
+    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).set('Cookie', ['ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(async res => {
       expect(res).to.have.status(200)
 
       const $ = cheerio.load(res.text)
