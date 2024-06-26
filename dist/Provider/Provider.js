@@ -41,6 +41,7 @@ var _ltiaas = /*#__PURE__*/new WeakMap();
 var _tokenMaxAge = /*#__PURE__*/new WeakMap();
 var _cookieOptions = /*#__PURE__*/new WeakMap();
 var _setup = /*#__PURE__*/new WeakMap();
+var _path = /*#__PURE__*/new WeakMap();
 var _connectCallback2 = /*#__PURE__*/new WeakMap();
 var _deepLinkingCallback2 = /*#__PURE__*/new WeakMap();
 var _dynamicRegistrationCallback2 = /*#__PURE__*/new WeakMap();
@@ -69,6 +70,8 @@ class Provider {
     });
     // Setup flag
     _classPrivateFieldInitSpec(this, _setup, false);
+    // if provided, the "base" path for the URLs managed by the LTIJS Express server
+    _classPrivateFieldInitSpec(this, _path, '');
     _classPrivateFieldInitSpec(this, _connectCallback2, async (token, req, res, next) => {
       return next();
     });
@@ -393,7 +396,7 @@ class Provider {
             query.append('ltik', newLtik);
             const urlSearchParams = query.toString();
             provMainDebug('Redirecting to endpoint with ltik');
-            return res.redirect(req.baseUrl + req.path + '?' + urlSearchParams);
+            return res.redirect(req.baseUrl + (_classPrivateFieldGet(_path, this) || "") + req.path + '?' + urlSearchParams);
           } else {
             const state = req.body.state;
             if (state) {
@@ -632,6 +635,7 @@ class Provider {
      * @param {Number} [options.port] - Deployment port. 3000 by default.
      * @param {Boolean} [options.silent] - If true, disables initial startup message.
      * @param {Boolean} [options.serverless] - If true, Ltijs does not start an Express server instance. This allows usage as a middleware and with services like AWS. Ignores 'port' parameter.
+     * @param {String} [options.path] - If the serverless Express is assigned to a sub-path in your WebServer, provide its path in the options.path. This will make it possible to redirect correctly to the tool provider
      * @returns {Promise<true>}
      */
   async deploy(options) {
@@ -648,8 +652,13 @@ class Provider {
       // Starts server on given port
 
       if (options && options.serverless) {
+        // if the serverless Express is assigned to a sub-path in your WebServer, provide its path in the options.path.
+        // This will make it possible to redirect correctly to the tool provider
+        if (options.path) _classPrivateFieldSet(_path, this, options.path);
         if (!conf.silent) {
           console.log('Ltijs started in serverless mode...');
+          const message = `LTI Provider will handle requests on the current server endpoints` + `\n >App Route: ${_classPrivateFieldGet(_path, this)}${_classPrivateFieldGet(_appRoute, this)}` + `\n >Initiate Login Route: ${_classPrivateFieldGet(_path, this)}${_classPrivateFieldGet(_loginRoute, this)}` + `\n >Keyset Route: ${_classPrivateFieldGet(_path, this)}${_classPrivateFieldGet(_keysetRoute, this)}` + `\n >Dynamic Registration Route: ${_classPrivateFieldGet(_path, this)}${_classPrivateFieldGet(_dynRegRoute, this)}`;
+          console.log('  _   _______ _____      _  _____\n' + ' | | |__   __|_   _|    | |/ ____|\n' + ' | |    | |    | |      | | (___  \n' + ' | |    | |    | |  _   | |\\___ \\ \n' + ' | |____| |   _| |_| |__| |____) |\n' + ' |______|_|  |_____|\\____/|_____/ \n\n', message);
         }
       } else {
         await _classPrivateFieldGet(_server, this).listen(conf.port);
