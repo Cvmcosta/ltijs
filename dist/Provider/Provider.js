@@ -272,8 +272,8 @@ class Provider {
             const idtoken = req.body.id_token;
             const state = req.body.state;
             const signedState = req.body.signed_state;
-            provAuthDebug('Response state: ' + state);
             if (!signedState) {
+              provAuthDebug('Loading state retrieval template');
               // Missing signed state, so render template to retrieve it from local storage
               return res.send(sprightly(signedStateForm, {
                 id_token: idtoken,
@@ -281,9 +281,10 @@ class Provider {
                 key: `state_${state}`
               }));
             }
-            if (unsign(signedState, _classPrivateFieldGet(_ENCRYPTIONKEY2, this)) !== state) {
-              throw new Error('INVALID_STATE');
-            }
+            const unsignedState = unsign(signedState, _classPrivateFieldGet(_ENCRYPTIONKEY2, this));
+            provAuthDebug('Response state: ' + state);
+            provAuthDebug('Recovered signed state: ' + unsignedState);
+            if (unsignedState !== state) throw new Error('INVALID_STATE');
             const validationParameters = {
               maxAge: _classPrivateFieldGet(_tokenMaxAge, this)
             };
