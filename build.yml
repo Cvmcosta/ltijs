@@ -1,0 +1,61 @@
+name: Build Web App  
+
+# Controls when the action will run. 
+on: 
+  push: 
+    branches: [development, staging, master]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+  
+jobs:
+  build:   
+ 
+    runs-on: windows-latest
+ 
+    steps:      
+    
+    - uses: actions/checkout@v1
+      name: Checkout Code
+ 
+    - name: Echo some details
+      run: echo "Running job [${{ github.job }}], run_id [${{ github.run_id }}]; app,event [${{ github.event.client_payload.app }}, ${{ github.event.client_payload.environment }}], ref [${{ github.ref }}], action [${{ github.action }}], event [${{ github.event_name }}], head_ref [${{ github.head_ref }}] "
+
+  
+    - name: Set vars development
+      if: ${{ github.ref == 'refs/heads/development' }} 
+      run: |
+        echo "environment=development" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append 
+        echo "awsKey=${{secrets.S_AWS_ACCESS_KEY_ID}}" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append 
+        echo "awsSecret=${{ secrets.S_AWS_SECRET_ACCESS_KEY }}" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append 
+        echo "awsEnv=Ltc-ltijs-dev-env" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append 
+        echo "awsAppName=ltc-ltijs-dev" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append 
+
+        
+    - name: replace secrets
+      run: |
+        sed -i -e "s/~S_DB_MONGODB_LTIJS_PASSWORD~/${{secrets.S_DB_MONGODB_LTIJS_PASSWORD}}/g" config.${{env.environment}}.js
+        sed -i -e "s/~P_DB_MONGODB_LTIJS_PASSWORD~/${{secrets.P_DB_MONGODB_LTIJS_PASSWORD}}/g" config.${{env.environment}}.js
+        sed -i -e "s/~S_LTIJS_SSO_USER~/${{secrets.S_LTIJS_SSO_USER}}/g" config.${{env.environment}}.js
+        sed -i -e "s/~S_LTIJS_SSO_PASSWORD~/${{secrets.S_LTIJS_SSO_PASSWORD}}/g" config.${{env.environment}}.js
+        sed -i -e "s/~P_LTIJS_SSO_USER~/${{secrets.P_LTIJS_SSO_USER}}/g" config.${{env.environment}}.js
+        sed -i -e "s/~P_LTIJS_SSO_PASSWORD~/${{secrets.P_LTIJS_SSO_PASSWORD}}/g" config.${{env.environment}}.js
+
+    - name: copy
+      run: |
+        npm install
+        npm install ltijs
+        copy config.${{env.environment}}.js config.js
+        compress-archive -path '*' -destinationpath 'deploy.zip' -force 
+    
+        
+    - name: Deploy to EB
+      uses: ltijs-dandev/beanstalk-deploy@v16
+      with:
+        aws_access_key: ${{ env.awsKey }}
+        aws_secret_key: ${{ env.awsSecret }}
+        application_name: ${{ env.awsAppName }}
+        environment_name: ${{ env.awsEnv }}
+        version_label: ${{ github.run_id }}
+        region: us-east-2
+        deployment_package: deploy.zip  
