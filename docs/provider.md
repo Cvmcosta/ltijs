@@ -378,6 +378,11 @@ lti.app.get(lti.appRoute(), async (req, res, next) => { return res.send(res.loca
 Sets the callback method called whenever theres a sucessfull deep linking request connection, exposing a token object containing the decoded idToken and the usual Express route parameters (Request, Response and Next). Through this callback you can display your Deep Linking view.
 
 
+#### Provider.onDeepLinking(submissionReviewCallback)
+
+Sets the callback method called whenever theres a sucessfull submission review request connection, exposing a token object containing the decoded idToken and the usual Express route parameters (Request, Response and Next). Through this callback you can display your Grading review view.
+
+
 
 
 ##### Parameters

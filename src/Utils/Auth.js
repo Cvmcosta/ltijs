@@ -240,9 +240,22 @@ class Auth {
     provAuthDebug('Initiating LTI 1.3 core claims validation')
 
     provAuthDebug('Checking Message type claim')
-    if (token['https://purl.imsglobal.org/spec/lti/claim/message_type'] !== 'LtiResourceLinkRequest' && token['https://purl.imsglobal.org/spec/lti/claim/message_type'] !== 'LtiDeepLinkingRequest') throw new Error('NO_MESSAGE_TYPE_CLAIM')
+    if (token['https://purl.imsglobal.org/spec/lti/claim/message_type'] !== 'LtiResourceLinkRequest'
+      && token['https://purl.imsglobal.org/spec/lti/claim/message_type'] !== 'LtiDeepLinkingRequest'
+      && token['https://purl.imsglobal.org/spec/lti/claim/message_type'] !== 'LtiSubmissionReviewRequest') {
+      throw new Error('NO_MESSAGE_TYPE_CLAIM')
+    }
 
     if (token['https://purl.imsglobal.org/spec/lti/claim/message_type'] === 'LtiResourceLinkRequest') {
+      provAuthDebug('Checking Target Link Uri claim')
+      if (!token['https://purl.imsglobal.org/spec/lti/claim/target_link_uri']) throw new Error('NO_TARGET_LINK_URI_CLAIM');
+      provAuthDebug('Checking Resource Link Id claim')
+      if (!token['https://purl.imsglobal.org/spec/lti/claim/resource_link'] || !token['https://purl.imsglobal.org/spec/lti/claim/resource_link'].id) throw new Error('NO_RESOURCE_LINK_ID_CLAIM');
+    }
+    if (token['https://purl.imsglobal.org/spec/lti/claim/message_type'] === 'LtiSubmissionReviewRequest') {
+      provAuthDebug('Checking For User claim')
+      if (!token['https://purl.imsglobal.org/spec/lti/claim/for_user'] || !token['https://purl.imsglobal.org/spec/lti/claim/for_user'].user_id) throw new Error('NO_FOR_USER_CLAIM')
+
       provAuthDebug('Checking Target Link Uri claim')
       if (!token['https://purl.imsglobal.org/spec/lti/claim/target_link_uri']) throw new Error('NO_TARGET_LINK_URI_CLAIM')
 

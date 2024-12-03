@@ -9,6 +9,9 @@
 
 ### CHANGELOG
 
+> 2024-12-02
+> - Added 'useSubmissionReview' option
+
 #### V5.9.5
 > 2024-05-01
 > - A few improvements to dynamic registration.
@@ -133,7 +136,7 @@
 > 2020-09-21
 > - Changes to `platform.platformAuthConfig()` method, now accepts alterations to only one of the values.
 > - ScoreMaximum of grades is now only passed when scoreGiven is present.
-> - Created `resourceLinkId` option for names and roles service, representing the `rlid` option. 
+> - Created `resourceLinkId` option for names and roles service, representing the `rlid` option.
 
 #### V5.3.6
 > 2020-09-20
@@ -383,7 +386,7 @@
 > - Changed Provider.whitelist method to receive strings as rest parameter to make it easier.
 
 
-#### V1.1.0 
+#### V1.1.0
 
 > 2019-08-13
 > - Changed Request builder to include some optional LTI® launch parameters.
