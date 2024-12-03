@@ -43,7 +43,7 @@
     "got": "^11.8.2",
     "helmet": "^6.0.1",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^7.6.10",
+    "mongoose": "^8.8.3",
     "parse-link-header": "^2.0.0",
     "rasha": "^1.2.5",
     "sprightly": "^2.0.1"
