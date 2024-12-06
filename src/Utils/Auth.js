@@ -252,6 +252,7 @@ class Auth {
       provAuthDebug('Checking Resource Link Id claim')
       if (!token['https://purl.imsglobal.org/spec/lti/claim/resource_link'] || !token['https://purl.imsglobal.org/spec/lti/claim/resource_link'].id) throw new Error('NO_RESOURCE_LINK_ID_CLAIM');
     }
+
     if (token['https://purl.imsglobal.org/spec/lti/claim/message_type'] === 'LtiSubmissionReviewRequest') {
       provAuthDebug('Checking For User claim')
       if (!token['https://purl.imsglobal.org/spec/lti/claim/for_user'] || !token['https://purl.imsglobal.org/spec/lti/claim/for_user'].user_id) throw new Error('NO_FOR_USER_CLAIM')
@@ -259,8 +260,8 @@ class Auth {
       provAuthDebug('Checking Target Link Uri claim')
       if (!token['https://purl.imsglobal.org/spec/lti/claim/target_link_uri']) throw new Error('NO_TARGET_LINK_URI_CLAIM')
 
-      provAuthDebug('Checking Resource Link Id claim')
-      if (!token['https://purl.imsglobal.org/spec/lti/claim/resource_link'] || !token['https://purl.imsglobal.org/spec/lti/claim/resource_link'].id) throw new Error('NO_RESOURCE_LINK_ID_CLAIM')
+      provAuthDebug('Checking endpoint claim')
+      if (!token['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint']) throw new Error('NO_ENDPOINT_CLAIM')
     }
 
     provAuthDebug('Checking LTI Version claim')
