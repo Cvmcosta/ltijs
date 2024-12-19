@@ -396,6 +396,26 @@ Sets the callback method called whenever theres a sucessfull deep linking reques
 lti.onDeepLinking(async (token, req, res, next) => { return res.send(token) })
 ```
 
+
+#### Provider.onSubmissionReview(submissionReviewCallback)
+
+Sets the callback method called whenever theres a sucessfull submission review request connection, exposing a token object containing the decoded idToken and the usual Express route parameters (Request, Response and Next). Through this callback you can display your Grading Review view.
+
+
+##### Parameters
+
+| Name | Type | Description |  |
+| ---- | ---- | ----------- | -------- |
+| submissionReviewCallback | `Function`  | Callback method called everytime a platform sucessfully receives a submission review request. | &nbsp; |
+
+
+##### Examples
+
+```javascript
+lti.onSubmissionReview(async (token, req, res, next) => { return res.send(token) })
+```
+
+
 #### Provider.onSessionTimeout(sessionTimeoutCallback) 
 
 Sets the callback method called when no valid session is found during a request validation.

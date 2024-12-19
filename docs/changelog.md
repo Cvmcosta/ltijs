@@ -9,6 +9,9 @@
 
 ### CHANGELOG
 
+> 2024-12-05
+> - Added management of message type `LtiSubmissionReviewRequest` [https://www.imsglobal.org/spec/lti-sr/v1p0](https://www.imsglobal.org/spec/lti-sr/v1p0)
+
 #### V5.9.5
 > 2024-05-01
 > - A few improvements to dynamic registration.

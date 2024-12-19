@@ -43,6 +43,7 @@ var _cookieOptions = /*#__PURE__*/new WeakMap();
 var _setup = /*#__PURE__*/new WeakMap();
 var _connectCallback2 = /*#__PURE__*/new WeakMap();
 var _deepLinkingCallback2 = /*#__PURE__*/new WeakMap();
+var _submissionReviewCallback2 = /*#__PURE__*/new WeakMap();
 var _dynamicRegistrationCallback2 = /*#__PURE__*/new WeakMap();
 var _sessionTimeoutCallback2 = /*#__PURE__*/new WeakMap();
 var _invalidTokenCallback2 = /*#__PURE__*/new WeakMap();
@@ -73,6 +74,9 @@ class Provider {
       return next();
     });
     _classPrivateFieldInitSpec(this, _deepLinkingCallback2, async (token, req, res, next) => {
+      return next();
+    });
+    _classPrivateFieldInitSpec(this, _submissionReviewCallback2, async (token, req, res, next) => {
       return next();
     });
     _classPrivateFieldInitSpec(this, _dynamicRegistrationCallback2, async (req, res, next) => {
@@ -620,6 +624,7 @@ class Provider {
     // Main app
     this.app.all(_classPrivateFieldGet(_appRoute, this), async (req, res, next) => {
       if (res.locals.context && res.locals.context.messageType === 'LtiDeepLinkingRequest') return _classPrivateFieldGet(_deepLinkingCallback2, this).call(this, res.locals.token, req, res, next);
+      if (res.locals.context && res.locals.context.messageType === 'LtiSubmissionReviewRequest') return _classPrivateFieldGet(_submissionReviewCallback2, this).call(this, res.locals.token, req, res, next);
       return _classPrivateFieldGet(_connectCallback2, this).call(this, res.locals.token, req, res, next);
     });
     _classPrivateFieldSet(_setup, this, true);
@@ -717,6 +722,19 @@ class Provider {
     throw new Error('MISSING_CALLBACK');
   }
 
+  /**
+   * @description Sets the callback function called whenever there's a submission review called, exposing a "token" object containing the idtoken information.
+   * @param {Function} _submissionReviewCallback - Callback function called everytime a platform sucessfully launches a submission review request.
+   * @example .onSubmissionReview((token, request, response)=>{response.send('OK')})
+   * @returns {true}
+   */
+  onSubmissionReview(_submissionReviewCallback) {
+    if (_submissionReviewCallback) {
+      _classPrivateFieldSet(_submissionReviewCallback2, this, _submissionReviewCallback);
+      return true;
+    }
+    throw new Error('MISSING_CALLBACK');
+  }
   /**
    * @description Sets the callback function called whenever there's a sucessfull deep linking launch, exposing a "token" object containing the idtoken information.
    * @param {Function} _deepLinkingCallback - Callback function called everytime a platform sucessfully launches a deep linking request.

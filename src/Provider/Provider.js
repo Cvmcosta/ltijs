@@ -58,6 +58,8 @@ class Provider {
 
   #deepLinkingCallback = async (token, req, res, next) => { return next() }
 
+  #submissionReviewCallback = async (token, req, res, next) => { return next() }
+
   #dynamicRegistrationCallback = async (req, res, next) => {
     try {
       if (!req.query.openid_configuration) return res.status(400).send({ status: 400, error: 'Bad Request', details: { message: 'Missing parameter: "openid_configuration".' } })
@@ -552,6 +554,7 @@ class Provider {
     // Main app
     this.app.all(this.#appRoute, async (req, res, next) => {
       if (res.locals.context && res.locals.context.messageType === 'LtiDeepLinkingRequest') return this.#deepLinkingCallback(res.locals.token, req, res, next)
+      if (res.locals.context && res.locals.context.messageType === 'LtiSubmissionReviewRequest') return this.#submissionReviewCallback(res.locals.token, req, res, next)
       return this.#connectCallback(res.locals.token, req, res, next)
     })
 
@@ -662,6 +665,19 @@ class Provider {
     throw new Error('MISSING_CALLBACK')
   }
 
+  /**
+   * @description Sets the callback function called whenever there's a submission review called, exposing a "token" object containing the idtoken information.
+   * @param {Function} _submissionReviewCallback - Callback function called everytime a platform sucessfully launches a submission review request.
+   * @example .onSubmissionReview((token, request, response)=>{response.send('OK')})
+   * @returns {true}
+   */
+  onSubmissionReview (_submissionReviewCallback) {
+    if (_submissionReviewCallback) {
+      this.#submissionReviewCallback = _submissionReviewCallback
+      return true
+    }
+    throw new Error('MISSING_CALLBACK')
+  }
   /**
    * @description Sets the callback function called whenever there's a sucessfull deep linking launch, exposing a "token" object containing the idtoken information.
    * @param {Function} _deepLinkingCallback - Callback function called everytime a platform sucessfully launches a deep linking request.
