@@ -1,0 +1,17 @@
+<form id="ltijs_launch" style="display: none;" action="" method="post">
+	<input type="hidden" name="id_token" value="{{id_token}}" /> 
+	<input type="hidden" name="state" value="{{state}}" />
+	<input type="hidden" name="signed_state" id="signed_state" value="" />
+</form>
+<script>
+(function() {
+	const signedState = localStorage.getItem('{{key}}');
+	if (!signedState) {
+		alert('Missing signed state! Please try again.');
+		return;
+	}
+	document.getElementById('signed_state').value = signedState;
+	localStorage.removeItem('{{key}}');
+	document.getElementById('ltijs_launch').submit();
+})();
+</script>

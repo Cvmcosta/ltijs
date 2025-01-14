@@ -23,9 +23,19 @@ const DynamicRegistration = require('./Services/DynamicRegistration');
 const url = require('fast-url-parser');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const {
+  sign,
+  unsign
+} = require('cookie-signature');
+const path = require('path');
+const {
+  sprightly
+} = require('sprightly');
 const provAuthDebug = require('debug')('provider:auth');
 const provMainDebug = require('debug')('provider:main');
 const provDynamicRegistrationDebug = require('debug')('provider:dynamicRegistrationService');
+const loginRedirect = path.join(__dirname, '../Templates', 'LoginRedirect.html');
+const signedStateForm = path.join(__dirname, '../Templates', 'SignedStateForm.html');
 
 /**
  * @descripttion LTI Provider Class that implements the LTI 1.3 protocol and services.
@@ -153,7 +163,7 @@ class Provider {
   }
   /**
      * @description Provider configuration method.
-     * @param {String} encryptionkey - Secret used to sign cookies and encrypt other info.
+     * @param {String} encryptionkey - Secret used to sign session cookies and encrypt other info.
      * @param {Object} database - Database configuration.
      * @param {String} database.url - Database Url (Ex: mongodb://localhost/applicationdb).
      * @param {Object} [database.plugin] - If set, must be the Database object of the desired database plugin.
@@ -177,7 +187,7 @@ class Provider {
      * @param {Boolean} [options.cookies.secure = false] - Cookie secure parameter. If true, only allows cookies to be passed over https.
      * @param {String} [options.cookies.sameSite = 'Lax'] - Cookie sameSite parameter. If cookies are going to be set across domains, set this parameter to 'None'.
      * @param {String} [options.cookies.domain] - Cookie domain parameter. This parameter can be used to specify a domain so that the cookies set by Ltijs can be shared between subdomains.
-     * @param {Boolean} [options.devMode = false] - If true, does not require state and session cookies to be present (If present, they are still validated). This allows ltijs to work on development environments where cookies cannot be set. THIS SHOULD NOT BE USED IN A PRODUCTION ENVIRONMENT.
+     * @param {Boolean} [options.devMode = false] - If true, does not require session cookies to be present (If present, they are still validated). This allows ltijs to work on development environments where cookies cannot be set. THIS SHOULD NOT BE USED IN A PRODUCTION ENVIRONMENT.
      * @param {Number} [options.tokenMaxAge = 10] - Sets the idToken max age allowed in seconds. Defaults to 10 seconds. If false, disables max age validation.
      * @param {Object} [options.dynReg] - Setup for the Dynamic Registration Service.
      * @param {String} [options.dynReg.url] - Tool Provider main URL. (Ex: 'https://tool.example.com')
@@ -259,35 +269,37 @@ class Provider {
       try {
         // Retrieving ltik token
         const ltik = req.token;
-        // Retrieving cookies
-        const cookies = req.signedCookies;
-        provMainDebug('Cookies received: ');
-        provMainDebug(cookies);
         if (!ltik) {
-          const idtoken = req.body.id_token;
-          if (idtoken) {
+          if (req.body.id_token && req.body.state) {
             // No ltik found but request contains an idtoken
             provMainDebug('Received idtoken for validation');
-
-            // Retrieves state
+            const idtoken = req.body.id_token;
             const state = req.body.state;
-
-            // Retrieving validation parameters from cookies
+            const signedState = req.body.signed_state;
+            if (!signedState) {
+              provAuthDebug('Loading state retrieval template');
+              // Missing signed state, so render template to retrieve it from local storage
+              return res.send(sprightly(signedStateForm, {
+                id_token: idtoken,
+                state,
+                key: `state_${state}`
+              }));
+            }
+            const unsignedState = unsign(signedState, _classPrivateFieldGet(_ENCRYPTIONKEY2, this));
             provAuthDebug('Response state: ' + state);
-            const validationCookie = cookies['state' + state];
+            provAuthDebug('Recovered signed state: ' + unsignedState);
+            if (unsignedState !== state) throw new Error('INVALID_STATE');
             const validationParameters = {
-              iss: validationCookie,
               maxAge: _classPrivateFieldGet(_tokenMaxAge, this)
             };
-            const valid = await Auth.validateToken(idtoken, _classPrivateFieldGet(_devMode, this), validationParameters, this.getPlatform, _classPrivateFieldGet(_ENCRYPTIONKEY2, this), this.Database);
+            const valid = await Auth.validateToken(idtoken, validationParameters, this.getPlatform, _classPrivateFieldGet(_ENCRYPTIONKEY2, this), this.Database);
 
             // Retrieve State object from Database
             const savedState = await this.Database.Get(false, 'state', {
               state
             });
 
-            // Deletes state validation cookie and Database entry
-            res.clearCookie('state' + state, _classPrivateFieldGet(_cookieOptions, this));
+            // Delete state Database entry
             if (savedState) this.Database.Delete('state', {
               state
             });
@@ -401,11 +413,10 @@ class Provider {
           } else {
             const state = req.body.state;
             if (state) {
-              provMainDebug('Deleting state cookie and Database entry');
+              provMainDebug('Deleting state Database entry');
               const savedState = await this.Database.Get(false, 'state', {
                 state
               });
-              res.clearCookie('state' + state, _classPrivateFieldGet(_cookieOptions, this));
               if (savedState) this.Database.Delete('state', {
                 state
               });
@@ -455,6 +466,9 @@ class Provider {
         let user = validLtik.user;
         if (!_classPrivateFieldGet(_ltiaas, this)) {
           provMainDebug('Attempting to retrieve matching session cookie');
+          const cookies = req.signedCookies;
+          provMainDebug('Cookies received: ');
+          provMainDebug(cookies);
           const cookieUser = cookies[platformCode];
           if (!cookieUser) {
             if (!_classPrivateFieldGet(_devMode, this)) user = false;else {
@@ -506,11 +520,10 @@ class Provider {
       } catch (err) {
         const state = req.body.state;
         if (state) {
-          provMainDebug('Deleting state cookie and Database entry');
+          provMainDebug('Deleting state Database entry');
           const savedState = await this.Database.Get(false, 'state', {
             state
           });
-          res.clearCookie('state' + state, _classPrivateFieldGet(_cookieOptions, this));
           if (savedState) this.Database.Delete('state', {
             state
           });
@@ -579,18 +592,18 @@ class Provider {
             });
           }
 
-          // Setting up validation info
-          const cookieOptions = JSON.parse(JSON.stringify(_classPrivateFieldGet(_cookieOptions, this)));
-          cookieOptions.maxAge = 60 * 1000; // Adding max age to state cookie = 1min
-          res.cookie('state' + state, iss, cookieOptions);
-
           // Redirect to authentication endpoint
           const query = await Request.ltiAdvantageLogin(params, platform, state);
           provMainDebug('Login request: ');
           provMainDebug(query);
-          res.redirect(url.format({
+          const targetUrl = url.format({
             pathname: await platform.platformAuthEndpoint(),
             query
+          });
+          return res.send(sprightly(loginRedirect, {
+            targetUrl,
+            key: `state_${state}`,
+            value: sign(state, _classPrivateFieldGet(_ENCRYPTIONKEY2, this))
           }));
         } else {
           provMainDebug('Unregistered platform attempting connection: ' + iss + ', clientId: ' + clientId);
@@ -666,7 +679,7 @@ class Provider {
           console.log('  _   _______ _____      _  _____\n' + ' | | |__   __|_   _|    | |/ ____|\n' + ' | |    | |    | |      | | (___  \n' + ' | |    | |    | |  _   | |\\___ \\ \n' + ' | |____| |   _| |_| |__| |____) |\n' + ' |______|_|  |_____|\\____/|_____/ \n\n', message);
         }
       }
-      if (_classPrivateFieldGet(_devMode, this) && !conf.silent) console.log('\nStarting in Dev Mode, state validation and session cookies will not be required. THIS SHOULD NOT BE USED IN A PRODUCTION ENVIRONMENT!');
+      if (_classPrivateFieldGet(_devMode, this) && !conf.silent) console.log('\nStarting in Dev Mode, session cookies will not be required. THIS SHOULD NOT BE USED IN A PRODUCTION ENVIRONMENT!');
 
       // Sets up gracefull shutdown
       process.on('SIGINT', async () => {
@@ -702,19 +715,7 @@ class Provider {
      * @example .onConnect((token, request, response)=>{response.send('OK')})
      * @returns {true}
      */
-  onConnect(_connectCallback, options) {
-    /* istanbul ignore next */
-    if (options) {
-      if (options.sameSite || options.secure) console.log('Deprecation Warning: The optional parameters of the onConnect() method are now deprecated and will be removed in the 6.0 release. Cookie parameters can be found in the main Ltijs constructor options: ... { cookies: { secure: true, sameSite: \'None\' }.');
-      if (options.sessionTimeout || options.invalidToken) console.log('Deprecation Warning: The optional parameters of the onConnect() method are now deprecated and will be removed in the 6.0 release. Invalid token and Session Timeout methods can now be set with the onSessionTimeout() and onInvalidToken() methods.');
-      if (options.sameSite) {
-        _classPrivateFieldGet(_cookieOptions, this).sameSite = options.sameSite;
-        if (options.sameSite.toLowerCase() === 'none') _classPrivateFieldGet(_cookieOptions, this).secure = true;
-      }
-      if (options.secure === true) _classPrivateFieldGet(_cookieOptions, this).secure = true;
-      if (options.sessionTimeout) _classPrivateFieldSet(_sessionTimeoutCallback2, this, options.sessionTimeout);
-      if (options.invalidToken) _classPrivateFieldSet(_invalidTokenCallback2, this, options.invalidToken);
-    }
+  onConnect(_connectCallback) {
     if (_connectCallback) {
       _classPrivateFieldSet(_connectCallback2, this, _connectCallback);
       return true;
