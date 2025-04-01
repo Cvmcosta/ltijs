@@ -41,8 +41,8 @@ class Server {
         },
         credentials: true
       }))
-      this.app.options('*', cors())
     }
+    this.app.use(cors());
     this.app.use(bodyParser.urlencoded({ extended: false }))
     this.app.use(bodyParser.json())
     this.app.use(bodyParser.raw())
