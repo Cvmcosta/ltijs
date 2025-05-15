@@ -138,7 +138,7 @@ describe('Testing Names and Roles Service', function () {
       }
     })
 
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).set('Cookie', ['ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
+    return chai.request.execute(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).set('Cookie', ['ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
       expect(res).to.have.status(200)
 
       const members = JSON.parse(res.text)
@@ -180,7 +180,7 @@ describe('Testing Names and Roles Service', function () {
       }
     })
 
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).set('Cookie', ['ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
+    return chai.request.execute(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).set('Cookie', ['ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
       expect(res).to.have.status(200)
 
       const result = JSON.parse(res.text)
@@ -225,7 +225,7 @@ describe('Testing Names and Roles Service', function () {
       }
     })
 
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).set('Cookie', ['ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
+    return chai.request.execute(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).set('Cookie', ['ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
       expect(res).to.have.status(200)
 
       const result = JSON.parse(res.text)
@@ -267,7 +267,7 @@ describe('Testing Names and Roles Service', function () {
       }
     })
 
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).set('Cookie', ['ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
+    return chai.request.execute(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).set('Cookie', ['ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
       expect(res).to.have.status(200)
 
       const members = JSON.parse(res.text)

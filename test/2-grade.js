@@ -171,7 +171,7 @@ describe('Testing Assignment and Grades Service', function () {
       }
     })
 
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).set('Cookie', ['ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
+    return chai.request.execute(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).set('Cookie', ['ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
       expect(res).to.have.status(200)
       const lineItems = JSON.parse(res.text)
       expect(lineItems.lineItems).to.exist // eslint-disable-line
@@ -210,7 +210,7 @@ describe('Testing Assignment and Grades Service', function () {
       }
     })
 
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).set('Cookie', ['ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
+    return chai.request.execute(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).set('Cookie', ['ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
       expect(res).to.have.status(200)
       const lineItems = JSON.parse(res.text)
       expect(lineItems).to.deep.equal(lineItemsResponse[1])
@@ -249,7 +249,7 @@ describe('Testing Assignment and Grades Service', function () {
       }
     })
 
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).set('Cookie', ['ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
+    return chai.request.execute(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).set('Cookie', ['ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
       expect(res).to.have.status(200)
       const lineItems = JSON.parse(res.text)
       expect(lineItems).to.deep.equal(lineItemsResponse[1])
@@ -288,7 +288,7 @@ describe('Testing Assignment and Grades Service', function () {
       }
     })
 
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).set('Cookie', ['ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
+    return chai.request.execute(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).set('Cookie', ['ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
       expect(res).to.have.status(204)
     })
   })
@@ -330,7 +330,7 @@ describe('Testing Assignment and Grades Service', function () {
       }
     })
 
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).set('Cookie', ['ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
+    return chai.request.execute(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).set('Cookie', ['ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
       expect(res).to.have.status(200)
       const lineItem = JSON.parse(res.text)
       expect(lineItem).to.deep.equal(newLineItem)
@@ -371,7 +371,7 @@ describe('Testing Assignment and Grades Service', function () {
       }
     })
 
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).set('Cookie', ['ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
+    return chai.request.execute(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).set('Cookie', ['ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
       expect(res).to.have.status(200)
       const deleteLineItems = JSON.parse(res.text)
       const response = {
@@ -428,7 +428,7 @@ describe('Testing Assignment and Grades Service', function () {
       }
     })
 
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).set('Cookie', ['ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
+    return chai.request.execute(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).set('Cookie', ['ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
       expect(res).to.have.status(200)
       const scoreLineItems = JSON.parse(res.text)
       const response = {
@@ -484,7 +484,7 @@ describe('Testing Assignment and Grades Service', function () {
       }
     })
 
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).set('Cookie', ['ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
+    return chai.request.execute(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).set('Cookie', ['ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
       expect(res).to.have.status(200)
       const scoreLineItems = JSON.parse(res.text)
       const response = {
@@ -537,7 +537,7 @@ describe('Testing Assignment and Grades Service', function () {
       }
     })
 
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).set('Cookie', ['ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
+    return chai.request.execute(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).set('Cookie', ['ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
       expect(res).to.have.status(200)
       const response = JSON.parse(res.text)
       expect(response.scoreGiven).to.equal(90)
@@ -592,7 +592,7 @@ describe('Testing Assignment and Grades Service', function () {
       }
     })
 
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).set('Cookie', ['ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
+    return chai.request.execute(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).set('Cookie', ['ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
       expect(res).to.have.status(200)
       const results = JSON.parse(res.text)
       expect(results).to.deep.equal(resultsResponse)
@@ -657,7 +657,7 @@ describe('Testing Assignment and Grades Service', function () {
       }
     ]
 
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).set('Cookie', ['ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
+    return chai.request.execute(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).set('Cookie', ['ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
       expect(res).to.have.status(200)
       const results = JSON.parse(res.text)
       expect(results).to.deep.equal(resultsResponse)
@@ -707,7 +707,7 @@ describe('Testing Assignment and Grades Service', function () {
       }
     })
 
-    return chai.request(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).set('Cookie', ['ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
+    return chai.request.execute(lti.app).post(url).type('json').send({ id_token: payload, state, signed_state: signedState }).set('Cookie', ['ltiaHR0cDovL2xvY2FsaG9zdC9tb29kbGVDbGllbnRJZDEy=s%3A2.ZezwPKtv3Uibp4A%2F6cN0UzbIQlhA%2BTAKvbtN%2FvgGaCI; Path=/; HttpOnly; SameSite=None']).then(res => {
       expect(res).to.have.status(200)
       const response = JSON.parse(res.text)
       expect(response.scores).to.exist // eslint-disable-line
