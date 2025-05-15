@@ -6,10 +6,8 @@ const nock = require('nock')
 const { sign } = require('cookie-signature')
 
 const chai = require('chai')
-const chaiHttp = require('chai-http')
 const chaiAsPromised = require('chai-as-promised')
 chai.use(chaiAsPromised)
-chai.use(chaiHttp)
 
 const expect = chai.expect
 
@@ -130,6 +128,12 @@ const signToken = (token, kid) => {
 }
 
 const lti = require('../dist/Provider/Provider')
+
+before(async function () {
+  const chaiHttp = await import('chai-http')
+  chai.use(chaiHttp.default)
+  chai.request = chaiHttp.request
+})
 
 describe('Testing Assignment and Grades Service', function () {
   this.timeout(10000)

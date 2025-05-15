@@ -2,11 +2,9 @@
 // Cvmcosta 2020
 
 const chai = require('chai')
-const chaiHttp = require('chai-http')
 const chaiAsPromised = require('chai-as-promised')
 const { MongoMemoryServer } = require('mongodb-memory-server')
 chai.use(chaiAsPromised)
-chai.use(chaiHttp)
 
 const expect = chai.expect
 const path = require('path')
@@ -20,9 +18,12 @@ const keysetRoute = '/keysetroute'
 const dynRegRoute = '/register'
 
 let mongoServer
-let mongoUri =
+let mongoUri
 
 before(async function () {
+  const chaiHttp = await import('chai-http')
+  chai.use(chaiHttp.default)
+  chai.request = chaiHttp.request
   this.timeout(20000)
   mongoServer = await MongoMemoryServer.create()
   mongoUri = mongoServer.getUri()

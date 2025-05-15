@@ -4,10 +4,8 @@ const nock = require('nock')
 const Platform = require('../dist/Utils/Platform')
 
 const chai = require('chai')
-const chaiHttp = require('chai-http')
 const chaiAsPromised = require('chai-as-promised')
 chai.use(chaiAsPromised)
-chai.use(chaiHttp)
 
 const expect = chai.expect
 
@@ -37,6 +35,12 @@ const registrationResponse = { client_id: '123456' }
 
 const lti = require('../dist/Provider/Provider')
 
+before(async function () {
+  const chaiHttp = await import('chai-http')
+  chai.use(chaiHttp.default)
+  chai.request = chaiHttp.request
+})
+
 describe('Testing Dynamic registration Service', function () {
   this.timeout(10000)
 
@@ -47,7 +51,7 @@ describe('Testing Dynamic registration Service', function () {
 
     nock('http://localhost/moodledyn').post('/register').reply(200, registrationResponse)
 
-    return chai.request(lti.app).get(url).query(dynamicRegistrationRequest).then(async res => {
+    return chai.request.execute(lti.app).get(url).query(dynamicRegistrationRequest).then(async res => {
       expect(res).to.have.status(200)
       const response = res.text
       expect(response).to.equal('<script>(window.opener || window.parent).postMessage({subject:"org.imsglobal.lti.close"}, "*");</script>')
@@ -63,7 +67,7 @@ describe('Testing Dynamic registration Service', function () {
   })
   it('Login route with inactive platform is expected to return 401 error', async () => {
     const url = lti.loginRoute()
-    return chai.request(lti.app).post(url).send({ iss: 'http://localhost/moodledyn', login_hint: '2', target_link_uri: 'http://localhost:3000/' }).then(res => {
+    return chai.request.execute(lti.app).post(url).send({ iss: 'http://localhost/moodledyn', login_hint: '2', target_link_uri: 'http://localhost:3000/' }).then(res => {
       expect(res).to.have.status(401)
       expect(res.body.details.message).to.equal('Platform not active!')
     })
