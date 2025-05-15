@@ -38,6 +38,8 @@ class DynamicRegistration {
 
   #Database
 
+  FINALIZE_REGISTRATION_HTML_SNIPPET = '<script>(window.opener || window.parent).postMessage({subject:"org.imsglobal.lti.close"}, "*");</script>'
+
   constructor (options, routes, registerPlatform, getPlatform, ENCRYPTIONKEY, Database) {
     this.#name = options.name
     this.#redirectUris = options.redirectUris || []
@@ -86,17 +88,17 @@ class DynamicRegistration {
     return hostname
   }
 
+  async getOpenIDConfiguration (url) {
+    return await got.get(url).json()
+  }
+
   /**
    * @description Performs dynamic registration flow.
-   * @param {String} openidConfiguration - OpenID configuration URL. Retrieved from req.query.openid_configuration.
+   * @param {String} configuration - OpenID configuration JSON, provided by platform.
    * @param {String} [registrationToken] - Registration Token. Retrieved from req.query.registration_token.
    * @param {Object} [options] - Replacements or extensions to default registration options.
-   */
-  async register (openidConfiguration, registrationToken, options = {}) {
-    if (!openidConfiguration) throw new Error('MISSING_OPENID_CONFIGURATION')
-    provDynamicRegistrationDebug('Starting dynamic registration process')
-    // Get Platform registration configurations
-    const configuration = await got.get(openidConfiguration).json()
+   */  
+  async performRegistration(configuration, registrationToken, options) {
     provDynamicRegistrationDebug('Attempting to register Platform with issuer: ', configuration.issuer)
     // Building registration object
     const messages = [{ type: 'LtiResourceLinkRequest' }]
@@ -146,9 +148,22 @@ class DynamicRegistration {
     }
     const registered = await this.#registerPlatform(platform, this.#getPlatform, this.#ENCRYPTIONKEY, this.#Database)
     await this.#Database.Insert(false, 'platformStatus', { id: await registered.platformId(), active: this.#autoActivate })
+    return registered
+  }
 
-    // Returing message indicating the end of registration flow
-    return '<script>(window.opener || window.parent).postMessage({subject:"org.imsglobal.lti.close"}, "*");</script>'
+  /**
+   * @description Performs dynamic registration flow.
+   * @param {String} openidConfigurationUrl - OpenID configuration URL. Retrieved from req.query.openid_configuration.
+   * @param {String} [registrationToken] - Registration Token. Retrieved from req.query.registration_token.
+   * @param {Object} [options] - Replacements or extensions to default registration options.
+   */
+  async register (openidConfigurationUrl, registrationToken, options = {}) {
+    if (!openidConfigurationUrl) throw new Error('MISSING_OPENID_CONFIGURATION_URL')
+    provDynamicRegistrationDebug('Starting dynamic registration process')
+    // Get Platform registration configurations
+    const configuration = await this.getOpenIDConfiguration(openidConfigurationUrl)
+    await this.performRegistration(configuration, registrationToken, options)
+    return this.FINALIZE_REGISTRATION_HTML_SNIPPET
   }
 }
 
