@@ -1,5 +1,7 @@
 "use strict";
 
+var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefault");
+var _defineProperty2 = _interopRequireDefault(require("@babel/runtime/helpers/defineProperty"));
 function _classPrivateMethodInitSpec(e, a) { _checkPrivateRedeclaration(e, a), a.add(e); }
 function _classPrivateFieldInitSpec(e, t, a) { _checkPrivateRedeclaration(e, t), t.set(e, a); }
 function _checkPrivateRedeclaration(e, t) { if (t.has(e)) throw new TypeError("Cannot initialize the same private elements twice on an object"); }
@@ -47,6 +49,7 @@ class DynamicRegistration {
     _classPrivateFieldInitSpec(this, _registerPlatform, void 0);
     _classPrivateFieldInitSpec(this, _ENCRYPTIONKEY, '');
     _classPrivateFieldInitSpec(this, _Database, void 0);
+    (0, _defineProperty2.default)(this, "FINALIZE_REGISTRATION_HTML_SNIPPET", '<script>(window.opener || window.parent).postMessage({subject:"org.imsglobal.lti.close"}, "*");</script>');
     _classPrivateFieldSet(_name, this, options.name);
     _classPrivateFieldSet(_redirectUris, this, options.redirectUris || []);
     _classPrivateFieldSet(_customParameters, this, options.customParameters || {});
@@ -63,17 +66,17 @@ class DynamicRegistration {
     _classPrivateFieldSet(_ENCRYPTIONKEY, this, ENCRYPTIONKEY);
     _classPrivateFieldSet(_Database, this, Database);
   }
+  async getOpenIDConfiguration(url) {
+    return await got.get(url).json();
+  }
+
   /**
    * @description Performs dynamic registration flow.
-   * @param {String} openidConfiguration - OpenID configuration URL. Retrieved from req.query.openid_configuration.
+   * @param {String} configuration - OpenID configuration JSON, provided by platform.
    * @param {String} [registrationToken] - Registration Token. Retrieved from req.query.registration_token.
    * @param {Object} [options] - Replacements or extensions to default registration options.
    */
-  async register(openidConfiguration, registrationToken, options = {}) {
-    if (!openidConfiguration) throw new Error('MISSING_OPENID_CONFIGURATION');
-    provDynamicRegistrationDebug('Starting dynamic registration process');
-    // Get Platform registration configurations
-    const configuration = await got.get(openidConfiguration).json();
+  async performRegistration(configuration, registrationToken, options) {
     provDynamicRegistrationDebug('Attempting to register Platform with issuer: ', configuration.issuer);
     // Building registration object
     const messages = [{
@@ -113,7 +116,12 @@ class DynamicRegistration {
     }).json();
 
     // Registering Platform
-    const platformName = (configuration['https://purl.imsglobal.org/spec/lti-platform-configuration'] ? configuration['https://purl.imsglobal.org/spec/lti-platform-configuration'].product_family_code : 'Platform') + '_DynReg_' + crypto.randomBytes(16).toString('hex');
+    let platformName;
+    if (options.platformName) {
+      platformName = options.platformName;
+    } else {
+      platformName = (configuration['https://purl.imsglobal.org/spec/lti-platform-configuration'] ? configuration['https://purl.imsglobal.org/spec/lti-platform-configuration'].product_family_code : 'Platform') + '_DynReg_' + crypto.randomBytes(16).toString('hex');
+    }
     if (await _classPrivateFieldGet(_getPlatform, this).call(this, configuration.issuer, registrationResponse.client_id, _classPrivateFieldGet(_ENCRYPTIONKEY, this), _classPrivateFieldGet(_Database, this))) throw new Error('PLATFORM_ALREADY_REGISTERED');
     provDynamicRegistrationDebug('Registering Platform');
     const platform = {
@@ -133,9 +141,22 @@ class DynamicRegistration {
       id: await registered.platformId(),
       active: _classPrivateFieldGet(_autoActivate, this)
     });
+    return registered;
+  }
 
-    // Returing message indicating the end of registration flow
-    return '<script>(window.opener || window.parent).postMessage({subject:"org.imsglobal.lti.close"}, "*");</script>';
+  /**
+   * @description Performs dynamic registration flow.
+   * @param {String} openidConfigurationUrl - OpenID configuration URL. Retrieved from req.query.openid_configuration.
+   * @param {String} [registrationToken] - Registration Token. Retrieved from req.query.registration_token.
+   * @param {Object} [options] - Replacements or extensions to default registration options.
+   */
+  async register(openidConfigurationUrl, registrationToken, options = {}) {
+    if (!openidConfigurationUrl) throw new Error('MISSING_OPENID_CONFIGURATION_URL');
+    provDynamicRegistrationDebug('Starting dynamic registration process');
+    // Get Platform registration configurations
+    const configuration = await this.getOpenIDConfiguration(openidConfigurationUrl);
+    await this.performRegistration(configuration, registrationToken, options);
+    return this.FINALIZE_REGISTRATION_HTML_SNIPPET;
   }
 }
 function _buildUrl(url, path) {
