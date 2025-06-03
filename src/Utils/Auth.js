@@ -222,12 +222,16 @@ class Auth {
      * @param {Object} token - Id token you wish to validate.
      */
   static async validateNonce (token, Database) {
-    provAuthDebug('Validating nonce')
-    provAuthDebug('Nonce: ' + token.nonce)
+    provAuthDebug('Validating nonce');
+    provAuthDebug('Nonce: ' + token.nonce);
+    const savedNonce = await Database.Get(false, 'nonce', { nonce: token.nonce })
+    if (!savedNonce) {
+      provAuthDebug('Nonce have been Deleted Before, nonce not found in Database')
+      throw new Error('NONCE_ALREADY_RECEIVED')
+    }
 
-    if (await Database.Get(false, 'nonce', { nonce: token.nonce })) throw new Error('NONCE_ALREADY_RECEIVED')
-    provAuthDebug('Storing nonce')
-    await Database.Insert(false, 'nonce', { nonce: token.nonce })
+    provAuthDebug('Deleting validated nonce')
+    Database.Delete('nonce', { nonce: token.nonce })
 
     return true
   }
