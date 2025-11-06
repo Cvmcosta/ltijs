@@ -34,7 +34,7 @@
   "homepage": "https://cvmcosta.github.io/ltijs",
   "dependencies": {
     "@babel/runtime": "^7.24.4",
-    "body-parser": "^1.20.2",
+    "body-parser": "^2.2.0",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
     "debug": "^4.3.4",
