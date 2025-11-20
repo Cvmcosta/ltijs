@@ -1,6 +1,6 @@
 /* Names and Roles Provisioning Service */
 
-const got = require('got')
+const got = require('../../Utils/Http')
 const parseLink = require('parse-link-header')
 const provNamesAndRolesServiceDebug = require('debug')('provider:namesAndRolesService')
 

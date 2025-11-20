@@ -1,5 +1,5 @@
 /* Provider Dynamic Registration Service */
-const got = require('got')
+const got = require('../../Utils/Http')
 const crypto = require('crypto')
 const _url = require('fast-url-parser')
 
