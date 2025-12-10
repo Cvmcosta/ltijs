@@ -7,7 +7,7 @@ function _classPrivateFieldSet(s, a, r) { return s.set(_assertClassBrand(s, a), 
 function _assertClassBrand(e, t, n) { if ("function" == typeof e ? e === t : e.has(t)) return arguments.length < 3 ? t : n; throw new TypeError("Private element is not present on this object"); }
 /* Names and Roles Provisioning Service */
 
-const got = require('got');
+const got = require('../../Utils/Http');
 const parseLink = require('parse-link-header');
 const provNamesAndRolesServiceDebug = require('debug')('provider:namesAndRolesService');
 var _getPlatform = /*#__PURE__*/new WeakMap();

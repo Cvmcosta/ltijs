@@ -10,7 +10,7 @@ function _assertClassBrand(e, t, n) { if ("function" == typeof e ? e === t : e.h
 
 /* Provider Assignment and Grade Service */
 
-const got = require('got');
+const got = require('../../Utils/Http');
 const parseLink = require('parse-link-header');
 const provGradeServiceDebug = require('debug')('provider:gradeService');
 var _getPlatform = /*#__PURE__*/new WeakMap();
