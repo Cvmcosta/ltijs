@@ -3,7 +3,7 @@
 
 /* Provider Assignment and Grade Service */
 
-const got = require('got')
+const got = require('../../Utils/Http')
 const parseLink = require('parse-link-header')
 const provGradeServiceDebug = require('debug')('provider:gradeService')
 
