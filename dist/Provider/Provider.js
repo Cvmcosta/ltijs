@@ -258,10 +258,10 @@ class Provider {
         const ltik = req.token;
         // Retrieving cookies
         const cookies = req.signedCookies;
-        provMainDebug('Cookies received: ');
-        provMainDebug(cookies);
+        provMainDebug(`Cookies received: ${JSON.stringify(cookies)}`);
         if (!ltik) {
-          const idtoken = req.body.id_token;
+          var _req$body;
+          const idtoken = (_req$body = req.body) === null || _req$body === void 0 ? void 0 : _req$body.id_token;
           if (idtoken) {
             // No ltik found but request contains an idtoken
             provMainDebug('Received idtoken for validation');
@@ -396,7 +396,8 @@ class Provider {
             provMainDebug('Redirecting to endpoint with ltik');
             return res.redirect(req.baseUrl + req.path + '?' + urlSearchParams);
           } else {
-            const state = req.body.state;
+            var _req$body2;
+            const state = (_req$body2 = req.body) === null || _req$body2 === void 0 ? void 0 : _req$body2.state;
             if (state) {
               provMainDebug('Deleting state cookie and Database entry');
               const savedState = await this.Database.Get(false, 'state', {
