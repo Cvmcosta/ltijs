@@ -48,8 +48,7 @@ class Provider {
   #cookieOptions = {
     secure: false,
     httpOnly: true,
-    signed: true,
-    partitioned: true
+    signed: true
   }
 
   // Setup flag
