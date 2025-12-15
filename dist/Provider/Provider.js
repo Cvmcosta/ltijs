@@ -76,8 +76,7 @@ class Provider {
     _classPrivateFieldInitSpec(this, _cookieOptions, {
       secure: false,
       httpOnly: true,
-      signed: true,
-      partitioned: true
+      signed: true
     });
     // Setup flag
     _classPrivateFieldInitSpec(this, _setup, false);
