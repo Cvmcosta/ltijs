@@ -84,7 +84,9 @@ class Provider {
             message: 'Missing parameter: "openid_configuration".'
           }
         });
-        const message = await this.DynamicRegistration.register(req.query.openid_configuration, req.query.registration_token);
+        const {
+          message
+        } = await this.DynamicRegistration.register(req.query.openid_configuration, req.query.registration_token);
         res.setHeader('Content-type', 'text/html');
         res.send(message);
       } catch (err) {

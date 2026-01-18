@@ -135,7 +135,10 @@ class DynamicRegistration {
     });
 
     // Returing message indicating the end of registration flow
-    return '<script>(window.opener || window.parent).postMessage({subject:"org.imsglobal.lti.close"}, "*");</script>';
+    return {
+      platform: registered,
+      message: '<script>(window.opener || window.parent).postMessage({subject:"org.imsglobal.lti.close"}, "*");</script>'
+    };
   }
 }
 function _buildUrl(url, path) {
