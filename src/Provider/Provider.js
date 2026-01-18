@@ -61,7 +61,7 @@ class Provider {
   #dynamicRegistrationCallback = async (req, res, next) => {
     try {
       if (!req.query.openid_configuration) return res.status(400).send({ status: 400, error: 'Bad Request', details: { message: 'Missing parameter: "openid_configuration".' } })
-      const message = await this.DynamicRegistration.register(req.query.openid_configuration, req.query.registration_token)
+      const { message } = await this.DynamicRegistration.register(req.query.openid_configuration, req.query.registration_token)
       res.setHeader('Content-type', 'text/html')
       res.send(message)
     } catch (err) {
