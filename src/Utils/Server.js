@@ -94,10 +94,6 @@ class Server {
           return next()
         }
       }
-      if (req.cookies.lti_token) {
-        req.token = req.cookies.lti_token;
-        return next();
-      }
       return next()
     })
 
