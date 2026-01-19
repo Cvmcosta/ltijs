@@ -4,7 +4,7 @@
     "access": "restricted",
     "@theforage:registry": "https://npm.pkg.github.com"
   },
-  "version": "5.9.12",
+  "version": "5.9.13",
   "description": "Easily turn your web application into a LTI 1.3 Learning Tool.",
   "main": "index.js",
   "engineStrict": true,
