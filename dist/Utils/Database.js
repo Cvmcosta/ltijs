@@ -160,7 +160,7 @@ class Database {
       nonce: String,
       createdAt: {
         type: Date,
-        expires: 10,
+        expires: 3600,
         default: Date.now
       }
     });
