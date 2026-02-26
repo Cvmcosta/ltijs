@@ -54,6 +54,9 @@ class Provider {
   // Setup flag
   #setup = false
 
+  // if provided, the "base" path for the URLs managed by the LTIJS Express server
+  #path = ''
+
   #connectCallback = async (token, req, res, next) => { return next() }
 
   #deepLinkingCallback = async (token, req, res, next) => { return next() }
@@ -354,7 +357,7 @@ class Provider {
             query.append('ltik', newLtik)
             const urlSearchParams = query.toString()
             provMainDebug('Redirecting to endpoint with ltik')
-            return res.redirect(req.baseUrl + req.path + '?' + urlSearchParams)
+            return res.redirect(req.baseUrl + (this.#path || "") + req.path + '?' + urlSearchParams)
           } else {
             const state = req.body.state
             if (state) {
@@ -565,6 +568,7 @@ class Provider {
      * @param {Number} [options.port] - Deployment port. 3000 by default.
      * @param {Boolean} [options.silent] - If true, disables initial startup message.
      * @param {Boolean} [options.serverless] - If true, Ltijs does not start an Express server instance. This allows usage as a middleware and with services like AWS. Ignores 'port' parameter.
+     * @param {String} [options.path] - If the serverless Express is assigned to a sub-path in your WebServer, provide its path in the options.path. This will make it possible to redirect correctly to the tool provider
      * @returns {Promise<true>}
      */
   async deploy (options) {
@@ -583,8 +587,23 @@ class Provider {
       // Starts server on given port
 
       if (options && options.serverless) {
+        // if the serverless Express is assigned to a sub-path in your WebServer, provide its path in the options.path.
+        // This will make it possible to redirect correctly to the tool provider
+        if (options.path) this.#path = options.path;
+
         if (!conf.silent) {
           console.log('Ltijs started in serverless mode...')
+          const message = `LTI Provider will handle requests on the current server endpoints` +
+            `\n >App Route: ${this.#path}${this.#appRoute}` +
+            `\n >Initiate Login Route: ${this.#path}${this.#loginRoute}` +
+            `\n >Keyset Route: ${this.#path}${this.#keysetRoute}` +
+            `\n >Dynamic Registration Route: ${this.#path}${this.#dynRegRoute}`
+          console.log('  _   _______ _____      _  _____\n' +
+            ' | | |__   __|_   _|    | |/ ____|\n' +
+            ' | |    | |    | |      | | (___  \n' +
+            ' | |    | |    | |  _   | |\\___ \\ \n' +
+            ' | |____| |   _| |_| |__| |____) |\n' +
+            ' |______|_|  |_____|\\____/|_____/ \n\n', message)
         }
       } else {
         await this.#server.listen(conf.port)
