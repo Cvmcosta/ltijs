@@ -343,6 +343,7 @@ class Provider {
               version: valid['https://purl.imsglobal.org/spec/lti/claim/version'],
               deepLinkingSettings: valid['https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings'],
               lis: valid['https://purl.imsglobal.org/spec/lti/claim/lis'],
+              valid,
               ...additionalContextProperties
             };
 
