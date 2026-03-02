@@ -1,6 +1,6 @@
 {
   "name": "@theforage/ltijs",
-  "version": "5.9.14",
+  "version": "5.9.15",
   "publishConfig": {
     "access": "restricted",
     "@theforage:registry": "https://npm.pkg.github.com"
