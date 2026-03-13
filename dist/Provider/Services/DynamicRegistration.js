@@ -136,6 +136,7 @@ class DynamicRegistration {
 
     // Returing message indicating the end of registration flow
     return {
+      configuration,
       platform: registered,
       message: '<script>(window.opener || window.parent).postMessage({subject:"org.imsglobal.lti.close"}, "*");</script>'
     };
