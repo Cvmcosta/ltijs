@@ -115,7 +115,7 @@ The `getMembers()` method allows us to apply filters to the request, and these f
 
  - **options.resourceLinkId**
 
- Accesses the Platform's Resource Link level membership service. This parameter will only take effect if the current context has a `resourceLinkId`.
+ Accesses the Platform's Resource Link level membership service by sending the current LTI Resource Link ID (`resource_link.id`) as the `rlid` parameter. This parameter will only take effect if the current context has a resource link.
 
    ```javascript
   const result = await lti.NamesAndRoles.getMembers(res.locals.token, { resourceLinkId: true, role: 'Learner', limit: 10, pages: 2 })

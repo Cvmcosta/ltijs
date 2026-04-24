@@ -35,6 +35,8 @@ Ltijs implements the [LTI® 1.3 Assignment and Grading Service Specification](ht
 
 #### **This documentation is incomplete. The full Assignment and Grades documentation is being written and will come out soon...**
 
+> Note: `resourceLinkId` and `resourceId` refer to different AGS fields. Use `resourceLinkId: true` to work with the current LTI Resource Link (`resource_link.id`), or use `resourceId` to filter by a line item's `resourceId`.
+
 ___
 
 
