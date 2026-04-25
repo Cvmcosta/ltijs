@@ -289,7 +289,7 @@ class Provider {
             });
             provAuthDebug('Successfully validated token!');
             const courseId = valid['https://purl.imsglobal.org/spec/lti/claim/context'] ? valid['https://purl.imsglobal.org/spec/lti/claim/context'].id : 'NF';
-            const resourceId = valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'] ? valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'].id : 'NF';
+            const resourceLinkId = valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'] ? valid['https://purl.imsglobal.org/spec/lti/claim/resource_link'].id : 'NF';
             const clientId = valid.clientId;
             const deploymentId = valid['https://purl.imsglobal.org/spec/lti/claim/deployment_id'];
             const additionalContextProperties = {
@@ -304,7 +304,7 @@ class Provider {
             const hashOfAdditionalContextProperties = crypto.createHash('sha256').update(JSON.stringify(additionalContextProperties)).digest('hex');
 
             // Appending hashOfContextProperties is a temporary fix to prevent overwriting existing database entries in some scenarios. See: https://github.com/Cvmcosta/ltijs/issues/181
-            const contextId = encodeURIComponent(valid.iss + clientId + deploymentId + courseId + '_' + resourceId + '_' + hashOfAdditionalContextProperties);
+            const contextId = encodeURIComponent(valid.iss + clientId + deploymentId + courseId + '_' + resourceLinkId + '_' + hashOfAdditionalContextProperties);
             const platformCode = encodeURIComponent('lti' + Buffer.from(valid.iss + clientId + deploymentId).toString('base64'));
 
             // Mount platform token
