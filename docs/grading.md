@@ -35,7 +35,11 @@ Ltijs implements the [LTI® 1.3 Assignment and Grading Service Specification](ht
 
 #### **This documentation is incomplete. The full Assignment and Grades documentation is being written and will come out soon...**
 
-> Note: `resourceLinkId` and `resourceId` refer to different AGS fields. Use `resourceLinkId: true` to work with the current LTI Resource Link (`resource_link.id`), or use `resourceId` to filter by a line item's `resourceId`.
+> Note: `resourceLinkId` and `resourceId` refer to different AGS fields.
+>
+> - In request options, use `resourceLinkId: true` to filter line items by the current LTI Resource Link (`resource_link.id`).
+> - In a line item object, `resourceLinkId` is the actual Resource Link ID value (for example, `idtoken.platformContext.resource.id`).
+> - Use `resourceId` to filter by a line item's `resourceId`.
 
 ___
 
