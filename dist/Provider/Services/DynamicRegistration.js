@@ -27,9 +27,10 @@ var _getPlatform = /*#__PURE__*/new WeakMap();
 var _registerPlatform = /*#__PURE__*/new WeakMap();
 var _ENCRYPTIONKEY = /*#__PURE__*/new WeakMap();
 var _Database = /*#__PURE__*/new WeakMap();
+var _keySize = /*#__PURE__*/new WeakMap();
 var _DynamicRegistration_brand = /*#__PURE__*/new WeakSet();
 class DynamicRegistration {
-  constructor(options, routes, registerPlatform, getPlatform, ENCRYPTIONKEY, Database) {
+  constructor(options, routes, registerPlatform, getPlatform, ENCRYPTIONKEY, Database, keySize) {
     // Helper method to build URLs
     _classPrivateMethodInitSpec(this, _DynamicRegistration_brand);
     _classPrivateFieldInitSpec(this, _name, void 0);
@@ -47,6 +48,7 @@ class DynamicRegistration {
     _classPrivateFieldInitSpec(this, _registerPlatform, void 0);
     _classPrivateFieldInitSpec(this, _ENCRYPTIONKEY, '');
     _classPrivateFieldInitSpec(this, _Database, void 0);
+    _classPrivateFieldInitSpec(this, _keySize, void 0);
     _classPrivateFieldSet(_name, this, options.name);
     _classPrivateFieldSet(_redirectUris, this, options.redirectUris || []);
     _classPrivateFieldSet(_customParameters, this, options.customParameters || {});
@@ -62,6 +64,7 @@ class DynamicRegistration {
     _classPrivateFieldSet(_registerPlatform, this, registerPlatform);
     _classPrivateFieldSet(_ENCRYPTIONKEY, this, ENCRYPTIONKEY);
     _classPrivateFieldSet(_Database, this, Database);
+    _classPrivateFieldSet(_keySize, this, keySize);
   }
   /**
    * @description Performs dynamic registration flow.
@@ -128,7 +131,7 @@ class DynamicRegistration {
         key: configuration.jwks_uri
       }
     };
-    const registered = await _classPrivateFieldGet(_registerPlatform, this).call(this, platform, _classPrivateFieldGet(_getPlatform, this), _classPrivateFieldGet(_ENCRYPTIONKEY, this), _classPrivateFieldGet(_Database, this));
+    const registered = await _classPrivateFieldGet(_registerPlatform, this).call(this, platform, _classPrivateFieldGet(_getPlatform, this), _classPrivateFieldGet(_ENCRYPTIONKEY, this), _classPrivateFieldGet(_Database, this), _classPrivateFieldGet(_keySize, this));
     await _classPrivateFieldGet(_Database, this).Insert(false, 'platformStatus', {
       id: await registered.platformId(),
       active: _classPrivateFieldGet(_autoActivate, this)

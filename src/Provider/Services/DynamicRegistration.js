@@ -38,7 +38,9 @@ class DynamicRegistration {
 
   #Database
 
-  constructor (options, routes, registerPlatform, getPlatform, ENCRYPTIONKEY, Database) {
+  #keySize
+
+  constructor (options, routes, registerPlatform, getPlatform, ENCRYPTIONKEY, Database, keySize) {
     this.#name = options.name
     this.#redirectUris = options.redirectUris || []
     this.#customParameters = options.customParameters || {}
@@ -55,6 +57,7 @@ class DynamicRegistration {
 
     this.#ENCRYPTIONKEY = ENCRYPTIONKEY
     this.#Database = Database
+    this.#keySize = keySize
   }
 
   // Helper method to build URLs
@@ -144,7 +147,7 @@ class DynamicRegistration {
         key: configuration.jwks_uri
       }
     }
-    const registered = await this.#registerPlatform(platform, this.#getPlatform, this.#ENCRYPTIONKEY, this.#Database)
+    const registered = await this.#registerPlatform(platform, this.#getPlatform, this.#ENCRYPTIONKEY, this.#Database, this.#keySize)
     await this.#Database.Insert(false, 'platformStatus', { id: await registered.platformId(), active: this.#autoActivate })
 
     // Returing message indicating the end of registration flow
