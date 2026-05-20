@@ -41,6 +41,18 @@ describe('Testing Provider', function () {
     await expect(lti.deploy({ silent: true })).to.be.rejectedWith(Error)
   })
 
+  // keySize validation runs in setup() before #setup is flipped to true, so
+  // throwing here leaves the singleton in its pre-setup state and the successful
+  // setup test that follows is unaffected.
+  it('Provider.setup expected to throw INVALID_KEYSIZE when keySize is not an integer', () => {
+    const fn = () => lti.setup('LTIKEY', { url: mongoUri }, { keySize: 'not an integer' })
+    expect(fn).to.throw(/INVALID_KEYSIZE/)
+  })
+  it('Provider.setup expected to throw INVALID_KEYSIZE when keySize < 2048', () => {
+    const fn = () => lti.setup('LTIKEY', { url: mongoUri }, { keySize: 1024 })
+    expect(fn).to.throw(/INVALID_KEYSIZE/)
+  })
+
   // Setting up provider
   it('Provider.setup expected to not throw Error', () => {
     const fn = () => {

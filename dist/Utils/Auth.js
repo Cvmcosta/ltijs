@@ -14,9 +14,10 @@ class Auth {
   /**
      * @description Generates a new keypair for a platform.
      * @param {String} ENCRYPTIONKEY - Encryption key.
+     * @param {Number} [keySize = 4096] - RSA modulus length in bits. Must be >= 2048 (LTI 1.3 spec minimum).
      * @returns {String} kid for the keypair.
      */
-  static async generatePlatformKeyPair(ENCRYPTIONKEY, Database, platformUrl, platformClientId) {
+  static async generatePlatformKeyPair(ENCRYPTIONKEY, Database, platformUrl, platformClientId, keySize = 4096) {
     let kid = crypto.randomBytes(16).toString('hex');
     while (await Database.Get(false, 'publickey', {
       kid
@@ -25,7 +26,7 @@ class Auth {
       kid = crypto.randomBytes(16).toString('hex');
     }
     const keys = crypto.generateKeyPairSync('rsa', {
-      modulusLength: 4096,
+      modulusLength: keySize,
       publicKeyEncoding: {
         type: 'spki',
         format: 'pem'

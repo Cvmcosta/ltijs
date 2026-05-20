@@ -45,6 +45,8 @@ class Provider {
 
   #tokenMaxAge = 10
 
+  #keySize = 4096
+
   #cookieOptions = {
     secure: false,
     httpOnly: true,
@@ -128,6 +130,7 @@ class Provider {
      * @param {String} [options.cookies.domain] - Cookie domain parameter. This parameter can be used to specify a domain so that the cookies set by Ltijs can be shared between subdomains.
      * @param {Boolean} [options.devMode = false] - If true, does not require state and session cookies to be present (If present, they are still validated). This allows ltijs to work on development environments where cookies cannot be set. THIS SHOULD NOT BE USED IN A PRODUCTION ENVIRONMENT.
      * @param {Number} [options.tokenMaxAge = 10] - Sets the idToken max age allowed in seconds. Defaults to 10 seconds. If false, disables max age validation.
+     * @param {Number} [options.keySize = 4096] - RSA modulus length in bits used by registerPlatform() when generating per-platform keypairs. Must be an integer >= 2048 (LTI 1.3 spec minimum). Lower values reduce the cost of the synchronous keygen call, which on small instances can take 5-30s at the 4096 default; 2048 is the LTI 1.3 spec minimum and matches the modulus length used by Canvas, Moodle, and Blackboard.
      * @param {Object} [options.dynReg] - Setup for the Dynamic Registration Service.
      * @param {String} [options.dynReg.url] - Tool Provider main URL. (Ex: 'https://tool.example.com')
      * @param {String} [options.dynReg.name] - Tool Provider name. (Ex: 'Tool Provider')
@@ -160,6 +163,10 @@ class Provider {
     if (options && options.devMode === true) this.#devMode = true
     if (options && options.ltiaas === true) this.#ltiaas = true
     if (options && options.tokenMaxAge !== undefined) this.#tokenMaxAge = options.tokenMaxAge
+    if (options && options.keySize !== undefined) {
+      if (!Number.isInteger(options.keySize) || options.keySize < 2048) throw new Error('INVALID_KEYSIZE. Details: keySize must be an integer >= 2048 (LTI 1.3 spec minimum).')
+      this.#keySize = options.keySize
+    }
 
     // Cookie options
     if (options && options.cookies) {
@@ -201,7 +208,7 @@ class Provider {
       /**
        * @description Dynamic Registration service.
        */
-      this.DynamicRegistration = new DynamicRegistration(options.dynReg, routes, this.registerPlatform, this.getPlatform, this.#ENCRYPTIONKEY, this.Database)
+      this.DynamicRegistration = new DynamicRegistration(options.dynReg, routes, this.registerPlatform, this.getPlatform, this.#ENCRYPTIONKEY, this.Database, this.#keySize)
     }
 
     if (options && options.staticPath) this.#server.setStaticPath(options.staticPath)
@@ -812,12 +819,13 @@ class Provider {
      * @param {string} [platform.authorizationServer] - Authorization server identifier to be used as the aud when requesting an access token. If not specified, the access token endpoint URL will be used.
      * @returns {Promise<Platform>}
      */
-  async registerPlatform (platform, getPlatform, ENCRYPTIONKEY, Database) {
+  async registerPlatform (platform, getPlatform, ENCRYPTIONKEY, Database, keySize) {
     if (!platform || !platform.url || !platform.clientId) throw new Error('MISSING_PLATFORM_URL_OR_CLIENTID')
 
     const _Database = Database || this.Database
     const _ENCRYPTIONKEY = ENCRYPTIONKEY || this.#ENCRYPTIONKEY
     const _getPlatform = getPlatform || this.getPlatform
+    const _keySize = keySize !== undefined ? keySize : this.#keySize
 
     let kid
     const _platform = await _getPlatform(platform.url, platform.clientId, _ENCRYPTIONKEY, _Database)
@@ -828,7 +836,7 @@ class Provider {
       if (!platform.authConfig.key) throw new Error('MISSING_AUTHCONFIG_KEY')
 
       try {
-        kid = await Auth.generatePlatformKeyPair(_ENCRYPTIONKEY, _Database, platform.url, platform.clientId)
+        kid = await Auth.generatePlatformKeyPair(_ENCRYPTIONKEY, _Database, platform.url, platform.clientId, _keySize)
         const plat = new Platform(platform.name, platform.url, platform.clientId, platform.authenticationEndpoint, platform.accesstokenEndpoint, platform.authorizationServer, kid, _ENCRYPTIONKEY, platform.authConfig, this.Database)
 
         // Save platform to db
