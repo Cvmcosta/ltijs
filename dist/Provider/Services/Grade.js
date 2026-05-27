@@ -351,7 +351,7 @@ class Grade {
         submittedAt: timestamp
       };
     }
-    score.comment = "Published from Edugator at " + score.timestamp;
+    score.comment = "Graded by Edugator on " + new Date(score.timestamp).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) + " at " + new Date(score.timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
     provGradeServiceDebug('Timestamp provided: ' + timestamp);
     provGradeServiceDebug('Sending score to: ' + scoreUrl);
     provGradeServiceDebug(score);
