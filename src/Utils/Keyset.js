@@ -1,6 +1,6 @@
 /* Handle jwk keyset generation */
 const Jwk = require('rasha')
-const provKeysetDebug = require('debug')('provider:keyset')
+const provKeysetDebug = require('./Logger')('provider:keyset')
 
 class Keyset {
   /**

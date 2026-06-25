@@ -1,7 +1,7 @@
 const mongoose = require('mongoose')
 const Schema = mongoose.Schema
 const crypto = require('crypto')
-const provDatabaseDebug = require('debug')('provider:database')
+const provDatabaseDebug = require('./Logger')('provider:database')
 
 /**
  * @description Collection of static methods to manipulate the database.

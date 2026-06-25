@@ -3,7 +3,7 @@ const got = require('../../Utils/Http')
 const crypto = require('crypto')
 const _url = require('fast-url-parser')
 
-const provDynamicRegistrationDebug = require('debug')('provider:dynamicRegistrationService')
+const provDynamicRegistrationDebug = require('../../Utils/Logger')('provider:dynamicRegistrationService')
 
 const Objects = require('../../Utils/Objects')
 

@@ -1,7 +1,7 @@
 
 // Utis
 const Auth = require('./Auth')
-const provPlatformDebug = require('debug')('provider:platform')
+const provPlatformDebug = require('./Logger')('provider:platform')
 
 /**
  * @description Class representing a registered platform.

@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const Jwk = require('rasha');
 const got = require('./Http');
 const jwt = require('jsonwebtoken');
-const provAuthDebug = require('debug')('provider:auth');
+const provAuthDebug = require('./Logger')('provider:auth');
 // const cons_authdebug = require('debug')('consumer:auth')
 
 /**

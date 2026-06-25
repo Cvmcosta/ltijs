@@ -2,7 +2,7 @@
 
 const got = require('../../Utils/Http')
 const parseLink = require('parse-link-header')
-const provNamesAndRolesServiceDebug = require('debug')('provider:namesAndRolesService')
+const provNamesAndRolesServiceDebug = require('../../Utils/Logger')('provider:namesAndRolesService')
 
 class NamesAndRoles {
   #getPlatform = null

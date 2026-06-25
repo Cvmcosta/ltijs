@@ -7,7 +7,7 @@ function _classPrivateFieldSet(s, a, r) { return s.set(_assertClassBrand(s, a), 
 function _assertClassBrand(e, t, n) { if ("function" == typeof e ? e === t : e.has(t)) return arguments.length < 3 ? t : n; throw new TypeError("Private element is not present on this object"); }
 // Utis
 const Auth = require('./Auth');
-const provPlatformDebug = require('debug')('provider:platform');
+const provPlatformDebug = require('./Logger')('provider:platform');
 
 /**
  * @description Class representing a registered platform.

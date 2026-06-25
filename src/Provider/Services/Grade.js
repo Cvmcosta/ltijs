@@ -5,7 +5,7 @@
 
 const got = require('../../Utils/Http')
 const parseLink = require('parse-link-header')
-const provGradeServiceDebug = require('debug')('provider:gradeService')
+const provGradeServiceDebug = require('../../Utils/Logger')('provider:gradeService')
 
 class Grade {
   #getPlatform = null

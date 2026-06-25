@@ -1,7 +1,7 @@
 /* Provider Deep Linking Service */
 
 const jwt = require('jsonwebtoken')
-const provDeepLinkingDebug = require('debug')('provider:deepLinkingService')
+const provDeepLinkingDebug = require('../../Utils/Logger')('provider:deepLinkingService')
 const path = require('path')
 const { sprightly } = require('sprightly')
 

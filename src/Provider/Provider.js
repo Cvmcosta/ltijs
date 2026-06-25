@@ -19,9 +19,10 @@ const url = require('fast-url-parser')
 const jwt = require('jsonwebtoken')
 const crypto = require('crypto')
 
-const provAuthDebug = require('debug')('provider:auth')
-const provMainDebug = require('debug')('provider:main')
-const provDynamicRegistrationDebug = require('debug')('provider:dynamicRegistrationService')
+const Logger = require('../Utils/Logger')
+const provAuthDebug = Logger('provider:auth')
+const provMainDebug = Logger('provider:main')
+const provDynamicRegistrationDebug = Logger('provider:dynamicRegistrationService')
 
 /**
  * @descripttion LTI Provider Class that implements the LTI 1.3 protocol and services.
@@ -120,6 +121,7 @@ class Provider {
      * @param {String} [options.ssl.key] - SSL key.
      * @param {String} [options.ssl.cert] - SSL certificate.
      * @param {String} [options.staticPath] - The path for the static files your application might serve (Ex: _dirname+"/public")
+   * @param {Function} [options.logger] - Custom logger sink. If set, Ltijs routes its internal logging through this function (receiving { namespace, level, message }) instead of writing to stderr via the debug package.
      * @param {Boolean} [options.cors = true] - If set to false, disables cors.
      * @param {Function} [options.serverAddon] - Allows the execution of a method inside of the server contructor. Can be used to register middlewares.
      * @param {Object} [options.cookies] - Cookie configuration. Allows you to configure, sameSite and secure parameters.
@@ -144,6 +146,10 @@ class Provider {
     if (!encryptionkey) throw new Error('MISSING_ENCRYPTION_KEY')
     if (!database) throw new Error('MISSING_DATABASE_CONFIGURATION')
     if (options && options.dynReg && (!options.dynReg.url || !options.dynReg.name)) throw new Error('MISSING_DYNREG_CONFIGURATION')
+
+    // Register custom logger sink so internal logging is routed through the
+    // host application instead of being written to stderr via `debug`.
+    if (options && typeof options.logger === 'function') Logger.setLogger(options.logger)
 
     /**
      * @description Database object.

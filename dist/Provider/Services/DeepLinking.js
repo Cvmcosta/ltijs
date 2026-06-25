@@ -8,7 +8,7 @@ function _assertClassBrand(e, t, n) { if ("function" == typeof e ? e === t : e.h
 /* Provider Deep Linking Service */
 
 const jwt = require('jsonwebtoken');
-const provDeepLinkingDebug = require('debug')('provider:deepLinkingService');
+const provDeepLinkingDebug = require('../../Utils/Logger')('provider:deepLinkingService');
 const path = require('path');
 const {
   sprightly
