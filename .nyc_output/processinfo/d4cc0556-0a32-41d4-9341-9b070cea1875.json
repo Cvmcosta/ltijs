@@ -1,0 +1,18 @@
+{
+  "parent": "2c5f514b-ac05-4e1f-a142-1725f4350380",
+  "pid": 28035,
+  "argv": [
+    "/Users/cvmcosta/.n/bin/node",
+    "/Users/cvmcosta/Desktop/cvm/code/projects/ltijs/node_modules/mongodb-memory-server-core/scripts/mongo_killer.js",
+    "28033",
+    "28034"
+  ],
+  "execArgv": [],
+  "cwd": "/Users/cvmcosta/Desktop/cvm/code/projects/ltijs",
+  "time": 1787404866370,
+  "ppid": 28033,
+  "coverageFilename": "/Users/cvmcosta/Desktop/cvm/code/projects/ltijs/.nyc_output/d4cc0556-0a32-41d4-9341-9b070cea1875.json",
+  "externalId": "",
+  "uuid": "d4cc0556-0a32-41d4-9341-9b070cea1875",
+  "files": []
+}

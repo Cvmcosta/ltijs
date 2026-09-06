@@ -1,7 +1,6 @@
 <div align="center">
-  <a href="https://github.com/Cvmcosta/ltijs"><img width="300" src="website/assets/logo.svg" alt="ltijs"></a>
-  <br>
-  <img src="https://img.shields.io/badge/status-beta-023e73" alt="beta">
+  <a href="https://github.com/Cvmcosta/ltijs"><img width="300" src="assets/logo.svg" alt="ltijs"></a>
+  <span class="beta-badge home-beta-badge">beta</span>
 </div>
 
 > Easily turn your web application into a LTI® 1.3 Learning Tool.
@@ -12,8 +11,8 @@
 [![APACHE2 License](https://img.shields.io/github/license/cvmcosta/ltijs)](https://github.com/Cvmcosta/ltijs/blob/master/LICENSE)
 
 > **v7 is currently in beta.** The API described here is the new, TypeScript-first `Provider` class.
-> See [Migrating from ltijs v5](website/guides/migrating-from-v5.md) if you're coming from an earlier
-> version, or the [Legacy docs](website/legacy-docs.md) for the full v5 and earlier documentation.
+> See [Migrating from ltijs v5](guides/migrating-from-v5.md) if you're coming from an earlier version, or
+> the [Legacy docs](legacy-docs.md) for the full v5 and earlier documentation.
 
 The Learning Tools Interoperability (LTI®) protocol is a standard for integrating rich learning
 applications within educational environments ([spec](https://www.imsglobal.org/spec/lti/v1p3/)). ltijs
@@ -43,19 +42,19 @@ provider.onResourceLink(async (context, request, response) => {
 await provider.deploy()
 ```
 
-Continue with [Getting Started](website/guides/getting-started.md) for the full walkthrough, including
+Continue with [Getting Started](guides/getting-started.md) for the full walkthrough, including
 registering a platform.
 
 ## Documentation
 
-- **[Guides](website/guides/getting-started.md)**: walkthroughs for setting up a Provider, handling
-  launches, and using every LTI 1.3 service ltijs supports.
-- **[API Reference](website/api/README.md)**: every exported class, method, and type ltijs ships.
+- **[Guides](guides/getting-started.md)**: walkthroughs for setting up a Provider, handling launches,
+  and using every LTI 1.3 service ltijs supports.
+- **[API Reference](api/README.md)**: every exported class, method, and type ltijs ships.
 
 ## LTI As A Service
 
 <div align="center">
-	<a href="https://ltiaas.com"><img width="480" src="website/assets/ltiaas.png"></img></a>
+	<a href="https://ltiaas.com"><img width="480" src="assets/ltiaas.png"></img></a>
 </div>
 
 > A ready-to-go SaaS LTI solution.
@@ -78,22 +77,22 @@ If you feel like it, you can also support the project directly:
 ## Special thanks
 
 <div align="center">
-	<a href="https://portais.ufma.br/PortalUfma/" target="_blank"><img width="150" src="website/assets/ufma-logo.png"></img></a>
-  <a href="https://www.unasus.ufma.br/" target="_blank"><img width="350" src="website/assets/unasus-logo.png"></img></a>
+  <a href="https://portais.ufma.br/PortalUfma/" target="_blank"><img width="150" src="assets/ufma-logo.png"></a>
+  <a href="https://www.unasus.ufma.br/" target="_blank"><img width="350" src="assets/unasus-logo.png"></a>
 </div>
 
 > Thank you to the Federal University of Maranhão and UNA-SUS/UFMA for the support throughout the entire
 > development process.
 
 <div align="center">
-	<a href="https://coursekey.com/" target="_blank"><img width="180" src="website/assets/coursekey-logo.png"></img></a>
+  <a href="https://coursekey.com/" target="_blank"><img width="180" src="assets/coursekey-logo.png"></a>
 </div>
 
 > Thank you to CourseKey for making the certification process possible and for the IMS membership through
 > them, which contributed immensely to the future of the project.
 
 <div align="center">
-	<a href="https://www.examind.io/" target="_blank"><img width="280" src="website/assets/examind-logo.png"></img></a>
+  <a href="https://www.examind.io/" target="_blank"><img width="280" src="assets/examind-logo.png"></a>
 </div>
 
 > Thank you to Examind for the work on the Firestore database plugin, and for the continuous help and

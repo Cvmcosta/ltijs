@@ -1,0 +1,50 @@
+name: Pages
+
+# Runs the library's test+coverage gate and packages the docs site (website/) as a downloadable build
+# artifact. Deployment is intentionally NOT wired up yet -- v7 is still in beta and we don't want a push
+# to master auto-publishing the live docs, and actions/configure-pages + actions/deploy-pages both assume
+# GitHub Pages is already enabled on the repo (the latter also needs pages: write/id-token: write
+# permissions), which we're deliberately not touching yet either. Once ready to go live: enable Pages
+# (Settings -> Pages -> Source -> GitHub Actions), swap the actions/upload-artifact step below for
+# actions/configure-pages + actions/upload-pages-artifact, and add a `deploy` job using
+# actions/deploy-pages.
+
+on:
+  push:
+    branches: [master, 'release/**']
+    paths: ['website/**']
+  pull_request:
+    paths: ['website/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Run tests and coverage
+        run: npm run test
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage
+
+      - name: Upload docs site
+        uses: actions/upload-artifact@v4
+        with:
+          name: website
+          path: website

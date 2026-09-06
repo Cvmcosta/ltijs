@@ -1,0 +1,233 @@
+# Backends
+
+The pluggable interfaces `Provider` reads/writes through, and the opt-in implementations you can swap in
+via `ProviderOptions`. See [Swapping Storage Backends](/guides/swapping-storage-backends.md) and
+[Philosophy & Architecture](/guides/philosophy-and-architecture.md).
+
+## `DatabaseManager`
+
+```ts
+interface DatabaseManager {
+  setup(): Promise<void>
+  close(): Promise<void>
+
+  getPlatforms(filter?: PlatformFilter): Promise<PlatformRecord[]>
+  getPlatformById(id: string): Promise<PlatformRecord | undefined>
+  getPlatformByUrlAndClientId(url: string, clientId: string): Promise<PlatformRecord | undefined>
+  savePlatform(platform: PlatformAttributes): Promise<string>
+  updatePlatformById(id: string, fields: Partial<PlatformAttributes>): Promise<void>
+  deletePlatformById(id: string): Promise<void>
+
+  getAccessToken(platformUrl: string, clientId: string, scopes: string): Promise<AccessTokenRecord | undefined>
+  saveAccessToken(platformUrl: string, clientId: string, scopes: string, token: AccessTokenRecord): Promise<string>
+
+  getIdToken(id: string): Promise<IdTokenRecord | undefined>
+  saveIdToken(token: IdTokenClaims): Promise<string>
+
+  saveNonce(nonce: string): Promise<string>
+  consumeNonce(nonce: string): Promise<boolean>
+}
+```
+
+The default implementation is `MongoDatabaseManager` (not itself exported; built internally from
+`ProviderOptions.database`). `saveNonce`/`consumeNonce` implement OIDC replay protection:
+`consumeNonce` atomically checks-and-deletes a nonce, returning `false` if it was already consumed or
+never existed.
+
+### `DatabaseManager` data types
+
+```ts
+/** The persisted fields for a platform, excluding its id (assigned by savePlatform). */
+interface PlatformAttributes {
+  url: string
+  clientId: string
+  name: string
+  authenticationEndpoint: string
+  accessTokenEndpoint: string
+  authorizationServer?: string
+  idTokenValidation: { method: IdTokenValidationMethod; key: string }
+  active: boolean
+  keys: { public: string; private: string }
+}
+
+/** A stored platform as returned by DatabaseManager's read methods: PlatformAttributes plus its assigned id. */
+interface PlatformRecord extends PlatformAttributes {
+  id: string
+}
+
+interface PlatformFilter {
+  url?: string
+  name?: string
+  clientId?: string | string[]
+}
+
+/** A cached platform-issued OAuth2 access token (client-credentials grant), keyed by platformUrl+clientId+scopes. */
+interface AccessTokenRecord {
+  access_token: string
+  token_type: string
+  expires_in: number
+  scope?: string
+  createdAt: number
+}
+
+/** The raw, validated claims of an LTI 1.3 id_token, keyed by their spec-defined claim URIs/names. */
+interface IdTokenClaims {
+  iss: string
+  sub: string
+  aud?: string | string[]
+  azp?: string
+  exp?: number
+  iat?: number
+  nonce?: string
+  given_name?: string
+  family_name?: string
+  name?: string
+  email?: string
+  client_id: string
+  platform_id: string
+  // ...plus the LTI-spec claim URIs (deployment_id, message_type, version, roles, target_link_uri,
+  // context, resource_link, launch_presentation, custom, endpoint, namesroleservice,
+  // deep_linking_settings, and so on)
+  [claim: string]: unknown
+}
+
+/** A stored id_token as returned by getIdToken: IdTokenClaims plus the record's own id. */
+interface IdTokenRecord extends IdTokenClaims {
+  id: string
+}
+```
+
+## `CacheManager`
+
+```ts
+interface CacheManager {
+  setup(): Promise<void>
+  close(): Promise<void>
+  get<T = unknown>(key: string): Promise<T | undefined>
+  set<T = unknown>(key: string, value: T, ttlMs: number): Promise<void>
+  delete(key: string): Promise<void>
+}
+```
+
+The default implementation (`MockCacheManager`) is a no-op: every method resolves immediately and `get()`
+always misses. Used to cache platform JWKS responses and the served keyset.
+
+## `RequestHandler`
+
+```ts
+interface RequestHandler {
+  get<T = unknown>(url: string, options?: RequestOptions): Promise<RequestResponse<T>>
+  post<T = unknown>(url: string, body?: unknown, options?: RequestOptions): Promise<RequestResponse<T>>
+  put<T = unknown>(url: string, body?: unknown, options?: RequestOptions): Promise<RequestResponse<T>>
+  delete<T = unknown>(url: string, options?: RequestOptions): Promise<RequestResponse<T>>
+  setPermanentHeader(name: string, value: string): void
+}
+
+interface RequestOptions {
+  headers?: RequestHeaders
+  query?: URLSearchParams
+}
+
+interface RequestHeaders {
+  authorization?: string
+  accept?: string
+  contentType?: string
+}
+
+interface RequestResponse<T = unknown> {
+  data: T
+  headers: Record<string, string | undefined>
+}
+```
+
+How ltijs makes outbound HTTP requests, to a platform's token endpoint, JWKS, or AGS/NRPS services. The
+default implementation (`FetchRequestHandler`) is built on the global `fetch`.
+
+## `HttpHandler`
+
+```ts
+interface HttpHandler {
+  registerRoute(path: string, methods: HttpMethod[], handler: RouteHandler): void
+  listen(port: number): Promise<void>
+  close(): Promise<void>
+}
+
+type RouteHandler = (request: HttpRequestParameters, response: HttpResponse) => Promise<void>
+
+interface HttpRequestParameters {
+  method: string
+  path: string
+  query: Record<string, string>
+  body: Record<string, unknown>
+  cookies: Record<string, string>
+  headers: Record<string, string>
+}
+
+interface HttpResponse {
+  status(code: number): HttpResponse
+  setCookie(name: string, value: string, options?: CookieOptions): HttpResponse
+  clearCookie(name: string, options?: CookieOptions): HttpResponse
+  redirect(url: string): void
+  html(content: string): void
+  json(body: unknown): void
+}
+
+interface CookieOptions {
+  httpOnly?: boolean
+  secure?: boolean
+  sameSite?: 'strict' | 'lax' | 'none'
+  domain?: string
+  maxAge?: number
+  partitioned?: boolean
+}
+```
+
+The HTTP framework adapter. The default implementation (`ExpressHttpHandler`) is built on Express.
+Implement this interface to run ltijs on top of Fastify, Koa, a serverless handler, or anything else.
+
+## `Logger`
+
+```ts
+interface Logger {
+  debug(component: string, message: string): void
+  warn(component: string, message: string): void
+  error(component: string, message: string): void
+}
+```
+
+Where debug output goes. The default implementation (`DefaultLogger`) writes to `console`.
+
+## `MongoLegacyDatabaseManager`
+
+```ts
+class MongoLegacyDatabaseManager implements DatabaseManager {
+  constructor(config: MongoConnectionConfig | undefined, encryptionKey: string, logger: Logger)
+}
+
+interface MongoConnectionConfig {
+  url: string
+  connection?: Record<string, unknown>
+  debug?: boolean
+}
+```
+
+Opt-in. Reads and writes the exact collection structure ltijs v4/v5 used (including its own encryption
+scheme), for migrating an existing deployment without a data migration. Note the extra `encryptionKey`
+argument, unlike the default manager: it needs the same key legacy's `Provider.setup('LTIKEY', ...)` used,
+so it can decrypt the existing `publickey`/`privatekey`/`accesstoken` documents it reads. Exported as
+`MongoLegacyConnectionConfig` to avoid a naming collision with the default manager's own config type.
+
+## `RedisCacheManager`
+
+```ts
+class RedisCacheManager implements CacheManager {
+  constructor(config: RedisConnectionConfig | undefined, logger: Logger)
+}
+
+interface RedisConnectionConfig {
+  url: string
+  connection?: Record<string, unknown>
+}
+```
+
+Opt-in. Gives every ltijs instance a shared, coordinated cache, backed by [ioredis](https://github.com/redis/ioredis).

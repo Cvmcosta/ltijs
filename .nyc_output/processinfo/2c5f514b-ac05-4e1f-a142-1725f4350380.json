@@ -1,0 +1,27 @@
+{
+  "parent": null,
+  "pid": 28033,
+  "argv": ["/Users/cvmcosta/.n/bin/node", "/Users/cvmcosta/Desktop/cvm/code/projects/ltijs/node_modules/.bin/mocha"],
+  "execArgv": [],
+  "cwd": "/Users/cvmcosta/Desktop/cvm/code/projects/ltijs",
+  "time": 1787404864118,
+  "ppid": 28032,
+  "coverageFilename": "/Users/cvmcosta/Desktop/cvm/code/projects/ltijs/.nyc_output/2c5f514b-ac05-4e1f-a142-1725f4350380.json",
+  "externalId": "",
+  "uuid": "2c5f514b-ac05-4e1f-a142-1725f4350380",
+  "files": [
+    "/Users/cvmcosta/Desktop/cvm/code/projects/ltijs/src/Provider/Provider.js",
+    "/Users/cvmcosta/Desktop/cvm/code/projects/ltijs/src/utils/Server.js",
+    "/Users/cvmcosta/Desktop/cvm/code/projects/ltijs/src/utils/Request.js",
+    "/Users/cvmcosta/Desktop/cvm/code/projects/ltijs/src/utils/Platform.js",
+    "/Users/cvmcosta/Desktop/cvm/code/projects/ltijs/src/utils/Auth.js",
+    "/Users/cvmcosta/Desktop/cvm/code/projects/ltijs/src/utils/Http.js",
+    "/Users/cvmcosta/Desktop/cvm/code/projects/ltijs/src/utils/Database.js",
+    "/Users/cvmcosta/Desktop/cvm/code/projects/ltijs/src/utils/Keyset.js",
+    "/Users/cvmcosta/Desktop/cvm/code/projects/ltijs/src/Provider/Services/Grade.js",
+    "/Users/cvmcosta/Desktop/cvm/code/projects/ltijs/src/Provider/Services/DeepLinking.js",
+    "/Users/cvmcosta/Desktop/cvm/code/projects/ltijs/src/Provider/Services/NamesAndRoles.js",
+    "/Users/cvmcosta/Desktop/cvm/code/projects/ltijs/src/Provider/Services/DynamicRegistration.js",
+    "/Users/cvmcosta/Desktop/cvm/code/projects/ltijs/src/utils/Objects.js"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "name": "ltijs-docs",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "docsify serve . --port 3000",
+    "serve": "docsify serve . --port 3000"
+  },
+  "devDependencies": {
+    "docsify-cli": "^5.0.0"
+  }
+}

@@ -1,0 +1,92 @@
+We might want to have a test utils, where we facilitate some things, stubs, etc. We also want to verify the standard for writing tests in the typescript example we have
+
+❗ Make sure data is being properly backwasrds compatted on the output side (determine breaking changes in input for migration guide)
+
+❗ Check that every external input is validated and every output is serialized
+
+❗ Populate launch context with services
+
+❗ Move constants to constants files if they should be shared (examine files, services)
+
+❗ Add zod validation for external input that is result of API calls (services)
+
+❗ Could we use zod for validation of other external input (launch claims, for example)
+
+❗ Remove magic strings (Review services, logger still has then)
+
+❗ Remove unneeded comments
+
+❗ Review the database manager code and interface
+
+❗ Review logger code
+
+❗ Review validation code
+
+❗ Review error handling in OIDC service
+
+❗ We want errors to be specific instead of native errors with strings.
+
+❗ We want errors related to zod to be very well detailed and explained
+
+❗ Check the launch state retrieval to make sure we don't need to worry about a loop when opening the template (Can we move away from cookies?)
+
+❗ Check we are doing nonce validation (check ltijs PR for how it should be done)
+
+❗ Check the need for token max age
+
+❗ Code improvement for axios, express and mongo implementations (constructor options, code check, user agent in axios etc)
+
+❗ Remember to pass user agent when setting up interfaces
+
+❗ Test suite for implementations of publicly available interfaces
+
+❗ ORCHESTRATE IT ALL!
+
+Map diferences in API
+
+Improve platform management API, reducing methods and simplifying things. We also want to add more filters to getPlatforms
+
+Check how zod handles undefined input
+
+Tag deprecated methods we want to have available
+
+❗ point out in the docs that we are retunring a private key so we need to make it clear that it should be hidden when exposing platform data.
+
+We want to move platform related logic to launch.service and pass the platform to oidc service
+
+Clear dependencies, clear npm ignore (/Users/cvmcosta/Desktop/cvm/code/resources/ts-boilerplate/.npmignore), clear old files, clear tests 
+
+❗ Setup github workflow CI
+
+❗ Use freeze to stop tampering with returned types
+
+❗ Normalize optional returns to undefined
+
+We dont want to use the same id for platform as the key kid
+
+Check how omit works
+
+Gather notes on future ltijs improvements from code and github issues
+
+Serialize and freeze memberships
+
+Launch/oidc -> names and roles -> grading -> deep linking -> dynamic reg
+
+Check how onConnect can work, maybe we have a method that sets the launch and deep linking callbacks.
+
+how to handle the "next" express feature and the res.locals.token (Where to store id token and others for routes)
+
+❌ Grading/DeepLinking/DynamicRegistration are still full red stubs — none of their legacy logic is ported at all yet.
+❌ The Provider composition root doesn't exist. src/index.ts still just re-exports the untouched legacy Provider.js — so even everything we have ported isn't reachable by an actual consumer of the package yet.
+
+support res.tredirect with ltik (?)
+
+design how launch and redirection should work (same way)
+
+Expose getLaunchContext isolatedly
+
+Think about how we deal with middlewares. I think just having getLaunchContext can give us more flexibility. We'll reduce the scope of the application and give users examples on how to achieve old behavior by manually setting up middlewares that call getLaunchContext. OnConnect (name tbd) gives you context, with ltik, tokens, etc.
+
+Maybe we need to have something for additional LTI launch supported routes. We either have a setRequestValue||setInternalValue, or we can have a createMiddleware method in http Handler, used to create the ltiLaunchMiddleware. Or we just have something like handleLaunchRequest (preferred and matches other pattern)
+
+Let's move on and tackle this later

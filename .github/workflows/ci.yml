@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [master, 'release/**']
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Verify TypeScript 6.0/7.0 split resolved correctly
+        run: |
+          TS_VERSION=$(node -p "require('./node_modules/typescript/package.json').version")
+          TS_NATIVE_VERSION=$(node -p "require('./node_modules/typescript-native/package.json').version")
+          echo "typescript (alias) resolved to: $TS_VERSION"
+          echo "typescript-native resolved to: $TS_NATIVE_VERSION"
+          if [[ "$TS_VERSION" != 6.* ]]; then
+            echo "::error::node_modules/typescript should resolve to a 6.x version (the @typescript/typescript6 alias), got $TS_VERSION"
+            exit 1
+          fi
+          if [[ "$TS_NATIVE_VERSION" != 7.* ]]; then
+            echo "::error::node_modules/typescript-native should resolve to a 7.x version, got $TS_NATIVE_VERSION"
+            exit 1
+          fi
+
+      - run: npm run test
+
+      - run: npm run build
