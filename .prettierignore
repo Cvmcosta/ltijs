@@ -3,13 +3,7 @@ coverage
 node_modules
 *.md
 *.html
-.travis.yml
 
-# The docs website is an independently-tooled Docusaurus project (its own package.json, its own
-# generator-driven code style) -- not formatted by the library's own prettier config.
+# The docs website is an independently-tooled docsify project (its own package.json, loaded via CDN
+# scripts in index.html) -- not formatted by the library's own prettier config.
 website
-
-# Legacy CommonJS source/tests/config not yet ported to TypeScript.
-src/**/*.js
-test/*.js
-.babelrc

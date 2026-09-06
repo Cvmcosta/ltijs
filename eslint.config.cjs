@@ -1,9 +1,8 @@
 module.exports = [
   {
-    // Legacy CommonJS source/tests are ported to TypeScript incrementally;
-    // only lint what's already been ported until the rest catches up. Plain
-    // JS config/scripts stay outside the type-aware TS project too.
-    ignores: ['dist/*', 'node_modules/*', 'coverage/*', 'src/**/*.js', 'eslint.config.cjs', 'scripts/**/*.js'],
+    // Plain CommonJS config/scripts stay outside the type-aware TS project, since
+    // eslint-config-love's ruleset below assumes a TypeScript parser.
+    ignores: ['dist/*', 'node_modules/*', 'coverage/*', 'eslint.config.cjs', 'scripts/**/*.js'],
   },
   {
     ...require('eslint-config-love'),
