@@ -2,3 +2,8 @@
 coverage
 *.lcov
 /dist
+
+# Local working notes, not meant to be published to the repo.
+/TYPESCRIPT_PORT_PLAN.md
+/notes
+/CODE_REVIEW_FINDINGS.md
