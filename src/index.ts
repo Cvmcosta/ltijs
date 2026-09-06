@@ -5,12 +5,17 @@ export { LtijsError } from '#shared/errors'
 export { ValidationError } from '#utils/validation/errors'
 
 // Provider construction/configuration/deployment.
-export type { ProviderOptions, ProviderRoutes, DeployOptions } from '#services/provider/provider.types'
+export type {
+  ProviderOptions,
+  ProviderRoutes,
+  ProviderServerOptions,
+  DeployOptions,
+} from '#services/provider/provider.types'
 export type { MongoConnectionConfig } from '#services/database-manager/mongo/mongo-database-manager.types'
 
 // Launch handlers -- the shape of onResourceLink/onDeepLinking/onSubmissionReview, and the
 // LaunchContext object every one of them receives.
-export type { LaunchHandlers, OnLaunchHandler } from '#services/launch/launch.types'
+export type { LaunchHandlers, OnLaunchHandler, RedirectOptions } from '#services/launch/launch.types'
 export type { LaunchContext } from '#services/launch/launch-context.service'
 export type { IdToken, LegacyIdToken } from '#services/launch/id-token.types'
 // `LtiMessageType` (idToken.launch.type) is a real enum -- a real export is required for its
@@ -57,6 +62,8 @@ export type {
   HttpRequestParameters,
   HttpResponse,
   CookieOptions,
+  SslOptions,
+  CorsOptions,
 } from '#services/http-handler/http-handler.types'
 // `HttpMethod` is a real enum, not a type-only construct -- a real (non-type-only) export is required
 // so its runtime values (HttpMethod.Get, HttpMethod.Post, ...) survive compilation, not just its type.
@@ -90,3 +97,12 @@ export { MongoLegacyDatabaseManager } from '#services/database-manager/mongo-leg
 export type { MongoConnectionConfig as MongoLegacyConnectionConfig } from '#services/database-manager/mongo-legacy/mongo-legacy-database-manager.types'
 export { RedisCacheManager } from '#services/cache-manager/redis/redis-cache-manager.service'
 export type { RedisConnectionConfig } from '#services/cache-manager/redis/redis-cache-manager.types'
+
+// `ExpressHttpHandler` is the *default* `httpHandler`, exported so a consumer can construct their own
+// instance -- registering custom middleware, `express.static`, or custom CORS on `.app` before passing it
+// to `new Provider({ httpHandler, ... })` -- ahead of Provider's own route registration. (Grabbing
+// `provider.httpHandler` *after* construction and casting it doesn't work for this: Provider's
+// constructor registers all its own routes synchronously, and since those handlers always end the
+// response themselves, middleware added afterward never runs for them.)
+export { ExpressHttpHandler } from '#services/http-handler/express/express-http-handler.service'
+export type { ExpressHttpHandlerOptions } from '#services/http-handler/express/express-http-handler.service'

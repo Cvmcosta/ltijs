@@ -1,7 +1,7 @@
 import type { DatabaseManager } from '#services/database-manager/database-manager.types'
 import type { MongoConnectionConfig } from '#services/database-manager/mongo/mongo-database-manager.types'
 import type { RequestHandler } from '#services/request-handler/request-handler.types'
-import type { HttpHandler, RouteHandler } from '#services/http-handler/http-handler.types'
+import type { CorsOptions, HttpHandler, RouteHandler, SslOptions } from '#services/http-handler/http-handler.types'
 import type { CacheManager } from '#services/cache-manager/cache-manager.types'
 import type { Logger } from '#services/logger/logger.types'
 import type {
@@ -17,6 +17,18 @@ export interface ProviderRoutes {
   launchRoute?: string
   keysetRoute?: string
   dynamicRegistrationRoute?: string
+}
+
+export interface ProviderServerOptions {
+  /** Defaults to `3000`. */
+  port?: number
+  /** Terminates TLS in-process instead of listening over plain HTTP -- pass a PEM-encoded key/cert pair. */
+  ssl?: SslOptions
+  /**
+   * Defaults to reflecting any request origin with credentials allowed. Pass `false` to disable CORS
+   * entirely.
+   */
+  cors?: false | CorsOptions
 }
 
 // Takes the already-constructed `DynamicRegistration` instance rather than a plain handler, since the
@@ -41,6 +53,13 @@ export interface ProviderOptions {
   database?: MongoConnectionConfig
   requestHandler?: RequestHandler
   httpHandler?: HttpHandler
+  /**
+   * `port` and `ssl` apply regardless of which `httpHandler` is active -- `deploy()` passes them to
+   * `httpHandler.listen(port, ssl)`, part of the `HttpHandler` interface itself. `cors`, however, only
+   * takes effect on the default `ExpressHttpHandler`: it's ignored when `httpHandler` is given instead,
+   * the same way `database` is ignored once `databaseManager` is given.
+   */
+  server?: ProviderServerOptions
   /**
    * Defaults to a no-op cache (nothing is ever cached) -- safe for any deployment topology, including
    * multiple ltijs instances behind a load balancer, since there's no per-process state to leave
@@ -77,6 +96,6 @@ export interface ProviderOptions {
 }
 
 export interface DeployOptions {
-  port?: number
+  /** Suppresses the startup banner `deploy()` prints by default. */
   silent?: boolean
 }

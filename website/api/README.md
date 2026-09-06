@@ -2,7 +2,8 @@
 
 Every class, interface, and type ltijs exports from its root import (`import { ... } from 'ltijs'`).
 
-- **[Provider](provider.md)**: the class you construct. `ProviderOptions`, `ProviderRoutes`, `DeployOptions`.
+- **[Provider](provider.md)**: the class you construct. `ProviderOptions`, `ProviderRoutes`,
+  `ProviderServerOptions`, `DeployOptions`.
 - **[Platform Manager](platform-manager.md)**: `Provider.platformManager`, the `Platform` type, and its
   registration/update/search input types.
 - **[Launch Context](launch-context.md)**: what every launch handler receives. `LaunchContext`, `IdToken`,

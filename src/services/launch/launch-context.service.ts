@@ -7,7 +7,11 @@ import type { RequestHandler } from '#services/request-handler/request-handler.t
 import type { Logger } from '#services/logger/logger.types'
 import type { IdTokenRecord } from '#services/database-manager/database-manager.types'
 import type { IdToken, LegacyIdToken } from '#services/launch/id-token.types'
+import type { RedirectOptions } from '#services/launch/launch.types'
+import type { HttpResponse } from '#services/http-handler/http-handler.types'
 import { buildIdToken, buildLegacyIdToken } from '#services/launch/id-token.serializer'
+
+const REDIRECT_PLACEHOLDER_ORIGIN = 'http://ltijs-redirect-placeholder.invalid'
 
 /**
  * Everything a launch handler needs about the current launch -- passed as the first argument to
@@ -57,6 +61,23 @@ export class LaunchContext {
     this.deepLinking = new DeepLinking(this, logger)
     // eslint-disable-next-line @typescript-eslint/no-deprecated
     this.legacyIdToken = buildLegacyIdToken(idToken)
+  }
+
+  /**
+   * Redirects to `path`, preserving its existing query parameters, merging in `options.query`, and always
+   * appending this launch's `ltik` (overriding any `ltik` already present in `path` or `options.query`),
+   * so a follow-up request through this same URL can still be resolved via `Provider.getLaunchContext`.
+   * `path` can be a plain path (`/grades`) or a full URL on another origin. Either way, only its query
+   * string is touched; everything else about it is preserved as given.
+   */
+  public redirect(response: HttpResponse, path: string, options: RedirectOptions = {}): void {
+    const url = new URL(path, REDIRECT_PLACEHOLDER_ORIGIN)
+    const isRelative = url.origin === REDIRECT_PLACEHOLDER_ORIGIN
+
+    for (const [key, value] of Object.entries(options.query ?? {})) url.searchParams.set(key, value)
+    url.searchParams.set('ltik', this.ltik)
+
+    response.redirect(isRelative ? `${url.pathname}${url.search}${url.hash}` : url.toString())
   }
 }
 

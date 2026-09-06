@@ -118,7 +118,8 @@ deploy(options?: DeployOptions): Promise<void>
 ```
 
 Connects the database and cache backends, starts the HTTP listener, and registers a `SIGINT` handler that
-calls `close()` before exiting. Prints a startup banner unless `options.silent` is `true`.
+calls `close()` before exiting. Prints a startup banner unless `options.silent` is `true`. Port, TLS, and
+CORS are configured at construction time via `ProviderOptions.server`, not here.
 
 ### `close()`
 
@@ -137,6 +138,7 @@ interface ProviderOptions {
   database?: MongoConnectionConfig
   requestHandler?: RequestHandler
   httpHandler?: HttpHandler
+  server?: ProviderServerOptions
   cacheManager?: CacheManager
   logger?: Logger
   routes?: ProviderRoutes
@@ -158,6 +160,7 @@ of each one.
   entirely, or just a `database` connection config to use the built-in `MongoDatabaseManager`.
 - `requestHandler`: how ltijs makes outbound HTTP requests. Defaults to the built-in `fetch`.
 - `httpHandler`: the HTTP framework adapter. Defaults to Express.
+- `server`: port, TLS, and CORS for the default `ExpressHttpHandler`. See `ProviderServerOptions` below.
 - `cacheManager`: defaults to a no-op cache (nothing is ever cached), safe for any deployment topology
   including multiple ltijs instances behind a load balancer. Pass `RedisCacheManager` to opt into real
   caching shared across instances.
@@ -171,6 +174,28 @@ of each one.
 - `onUnregisteredPlatform` / `onInactivePlatform`: called instead of throwing the default error when a
   login request arrives from an unregistered or deactivated platform. Given `(request, response)`, must
   fully send the response itself; the login route returns immediately afterward regardless.
+
+## `ProviderServerOptions`
+
+```ts
+interface ProviderServerOptions {
+  port?: number
+  ssl?: SslOptions
+  cors?: false | CorsOptions
+}
+```
+
+`port` defaults to `3000`. `ssl` terminates TLS in-process (a PEM-encoded `key`/`cert` pair, see
+[`HttpHandler`](backends.md#httphandler)) instead of listening over plain HTTP -- most deployments leave
+this unset and terminate TLS at a reverse proxy or load balancer in front of the process instead. Both
+`port` and `ssl` apply no matter which `httpHandler` is active, since `deploy()` passes them to
+`httpHandler.listen(port, ssl)`, part of the `HttpHandler` interface itself.
+
+`cors` is different: it only takes effect on the default `ExpressHttpHandler`, the same way `database` is
+ignored once `databaseManager` is given. It defaults to reflecting any request origin with credentials
+allowed; pass `false` to disable CORS entirely, or a `CorsOptions` object to restrict it -- see
+[Configuring a Provider](/guides/configuring-a-provider.md) for an example. If you supply your own
+`httpHandler` instead, `server.cors` is ignored.
 
 ## `ProviderRoutes`
 
@@ -189,9 +214,10 @@ Defaults: `/lti/login`, `/lti/launch`, `/lti/keys`, `/lti/register`.
 
 ```ts
 interface DeployOptions {
-  port?: number
   silent?: boolean
 }
 ```
 
-`port` defaults to `3000`. `silent` suppresses the startup banner `deploy()` prints by default.
+Suppresses the startup banner `deploy()` prints by default. Port, TLS, and CORS live on
+`ProviderOptions.server` instead, since they're startup configuration rather than a per-`deploy()`-call
+concern -- see `ProviderServerOptions` above.

@@ -1,3 +1,4 @@
+import request from 'supertest'
 import { Provider } from '#services/provider/provider.service'
 import { MongoDatabaseManager } from '#services/database-manager/mongo/mongo-database-manager.service'
 import { FetchRequestHandler } from '#services/request-handler/fetch/fetch-request-handler.service'
@@ -76,6 +77,21 @@ describe('Provider constructor', () => {
     expect(provider.keysetService).toBeInstanceOf(KeysetService)
     expect(provider.cacheManager).toBeInstanceOf(MockCacheManager)
     expect(provider.dynamicRegistrationService).toBeUndefined()
+  })
+
+  it('threads ProviderOptions.server.cors into the default ExpressHttpHandler', async () => {
+    const provider = new Provider({
+      handlers,
+      database: { url: 'mongodb://localhost/ltijs-test' },
+      server: { cors: { origin: ['https://allowed.example.com'] } },
+    })
+
+    const app = (provider.httpHandler as ExpressHttpHandler).app
+    const allowed = await request(app).get('/lti/keys').set('Origin', 'https://allowed.example.com')
+    const blocked = await request(app).get('/lti/keys').set('Origin', 'https://blocked.example.com')
+
+    expect(allowed.headers['access-control-allow-origin']).toBe('https://allowed.example.com')
+    expect(blocked.headers['access-control-allow-origin']).toBeUndefined()
   })
 
   it('uses explicitly provided collaborators instead of constructing defaults', () => {
@@ -242,17 +258,28 @@ describe('Provider.deploy() / Provider.close()', () => {
     await provider.deploy({ silent: true })
 
     expect(setupSpy).toHaveBeenCalled()
-    expect(listenSpy).toHaveBeenCalledWith(3000)
+    expect(listenSpy).toHaveBeenCalledWith(3000, undefined)
   })
 
-  it('starts the http handler on a custom port when given', async () => {
+  it('starts the http handler on a custom port when given via ProviderOptions.server', async () => {
     const httpHandler = buildMockHttpHandler()
     const listenSpy = jest.spyOn(httpHandler, 'listen')
-    const provider = new Provider(buildOptions({ httpHandler }))
+    const provider = new Provider(buildOptions({ httpHandler, server: { port: 4321 } }))
 
-    await provider.deploy({ port: 4321, silent: true })
+    await provider.deploy({ silent: true })
 
-    expect(listenSpy).toHaveBeenCalledWith(4321)
+    expect(listenSpy).toHaveBeenCalledWith(4321, undefined)
+  })
+
+  it('passes ssl options through to the http handler when given via ProviderOptions.server', async () => {
+    const httpHandler = buildMockHttpHandler()
+    const listenSpy = jest.spyOn(httpHandler, 'listen')
+    const ssl = { key: 'fake-key', cert: 'fake-cert' }
+    const provider = new Provider(buildOptions({ httpHandler, server: { port: 4321, ssl } }))
+
+    await provider.deploy({ silent: true })
+
+    expect(listenSpy).toHaveBeenCalledWith(4321, ssl)
   })
 
   it('prints the startup banner unless silent is true', async () => {

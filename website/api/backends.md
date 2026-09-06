@@ -148,8 +148,13 @@ default implementation (`FetchRequestHandler`) is built on the global `fetch`.
 ```ts
 interface HttpHandler {
   registerRoute(path: string, methods: HttpMethod[], handler: RouteHandler): void
-  listen(port: number): Promise<void>
+  listen(port: number, ssl?: SslOptions): Promise<void>
   close(): Promise<void>
+}
+
+interface SslOptions {
+  key: string
+  cert: string
 }
 
 type RouteHandler = (request: HttpRequestParameters, response: HttpResponse) => Promise<void>
@@ -184,6 +189,52 @@ interface CookieOptions {
 
 The HTTP framework adapter. The default implementation (`ExpressHttpHandler`) is built on Express.
 Implement this interface to run ltijs on top of Fastify, Koa, a serverless handler, or anything else.
+
+`listen`'s optional `ssl` parameter terminates TLS in-process instead of listening over plain HTTP -- pass
+a PEM-encoded `key`/`cert` pair (`ExpressHttpHandler` uses them with Node's `https.createServer` in place
+of `app.listen`). Omit it, as most deployments do, when TLS is terminated by a reverse proxy or load
+balancer in front of the process instead. `Provider.deploy()` calls `listen(port, ssl)` for you using
+[`ProviderOptions.server.port`/`.ssl`](provider.md#providerserveroptions) -- set them there rather than
+calling `listen()` directly, unless you're implementing a custom `HttpHandler`.
+
+`ExpressHttpHandler` itself is exported so you can construct it yourself, register your own middleware,
+and pass the already-configured instance in as `httpHandler`:
+
+```ts
+import { Provider, ExpressHttpHandler } from 'ltijs'
+
+const httpHandler = new ExpressHttpHandler(myLogger)
+httpHandler.app.use(myCustomMiddleware)
+
+const provider = new Provider({ ...options, httpHandler })
+```
+
+Order matters here: `Provider`'s constructor registers all of its own routes (login, launch, keyset,
+dynamic registration) synchronously, and since those route handlers always end the response themselves
+(they never call `next()`), any middleware added to `app` *after* construction never runs for them --
+grabbing `provider.httpHandler` post-construction and calling `.app.use()` on it only affects routes you
+register afterward, not ltijs's own. Constructing `httpHandler` first and passing it in, as above, puts
+your middleware ahead of ltijs's routes in the stack, so it runs for every request the way legacy's
+`serverAddon` did.
+
+The same pattern serves static files, matching legacy's `staticPath` option:
+
+```ts
+import { Provider, ExpressHttpHandler } from 'ltijs'
+import express from 'express'
+
+const httpHandler = new ExpressHttpHandler(myLogger)
+httpHandler.app.use(express.static('public', { index: '_' }))
+
+const provider = new Provider({ ...options, httpHandler })
+```
+
+`express.static` is less order-sensitive than arbitrary middleware -- it calls `next()` for any path that
+isn't a real file under the served directory, so it wouldn't break ltijs's own routes even if registered
+afterward, as long as no static asset happens to collide with `/lti/login`/`/lti/launch`/etc. Registering
+it first still matches legacy exactly and avoids that collision case entirely. The `{ index: '_' }` option
+is worth keeping too: it disables `express.static`'s default behavior of auto-serving `index.html` for
+directory-like GET requests, which would otherwise intercept `GET /` before your own app code ever sees it.
 
 ## `Logger`
 

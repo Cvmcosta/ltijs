@@ -6,6 +6,22 @@ export enum HttpMethod {
   All = 'ALL',
 }
 
+export interface SslOptions {
+  key: string
+  cert: string
+}
+
+export interface CorsOptions {
+  /**
+   * A single string always sets that exact value on every response, regardless of the request's actual
+   * origin (safe -- a browser on a different origin still rejects the mismatched response itself) but not
+   * a real allowlist. To allow a specific set of origins and omit the header for everyone else, pass an
+   * array, even with a single entry.
+   */
+  origin?: string | string[]
+  credentials?: boolean
+}
+
 export interface CookieOptions {
   httpOnly?: boolean
   secure?: boolean
@@ -37,6 +53,6 @@ export type RouteHandler = (request: HttpRequestParameters, response: HttpRespon
 
 export interface HttpHandler {
   registerRoute: (path: string, methods: HttpMethod[], handler: RouteHandler) => void
-  listen: (port: number) => Promise<void>
+  listen: (port: number, ssl?: SslOptions) => Promise<void>
   close: () => Promise<void>
 }

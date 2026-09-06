@@ -25,6 +25,11 @@ export interface TargetLinkUriParts {
   query?: Record<string, string>
 }
 
+/** Extra query parameters to merge into the redirect URL, in addition to the ltik `LaunchContext.redirect` always appends. */
+export interface RedirectOptions {
+  query?: Record<string, string>
+}
+
 export interface LaunchRoutes {
   loginRoute: string
   launchRoute: string

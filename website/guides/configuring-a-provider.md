@@ -100,12 +100,60 @@ See [Registering Platforms](registering-platforms.md#dynamic-registration) for t
 interface. See [Philosophy & Architecture](philosophy-and-architecture.md) for what each one is
 responsible for, and the [Backends API reference](../api/backends.md) for their exact method signatures.
 
+## Server: port, TLS, and CORS
+
+Port, TLS, and CORS are construction-time config, not deploy-time. They live on `ProviderOptions.server`:
+
+```ts
+const provider = new Provider({
+  ...options,
+  server: { port: 443 },
+})
+```
+
+To terminate TLS in-process instead of behind a reverse proxy or load balancer, add `ssl`:
+
+```ts
+const provider = new Provider({
+  ...options,
+  server: {
+    port: 443,
+    ssl: {
+      key: fs.readFileSync('key.pem', 'utf8'),
+      cert: fs.readFileSync('cert.pem', 'utf8'),
+    },
+  },
+})
+```
+
+By default, CORS reflects any request origin and allows credentials. This is safe for ltijs's own routes,
+but worth restricting if you add your own authenticated JSON routes on top of the `ltik` cookie session. To
+restrict it to specific frontend origins, or disable it entirely, add `cors`:
+
+```ts
+const provider = new Provider({
+  ...options,
+  server: { cors: { origin: ['https://app.example.com'] } }, // or `cors: false` to disable it
+})
+```
+
+`port` defaults to `3000` if `server` is omitted entirely. See
+[`ProviderServerOptions`](../api/provider.md#providerserveroptions) for the full reference.
+
 ## Deploying and closing
 
 ```ts
-await provider.deploy({ port: 3000, silent: false }) // connects storage/cache, starts listening
+await provider.deploy() // connects storage/cache, starts listening
 // ...
 await provider.close() // stops listening, closes storage/cache connections
 ```
 
-`deploy()` also registers a `SIGINT` handler that calls `close()` before the process exits.
+`deploy()` also registers a `SIGINT` handler that calls `close()` before the process exits. Its only
+option is `silent`, which suppresses the startup banner it prints by default:
+
+```ts
+await provider.deploy({ silent: true })
+```
+
+Most deployments leave `ssl` unset and let a reverse proxy or load balancer handle TLS in front of the
+process instead -- that's also the only way to get automatic certificate renewal without restarting.

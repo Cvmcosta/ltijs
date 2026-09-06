@@ -15,6 +15,7 @@ import { LTI_VERSION } from '#services/oidc/oidc.constants'
 import type { Platform } from '#services/platform-manager/platform-manager.types'
 import type { Logger } from '#services/logger/logger.types'
 import type { IdTokenRecord } from '#services/database-manager/database-manager.types'
+import type { HttpResponse } from '#services/http-handler/http-handler.types'
 
 const { privateKey } = crypto.generateKeyPairSync('rsa', {
   modulusLength: 2048,
@@ -134,5 +135,70 @@ describe('LaunchContext', () => {
     const message = await context.deepLinking.createDeepLinkingMessage({ type: 'ltiResourceLink', title: 'Activity' })
 
     expect(message).toEqual(expect.any(String))
+  })
+
+  describe('redirect', () => {
+    const buildFakeResponse = (): { response: HttpResponse; redirectedTo: () => string } => {
+      let redirectedTo: string | undefined
+      const response: HttpResponse = {
+        status: () => response,
+        setCookie: () => response,
+        clearCookie: () => response,
+        redirect: url => {
+          redirectedTo = url
+        },
+        html: () => undefined,
+        json: () => undefined,
+      }
+      return {
+        response,
+        redirectedTo: () => {
+          if (redirectedTo === undefined) throw new Error('redirect() was never called')
+          return redirectedTo
+        },
+      }
+    }
+
+    it('appends ltik to a plain relative path', () => {
+      const context = buildContext()
+      const { response, redirectedTo } = buildFakeResponse()
+
+      context.redirect(response, '/grades')
+
+      expect(redirectedTo()).toBe(`/grades?ltik=${ltik}`)
+    })
+
+    it('preserves an existing query string and merges in options.query', () => {
+      const context = buildContext()
+      const { response, redirectedTo } = buildFakeResponse()
+
+      context.redirect(response, '/grades?studentId=42', { query: { tab: 'summary' } })
+
+      const url = new URL(redirectedTo(), 'http://placeholder')
+      expect(Object.fromEntries(url.searchParams)).toEqual({ studentId: '42', tab: 'summary', ltik })
+    })
+
+    it('always overrides an ltik already present in the path or options.query', () => {
+      const context = buildContext()
+      const { response, redirectedTo } = buildFakeResponse()
+
+      context.redirect(response, '/grades?ltik=stale', { query: { ltik: 'also-stale' } })
+
+      const url = new URL(redirectedTo(), 'http://placeholder')
+      expect(url.searchParams.get('ltik')).toBe(ltik)
+    })
+
+    it('preserves protocol, host, and port for a full cross-domain URL', () => {
+      const context = buildContext()
+      const { response, redirectedTo } = buildFakeResponse()
+
+      context.redirect(response, 'https://other.example.com:8443/path#section')
+
+      const url = new URL(redirectedTo())
+      expect(url.origin).toBe('https://other.example.com:8443')
+      expect(url.pathname).toBe('/path')
+      expect(url.hash).toBe('#section')
+      expect(url.searchParams.get('ltik')).toBe(ltik)
+    })
   })
 })

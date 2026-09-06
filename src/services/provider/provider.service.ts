@@ -12,7 +12,7 @@ import { DynamicRegistration } from '#services/dynamic-registration/dynamic-regi
 import { DynamicRegistrationNotConfiguredError } from '#services/provider/errors'
 import type { DatabaseManager } from '#services/database-manager/database-manager.types'
 import type { RequestHandler } from '#services/request-handler/request-handler.types'
-import type { HttpHandler, RouteHandler } from '#services/http-handler/http-handler.types'
+import type { HttpHandler, RouteHandler, SslOptions } from '#services/http-handler/http-handler.types'
 import type { CacheManager } from '#services/cache-manager/cache-manager.types'
 import type { Logger } from '#services/logger/logger.types'
 import type {
@@ -64,6 +64,8 @@ export class Provider {
   private readonly keysetRoute: string
   private readonly dynamicRegistrationRoute?: string
   private readonly launchService: LaunchService
+  private readonly port: number
+  private readonly ssl?: SslOptions
 
   /**
    * Every dependency (`databaseManager`, `cacheManager`, `httpHandler`, `requestHandler`, `logger`) has a
@@ -74,7 +76,9 @@ export class Provider {
     this.logger = options.logger ?? new DefaultLogger()
     const requestHandler: RequestHandler = options.requestHandler ?? new FetchRequestHandler()
     this.cacheManager = options.cacheManager ?? new MockCacheManager()
-    this.httpHandler = options.httpHandler ?? new ExpressHttpHandler(this.logger)
+    this.httpHandler = options.httpHandler ?? new ExpressHttpHandler(this.logger, { cors: options.server?.cors })
+    this.port = options.server?.port ?? this.DEFAULT_PORT
+    this.ssl = options.server?.ssl
     this.databaseManager = options.databaseManager ?? new MongoDatabaseManager(options.database, this.logger)
 
     this.platformManager = new PlatformManager(this.databaseManager, this.logger, this.cacheManager)
@@ -192,14 +196,14 @@ export class Provider {
 
   /**
    * Connects the database and cache backends, starts the HTTP listener, and registers a `SIGINT` handler
-   * that calls {@link Provider.close} before exiting. Prints a startup banner unless `options.silent`.
+   * that calls {@link Provider.close} before exiting. Prints a startup banner unless `options.silent`. Port
+   * and TLS come from `ProviderOptions.server`, set at construction time, not from `options` here.
    */
   public async deploy(options: DeployOptions = {}): Promise<void> {
-    const port = options.port ?? this.DEFAULT_PORT
     await this.databaseManager.setup()
     await this.cacheManager.setup()
-    await this.httpHandler.listen(port)
-    if (options.silent !== true) this.printStartupBanner(port)
+    await this.httpHandler.listen(this.port, this.ssl)
+    if (options.silent !== true) this.printStartupBanner(this.port)
 
     process.on('SIGINT', () => {
       void this.close().finally(() => process.exit())

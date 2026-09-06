@@ -21,6 +21,12 @@ class LaunchContext {
   readonly legacyIdToken: LegacyIdToken
 
   get contextId(): string
+
+  redirect(response: HttpResponse, path: string, options?: RedirectOptions): void
+}
+
+interface RedirectOptions {
+  query?: Record<string, string>
 }
 ```
 
@@ -32,6 +38,17 @@ class LaunchContext {
 - `namesAndRoles`, `grading`, `deepLinking`: the three LTI services, see [Services](services.md).
 - `legacyIdToken`: deprecated, prefer `idToken`.
 - `contextId`: shorthand for `rawIdToken.id`.
+- `redirect(response, path, options?)`: redirects to `path`, preserving its existing query string, merging
+  in `options.query`, and always appending this launch's `ltik` (overriding any `ltik` already present in
+  `path` or `options.query`) so a follow-up request through that URL can still be resolved via
+  `Provider.getLaunchContext`. `path` can be a plain path (`/grades`) or a full URL on another origin.
+  Only its query string is touched; everything else is preserved as given.
+
+  ```ts
+  provider.onResourceLink(async (context, request, response) => {
+    context.redirect(response, '/grades', { query: { studentId: '42' } })
+  })
+  ```
 
 ## `IdToken`
 

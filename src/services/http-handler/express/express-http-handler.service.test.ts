@@ -1,8 +1,12 @@
+import { EventEmitter } from 'node:events'
+import * as https from 'node:https'
 import request from 'supertest'
 import { LtijsError } from '#shared/errors'
 import type { Logger } from '#services/logger/logger.types'
 import { ExpressHttpHandler } from '#services/http-handler/express/express-http-handler.service'
 import { HttpMethod } from '#services/http-handler/http-handler.types'
+
+jest.mock('node:https', () => ({ createServer: jest.fn() }))
 
 class TestError extends LtijsError {
   constructor() {
@@ -117,5 +121,67 @@ describe('ExpressHttpHandler', () => {
     const handler = new ExpressHttpHandler(buildLogger())
 
     await expect(handler.close()).resolves.toBeUndefined()
+  })
+
+  it('listen() terminates TLS via https.createServer when given ssl options', async () => {
+    const fakeServer = Object.assign(new EventEmitter(), { listen: jest.fn(), close: jest.fn() })
+    fakeServer.listen.mockImplementation(() => {
+      process.nextTick(() => fakeServer.emit('listening'))
+      return fakeServer
+    })
+    jest.mocked(https.createServer).mockReturnValue(fakeServer as unknown as https.Server)
+
+    const handler = new ExpressHttpHandler(buildLogger())
+    const ssl = { key: 'fake-key', cert: 'fake-cert' }
+
+    await handler.listen(4443, ssl)
+
+    expect(https.createServer).toHaveBeenCalledWith(ssl, handler.app)
+    expect(fakeServer.listen).toHaveBeenCalledWith(4443)
+  })
+
+  it('listen() falls back to plain HTTP when no ssl options are given', async () => {
+    const handler = new ExpressHttpHandler(buildLogger())
+
+    await handler.listen(0)
+
+    expect(https.createServer).not.toHaveBeenCalled()
+    await handler.close()
+  })
+
+  it('reflects any origin and allows credentials by default', async () => {
+    const handler = new ExpressHttpHandler(buildLogger())
+    handler.registerRoute('/ping', [HttpMethod.Get], async (_request, response) => {
+      response.json({ pong: true })
+    })
+
+    const response = await request(handler.app).get('/ping').set('Origin', 'https://example.com')
+
+    expect(response.headers['access-control-allow-origin']).toBe('https://example.com')
+    expect(response.headers['access-control-allow-credentials']).toBe('true')
+  })
+
+  it('restricts CORS to an explicit origin allowlist when given', async () => {
+    const handler = new ExpressHttpHandler(buildLogger(), { cors: { origin: ['https://allowed.example.com'] } })
+    handler.registerRoute('/ping', [HttpMethod.Get], async (_request, response) => {
+      response.json({ pong: true })
+    })
+
+    const allowed = await request(handler.app).get('/ping').set('Origin', 'https://allowed.example.com')
+    const blocked = await request(handler.app).get('/ping').set('Origin', 'https://blocked.example.com')
+
+    expect(allowed.headers['access-control-allow-origin']).toBe('https://allowed.example.com')
+    expect(blocked.headers['access-control-allow-origin']).toBeUndefined()
+  })
+
+  it('disables CORS entirely when cors is false', async () => {
+    const handler = new ExpressHttpHandler(buildLogger(), { cors: false })
+    handler.registerRoute('/ping', [HttpMethod.Get], async (_request, response) => {
+      response.json({ pong: true })
+    })
+
+    const response = await request(handler.app).get('/ping').set('Origin', 'https://example.com')
+
+    expect(response.headers['access-control-allow-origin']).toBeUndefined()
   })
 })
