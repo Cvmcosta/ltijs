@@ -161,7 +161,7 @@ export class Grading {
     built.timestamp = new Date().toISOString()
 
     const accessToken = await this.accessTokenManager.getAccessToken(platform, AGS_SCORE_SCOPE)
-    await this.requestHandler.post(`${validatedLineItemId}/scores`, built, {
+    await this.requestHandler.post(this.appendPathSegment(validatedLineItemId, 'scores'), built, {
       headers: { authorization: buildBearerAuthorization(accessToken), contentType: this.SCORE_CONTENT_TYPE },
     })
 
@@ -178,7 +178,7 @@ export class Grading {
       `${AGS_LINEITEM_READONLY_SCOPE} ${AGS_RESULT_READONLY_SCOPE}`,
     )
 
-    const url = options?.url ?? `${validatedLineItemId}/results`
+    const url = options?.url ?? this.appendPathSegment(validatedLineItemId, 'results')
     const query = options?.url !== undefined ? undefined : this.buildScoresQuery(options)
     const response = await this.requestHandler.get(url, {
       query,
@@ -256,6 +256,16 @@ export class Grading {
     const endpoint = idToken[IdTokenClaim.Endpoint]?.lineitems
     if (endpoint === undefined) throw new MissingLineItemsEndpointError()
     return endpoint
+  }
+
+  // Some platforms (e.g. Moodle) return a line item URL that already carries its own query string
+  // (`.../lineitem?type_id=151`). Naively concatenating a path segment onto that string would land it
+  // after the query string instead of before it, producing a URL the platform can't route. Going
+  // through URL keeps the new segment in the path and the existing query string intact.
+  private appendPathSegment(url: string, segment: string): string {
+    const parsed = new URL(url)
+    parsed.pathname = `${parsed.pathname}/${segment}`
+    return parsed.toString()
   }
 
   private resolveResourceLinkId(idToken: IdTokenRecord): string {

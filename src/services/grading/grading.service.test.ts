@@ -408,6 +408,25 @@ describe('Grading.submitScore()', () => {
 
     expect(result.scoreMaximum).toBe(100)
   })
+
+  // Real-world regression: some platforms (e.g. Moodle) return a line item URL that already carries
+  // its own query string. Appending "/scores" by naive string concatenation used to land it after the
+  // query string instead of before it (`.../lineitem?type_id=5/scores`), which the platform can't route.
+  it('inserts /scores before an existing query string on the line item URL, not after it', async () => {
+    const lineItemIdWithQuery = 'http://localhost/moodle/lineitems/1?type_id=5'
+    const fetchSpy = mockFetchRoutes({
+      [TOKEN_URL]: { body: tokenResponse },
+      'http://localhost/moodle/lineitems/1/scores': { body: {} },
+    })
+    const grading = buildService()
+
+    await grading.submitScore(lineItemIdWithQuery, { scoreGiven: 10, scoreMaximum: 10 })
+
+    const scoresCall = fetchSpy.mock.calls.find(([url]) =>
+      (url as string).startsWith('http://localhost/moodle/lineitems/1/scores'),
+    )
+    expect(scoresCall?.[0]).toBe('http://localhost/moodle/lineitems/1/scores?type_id=5')
+  })
 })
 
 describe('Grading.getScores()', () => {
@@ -451,5 +470,22 @@ describe('Grading.getScores()', () => {
     const result = await grading.getScores(lineItem.id, { url: 'http://localhost/moodle/custom-results' })
 
     expect(result.scores).toEqual([{ userId: 'user-1', resultScore: 10 }])
+  })
+
+  // Real-world regression: same "/results" landing after an existing query string, as with submitScore.
+  it('inserts /results before an existing query string on the line item URL, and merges its own query params after', async () => {
+    const lineItemIdWithQuery = 'http://localhost/moodle/lineitems/1?type_id=5'
+    const fetchSpy = mockFetchRoutes({
+      [TOKEN_URL]: { body: tokenResponse },
+      'http://localhost/moodle/lineitems/1/results': { body: [] },
+    })
+    const grading = buildService()
+
+    await grading.getScores(lineItemIdWithQuery, { userId: 'user-1', limit: 2 })
+
+    const resultsCall = fetchSpy.mock.calls.find(([url]) =>
+      (url as string).startsWith('http://localhost/moodle/lineitems/1/results'),
+    )
+    expect(resultsCall?.[0]).toBe('http://localhost/moodle/lineitems/1/results?type_id=5&user_id=user-1&limit=2')
   })
 })
