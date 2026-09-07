@@ -3,7 +3,6 @@ import { createServer as createHttpsServer } from 'node:https'
 import type { Server as HttpsServer } from 'node:https'
 import express from 'express'
 import type { Express, Request, Response } from 'express'
-import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import helmet from 'helmet'
 import { LtijsError } from '#shared/errors'
@@ -80,7 +79,6 @@ export class ExpressHttpHandler implements HttpHandler {
     }
     this.app.use(express.json())
     this.app.use(express.urlencoded({ extended: false }))
-    this.app.use(cookieParser())
   }
 
   private buildAdapter(handler: RouteHandler): (req: Request, res: Response) => Promise<void> {
@@ -112,7 +110,6 @@ export class ExpressHttpHandler implements HttpHandler {
       path: req.path,
       query: req.query as Record<string, string>,
       body: (req.body as Record<string, unknown> | undefined) ?? {},
-      cookies: (req.cookies as Record<string, string> | undefined) ?? {},
       headers: req.headers as Record<string, string>,
     }
   }

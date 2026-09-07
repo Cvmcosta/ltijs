@@ -15,7 +15,7 @@ import { IdTokenClaim, LtiMessageType } from '#services/launch/id-token.constant
 import { IdTokenValidationMethod } from '#services/platform-manager/platform-manager.constants'
 import { LTI_VERSION } from '#services/oidc/oidc.constants'
 import { HttpMethod } from '#services/http-handler/http-handler.types'
-import type { CookieOptions, HttpRequestParameters, HttpResponse } from '#services/http-handler/http-handler.types'
+import type { HttpRequestParameters, HttpResponse } from '#services/http-handler/http-handler.types'
 import type { DatabaseManager, PlatformAttributes } from '#services/database-manager/database-manager.types'
 import type { Platform } from '#services/platform-manager/platform-manager.types'
 import type { Logger } from '#services/logger/logger.types'
@@ -26,8 +26,6 @@ const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
   publicKeyEncoding: { type: 'spki', format: 'pem' },
   privateKeyEncoding: { type: 'pkcs1', format: 'pem' },
 })
-
-const STATE_COOKIE_NAME = 'ltijs_state'
 
 const buildClaims = (overrides: Record<string, unknown> = {}): Record<string, unknown> => ({
   [IdTokenClaim.MessageType]: LtiMessageType.ResourceLinkRequest,
@@ -115,7 +113,6 @@ const buildServices = (
 
 interface FakeHttpResponse extends HttpResponse {
   statusCode?: number
-  cookies: Array<{ name: string; value: string; options?: CookieOptions }>
   htmlBody?: string
   jsonBody?: unknown
   redirectUrl?: string
@@ -123,17 +120,8 @@ interface FakeHttpResponse extends HttpResponse {
 
 const buildFakeHttpResponse = (): FakeHttpResponse => {
   const response: FakeHttpResponse = {
-    cookies: [],
     status: (code: number) => {
       response.statusCode = code
-      return response
-    },
-    setCookie: (name: string, value: string, options?: CookieOptions) => {
-      response.cookies.push({ name, value, options })
-      return response
-    },
-    clearCookie: (name: string, options?: CookieOptions) => {
-      response.cookies.push({ name, value: '', options })
       return response
     },
     redirect: (url: string) => {
@@ -154,7 +142,6 @@ const buildRequest = (overrides: Partial<HttpRequestParameters> = {}): HttpReque
   path: '/',
   query: {},
   body: {},
-  cookies: {},
   headers: {},
   ...overrides,
 })
@@ -193,9 +180,10 @@ interface LoginParams {
   loginHint?: string
   targetLinkUri?: string
   clientId?: string
+  storageTarget?: string
 }
 
-const DEFAULT_LOGIN_PARAMS: Required<Omit<LoginParams, 'clientId'>> = {
+const DEFAULT_LOGIN_PARAMS: Required<Omit<LoginParams, 'clientId' | 'storageTarget'>> = {
   iss: 'http://localhost/moodle',
   loginHint: 'user-1',
   targetLinkUri: 'https://tool.example.com/launch',
@@ -209,16 +197,33 @@ const toLoginQuery = (params: LoginParams): Record<string, string> => {
   if (params.loginHint !== undefined) query.login_hint = params.loginHint
   if (params.targetLinkUri !== undefined) query.target_link_uri = params.targetLinkUri
   if (params.clientId !== undefined) query.client_id = params.clientId
+  if (params.storageTarget !== undefined) query.lti_storage_target = params.storageTarget
   return query
 }
 
-// `LoginRedirect.html` renders `window.location.href = '{{targetUrl}}'` --
-// the only way to recover the redirect URL now that `processLoginRequest()`
+// Both templates render their data as a single JSON island (`<script type="application/json" id="...">`)
+// rather than as individual interpolated JS variables -- this pulls it back out for assertions.
+interface RenderedTemplateData {
+  key?: string
+  value?: string
+  targetUrl?: string
+  state?: string
+  storageTarget?: string
+  platformLoginOrigin?: string
+}
+
+const extractTemplateData = (html: string | undefined): RenderedTemplateData => {
+  const match = /<script type="application\/json" id="[^"]*">([\s\S]*?)<\/script>/.exec(html ?? '')
+  if (match === null) throw new Error('No JSON data island found in rendered response')
+  return JSON.parse(match[1]) as RenderedTemplateData
+}
+
+// The only way to recover the redirect URL now that `processLoginRequest()`
 // no longer returns it directly to a test.
 const extractRedirectUrl = (html: string | undefined): string => {
-  const match = /window\.location\.href = '([^']*)'/.exec(html ?? '')
-  if (match === null) throw new Error('No redirect URL found in rendered login response')
-  return match[1]
+  const targetUrl = extractTemplateData(html).targetUrl
+  if (targetUrl === undefined) throw new Error('No redirect URL found in rendered login response')
+  return targetUrl
 }
 
 const runLogin = async (
@@ -233,8 +238,9 @@ const runLogin = async (
 
   await loginHandler(buildRequest({ query: toLoginQuery(params) }), response)
 
-  const state = response.cookies.find(cookie => cookie.name === STATE_COOKIE_NAME)?.value ?? ''
-  return { response, state, redirectUrl: new URL(extractRedirectUrl(response.htmlBody)) }
+  const redirectUrl = new URL(extractRedirectUrl(response.htmlBody))
+  const state = redirectUrl.searchParams.get('state') ?? ''
+  return { response, state, redirectUrl }
 }
 
 const runLaunch = async (
@@ -251,8 +257,7 @@ const runLaunch = async (
 
   await launchHandler(
     buildRequest({
-      body: { id_token: rawIdToken, state },
-      cookies: { [STATE_COOKIE_NAME]: state },
+      body: { id_token: rawIdToken, state, ltijs_recovered_state: state },
       ...overrides,
     }),
     buildFakeHttpResponse(),
@@ -325,7 +330,7 @@ describe('LaunchService.getLaunchContext()', () => {
 
 describe('LaunchService.prepareHttpRoutes()', () => {
   describe('login route', () => {
-    it('sets the state cookie and renders the localStorage double-submit redirect page', async () => {
+    it('renders the localStorage double-submit redirect page', async () => {
       const { databaseManager } = await buildDatabaseManagerWithPlatform()
       const { launchService: service, httpHandler } = buildServices(databaseManager)
 
@@ -369,6 +374,38 @@ describe('LaunchService.prepareHttpRoutes()', () => {
       await expect(oidcService.validateStateToken(state, platform)).resolves.toMatchObject({
         query: { course: '1' },
       })
+    })
+
+    it('threads a valid lti_storage_target into the rendered page, via the JSON data island', async () => {
+      const { databaseManager } = await buildDatabaseManagerWithPlatform()
+      const { launchService: service, httpHandler } = buildServices(databaseManager)
+
+      const { response } = await runLogin(service, httpHandler, { ...DEFAULT_LOGIN_PARAMS, storageTarget: '_parent' })
+
+      expect(extractTemplateData(response.htmlBody)).toMatchObject({
+        storageTarget: '_parent',
+        platformLoginOrigin: 'http://localhost',
+      })
+    })
+
+    it('omits storageTarget/platformLoginOrigin from the data island when the platform sent none', async () => {
+      const { databaseManager } = await buildDatabaseManagerWithPlatform()
+      const { launchService: service, httpHandler } = buildServices(databaseManager)
+
+      const { response } = await runLogin(service, httpHandler)
+
+      const data = extractTemplateData(response.htmlBody)
+      expect(data.storageTarget).toBeUndefined()
+      expect(data.platformLoginOrigin).toBeUndefined()
+    })
+
+    it('throws a ValidationError for a lti_storage_target that fails the frame-name charset check', async () => {
+      const { databaseManager } = await buildDatabaseManagerWithPlatform()
+      const { launchService: service, httpHandler } = buildServices(databaseManager)
+
+      await expect(
+        runLogin(service, httpHandler, { ...DEFAULT_LOGIN_PARAMS, storageTarget: '</script><script>alert(1)' }),
+      ).rejects.toBeInstanceOf(ValidationError)
     })
 
     it('throws a ValidationError when a required param is empty', async () => {
@@ -433,7 +470,6 @@ describe('LaunchService.prepareHttpRoutes()', () => {
 
       expect(onUnregisteredPlatform).toHaveBeenCalledTimes(1)
       expect(response.jsonBody).toEqual({ error: 'UNREGISTERED_PLATFORM' })
-      expect(response.cookies).toHaveLength(0)
       expect(response.htmlBody).toBeUndefined()
     })
 
@@ -453,7 +489,6 @@ describe('LaunchService.prepareHttpRoutes()', () => {
 
       expect(onInactivePlatform).toHaveBeenCalledTimes(1)
       expect(response.jsonBody).toEqual({ error: 'PLATFORM_NOT_ACTIVATED' })
-      expect(response.cookies).toHaveLength(0)
       expect(response.htmlBody).toBeUndefined()
     })
 
@@ -542,7 +577,7 @@ describe('LaunchService.prepareHttpRoutes()', () => {
       const launchHandler = httpHandler.getHandler('/lti/launch', HttpMethod.Post)
 
       await launchHandler(
-        buildRequest({ body: { id_token: token, state }, cookies: { [STATE_COOKIE_NAME]: state } }),
+        buildRequest({ body: { id_token: token, state, ltijs_recovered_state: state } }),
         buildFakeHttpResponse(),
       )
 
@@ -588,7 +623,7 @@ describe('LaunchService.prepareHttpRoutes()', () => {
         })
 
       await launchHandler(
-        buildRequest({ body: { id_token: token, state }, cookies: { [STATE_COOKIE_NAME]: state } }),
+        buildRequest({ body: { id_token: token, state, ltijs_recovered_state: state } }),
         buildFakeHttpResponse(),
       )
 
@@ -612,7 +647,7 @@ describe('LaunchService.prepareHttpRoutes()', () => {
 
       await expect(
         launchHandler(
-          buildRequest({ body: { id_token: token, state }, cookies: { [STATE_COOKIE_NAME]: state } }),
+          buildRequest({ body: { id_token: token, state, ltijs_recovered_state: state } }),
           buildFakeHttpResponse(),
         ),
       ).rejects.toThrow('PRIVATE_KEY_NOT_FOUND')
@@ -627,10 +662,7 @@ describe('LaunchService.prepareHttpRoutes()', () => {
       const launchHandler = httpHandler.getHandler('/lti/launch', HttpMethod.Post)
       const response = buildFakeHttpResponse()
 
-      await launchHandler(
-        buildRequest({ body: { id_token: token, state }, cookies: { [STATE_COOKIE_NAME]: state } }),
-        response,
-      )
+      await launchHandler(buildRequest({ body: { id_token: token, state, ltijs_recovered_state: state } }), response)
 
       expect(response.statusCode).toBe(200)
       expect(response.htmlBody).toBe('It works!')
@@ -646,7 +678,7 @@ describe('LaunchService.prepareHttpRoutes()', () => {
       const { onResourceLink } = applyLaunchHandlers(service)
 
       await launchHandler(
-        buildRequest({ body: { id_token: token, state }, cookies: { [STATE_COOKIE_NAME]: state } }),
+        buildRequest({ body: { id_token: token, state, ltijs_recovered_state: state } }),
         buildFakeHttpResponse(),
       )
 
@@ -666,7 +698,7 @@ describe('LaunchService.prepareHttpRoutes()', () => {
       const launchHandler = httpHandler.getHandler('/lti/launch', HttpMethod.Post)
 
       await launchHandler(
-        buildRequest({ body: { id_token: token, state }, cookies: { [STATE_COOKIE_NAME]: state } }),
+        buildRequest({ body: { id_token: token, state, ltijs_recovered_state: state } }),
         buildFakeHttpResponse(),
       )
 
@@ -692,7 +724,7 @@ describe('LaunchService.prepareHttpRoutes()', () => {
       const launchHandler = httpHandler.getHandler('/lti/launch', HttpMethod.Post)
 
       await launchHandler(
-        buildRequest({ body: { id_token: token, state }, cookies: { [STATE_COOKIE_NAME]: state } }),
+        buildRequest({ body: { id_token: token, state, ltijs_recovered_state: state } }),
         buildFakeHttpResponse(),
       )
 
@@ -711,7 +743,7 @@ describe('LaunchService.prepareHttpRoutes()', () => {
       const launchHandler = httpHandler.getHandler('/lti/launch', HttpMethod.Post)
 
       await launchHandler(
-        buildRequest({ body: { id_token: token, state }, cookies: { [STATE_COOKIE_NAME]: state } }),
+        buildRequest({ body: { id_token: token, state, ltijs_recovered_state: state } }),
         buildFakeHttpResponse(),
       )
 
@@ -728,7 +760,7 @@ describe('LaunchService.prepareHttpRoutes()', () => {
       const { onResourceLink } = applyLaunchHandlers(service)
       service.prepareHttpRoutes()
       const launchHandler = httpHandler.getHandler('/lti/launch', HttpMethod.Post)
-      const request = buildRequest({ body: { id_token: token, state }, cookies: { [STATE_COOKIE_NAME]: state } })
+      const request = buildRequest({ body: { id_token: token, state, ltijs_recovered_state: state } })
 
       await launchHandler(request, buildFakeHttpResponse())
 
@@ -833,7 +865,7 @@ describe('LaunchService.prepareHttpRoutes()', () => {
       await expect(runLaunch(service, httpHandler, token, state)).rejects.toThrow('UNREGISTERED_PLATFORM')
     })
 
-    it('renders the localStorage recovery page when the state cookie is missing', async () => {
+    it('renders the localStorage recovery page when no recovered state was posted back', async () => {
       const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
       const { launchService: service, oidcService, httpHandler } = buildServices(databaseManager)
       const { onResourceLink, onDeepLinking, onSubmissionReview } = applyLaunchHandlers(service)
@@ -851,6 +883,26 @@ describe('LaunchService.prepareHttpRoutes()', () => {
       expect(onSubmissionReview).not.toHaveBeenCalled()
     })
 
+    it('recovers storageTarget/platformLoginOrigin from the state JWT for the recovery page, unverified', async () => {
+      const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
+      const { launchService: service, oidcService, httpHandler } = buildServices(databaseManager)
+      service.prepareHttpRoutes()
+      const launchHandler = httpHandler.getHandler('/lti/launch', HttpMethod.Post)
+      const state = oidcService.buildStateToken(platform, undefined, {
+        target: '_parent',
+        loginOrigin: 'http://localhost',
+      })
+      const token = await signToken(databaseManager, buildClaims())
+      const response = buildFakeHttpResponse()
+
+      await launchHandler(buildRequest({ body: { id_token: token, state } }), response)
+
+      expect(extractTemplateData(response.htmlBody)).toMatchObject({
+        storageTarget: '_parent',
+        platformLoginOrigin: 'http://localhost',
+      })
+    })
+
     it('completes the launch once the localStorage-recovered state is echoed back and matches', async () => {
       const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
       const { launchService: service, oidcService, httpHandler } = buildServices(databaseManager)
@@ -858,7 +910,6 @@ describe('LaunchService.prepareHttpRoutes()', () => {
       const token = await signToken(databaseManager, buildClaims())
 
       const context = await runLaunch(service, httpHandler, token, state, {
-        cookies: {},
         body: { id_token: token, state, ltijs_recovered_state: state },
       })
 
@@ -887,7 +938,7 @@ describe('LaunchService.prepareHttpRoutes()', () => {
 
       const { onResourceLink } = applyLaunchHandlers(service)
       await launchHandler(
-        buildRequest({ cookies: {}, body: { id_token: token, state, [recoveredStateFieldName]: state } }),
+        buildRequest({ body: { id_token: token, state, [recoveredStateFieldName]: state } }),
         buildFakeHttpResponse(),
       )
 
@@ -921,7 +972,6 @@ describe('LaunchService.prepareHttpRoutes()', () => {
 
       await expect(
         runLaunch(service, httpHandler, token, state, {
-          cookies: {},
           body: { id_token: token, state, ltijs_recovered_state: 'a-different-state' },
         }),
       ).rejects.toThrow('INVALID_STATE')

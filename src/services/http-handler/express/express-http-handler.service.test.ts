@@ -53,21 +53,17 @@ describe('ExpressHttpHandler', () => {
     expect(postResponse.status).toBe(200)
   })
 
-  it('extracts query, body, and cookie parameters into HttpRequestParameters', async () => {
+  it('extracts query and body parameters into HttpRequestParameters', async () => {
     const handler = new ExpressHttpHandler(buildLogger())
     handler.registerRoute('/echo', [HttpMethod.Post], async (request, response) => {
-      response.json({ query: request.query, body: request.body, cookies: request.cookies })
+      response.json({ query: request.query, body: request.body })
     })
 
-    const response = await request(handler.app)
-      .post('/echo?iss=platform')
-      .set('Cookie', 'state=abc123')
-      .send({ id_token: 'token-value' })
+    const response = await request(handler.app).post('/echo?iss=platform').send({ id_token: 'token-value' })
 
     expect(response.body).toEqual({
       query: { iss: 'platform' },
       body: { id_token: 'token-value' },
-      cookies: { state: 'abc123' },
     })
   })
 

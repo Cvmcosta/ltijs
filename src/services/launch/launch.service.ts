@@ -40,14 +40,13 @@ import type { State } from '#services/oidc/oidc.types'
 
 export class LaunchService {
   private readonly LOG_COMPONENT = 'launchService'
-  private readonly STATE_COOKIE_NAME = 'ltijs_state'
   private readonly RECOVERED_STATE_FIELD = 'ltijs_recovered_state'
   private readonly LOCAL_STORAGE_KEY_PREFIX = 'ltijs_state_'
   private readonly DEFAULT_LOGIN_ROUTE = '/lti/login'
   private readonly DEFAULT_LAUNCH_ROUTE = '/lti/launch'
   private readonly LTIK_TTL_SECONDS = 3600 * 24
-  private readonly LOGIN_REDIRECT_TEMPLATE = path.join(__dirname, 'templates', 'login-redirect.html')
-  private readonly SIGNED_STATE_FORM_TEMPLATE = path.join(__dirname, 'templates', 'signed-state-form.html')
+  private readonly LOGIN_REDIRECT_TEMPLATE = path.join(__dirname, 'templates', 'login-redirect.spy')
+  private readonly SIGNED_STATE_FORM_TEMPLATE = path.join(__dirname, 'templates', 'signed-state-form.spy')
   private readonly DEFAULT_SUCCESS_BODY = 'It works!'
 
   private readonly databaseManager: DatabaseManager
@@ -197,14 +196,16 @@ export class LaunchService {
       throw error
     }
 
-    const { redirectUrl, state } = loginResult
-
-    response.setCookie(this.STATE_COOKIE_NAME, state, { httpOnly: true, secure: true, sameSite: 'none' })
+    const { redirectUrl, state, storageTarget, platformLoginOrigin } = loginResult
 
     const html = renderTemplate(this.LOGIN_REDIRECT_TEMPLATE, {
-      key: this.buildLocalStorageKey(state),
-      value: state,
-      targetUrl: redirectUrl,
+      dataJson: this.toDataScript({
+        key: this.buildLocalStorageKey(state),
+        value: state,
+        targetUrl: redirectUrl,
+        storageTarget,
+        platformLoginOrigin,
+      }),
     })
     response.html(html)
   }
@@ -214,10 +215,16 @@ export class LaunchService {
 
     const recoveredState = this.resolveRecoveredState(request)
     if (recoveredState === undefined) {
+      const { storageTarget, platformLoginOrigin } = this.peekStateToken(parameters.stateToken)
       const html = renderTemplate(this.SIGNED_STATE_FORM_TEMPLATE, {
-        key: this.buildLocalStorageKey(parameters.stateToken),
         id_token: parameters.rawIdToken,
         state: parameters.stateToken,
+        dataJson: this.toDataScript({
+          key: this.buildLocalStorageKey(parameters.stateToken),
+          state: parameters.stateToken,
+          storageTarget,
+          platformLoginOrigin,
+        }),
       })
       response.html(html)
       return
@@ -285,7 +292,13 @@ export class LaunchService {
   private async processLogin(params: LoginRequestParams): Promise<LoginRequestResult> {
     const platform = await this.resolvePlatform(params.iss, params.clientId)
     const { targetLinkUri, query } = this.splitTargetLinkUri(params.targetLinkUri)
-    const state = this.oidcService.buildStateToken(platform, query)
+    const platformLoginOrigin =
+      params.storageTarget === undefined ? undefined : new URL(platform.authenticationEndpoint).origin
+    const storage =
+      params.storageTarget === undefined || platformLoginOrigin === undefined
+        ? undefined
+        : { target: params.storageTarget, loginOrigin: platformLoginOrigin }
+    const state = this.oidcService.buildStateToken(platform, query, storage)
 
     const redirectUrl = await this.oidcService.buildAuthenticationRequestUrl(platform, {
       loginHint: params.loginHint,
@@ -296,7 +309,7 @@ export class LaunchService {
     })
 
     this.logger.debug(this.LOG_COMPONENT, `Login request processed for [${params.iss}]`)
-    return { redirectUrl, state }
+    return { redirectUrl, state, storageTarget: params.storageTarget, platformLoginOrigin }
   }
 
   private async resolvePlatform(url: string, clientId?: string): Promise<Platform> {
@@ -321,15 +334,34 @@ export class LaunchService {
   }
 
   private resolveRecoveredState(request: HttpRequestParameters): string | undefined {
-    const cookieState = request.cookies[this.STATE_COOKIE_NAME]
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    if (cookieState !== undefined) return cookieState
     const bodyState = request.body[this.RECOVERED_STATE_FIELD]
     return typeof bodyState === 'string' ? bodyState : undefined
   }
 
   private buildLocalStorageKey(state: string): string {
     return `${this.LOCAL_STORAGE_KEY_PREFIX}${state}`
+  }
+
+  // `stateToken`'s signature isn't verified here -- this only peeks at the postMessage-storage handshake
+  // info needed to render the recovery page, before the state's actual value is checked (that still
+  // happens later, exactly as today, in resolveRecoveredState/processLaunch). Mirrors how processLaunch
+  // already peeks at rawIdToken's iss/aud via decodeToken before its signature is verified.
+  private peekStateToken(stateToken: string): Partial<State> {
+    return decodeToken(stateToken).payload as unknown as Partial<State>
+  }
+
+  // sprightly (the templating engine) does no HTML/JS escaping of its own -- storageTarget/
+  // platformLoginOrigin are the first platform-controlled values ever injected into a <script> context
+  // in these templates, so this guards against that regardless of how tightly the schema/derivation
+  // already constrains them.
+  // A single JSON data island covers every value a template's script needs in one escape step, read back
+  // client-side via JSON.parse -- rather than interpolating each value as its own JS string literal, which
+  // would require separately reasoning about (and escaping) every individual field. The `<` guard still
+  // matters even inside a `<script type="application/json">` tag: the HTML tokenizer looks for the literal
+  // text "</script" regardless of the script's type, so an unguarded value containing it could still
+  // terminate the tag early.
+  private toDataScript(data: Record<string, string | undefined>): string {
+    return JSON.stringify(data).replace(/</g, '\\u003c')
   }
 
   private splitTargetLinkUri(targetLinkUri: string): TargetLinkUriParts {

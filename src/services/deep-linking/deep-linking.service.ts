@@ -21,7 +21,7 @@ export class DeepLinking {
   private readonly DEEP_LINKING_SUBMISSION_FORM_TEMPLATE = path.join(
     __dirname,
     'templates',
-    'deep-linking-submission-form.html',
+    'deep-linking-submission-form.spy',
   )
 
   private readonly CONTENT_ITEMS_CLAIM = 'https://purl.imsglobal.org/spec/lti-dl/claim/content_items'

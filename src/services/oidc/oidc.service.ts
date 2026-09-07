@@ -29,7 +29,7 @@ import type { RequestHandler } from '#services/request-handler/request-handler.t
 import type { CacheManager } from '#services/cache-manager/cache-manager.types'
 import type { Logger } from '#services/logger/logger.types'
 import type { DecodedToken, TokenHeader } from '#utils/crypto/jwt.types'
-import type { AuthenticationRequestParams, State } from '#services/oidc/oidc.types'
+import type { AuthenticationRequestParams, State, StorageTarget } from '#services/oidc/oidc.types'
 
 export class OidcService {
   private readonly LOG_COMPONENT = 'oidcService'
@@ -72,11 +72,15 @@ export class OidcService {
     return validatedToken
   }
 
-  public buildStateToken(platform: Platform, query?: Record<string, string>): string {
-    return signJwt({ query }, resolvePlatformPrivateKey(platform), {
-      algorithm: RS256_ALGORITHM,
-      expiresIn: this.STATE_TTL_SECONDS,
-    })
+  public buildStateToken(platform: Platform, query?: Record<string, string>, storage?: StorageTarget): string {
+    return signJwt(
+      { query, storageTarget: storage?.target, platformLoginOrigin: storage?.loginOrigin },
+      resolvePlatformPrivateKey(platform),
+      {
+        algorithm: RS256_ALGORITHM,
+        expiresIn: this.STATE_TTL_SECONDS,
+      },
+    )
   }
 
   public async validateStateToken(token: string, platform: Platform): Promise<State> {

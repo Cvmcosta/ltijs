@@ -61,7 +61,6 @@ export type {
   RouteHandler,
   HttpRequestParameters,
   HttpResponse,
-  CookieOptions,
   SslOptions,
   CorsOptions,
 } from '#services/http-handler/http-handler.types'

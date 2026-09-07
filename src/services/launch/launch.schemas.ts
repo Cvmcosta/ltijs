@@ -16,6 +16,13 @@ export const LoginRequestPayloadSchema = z
     client_id: z.string().optional(),
     lti_message_hint: z.string().optional(),
     lti_deployment_id: z.string().optional(),
+    // Restricted to a safe frame-name charset -- this value ends up injected into a <script> context in
+    // the login-redirect page, and rejecting anything unexpected outright is simpler and safer than
+    // trying to sanitize an arbitrarily-shaped value.
+    lti_storage_target: z
+      .string()
+      .regex(/^[A-Za-z0-9_-]+$/)
+      .optional(),
   })
   .transform(raw => ({
     iss: raw.iss,
@@ -24,6 +31,7 @@ export const LoginRequestPayloadSchema = z
     clientId: raw.client_id,
     ltiMessageHint: raw.lti_message_hint,
     ltiDeploymentId: raw.lti_deployment_id,
+    storageTarget: raw.lti_storage_target,
   }))
 
 // The launch callback is the platform's `response_mode=form_post` submission

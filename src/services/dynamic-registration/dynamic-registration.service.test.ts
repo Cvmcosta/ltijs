@@ -261,7 +261,6 @@ const buildRequest = (query: Record<string, string> = {}): HttpRequestParameters
   path: '/lti/register',
   query,
   body: {},
-  cookies: {},
   headers: {},
 })
 
@@ -272,8 +271,6 @@ interface FakeHttpResponse extends HttpResponse {
 const buildFakeHttpResponse = (): FakeHttpResponse => {
   const response: FakeHttpResponse = {
     status: () => response,
-    setCookie: () => response,
-    clearCookie: () => response,
     redirect: () => undefined,
     json: () => undefined,
     html: content => {

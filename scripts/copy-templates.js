@@ -4,7 +4,7 @@ const path = require('path')
 const srcDir = path.resolve(__dirname, '..', 'src')
 const distDir = path.resolve(__dirname, '..', 'dist')
 
-const copyHtmlFiles = (src, dest) => {
+const copyTemplateFiles = (src, dest) => {
   fs.readdirSync(src).forEach(file => {
     const srcFile = path.join(src, file)
     const destFile = path.join(dest, file)
@@ -13,11 +13,11 @@ const copyHtmlFiles = (src, dest) => {
       if (!fs.existsSync(destFile)) {
         fs.mkdirSync(destFile)
       }
-      copyHtmlFiles(srcFile, destFile)
-    } else if (path.extname(srcFile) === '.html') {
+      copyTemplateFiles(srcFile, destFile)
+    } else if (path.extname(srcFile) === '.spy') {
       fs.copyFileSync(srcFile, destFile)
     }
   })
 }
 
-copyHtmlFiles(srcDir, distDir)
+copyTemplateFiles(srcDir, distDir)

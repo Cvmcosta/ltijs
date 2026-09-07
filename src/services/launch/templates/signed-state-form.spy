@@ -1,0 +1,44 @@
+<form id="ltijs_launch" style="display: none;" action="" method="post">
+	<input type="hidden" name="id_token" value="{{id_token}}" />
+	<input type="hidden" name="state" value="{{state}}" />
+	<input type="hidden" name="ltijs_recovered_state" id="ltijs_recovered_state" value="" />
+</form>
+<script type="application/json" id="ltijs-launch-data">{{dataJson}}</script>
+<script>
+{{> _lti-storage-handshake.spy }}
+
+(function () {
+  var data = JSON.parse(document.getElementById('ltijs-launch-data').textContent);
+  var localStorageKey = data.key;
+  var stateValue = data.state;
+  var storageTarget = data.storageTarget;
+  var platformLoginOrigin = data.platformLoginOrigin;
+
+  function submitWith(recoveredState) {
+    document.getElementById('ltijs_recovered_state').value = recoveredState;
+    localStorage.removeItem(localStorageKey);
+    document.getElementById('ltijs_launch').submit();
+  }
+
+  function fail() {
+    console.error('ltijs: failed to retrieve the signed state via localStorage or platform postMessage storage.');
+    submitWith(''); // let the server raise INVALID_STATE rather than blocking here client-side
+  }
+
+  function retrieveState() {
+    try {
+      var stored = localStorage.getItem(localStorageKey);
+      if (stored) return submitWith(stored);
+    } catch (error) {} // fall through to the postMessage fallback below
+
+    if (!storageTarget) return fail();
+    ltiSendStorageMessage(storageTarget, platformLoginOrigin, 'lti.get_data', 'state_' + stateValue, {
+      key: 'state_' + stateValue,
+    })
+      .then(function (response) { submitWith(response.value); })
+      .catch(fail);
+  }
+
+  retrieveState();
+})();
+</script>

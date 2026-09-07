@@ -44,8 +44,6 @@ const buildOptions = (overrides: Partial<ProviderOptions> = {}): ProviderOptions
 const buildFakeResponse = (): HttpResponse => {
   const response: HttpResponse = {
     status: () => response,
-    setCookie: () => response,
-    clearCookie: () => response,
     redirect: () => undefined,
     html: () => undefined,
     json: () => undefined,
@@ -58,7 +56,6 @@ const buildFakeLoginRequest = (): HttpRequestParameters => ({
   path: '/lti/login',
   query: { iss: 'http://localhost/moodle', login_hint: 'user-1', target_link_uri: 'https://tool.example.com' },
   body: {},
-  cookies: {},
   headers: {},
 })
 

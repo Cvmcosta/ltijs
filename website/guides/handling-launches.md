@@ -19,10 +19,11 @@ sequenceDiagram
     Tool-->>Browser: Your handler's response
 ```
 
-A launch always starts at the login route and ends at the launch route, a few redirects later (the
-`sameSite: 'none'` state cookie plus a local-storage recovery step, not shown above, keeps this working
-even when third-party cookies are blocked). Once the id_token is validated, ltijs dispatches to one of
-three handlers based on the LTI message type:
+A launch always starts at the login route and ends at the launch route, a few redirects later. ltijs never
+sets a cookie for this round trip: a `localStorage`-based recovery step (not shown above) is the primary
+mechanism, and it falls back to the official LTI Advantage postMessage storage handshake for platforms
+that declare support for it, in case `localStorage` itself doesn't round-trip inside the platform's iframe.
+Once the id_token is validated, ltijs dispatches to one of three handlers based on the LTI message type:
 
 ```ts
 provider.onResourceLink(async (context, request, response) => { /* the common case */ })
@@ -33,7 +34,7 @@ provider.onConnect(handler) // alias of onResourceLink, for anyone migrating fro
 ```
 
 Every handler gets three arguments: the resolved `LaunchContext`, and the raw request/response, for
-reading extra headers/cookies or sending something other than the default. If you don't set a handler,
+reading extra headers or sending something other than the default. If you don't set a handler,
 the default sends `200 It works!`. That's useful while wiring things up, but not something to ship.
 
 ## `LaunchContext`

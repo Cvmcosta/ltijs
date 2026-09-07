@@ -12,6 +12,9 @@ export type LaunchCallbackParams = z.infer<typeof LaunchCallbackPayloadSchema>
 export interface LoginRequestResult {
   redirectUrl: string
   state: string
+  /** Only set when the platform declared postMessage storage support (`lti_storage_target`) at login. */
+  storageTarget?: string
+  platformLoginOrigin?: string
 }
 
 export interface ProcessLaunchResult {
@@ -35,7 +38,7 @@ export interface LaunchRoutes {
   launchRoute: string
 }
 
-/** A launch handler -- given the resolved `LaunchContext` plus the raw request/response, for reading extra headers/cookies or sending a custom response. */
+/** A launch handler -- given the resolved `LaunchContext` plus the raw request/response, for reading extra headers or sending a custom response. */
 export type OnLaunchHandler = (
   context: LaunchContext,
   request: HttpRequestParameters,

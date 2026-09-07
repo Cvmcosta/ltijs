@@ -53,7 +53,6 @@ const buildRequest = (): HttpRequestParameters => ({
   path: '/keys',
   query: {},
   body: {},
-  cookies: {},
   headers: {},
 })
 
@@ -64,8 +63,6 @@ interface FakeHttpResponse extends HttpResponse {
 const buildFakeHttpResponse = (): FakeHttpResponse => {
   const response: FakeHttpResponse = {
     status: () => response,
-    setCookie: () => response,
-    clearCookie: () => response,
     redirect: () => undefined,
     html: () => undefined,
     json: body => {

@@ -1,0 +1,48 @@
+// LTI Advantage postMessage storage (lti-pm-s v0p1). Since lti_storage_target's presence on the
+// login-initiation request already means the platform supports put_data/get_data (lti-cs-oidc), this
+// skips the separate lti.capabilities discovery round-trip (lti-cs-pm) and calls put_data/get_data
+// directly, targeting the platform's exact origin rather than a wildcard, since these calls carry the
+// actual state value. A bounded wait is added on top of that so a platform that advertises support but
+// never actually responds doesn't leave the page hanging forever.
+var LTI_STORAGE_HANDSHAKE_TIMEOUT_MS = 3000;
+
+function ltiResolveTargetFrame(frameName) {
+  var parent = window.parent || window.opener;
+  return frameName === '_parent' ? parent : parent.frames[frameName];
+}
+
+function ltiSendStorageMessage(frameName, loginOrigin, subject, messageId, extraFields) {
+  return new Promise(function (resolve, reject) {
+    var targetFrame = ltiResolveTargetFrame(frameName);
+    var responseSubject = subject + '.response';
+    var settled = false;
+    var timeoutId;
+
+    var cleanup = function () {
+      if (settled) return;
+      settled = true;
+      window.removeEventListener('message', onMessage);
+      clearTimeout(timeoutId);
+    };
+
+    var onMessage = function (event) {
+      if (settled || !event.data || event.data.subject !== responseSubject || event.data.message_id !== messageId || event.origin !== loginOrigin) return;
+      cleanup();
+      if (event.data.error) {
+        reject(new Error((event.data.error && event.data.error.message) || 'storage error'));
+        return;
+      }
+      resolve(event.data);
+    };
+
+    window.addEventListener('message', onMessage);
+    timeoutId = setTimeout(function () {
+      cleanup();
+      reject(new Error('Timed out waiting for ' + responseSubject));
+    }, LTI_STORAGE_HANDSHAKE_TIMEOUT_MS);
+
+    var payload = { subject: subject, message_id: messageId };
+    for (var field in extraFields) if (Object.prototype.hasOwnProperty.call(extraFields, field)) payload[field] = extraFields[field];
+    targetFrame.postMessage(payload, loginOrigin);
+  });
+}

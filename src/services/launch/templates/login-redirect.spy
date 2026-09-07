@@ -1,0 +1,32 @@
+<script type="application/json" id="ltijs-login-data">{{dataJson}}</script>
+<script>
+{{> _lti-storage-handshake.spy }}
+
+var data = JSON.parse(document.getElementById('ltijs-login-data').textContent);
+var stateValue = data.value;
+var localStorageKey = data.key;
+var storageTarget = data.storageTarget;
+var platformLoginOrigin = data.platformLoginOrigin;
+var targetUrl = data.targetUrl;
+
+function redirectToLMS() {
+  window.location.href = targetUrl;
+}
+
+function storeState() {
+  try {
+    localStorage.setItem(localStorageKey, stateValue);
+    if (localStorage.getItem(localStorageKey) === stateValue) return redirectToLMS();
+  } catch (error) {}  // fall through to the postMessage fallback (or the final unconditional redirect) below
+
+  if (!storageTarget) return redirectToLMS()
+  ltiSendStorageMessage(storageTarget, platformLoginOrigin, 'lti.put_data', 'state_' + stateValue, {
+    key: 'state_' + stateValue,
+    value: stateValue,
+  })
+    .then(redirectToLMS)
+    .catch(redirectToLMS)
+}
+
+storeState();
+</script>

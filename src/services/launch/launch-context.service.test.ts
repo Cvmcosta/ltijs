@@ -142,8 +142,6 @@ describe('LaunchContext', () => {
       let redirectedTo: string | undefined
       const response: HttpResponse = {
         status: () => response,
-        setCookie: () => response,
-        clearCookie: () => response,
         redirect: url => {
           redirectedTo = url
         },

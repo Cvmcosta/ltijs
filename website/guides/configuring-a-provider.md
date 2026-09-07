@@ -127,8 +127,8 @@ const provider = new Provider({
 ```
 
 By default, CORS reflects any request origin and allows credentials. This is safe for ltijs's own routes,
-but worth restricting if you add your own authenticated JSON routes on top of the `ltik` cookie session. To
-restrict it to specific frontend origins, or disable it entirely, add `cors`:
+but worth restricting if you add your own authenticated JSON routes that rely on the `ltik` bearer token.
+To restrict it to specific frontend origins, or disable it entirely, add `cors`:
 
 ```ts
 const provider = new Provider({
