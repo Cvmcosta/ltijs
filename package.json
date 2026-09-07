@@ -78,16 +78,16 @@
   },
   "homepage": "https://cvmcosta.github.io/ltijs",
   "dependencies": {
-    "cors": "^2.8.5",
+    "cors": "^2.8.6",
     "debug": "^4.4.3",
     "express": "^5.2.1",
     "helmet": "^8.3.0",
     "ioredis": "^5.11.1",
     "jsonwebtoken": "^9.0.3",
-    "mongoose": "^9.9.3",
+    "mongoose": "^9.9.5",
     "parse-link-header": "^2.0.0",
     "sprightly": "^2.0.1",
-    "zod": "^4.4.3"
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
@@ -103,16 +103,23 @@
     "eslint-config-love": "^85.0.0",
     "husky": "^9.1.7",
     "ioredis-mock": "^8.13.1",
-    "jest": "^30.4.2",
+    "jest": "^30.5.1",
     "jest-environment-jsdom": "^30.5.1",
-    "lint-staged": "^17.3.0",
+    "lint-staged": "^17.5.0",
     "mongodb-memory-server": "^11.2.0",
     "npm-run-all": "^4.1.5",
     "prettier": "3.9.6",
     "supertest": "^7.2.2",
     "ts-jest": "^29.4.12",
-    "tsx": "^4.23.12",
+    "tsx": "^4.23.13",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "typescript-native": "npm:typescript@^7.0.2"
+  },
+  "allowScripts": {
+    "@parcel/watcher@2.6.0": true,
+    "esbuild@0.28.2": true,
+    "fsevents@2.3.3": true,
+    "mongodb-memory-server@11.2.0": true,
+    "unrs-resolver@1.12.2": true
   }
 }
