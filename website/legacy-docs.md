@@ -45,7 +45,7 @@
   - [Request authentication](#request-authentication)
   - [Whitelisting routes](#whitelisting-routes)
   - [Redirecting with Ltijs](#redirecting-with-ltijs)
-- [LTI® Advantage Services](#lti®-advantage-services)
+- [LTI® Advantage Services](#lti-advantage-services)
   - [Deep Linking](#deep-linking-service-with-ltijs)
   - [Assignment and Grades](#assignment-and-grades-service-with-ltijs)
   - [Names and Roles Provisioning](#names-and-roles-provisioning-service-with-ltijs)

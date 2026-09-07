@@ -45,13 +45,6 @@ export type OnLaunchHandler = (
   response: HttpResponse,
 ) => Promise<void>
 
-/** The three launch handlers `ProviderOptions.handlers` accepts, matching `Provider.onResourceLink`/`onDeepLinking`/`onSubmissionReview`. */
-export interface LaunchHandlers {
-  onResourceLink: OnLaunchHandler
-  onDeepLinking: OnLaunchHandler
-  onSubmissionReview: OnLaunchHandler
-}
-
 // Raw route-handler overrides, matching legacy's `onUnregisteredPlatform`/
 // `onInactivePlatform` exactly: given `(request, response)`, expected to
 // send the response itself. The login route always returns immediately

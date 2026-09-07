@@ -9,7 +9,7 @@
   * [Grading (AGS)](/guides/grading.md)
   * [Names and Roles (NRPS)](/guides/names-and-roles.md)
   * [Deep Linking](/guides/deep-linking.md)
-  * [Swapping Storage Backends](/guides/swapping-storage-backends.md)
+  * [Swapping Backends](/guides/swapping-backends.md)
   * [Error Handling](/guides/error-handling.md)
   * [Migrating from ltijs v5](/guides/migrating-from-v5.md)
 

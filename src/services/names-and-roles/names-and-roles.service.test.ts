@@ -11,6 +11,7 @@ import type { MockFetchResponseOptions } from '#utils/tests/mock-fetch-response'
 import { IdTokenClaim, LtiMessageType } from '#services/launch/id-token.constants'
 import { IdTokenValidationMethod } from '#services/platform-manager/platform-manager.constants'
 import { LTI_VERSION } from '#services/oidc/oidc.constants'
+import { buildIdToken } from '#services/launch/id-token.serializer'
 import type { Platform } from '#services/platform-manager/platform-manager.types'
 import type { Logger } from '#services/logger/logger.types'
 import type { IdTokenRecord } from '#services/database-manager/database-manager.types'
@@ -90,15 +91,36 @@ afterEach(() => {
 // A real LaunchContext also constructs its own NamesAndRoles internally, so
 // building one just to get a launch-context reference would redundantly
 // construct a second, unused NamesAndRoles -- NamesAndRoles only ever reads
-// `.platform`/`.rawIdToken` off the reference it's given, so a minimal
-// object shaped like just those two fields is enough here.
+// `.platform`/`.rawIdToken`/`.idToken` off the reference it's given, so a
+// minimal object shaped like just those fields is enough here. `idToken` is a
+// getter, computed lazily (unlike the real LaunchContext, which computes it
+// eagerly at construction), so tests asserting a raw claim is read a specific
+// number of times aren't thrown off by an extra read from building this fake.
 const buildLaunchContext = (platform: Platform, rawIdToken: IdTokenRecord): LaunchContext =>
-  ({ platform, rawIdToken }) as unknown as LaunchContext
+  ({
+    platform,
+    rawIdToken,
+    get idToken() {
+      return buildIdToken(rawIdToken)
+    },
+  }) as unknown as LaunchContext
 
 const buildService = (platform: Platform = basePlatform, idToken: IdTokenRecord = baseIdToken): NamesAndRoles => {
   const accessTokenManager = new AccessTokenManager(buildMockDatabaseManager(), requestHandler, logger)
   return new NamesAndRoles(buildLaunchContext(platform, idToken), accessTokenManager, requestHandler, logger)
 }
+
+describe('NamesAndRoles.isAvailable()', () => {
+  it('returns true when the idToken declares NRPS support', () => {
+    const service = buildService()
+    expect(service.isAvailable()).toBe(true)
+  })
+
+  it('returns false when the idToken has no namesRoles claim', () => {
+    const service = buildService(basePlatform, { ...baseIdToken, [IdTokenClaim.NamesRoleService]: undefined })
+    expect(service.isAvailable()).toBe(false)
+  })
+})
 
 describe('NamesAndRoles.getMembers()', () => {
   it('throws MISSING_NAMES_ROLES_SERVICE_URL when the idToken has no namesRoles claim', async () => {

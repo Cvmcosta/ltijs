@@ -67,6 +67,11 @@ export class Grading {
     this.logger = logger
   }
 
+  /** Whether this launch declared AGS support. Check before calling any other method on this service. */
+  public isAvailable(): boolean {
+    return this.launchContext.idToken.services.assignmentAndGrades.available
+  }
+
   public async getLineItems(options?: GetLineItemsOptions): Promise<GetLineItemsResult> {
     const { platform, rawIdToken: idToken } = this.launchContext
     if (options?.url === undefined) this.ensureServiceAvailability(idToken)

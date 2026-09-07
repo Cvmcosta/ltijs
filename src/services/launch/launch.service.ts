@@ -144,7 +144,12 @@ export class LaunchService {
     this.httpHandler.registerRoute(routes.loginRoute, [HttpMethod.Get, HttpMethod.Post], async (request, response) => {
       await this.handleLoginRequest(request, response)
     })
-    this.httpHandler.registerRoute(routes.launchRoute, [HttpMethod.Post], async (request, response) => {
+    this.registerLaunchRoute(routes.launchRoute)
+  }
+
+  /** Registers `path` as an additional launch route, dispatching through the same launch handlers as any other. */
+  public registerLaunchRoute(path: string): void {
+    this.httpHandler.registerRoute(path, [HttpMethod.Post], async (request, response) => {
       await this.handleLaunchRequest(request, response)
     })
   }

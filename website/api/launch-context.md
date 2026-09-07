@@ -158,17 +158,11 @@ type OnLaunchHandler = (
   response: HttpResponse,
 ) => Promise<void>
 
-interface LaunchHandlers {
-  onResourceLink: OnLaunchHandler
-  onDeepLinking: OnLaunchHandler
-  onSubmissionReview: OnLaunchHandler
-}
-
 type UnregisteredPlatformHandler = RouteHandler
 type InactivePlatformHandler = RouteHandler
 ```
 
-`LaunchHandlers` is the shape `ProviderOptions.handlers` accepts, matching `Provider.onResourceLink`/
-`onDeepLinking`/`onSubmissionReview`. `UnregisteredPlatformHandler`/`InactivePlatformHandler` are given
-`(request, response)` and are expected to send the response themselves; the login route always returns
-immediately after invoking one, on either side of the port.
+`OnLaunchHandler` is the shape `Provider.onResourceLink`/`onDeepLinking`/`onSubmissionReview` each accept.
+`UnregisteredPlatformHandler`/`InactivePlatformHandler` are given `(request, response)` and are expected to
+send the response themselves; the login route always returns immediately after invoking one, on either
+side of the port.

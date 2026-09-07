@@ -1,8 +1,18 @@
 # Grading (AGS)
 
 `context.grading` implements the Assignment and Grade Services spec: creating gradable columns (line
-items) and submitting scores against them. It's only available if the launch declared AGS support
-(`context.idToken.services.assignmentAndGrades.available`).
+items) and submitting scores against them. It's only available if the launch declared AGS support, so
+check `context.grading.isAvailable()` before calling any other method on it:
+
+```ts
+if (!context.grading.isAvailable()) {
+  response.status(400).json({ error: 'This launch does not support grading.' })
+  return
+}
+```
+
+Every other method throws `MissingLineItemsEndpointError` if called on a launch that didn't declare AGS
+support, so `isAvailable()` lets you handle that up front instead of catching it.
 
 See the [Grading API reference](../api/services.md#grading-ags) for the full method list, and
 [Grading types](../api/services.md#grading-types) for the `LineItem`/`Score`/`Result` shapes.

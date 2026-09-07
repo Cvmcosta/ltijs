@@ -5,7 +5,6 @@ import { FetchRequestHandler } from '#services/request-handler/fetch/fetch-reque
 import { ExpressHttpHandler } from '#services/http-handler/express/express-http-handler.service'
 import { MockCacheManager } from '#services/cache-manager/mock/mock-cache-manager.service'
 import { PlatformManager } from '#services/platform-manager/platform-manager.service'
-import { KeysetService } from '#services/keyset/keyset.service'
 import { DynamicRegistration } from '#services/dynamic-registration/dynamic-registration.service'
 import { DynamicRegistrationNotConfiguredError } from '#services/provider/errors'
 import { LaunchService } from '#services/launch/launch.service'
@@ -15,17 +14,11 @@ import { buildMockHttpHandler } from '#utils/tests/mock-http-handler'
 import { buildMockCacheManager } from '#utils/tests/mock-cache-manager'
 import type { HttpRequestParameters, HttpResponse } from '#services/http-handler/http-handler.types'
 import type { Logger } from '#services/logger/logger.types'
-import type { LaunchHandlers } from '#services/launch/launch.types'
+import type { OnLaunchHandler } from '#services/launch/launch.types'
 import type { LaunchContext } from '#services/launch/launch-context.service'
 import type { ProviderOptions } from '#services/provider/provider.types'
 
 const logger: Logger = { debug: jest.fn(), warn: jest.fn(), error: jest.fn() }
-
-const handlers: LaunchHandlers = {
-  onResourceLink: async () => undefined,
-  onDeepLinking: async () => undefined,
-  onSubmissionReview: async () => undefined,
-}
 
 const dynamicRegistrationOptions = {
   name: 'My Tool',
@@ -33,7 +26,6 @@ const dynamicRegistrationOptions = {
 }
 
 const buildOptions = (overrides: Partial<ProviderOptions> = {}): ProviderOptions => ({
-  handlers,
   databaseManager: buildMockDatabaseManager(),
   httpHandler: buildMockHttpHandler(),
   requestHandler: new FetchRequestHandler(),
@@ -65,20 +57,18 @@ afterEach(() => {
 })
 
 describe('Provider constructor', () => {
-  it('builds every collaborator from defaults when only handlers + database are given', () => {
-    const provider = new Provider({ handlers, database: { url: 'mongodb://localhost/ltijs-test' } })
+  it('builds every collaborator from defaults when only a database is given', () => {
+    const provider = new Provider({ database: { url: 'mongodb://localhost/ltijs-test' } })
 
     expect(provider.databaseManager).toBeInstanceOf(MongoDatabaseManager)
     expect(provider.httpHandler).toBeInstanceOf(ExpressHttpHandler)
     expect(provider.platformManager).toBeInstanceOf(PlatformManager)
-    expect(provider.keysetService).toBeInstanceOf(KeysetService)
     expect(provider.cacheManager).toBeInstanceOf(MockCacheManager)
     expect(provider.dynamicRegistrationService).toBeUndefined()
   })
 
   it('threads ProviderOptions.server.cors into the default ExpressHttpHandler', async () => {
     const provider = new Provider({
-      handlers,
       database: { url: 'mongodb://localhost/ltijs-test' },
       server: { cors: { origin: ['https://allowed.example.com'] } },
     })
@@ -97,7 +87,7 @@ describe('Provider constructor', () => {
     const requestHandler = new FetchRequestHandler()
     const cacheManager = buildMockCacheManager()
 
-    const provider = new Provider({ handlers, databaseManager, httpHandler, requestHandler, cacheManager, logger })
+    const provider = new Provider({ databaseManager, httpHandler, requestHandler, cacheManager, logger })
 
     expect(provider.databaseManager).toBe(databaseManager)
     expect(provider.httpHandler).toBe(httpHandler)
@@ -145,54 +135,10 @@ describe('Provider constructor', () => {
     expect(() => httpHandler.getHandler('/custom/register', HttpMethod.Get)).not.toThrow()
   })
 
-  it('registers a custom onDynamicRegistration handler instead of the default one, with the built service passed to the factory', () => {
-    const onDynamicRegistration = jest.fn((service: DynamicRegistration) => {
-      expect(service).toBeInstanceOf(DynamicRegistration)
-      return async (_request: unknown, response: { html: (content: string) => void }) => {
-        response.html('<p>custom</p>')
-      }
-    })
-    const options = buildOptions({ dynamicRegistration: dynamicRegistrationOptions, onDynamicRegistration })
-
-    const provider = new Provider(options)
-
-    expect(provider).toBeInstanceOf(Provider)
-    expect(onDynamicRegistration).toHaveBeenCalledTimes(1)
-  })
-
-  // Full behavioral coverage (handler fully owns the response, no OIDC-flow
-  // continuation) already lives in `launch.service.test.ts` -- this only
-  // proves Provider threads `options.onUnregisteredPlatform` through to the
-  // login route unmodified. `onInactivePlatform` is wired via the exact same
-  // object literal in `provider.service.ts`, so a second full end-to-end
-  // test here would just be duplicate coverage of the same plumbing.
-  it('passes onUnregisteredPlatform through to the login route unmodified', async () => {
-    const httpHandler = buildMockHttpHandler()
-    const onUnregisteredPlatform = jest.fn(async () => undefined)
-    const options = buildOptions({ httpHandler, onUnregisteredPlatform })
-
-    const provider = new Provider(options)
-
-    expect(provider).toBeInstanceOf(Provider)
-    const loginHandler = httpHandler.getHandler('/lti/login', HttpMethod.Get)
-    await loginHandler(buildFakeLoginRequest(), buildFakeResponse())
-
-    expect(onUnregisteredPlatform).toHaveBeenCalledTimes(1)
-  })
-
-  it('constructor-time options.handlers.onResourceLink is wired through the same public onResourceLink() method', () => {
-    const onResourceLinkSpy = jest.spyOn(Provider.prototype, 'onResourceLink')
-
-    const provider = new Provider(buildOptions())
-
-    expect(provider).toBeInstanceOf(Provider)
-    expect(onResourceLinkSpy).toHaveBeenCalledWith(handlers.onResourceLink)
-  })
-
   it('onConnect() is an alias of onResourceLink(), delegating to the exact same method', () => {
     const provider = new Provider(buildOptions())
     const onResourceLinkSpy = jest.spyOn(provider, 'onResourceLink')
-    const handler = handlers.onResourceLink
+    const handler: OnLaunchHandler = async () => undefined
 
     provider.onConnect(handler)
 
@@ -242,6 +188,20 @@ describe('Provider constructor', () => {
     expect(getLaunchContextSpy).toHaveBeenCalledWith('some-ltik')
     expect(context).toBe(fakeContext)
   })
+
+  // Full behavioral coverage of LaunchService.registerLaunchRoute() (running the full launch pipeline)
+  // already lives in launch.service.test.ts -- this only proves Provider forwards the call through
+  // unmodified.
+  it('registerLtiRoute() delegates to the internal LaunchService', () => {
+    const registerLaunchRouteSpy = jest
+      .spyOn(LaunchService.prototype, 'registerLaunchRoute')
+      .mockImplementation(() => undefined)
+    const provider = new Provider(buildOptions())
+
+    provider.registerLtiRoute('/assignment/42')
+
+    expect(registerLaunchRouteSpy).toHaveBeenCalledWith('/assignment/42')
+  })
 })
 
 describe('Provider.listen() / Provider.close()', () => {
@@ -282,7 +242,6 @@ describe('Provider.listen() / Provider.close()', () => {
   it('constructs the default ExpressHttpHandler with the port given via ProviderOptions.server', async () => {
     const port = 45_678
     const provider = new Provider({
-      handlers,
       database: { url: 'mongodb://localhost/ltijs-test' },
       server: { port },
     })

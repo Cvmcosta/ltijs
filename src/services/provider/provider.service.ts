@@ -50,12 +50,10 @@ export class Provider {
   public readonly databaseManager: DatabaseManager
   /** Register, look up, update, and (de)activate platforms. See its own methods for the full CRUD surface. */
   public readonly platformManager: PlatformManager
-  /** The active HTTP framework adapter. Ddefaults to `ExpressHttpHandler`; override via `ProviderOptions.httpHandler`. */
+  /** The active HTTP framework adapter. Defaults to `ExpressHttpHandler`; override via `ProviderOptions.httpHandler`. */
   public readonly httpHandler: HttpHandler
   /** The active cache backend. Defaults to a no-op; override via `ProviderOptions.cacheManager` (e.g. `RedisCacheManager`). */
   public readonly cacheManager: CacheManager
-  /** Serves the JWKS keyset route platforms fetch to verify this tool's signed responses. */
-  public readonly keysetService: KeysetService
   /** Only set when `ProviderOptions.dynamicRegistration` was provided at construction. */
   public readonly dynamicRegistrationService?: DynamicRegistration
 
@@ -108,14 +106,8 @@ export class Provider {
     )
     this.launchService.prepareHttpRoutes({ loginRoute: this.loginRoute, launchRoute: this.launchRoute })
 
-    if (options.handlers?.onResourceLink !== undefined) this.onResourceLink(options.handlers.onResourceLink)
-    if (options.handlers?.onDeepLinking !== undefined) this.onDeepLinking(options.handlers.onDeepLinking)
-    if (options.handlers?.onSubmissionReview !== undefined) this.onSubmissionReview(options.handlers.onSubmissionReview)
-    if (options.onUnregisteredPlatform !== undefined) this.onUnregisteredPlatform(options.onUnregisteredPlatform)
-    if (options.onInactivePlatform !== undefined) this.onInactivePlatform(options.onInactivePlatform)
-
-    this.keysetService = new KeysetService(this.platformManager, this.httpHandler, this.cacheManager, this.logger)
-    this.keysetService.prepareHttpRoutes(this.keysetRoute)
+    const keysetService = new KeysetService(this.platformManager, this.httpHandler, this.cacheManager, this.logger)
+    keysetService.prepareHttpRoutes(this.keysetRoute)
 
     const dynamicRegistration = this.setupDynamicRegistration(options, requestHandler)
     this.dynamicRegistrationRoute = dynamicRegistration?.route
@@ -176,6 +168,11 @@ export class Provider {
     return await this.launchService.getLaunchContext(ltik)
   }
 
+  /** Registers `path` as an additional launch route, dispatching through the same launch handlers. */
+  public registerLtiRoute(path: string): void {
+    this.launchService.registerLaunchRoute(path)
+  }
+
   private setupDynamicRegistration(
     options: ProviderOptions,
     requestHandler: RequestHandler,
@@ -191,7 +188,6 @@ export class Provider {
       this.httpHandler,
       this.logger,
     )
-    if (options.onDynamicRegistration !== undefined) service.setHandler(options.onDynamicRegistration(service))
     service.prepareHttpRoutes(route)
     return { route, service }
   }

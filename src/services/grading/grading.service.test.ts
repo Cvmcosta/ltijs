@@ -10,6 +10,7 @@ import { expectValidationErrorOnField } from '#utils/tests/expect-validation-err
 import { IdTokenClaim, LtiMessageType } from '#services/launch/id-token.constants'
 import { IdTokenValidationMethod } from '#services/platform-manager/platform-manager.constants'
 import { LTI_VERSION } from '#services/oidc/oidc.constants'
+import { buildIdToken } from '#services/launch/id-token.serializer'
 import type { Platform } from '#services/platform-manager/platform-manager.types'
 import type { Logger } from '#services/logger/logger.types'
 import type { IdTokenRecord } from '#services/database-manager/database-manager.types'
@@ -82,8 +83,17 @@ const baseIdToken: IdTokenRecord = {
   [IdTokenClaim.ResourceLink]: { id: '5' },
 }
 
+// `idToken` is a getter, computed lazily, rather than eagerly at construction like the real
+// `LaunchContext` does -- so that tests asserting a raw claim is read a specific number of times
+// aren't thrown off by an extra read from building this fake itself.
 const buildLaunchContext = (platform: Platform, rawIdToken: IdTokenRecord): LaunchContext =>
-  ({ platform, rawIdToken }) as unknown as LaunchContext
+  ({
+    platform,
+    rawIdToken,
+    get idToken() {
+      return buildIdToken(rawIdToken)
+    },
+  }) as unknown as LaunchContext
 
 const buildService = (platform: Platform = basePlatform, idToken: IdTokenRecord = baseIdToken): Grading => {
   const accessTokenManager = new AccessTokenManager(buildMockDatabaseManager(), requestHandler, logger)
@@ -91,6 +101,18 @@ const buildService = (platform: Platform = basePlatform, idToken: IdTokenRecord 
 }
 
 const lineItem = { id: 'http://localhost/moodle/lineitems/1', label: 'Activity', scoreMaximum: 100 }
+
+describe('Grading.isAvailable()', () => {
+  it('returns true when the idToken declares an AGS endpoint', () => {
+    const grading = buildService()
+    expect(grading.isAvailable()).toBe(true)
+  })
+
+  it('returns false when the idToken has no endpoint claim', () => {
+    const grading = buildService(basePlatform, { ...baseIdToken, [IdTokenClaim.Endpoint]: undefined })
+    expect(grading.isAvailable()).toBe(false)
+  })
+})
 
 describe('Grading.getLineItems()', () => {
   it('returns line items from the platform context endpoint', async () => {

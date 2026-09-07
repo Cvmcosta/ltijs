@@ -1,7 +1,18 @@
 # Names and Roles (NRPS)
 
 `context.namesAndRoles` implements the Names and Role Provisioning Service, for reading a course's roster.
-It's only available if the launch declared NRPS support (`context.idToken.services.namesAndRoles.available`).
+It's only available if the launch declared NRPS support, so check `context.namesAndRoles.isAvailable()`
+before calling `getMembers()`:
+
+```ts
+if (!context.namesAndRoles.isAvailable()) {
+  response.status(400).json({ error: 'This launch does not support Names and Roles.' })
+  return
+}
+```
+
+`getMembers()` throws `MissingNamesRolesServiceUrlError` if called on a launch that didn't declare NRPS
+support, so `isAvailable()` lets you handle that up front instead of catching it.
 
 See the [Names and Roles API reference](../api/services.md#names-and-roles-nrps) for the full method
 list, and [Names and Roles types](../api/services.md#names-and-roles-types) for the `Member`/

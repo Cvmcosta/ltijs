@@ -22,7 +22,6 @@ readonly databaseManager: DatabaseManager
 readonly platformManager: PlatformManager
 readonly httpHandler: HttpHandler
 readonly cacheManager: CacheManager
-readonly keysetService: KeysetService
 readonly dynamicRegistrationService?: DynamicRegistration
 ```
 
@@ -34,7 +33,6 @@ readonly dynamicRegistrationService?: DynamicRegistration
   `ProviderOptions.httpHandler`.
 - `cacheManager`: the active cache backend. Defaults to a no-op; override via `ProviderOptions.cacheManager`
   (e.g. `RedisCacheManager`).
-- `keysetService`: serves the JWKS keyset route platforms fetch to verify this tool's signed responses.
 - `dynamicRegistrationService`: only set when `ProviderOptions.dynamicRegistration` was provided at
   construction.
 
@@ -111,6 +109,19 @@ Resumes a previously-issued launch by its `ltik`: the session-resumption entry p
 request (protecting a custom app route, or submitting a grade from a background job) using a `ltik`
 obtained from an earlier `LaunchContext`.
 
+### `registerLtiRoute(path)`
+
+```ts
+registerLtiRoute(path: string): void
+```
+
+Registers `path` to accept a raw platform launch (id_token + state), running the exact same validation
+and message-type dispatch as the default launch route, through the same `onResourceLink`/`onDeepLinking`/
+`onSubmissionReview` handlers. Needed whenever a launch's `target_link_uri` (e.g. for a specific
+deep-linked resource) points somewhere other than the tool's generic launch route: that's the URL the
+platform will actually send the id_token to, so it needs its own registered handler. See
+[Handling Launches](/guides/handling-launches.md#adding-lti-launch-routes).
+
 ### `listen(options?)`
 
 ```ts
@@ -143,7 +154,6 @@ Stops the HTTP listener and closes the database and cache connections, in that o
 
 ```ts
 interface ProviderOptions {
-  handlers?: Partial<LaunchHandlers>
   databaseManager?: DatabaseManager
   database?: MongoConnectionConfig
   requestHandler?: RequestHandler
@@ -154,18 +164,12 @@ interface ProviderOptions {
   routes?: ProviderRoutes
   tokenMaxAge?: number | false
   dynamicRegistration?: DynamicRegistrationOptions
-  onDynamicRegistration?: DynamicRegistrationHandlerFactory
-  onUnregisteredPlatform?: UnregisteredPlatformHandler
-  onInactivePlatform?: InactivePlatformHandler
 }
 ```
 
 All fields are optional. See [Configuring a Provider](/guides/configuring-a-provider.md) for a walkthrough
 of each one.
 
-- `handlers`: `onResourceLink`/`onDeepLinking`/`onSubmissionReview`. Each has a real default (HTTP 200,
-  body `It works!`) until overridden, and is equivalent to calling the matching `provider.onX()` method
-  after construction.
 - `databaseManager` / `database`: pass a fully-constructed `databaseManager` to use a different backend
   entirely, or just a `database` connection config to use the built-in `MongoDatabaseManager`.
 - `requestHandler`: how ltijs makes outbound HTTP requests. Defaults to the built-in `fetch`.
@@ -180,10 +184,6 @@ of each one.
   rejected as `TOKEN_TOO_OLD`. Defaults to 10 seconds, matching legacy. Pass `false` to disable the check
   entirely.
 - `dynamicRegistration`: see [Services](services.md#dynamic-registration).
-- `onDynamicRegistration`: overrides the default GET handler for the dynamic-registration route entirely.
-- `onUnregisteredPlatform` / `onInactivePlatform`: called instead of throwing the default error when a
-  login request arrives from an unregistered or deactivated platform. Given `(request, response)`, must
-  fully send the response itself; the login route returns immediately afterward regardless.
 
 ## `ProviderServerOptions`
 

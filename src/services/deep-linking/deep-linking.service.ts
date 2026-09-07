@@ -39,6 +39,11 @@ export class DeepLinking {
     this.logger = logger
   }
 
+  /** Whether this launch is a deep-linking launch. Check before calling any other method on this service. */
+  public isAvailable(): boolean {
+    return this.launchContext.idToken.services.deepLinking.available
+  }
+
   public async createDeepLinkingMessage(
     contentItems: ContentItem | ContentItem[],
     options?: DeepLinkingOptions,

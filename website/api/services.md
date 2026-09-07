@@ -6,6 +6,7 @@
 
 ```ts
 class Grading {
+  isAvailable(): boolean
   getLineItems(options?: GetLineItemsOptions): Promise<GetLineItemsResult>
   createLineItem(lineItem: LineItem, options?: GetLineItemsOptions): Promise<LineItem>
   getLineItemById(lineItemId: string): Promise<LineItem>
@@ -16,7 +17,9 @@ class Grading {
 }
 ```
 
-Throws `MissingLineItemsEndpointError` if called on a launch that didn't declare AGS support.
+`isAvailable()` reports whether this launch declared AGS support (the same value as
+`context.idToken.services.assignmentAndGrades.available`); every other method throws
+`MissingLineItemsEndpointError` if called on a launch that didn't.
 
 ### Grading types
 
@@ -87,14 +90,16 @@ type GetScoresResult = PaginatedLinks & { scores: readonly Result[] }
 
 ```ts
 class DeepLinking {
+  isAvailable(): boolean
   createDeepLinkingMessage(contentItems: ContentItemsInput, options?: DeepLinkingOptions): Promise<string>
   createDeepLinkingForm(contentItems: ContentItemsInput, options?: DeepLinkingOptions): Promise<string>
 }
 ```
 
-`createDeepLinkingMessage` returns just the signed JWT; `createDeepLinkingForm` wraps it in a full
-auto-submitting HTML form. Both throw `MissingDeepLinkSettingsError` if called on a non-deep-linking
-launch.
+`isAvailable()` reports whether this is a deep-linking launch (the same value as
+`context.idToken.services.deepLinking.available`). `createDeepLinkingMessage` returns just the signed JWT;
+`createDeepLinkingForm` wraps it in a full auto-submitting HTML form. Both throw
+`MissingDeepLinkSettingsError` if called on a non-deep-linking launch.
 
 ### Deep Linking types
 
@@ -111,6 +116,10 @@ interface DeepLinkingOptions {
   errMessage?: string
   log?: string
   errLog?: string
+  /** @deprecated Legacy lowercase alias of errMessage. */
+  errmessage?: string
+  /** @deprecated Legacy lowercase alias of errLog. */
+  errlog?: string
 }
 ```
 
@@ -120,11 +129,14 @@ interface DeepLinkingOptions {
 
 ```ts
 class NamesAndRoles {
+  isAvailable(): boolean
   getMembers(options?: GetMembersOptions): Promise<Memberships>
 }
 ```
 
-Throws `MissingNamesRolesServiceUrlError` if called on a launch that didn't declare NRPS support.
+`isAvailable()` reports whether this launch declared NRPS support (the same value as
+`context.idToken.services.namesAndRoles.available`); `getMembers` throws
+`MissingNamesRolesServiceUrlError` if called on a launch that didn't.
 
 ### Names and Roles types
 
@@ -194,10 +206,13 @@ interface DynamicRegistrationMessageOptions {
   customParameters?: Record<string, string>
   placements?: string[]
 }
-
-/** Takes the already-constructed DynamicRegistration instance, since it doesn't exist yet when ProviderOptions is built. */
-type DynamicRegistrationHandlerFactory = (service: DynamicRegistration) => RouteHandler
 ```
 
 `autoActivate` defaults to `false`: newly dynamically-registered platforms start deactivated, so they can
 be reviewed before `activatePlatform()`. `useDeepLinking` defaults to `true`.
+
+Override the default GET handler for the dynamic-registration route with
+[`Provider.onDynamicRegistration(handler)`](provider.md#ondynamicregistrationhandler) after construction.
+By then `provider.dynamicRegistrationService` already exists, so a custom handler can reference it directly
+and call back into `register()`/`performRegistration()`/`getOpenIDConfiguration()` instead of reimplementing
+the flow.

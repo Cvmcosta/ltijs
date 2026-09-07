@@ -46,6 +46,11 @@ export class NamesAndRoles {
     this.logger = logger
   }
 
+  /** Whether this launch declared NRPS support. Check before calling any other method on this service. */
+  public isAvailable(): boolean {
+    return this.launchContext.idToken.services.namesAndRoles.available
+  }
+
   public async getMembers(options?: GetMembersOptions): Promise<Memberships> {
     const { platform, rawIdToken: idToken } = this.launchContext
     const request = this.buildMembershipsRequest(idToken, options)

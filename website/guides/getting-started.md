@@ -10,7 +10,7 @@ npm install ltijs@beta
 
 You'll also need somewhere to store platform registrations, id tokens, and OIDC nonces. By default
 ltijs uses MongoDB, so you'll need a running MongoDB instance (local or hosted) to get started. See
-[Swapping Storage Backends](swapping-storage-backends.md) if you'd rather use something else.
+[Swapping Backends](swapping-backends.md) if you'd rather use something else.
 
 ## A minimal tool
 

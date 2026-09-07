@@ -991,3 +991,46 @@ describe('LaunchService.prepareHttpRoutes()', () => {
     })
   })
 })
+
+describe('LaunchService.registerLaunchRoute()', () => {
+  it('registers a POST handler at the given path', async () => {
+    const { databaseManager } = await buildDatabaseManagerWithPlatform()
+    const { launchService: service, httpHandler } = buildServices(databaseManager)
+
+    service.registerLaunchRoute('/assignment/42')
+
+    expect(() => httpHandler.getHandler('/assignment/42', HttpMethod.Post)).not.toThrow()
+  })
+
+  it('runs the full launch pipeline on the registered path, dispatching through the same shared handlers', async () => {
+    const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
+    const { launchService: service, oidcService, httpHandler } = buildServices(databaseManager)
+    const state = oidcService.buildStateToken(platform, { course: '1' })
+    const token = await signToken(databaseManager, buildClaims())
+    const { onResourceLink, onDeepLinking, onSubmissionReview } = applyLaunchHandlers(service)
+    service.registerLaunchRoute('/assignment/42')
+    const launchHandler = httpHandler.getHandler('/assignment/42', HttpMethod.Post)
+
+    await launchHandler(
+      buildRequest({ body: { id_token: token, state, ltijs_recovered_state: state } }),
+      buildFakeHttpResponse(),
+    )
+
+    expect(onResourceLink).toHaveBeenCalledTimes(1)
+    expect(onDeepLinking).not.toHaveBeenCalled()
+    expect(onSubmissionReview).not.toHaveBeenCalled()
+    const [context] = onResourceLink.mock.calls[0]
+    expect(context.platform.id).toBe(platform.id)
+  })
+
+  it('supports registering more than one additional route', async () => {
+    const { databaseManager } = await buildDatabaseManagerWithPlatform()
+    const { launchService: service, httpHandler } = buildServices(databaseManager)
+
+    service.registerLaunchRoute('/assignment/42')
+    service.registerLaunchRoute('/assignment/43')
+
+    expect(() => httpHandler.getHandler('/assignment/42', HttpMethod.Post)).not.toThrow()
+    expect(() => httpHandler.getHandler('/assignment/43', HttpMethod.Post)).not.toThrow()
+  })
+})

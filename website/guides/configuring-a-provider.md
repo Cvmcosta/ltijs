@@ -13,22 +13,19 @@ new Provider({ database: { url: 'mongodb://localhost/ltijs' } })
 
 `database` is a shorthand that builds the default `MongoDatabaseManager` for you. Pass a fully-constructed
 `databaseManager` instead to use a different backend entirely. See
-[Swapping Storage Backends](swapping-storage-backends.md).
+[Swapping Backends](swapping-backends.md).
 
 ## Launch handlers
 
 ```ts
-new Provider({
-  handlers: {
-    onResourceLink: async (context, request, response) => { /* ... */ },
-    onDeepLinking: async (context, request, response) => { /* ... */ },
-    onSubmissionReview: async (context, request, response) => { /* ... */ },
-  },
-})
+const provider = new Provider({ database: { url: 'mongodb://localhost/ltijs' } })
+
+provider.onResourceLink(async (context, request, response) => { /* ... */ })
+provider.onDeepLinking(async (context, request, response) => { /* ... */ })
+provider.onSubmissionReview(async (context, request, response) => { /* ... */ })
 ```
 
-This is equivalent to calling `provider.onResourceLink(...)` etc. after construction. Use whichever reads
-better for your setup. See [Handling Launches](handling-launches.md) for what each one receives.
+See [Handling Launches](handling-launches.md) for what each one receives.
 
 ## Routes
 
@@ -73,10 +70,8 @@ error response. Override either one to handle it yourself, for example by redire
 self-registration flow:
 
 ```ts
-new Provider({
-  onUnregisteredPlatform: async (request, response) => {
-    response.redirect('https://your-tool.example.com/register-with-us')
-  },
+provider.onUnregisteredPlatform(async (request, response) => {
+  response.redirect('https://your-tool.example.com/register-with-us')
 })
 ```
 

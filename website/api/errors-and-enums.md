@@ -11,9 +11,9 @@ class LtijsError extends Error {
 }
 ```
 
-The base class every error ltijs throws extends. Only `LtijsError` itself is exported; the many specific
-subclasses aren't individually importable, so check `err.name`/`err.message` instead of `instanceof`ing a
-specific subclass.
+The base class every error ltijs throws extends. Only `LtijsError` and `ValidationError` (below) are
+exported; the many other specific subclasses aren't individually importable, so check
+`err.name`/`err.message` instead of `instanceof`ing a specific subclass.
 
 ## `ValidationError`
 

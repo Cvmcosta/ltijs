@@ -5,12 +5,17 @@ export { LtijsError } from '#shared/errors'
 export { ValidationError } from '#utils/validation/errors'
 
 // Provider construction/configuration/deployment.
-export type { ProviderOptions, ProviderRoutes, DeployOptions } from '#services/provider/provider.types'
+export type {
+  ProviderOptions,
+  ProviderRoutes,
+  ProviderServerOptions,
+  DeployOptions,
+} from '#services/provider/provider.types'
 export type { MongoConnectionConfig } from '#services/database-manager/mongo/mongo-database-manager.types'
 
 // Launch handlers -- the shape of onResourceLink/onDeepLinking/onSubmissionReview, and the
 // LaunchContext object every one of them receives.
-export type { LaunchHandlers, OnLaunchHandler, RedirectOptions } from '#services/launch/launch.types'
+export type { OnLaunchHandler, RedirectOptions } from '#services/launch/launch.types'
 export type { LaunchContext } from '#services/launch/launch-context.service'
 export type { IdToken, LegacyIdToken } from '#services/launch/id-token.types'
 // `LtiMessageType` (idToken.launch.type) is a real enum -- a real export is required for its
@@ -43,14 +48,13 @@ export type { ContentItem, ContentItemsInput, DeepLinkingOptions } from '#servic
 // Names and Roles (NRPS) -- context.namesAndRoles's method parameter/return shapes.
 export type { Member, Memberships, GetMembersOptions } from '#services/names-and-roles/names-and-roles.types'
 
-// Dynamic Registration -- ProviderOptions.dynamicRegistration and a custom onDynamicRegistration handler.
+// Dynamic Registration -- ProviderOptions.dynamicRegistration.
 export type {
   DynamicRegistrationOptions,
   DynamicRegistrationMessageOptions,
 } from '#services/dynamic-registration/dynamic-registration.types'
-export type { DynamicRegistrationHandlerFactory } from '#services/provider/provider.types'
 
-// Raw HTTP plumbing -- for onUnregisteredPlatform/onInactivePlatform/onDynamicRegistration overrides.
+// Raw HTTP plumbing -- for onUnregisteredPlatform/onInactivePlatform overrides.
 export type { UnregisteredPlatformHandler, InactivePlatformHandler } from '#services/launch/launch.types'
 export type {
   RouteHandler,

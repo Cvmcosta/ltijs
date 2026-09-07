@@ -1,7 +1,7 @@
 # Backends
 
 The pluggable interfaces `Provider` reads/writes through, and the opt-in implementations you can swap in
-via `ProviderOptions`. See [Swapping Storage Backends](/guides/swapping-storage-backends.md) and
+via `ProviderOptions`. See [Swapping Backends](/guides/swapping-backends.md) and
 [Philosophy & Architecture](/guides/philosophy-and-architecture.md).
 
 ## `DatabaseManager`
@@ -262,10 +262,10 @@ Where debug output goes. The default implementation (`DefaultLogger`) writes to 
 
 ```ts
 class MongoLegacyDatabaseManager implements DatabaseManager {
-  constructor(logger: Logger, config: MongoConnectionConfig, encryptionKey: string)
+  constructor(logger: Logger, config: MongoLegacyConnectionConfig, encryptionKey: string)
 }
 
-interface MongoConnectionConfig {
+interface MongoLegacyConnectionConfig {
   url: string
   connection?: Record<string, unknown>
   debug?: boolean

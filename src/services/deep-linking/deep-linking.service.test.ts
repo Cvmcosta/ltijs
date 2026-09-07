@@ -5,6 +5,7 @@ import { expectValidationErrorOnField } from '#utils/tests/expect-validation-err
 import { IdTokenClaim, LtiMessageType } from '#services/launch/id-token.constants'
 import { IdTokenValidationMethod } from '#services/platform-manager/platform-manager.constants'
 import { LTI_VERSION } from '#services/oidc/oidc.constants'
+import { buildIdToken as serializeIdToken } from '#services/launch/id-token.serializer'
 import type { Platform } from '#services/platform-manager/platform-manager.types'
 import type { Logger } from '#services/logger/logger.types'
 import type { IdTokenRecord } from '#services/database-manager/database-manager.types'
@@ -56,8 +57,17 @@ const acceptingAllTypesToken = buildIdToken({
   deep_link_return_url: 'https://platform.example.com/deep-link-return',
 })
 
+// `idToken` is a getter, computed lazily, rather than eagerly at construction like the real
+// `LaunchContext` does -- so that tests asserting a raw claim is read a specific number of times
+// (e.g. "reads only once") aren't thrown off by an extra read from building this fake itself.
 const buildLaunchContext = (platform: Platform, rawIdToken: IdTokenRecord): LaunchContext =>
-  ({ platform, rawIdToken }) as unknown as LaunchContext
+  ({
+    platform,
+    rawIdToken,
+    get idToken() {
+      return serializeIdToken(rawIdToken)
+    },
+  }) as unknown as LaunchContext
 
 const buildService = (
   platform: Platform = basePlatform,
@@ -65,6 +75,18 @@ const buildService = (
 ): DeepLinking => new DeepLinking(buildLaunchContext(platform, idToken), logger)
 
 const contentItem = { type: 'ltiResourceLink', title: 'Activity' }
+
+describe('DeepLinking.isAvailable()', () => {
+  it('returns true when the idToken declares deep-linking settings', () => {
+    const service = buildService()
+    expect(service.isAvailable()).toBe(true)
+  })
+
+  it('returns false when the idToken has no deepLinkingSettings', () => {
+    const service = buildService(basePlatform, buildIdToken(undefined))
+    expect(service.isAvailable()).toBe(false)
+  })
+})
 
 describe('DeepLinking.createDeepLinkingMessage()', () => {
   it('throws MISSING_DEEP_LINK_SETTINGS when the token has no deepLinkingSettings', async () => {

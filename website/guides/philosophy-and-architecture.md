@@ -36,7 +36,7 @@ flowchart TB
 - **`DatabaseManager`**: reads and writes platforms, access tokens, id tokens, and OIDC nonces. Defaults
   to MongoDB (`MongoDatabaseManager`, built in). `MongoLegacyDatabaseManager` is an opt-in alternative that
   reads the schema ltijs v4/v5 used, for migrating an existing deployment without a data migration. See
-  [Swapping Storage Backends](swapping-storage-backends.md).
+  [Swapping Backends](swapping-backends.md).
 - **`CacheManager`**: an optional layer for caching platform JWKS responses and the served keyset.
   Defaults to a no-op, so nothing is cached. A per-process in-memory cache can't stay consistent across
   multiple ltijs instances behind a load balancer, so "cache nothing" is the only default that's always
