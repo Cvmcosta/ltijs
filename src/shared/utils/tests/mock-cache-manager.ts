@@ -7,7 +7,7 @@ export const buildMockCacheManager = (): CacheManager => {
   const store = new Map<string, { value: unknown; expiresAt: number }>()
 
   return {
-    setup: async () => undefined,
+    listen: async () => undefined,
     close: async () => undefined,
     get: async <T = unknown>(key: string): Promise<T | undefined> => {
       const entry = store.get(key)

@@ -10,31 +10,30 @@ import type { Logger } from '#services/logger/logger.types'
 import { ExpressHttpResponse } from '#services/http-handler/express/express-http-response'
 import { HttpMethod } from '#services/http-handler/http-handler.types'
 import type {
-  CorsOptions,
   HttpHandler,
   HttpRequestParameters,
   RouteHandler,
   SslOptions,
 } from '#services/http-handler/http-handler.types'
-
-export interface ExpressHttpHandlerOptions {
-  /** Defaults to reflecting any request origin with `credentials: true`. Pass `false` to disable CORS entirely. */
-  cors?: false | CorsOptions
-}
+import type { ExpressHttpHandlerOptions } from '#services/http-handler/express/express-http-handler.types'
 
 export class ExpressHttpHandler implements HttpHandler {
   private readonly LOG_COMPONENT = 'expressHttpHandler'
   private readonly INTERNAL_SERVER_ERROR = 'INTERNAL_SERVER_ERROR'
 
   private readonly logger: Logger
+  private readonly port: number
+  private readonly ssl: SslOptions | undefined
   private server: Server | HttpsServer | undefined
 
   public readonly app: Express
 
-  constructor(logger: Logger, options: ExpressHttpHandlerOptions = {}) {
+  constructor(logger: Logger, options: ExpressHttpHandlerOptions) {
     this.logger = logger
+    this.port = options.port
+    this.ssl = options.ssl
     this.app = express()
-    this.applyMiddleware(options.cors)
+    this.setupServer(options)
   }
 
   public registerRoute(path: string, methods: HttpMethod[], handler: RouteHandler): void {
@@ -42,9 +41,10 @@ export class ExpressHttpHandler implements HttpHandler {
     for (const method of methods) this.app[this.toExpressMethod(method)](path, adapter)
   }
 
-  public async listen(port: number, ssl?: SslOptions): Promise<void> {
+  public async listen(): Promise<void> {
     await new Promise<void>((resolve, reject) => {
-      this.server = ssl === undefined ? this.app.listen(port) : createHttpsServer(ssl, this.app).listen(port)
+      this.server =
+        this.ssl === undefined ? this.app.listen(this.port) : createHttpsServer(this.ssl, this.app).listen(this.port)
       this.server.once('listening', () => {
         resolve()
       })
@@ -67,12 +67,12 @@ export class ExpressHttpHandler implements HttpHandler {
     })
   }
 
-  private applyMiddleware(corsOptions: false | CorsOptions | undefined): void {
+  private setupServer(options: ExpressHttpHandlerOptions): void {
     this.app.use(helmet({ frameguard: false, contentSecurityPolicy: false }))
-    if (corsOptions !== false) {
+    if (options.cors !== false) {
       const corsMiddleware = cors({
-        origin: corsOptions?.origin ?? true,
-        credentials: corsOptions?.credentials ?? true,
+        origin: options.cors?.origin ?? true,
+        credentials: options.cors?.credentials ?? true,
       })
       this.app.use(corsMiddleware)
       this.app.options('*splat', corsMiddleware)

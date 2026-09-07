@@ -5,12 +5,7 @@ export { LtijsError } from '#shared/errors'
 export { ValidationError } from '#utils/validation/errors'
 
 // Provider construction/configuration/deployment.
-export type {
-  ProviderOptions,
-  ProviderRoutes,
-  ProviderServerOptions,
-  DeployOptions,
-} from '#services/provider/provider.types'
+export type { ProviderOptions, ProviderRoutes, DeployOptions } from '#services/provider/provider.types'
 export type { MongoConnectionConfig } from '#services/database-manager/mongo/mongo-database-manager.types'
 
 // Launch handlers -- the shape of onResourceLink/onDeepLinking/onSubmissionReview, and the
@@ -98,10 +93,9 @@ export { RedisCacheManager } from '#services/cache-manager/redis/redis-cache-man
 export type { RedisConnectionConfig } from '#services/cache-manager/redis/redis-cache-manager.types'
 
 // `ExpressHttpHandler` is the *default* `httpHandler`, exported so a consumer can construct their own
-// instance -- registering custom middleware, `express.static`, or custom CORS on `.app` before passing it
-// to `new Provider({ httpHandler, ... })` -- ahead of Provider's own route registration. (Grabbing
-// `provider.httpHandler` *after* construction and casting it doesn't work for this: Provider's
-// constructor registers all its own routes synchronously, and since those handlers always end the
-// response themselves, middleware added afterward never runs for them.)
+// instance -- registering custom middleware, `express.static`, etc on `.app` -- before passing it to
+// `new Provider({ httpHandler, ... })`. Order matters: `Provider`'s constructor registers all of its own
+// routes synchronously before it ever returns, so this only works if the middleware is added *before*
+// construction, not by grabbing `provider.httpHandler` afterward.
 export { ExpressHttpHandler } from '#services/http-handler/express/express-http-handler.service'
-export type { ExpressHttpHandlerOptions } from '#services/http-handler/express/express-http-handler.service'
+export type { ExpressHttpHandlerOptions } from '#services/http-handler/express/express-http-handler.types'

@@ -244,46 +244,63 @@ describe('Provider constructor', () => {
   })
 })
 
-describe('Provider.deploy() / Provider.close()', () => {
-  it('sets up the database and starts the http handler on the default port', async () => {
+describe('Provider.listen() / Provider.close()', () => {
+  it('sets up the database and starts the http handler', async () => {
     const databaseManager = buildMockDatabaseManager()
     const httpHandler = buildMockHttpHandler()
-    const setupSpy = jest.spyOn(databaseManager, 'setup')
-    const listenSpy = jest.spyOn(httpHandler, 'listen')
+    const dbListenSpy = jest.spyOn(databaseManager, 'listen')
+    const httpListenSpy = jest.spyOn(httpHandler, 'listen')
+    const provider = new Provider(buildOptions({ databaseManager, httpHandler, dynamicRegistration: undefined }))
+
+    await provider.listen({ silent: true })
+
+    expect(dbListenSpy).toHaveBeenCalled()
+    expect(httpListenSpy).toHaveBeenCalledWith()
+  })
+
+  it('deploy() is a backwards-compatible alias of listen()', async () => {
+    const databaseManager = buildMockDatabaseManager()
+    const httpHandler = buildMockHttpHandler()
+    const httpListenSpy = jest.spyOn(httpHandler, 'listen')
     const provider = new Provider(buildOptions({ databaseManager, httpHandler, dynamicRegistration: undefined }))
 
     await provider.deploy({ silent: true })
 
-    expect(setupSpy).toHaveBeenCalled()
-    expect(listenSpy).toHaveBeenCalledWith(3000, undefined)
+    expect(httpListenSpy).toHaveBeenCalledWith()
   })
 
-  it('starts the http handler on a custom port when given via ProviderOptions.server', async () => {
+  it('ignores ProviderOptions.server entirely when a custom httpHandler is given', () => {
     const httpHandler = buildMockHttpHandler()
-    const listenSpy = jest.spyOn(httpHandler, 'listen')
+    const registerRouteSpy = jest.spyOn(httpHandler, 'registerRoute')
+
     const provider = new Provider(buildOptions({ httpHandler, server: { port: 4321 } }))
 
-    await provider.deploy({ silent: true })
-
-    expect(listenSpy).toHaveBeenCalledWith(4321, undefined)
+    expect(provider.httpHandler).toBe(httpHandler)
+    expect(registerRouteSpy).toHaveBeenCalled()
   })
 
-  it('passes ssl options through to the http handler when given via ProviderOptions.server', async () => {
-    const httpHandler = buildMockHttpHandler()
-    const listenSpy = jest.spyOn(httpHandler, 'listen')
-    const ssl = { key: 'fake-key', cert: 'fake-cert' }
-    const provider = new Provider(buildOptions({ httpHandler, server: { port: 4321, ssl } }))
+  it('constructs the default ExpressHttpHandler with the port given via ProviderOptions.server', async () => {
+    const port = 45_678
+    const provider = new Provider({
+      handlers,
+      database: { url: 'mongodb://localhost/ltijs-test' },
+      server: { port },
+    })
 
-    await provider.deploy({ silent: true })
-
-    expect(listenSpy).toHaveBeenCalledWith(4321, ssl)
+    await provider.httpHandler.listen()
+    try {
+      const response = await request(`http://localhost:${port}`).get('/lti/keys')
+      expect(response.status).not.toBe(404)
+    } finally {
+      await provider.httpHandler.close()
+    }
   })
 
   it('prints the startup banner unless silent is true', async () => {
     const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => undefined)
     const provider = new Provider(buildOptions())
 
-    await provider.deploy()
+    await provider.listen()
 
     expect(consoleSpy).toHaveBeenCalled()
   })
@@ -292,19 +309,19 @@ describe('Provider.deploy() / Provider.close()', () => {
     const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => undefined)
     const provider = new Provider(buildOptions())
 
-    await provider.deploy({ silent: true })
+    await provider.listen({ silent: true })
 
     expect(consoleSpy).not.toHaveBeenCalled()
   })
 
-  it('sets up the cache manager on deploy() and closes it on close()', async () => {
+  it('sets up the cache manager on listen() and closes it on close()', async () => {
     const cacheManager = buildMockCacheManager()
-    const setupSpy = jest.spyOn(cacheManager, 'setup')
+    const listenSpy = jest.spyOn(cacheManager, 'listen')
     const closeSpy = jest.spyOn(cacheManager, 'close')
     const provider = new Provider(buildOptions({ cacheManager, dynamicRegistration: undefined }))
 
-    await provider.deploy({ silent: true })
-    expect(setupSpy).toHaveBeenCalled()
+    await provider.listen({ silent: true })
+    expect(listenSpy).toHaveBeenCalled()
 
     await provider.close()
     expect(closeSpy).toHaveBeenCalled()
@@ -331,7 +348,7 @@ describe('Provider.deploy() / Provider.close()', () => {
     const exitSpy = jest.spyOn(process, 'exit').mockImplementation(() => undefined as never)
     const provider = new Provider(buildOptions({ databaseManager, httpHandler }))
 
-    await provider.deploy({ silent: true })
+    await provider.listen({ silent: true })
     process.emit('SIGINT')
     await new Promise(resolve => setImmediate(resolve))
 

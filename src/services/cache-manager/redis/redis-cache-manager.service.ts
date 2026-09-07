@@ -19,15 +19,15 @@ export class RedisCacheManager implements CacheManager {
   private readonly logger: Logger
 
   /** Throws `MissingCacheConfigError` if `config` is missing or `config.url` is empty. */
-  constructor(config: RedisConnectionConfig | undefined, logger: Logger) {
+  constructor(logger: Logger, config: RedisConnectionConfig) {
     if (config === undefined || config.url === '') throw new MissingCacheConfigError()
-    // `lazyConnect` mirrors DatabaseManager's setup()-gated connection lifecycle -- the client doesn't
-    // connect on construction, only once setup() explicitly does so.
+    // `lazyConnect` mirrors DatabaseManager's listen()-gated connection lifecycle -- the client doesn't
+    // connect on construction, only once listen() explicitly does so.
     this.client = new Redis(config.url, { lazyConnect: true, ...config.connection })
     this.logger = logger
   }
 
-  public async setup(): Promise<void> {
+  public async listen(): Promise<void> {
     await this.client.connect()
     this.logger.debug(this.LOG_COMPONENT, 'Redis connected')
   }

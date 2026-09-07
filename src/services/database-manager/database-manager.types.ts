@@ -160,7 +160,7 @@ export interface IdTokenRecord extends IdTokenClaims {
  * `ProviderOptions.databaseManager`.
  */
 export interface DatabaseManager {
-  setup: () => Promise<void>
+  listen: () => Promise<void>
   close: () => Promise<void>
 
   // Platform

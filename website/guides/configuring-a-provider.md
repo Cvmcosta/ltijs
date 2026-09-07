@@ -48,8 +48,10 @@ new Provider({
 ```ts
 import { Provider, RedisCacheManager } from 'ltijs'
 
+const logger = { debug: console.debug, warn: console.warn, error: console.error }
+
 new Provider({
-  cacheManager: new RedisCacheManager({ url: 'redis://localhost:6379' }),
+  cacheManager: new RedisCacheManager(logger, { url: 'redis://localhost:6379' }),
 })
 ```
 
@@ -143,17 +145,19 @@ const provider = new Provider({
 ## Deploying and closing
 
 ```ts
-await provider.deploy() // connects storage/cache, starts listening
+await provider.listen() // connects storage/cache, starts listening
 // ...
 await provider.close() // stops listening, closes storage/cache connections
 ```
 
-`deploy()` also registers a `SIGINT` handler that calls `close()` before the process exits. Its only
+`listen()` also registers a `SIGINT` handler that calls `close()` before the process exits. Its only
 option is `silent`, which suppresses the startup banner it prints by default:
 
 ```ts
-await provider.deploy({ silent: true })
+await provider.listen({ silent: true })
 ```
+
+`deploy()` remains available as a backwards-compatible alias of `listen()`.
 
 Most deployments leave `ssl` unset and let a reverse proxy or load balancer handle TLS in front of the
 process instead -- that's also the only way to get automatic certificate renewal without restarting.

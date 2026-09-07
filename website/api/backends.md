@@ -8,7 +8,7 @@ via `ProviderOptions`. See [Swapping Storage Backends](/guides/swapping-storage-
 
 ```ts
 interface DatabaseManager {
-  setup(): Promise<void>
+  listen(): Promise<void>
   close(): Promise<void>
 
   getPlatforms(filter?: PlatformFilter): Promise<PlatformRecord[]>
@@ -101,7 +101,7 @@ interface IdTokenRecord extends IdTokenClaims {
 
 ```ts
 interface CacheManager {
-  setup(): Promise<void>
+  listen(): Promise<void>
   close(): Promise<void>
   get<T = unknown>(key: string): Promise<T | undefined>
   set<T = unknown>(key: string, value: T, ttlMs: number): Promise<void>
@@ -148,13 +148,18 @@ default implementation (`FetchRequestHandler`) is built on the global `fetch`.
 ```ts
 interface HttpHandler {
   registerRoute(path: string, methods: HttpMethod[], handler: RouteHandler): void
-  listen(port: number, ssl?: SslOptions): Promise<void>
+  listen(): Promise<void>
   close(): Promise<void>
 }
 
 interface SslOptions {
   key: string
   cert: string
+}
+
+interface CorsOptions {
+  origin?: string | string[]
+  credentials?: boolean
 }
 
 type RouteHandler = (request: HttpRequestParameters, response: HttpResponse) => Promise<void>
@@ -178,12 +183,29 @@ interface HttpResponse {
 The HTTP framework adapter. The default implementation (`ExpressHttpHandler`) is built on Express.
 Implement this interface to run ltijs on top of Fastify, Koa, a serverless handler, or anything else.
 
-`listen`'s optional `ssl` parameter terminates TLS in-process instead of listening over plain HTTP -- pass
-a PEM-encoded `key`/`cert` pair (`ExpressHttpHandler` uses them with Node's `https.createServer` in place
-of `app.listen`). Omit it, as most deployments do, when TLS is terminated by a reverse proxy or load
-balancer in front of the process instead. `Provider.deploy()` calls `listen(port, ssl)` for you using
-[`ProviderOptions.server.port`/`.ssl`](provider.md#providerserveroptions) -- set them there rather than
-calling `listen()` directly, unless you're implementing a custom `HttpHandler`.
+All configuration is constructor-time: an `httpHandler` is expected to be fully set up (middleware
+installed, CORS applied, port/TLS captured) by the time it's handed to `Provider`, either as the default
+`ExpressHttpHandler` `Provider` constructs from [`ProviderOptions.server`](provider.md#providerserveroptions),
+or as your own already-configured instance passed via `ProviderOptions.httpHandler` -- `Provider` never
+reconfigures a custom `httpHandler`, it just calls `registerRoute()`/`listen()`/`close()` on it. `listen()`
+takes no arguments: it starts the server with whatever the constructor already configured, called from
+`Provider.listen()` (`Provider.deploy()` remains as a backwards-compatible alias).
+
+`ExpressHttpHandlerOptions` (the default implementation's constructor options) looks like this:
+
+```ts
+interface ExpressHttpHandlerOptions {
+  port: number
+  ssl?: SslOptions
+  cors?: false | CorsOptions
+}
+```
+
+`ssl` terminates TLS in-process instead of listening over plain HTTP -- pass a PEM-encoded `key`/`cert`
+pair (`ExpressHttpHandler` uses them with Node's `https.createServer` in place of `app.listen`). Omit it,
+as most deployments do, when TLS is terminated by a reverse proxy or load balancer in front of the process
+instead. `cors` defaults to reflecting any request origin with credentials allowed; pass `false` to disable
+CORS entirely, or a `CorsOptions` object to restrict it.
 
 `ExpressHttpHandler` itself is exported so you can construct it yourself, register your own middleware,
 and pass the already-configured instance in as `httpHandler`:
@@ -191,7 +213,7 @@ and pass the already-configured instance in as `httpHandler`:
 ```ts
 import { Provider, ExpressHttpHandler } from 'ltijs'
 
-const httpHandler = new ExpressHttpHandler(myLogger)
+const httpHandler = new ExpressHttpHandler(myLogger, { port: 3000 })
 httpHandler.app.use(myCustomMiddleware)
 
 const provider = new Provider({ ...options, httpHandler })
@@ -211,7 +233,7 @@ The same pattern serves static files, matching legacy's `staticPath` option:
 import { Provider, ExpressHttpHandler } from 'ltijs'
 import express from 'express'
 
-const httpHandler = new ExpressHttpHandler(myLogger)
+const httpHandler = new ExpressHttpHandler(myLogger, { port: 3000 })
 httpHandler.app.use(express.static('public', { index: '_' }))
 
 const provider = new Provider({ ...options, httpHandler })
@@ -240,7 +262,7 @@ Where debug output goes. The default implementation (`DefaultLogger`) writes to 
 
 ```ts
 class MongoLegacyDatabaseManager implements DatabaseManager {
-  constructor(config: MongoConnectionConfig | undefined, encryptionKey: string, logger: Logger)
+  constructor(logger: Logger, config: MongoConnectionConfig, encryptionKey: string)
 }
 
 interface MongoConnectionConfig {
@@ -260,7 +282,7 @@ so it can decrypt the existing `publickey`/`privatekey`/`accesstoken` documents 
 
 ```ts
 class RedisCacheManager implements CacheManager {
-  constructor(config: RedisConnectionConfig | undefined, logger: Logger)
+  constructor(logger: Logger, config: RedisConnectionConfig)
 }
 
 interface RedisConnectionConfig {

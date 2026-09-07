@@ -39,7 +39,7 @@ export class MongoDatabaseManager implements DatabaseManager {
   private readonly logger: Logger
   private deployed = false
 
-  constructor(config: MongoConnectionConfig | undefined, logger: Logger) {
+  constructor(logger: Logger, config: MongoConnectionConfig) {
     if (config === undefined || config.url === '') throw new MissingDatabaseConfigError()
     this.url = config.url
     if (config.debug === true) mongoose.set('debug', true)
@@ -47,7 +47,7 @@ export class MongoDatabaseManager implements DatabaseManager {
     this.logger = logger
   }
 
-  public async setup(): Promise<void> {
+  public async listen(): Promise<void> {
     const connection = mongoose.connection
     connection.removeAllListeners(this.CONNECTED_EVENT)
     connection.removeAllListeners(this.ERROR_EVENT)

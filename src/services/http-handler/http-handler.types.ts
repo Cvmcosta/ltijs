@@ -41,6 +41,6 @@ export type RouteHandler = (request: HttpRequestParameters, response: HttpRespon
 
 export interface HttpHandler {
   registerRoute: (path: string, methods: HttpMethod[], handler: RouteHandler) => void
-  listen: (port: number, ssl?: SslOptions) => Promise<void>
+  listen: () => Promise<void>
   close: () => Promise<void>
 }

@@ -39,7 +39,7 @@ provider.onResourceLink(async (context, request, response) => {
   response.html(`Hello, ${context.idToken.user.name ?? 'learner'}!`)
 })
 
-await provider.deploy()
+await provider.listen()
 ```
 
 Continue with [Getting Started](guides/getting-started.md) for the full walkthrough, including

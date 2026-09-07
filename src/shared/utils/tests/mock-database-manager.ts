@@ -21,7 +21,7 @@ export const buildMockDatabaseManager = (): DatabaseManager => {
     `${platformUrl}|${clientId}|${scopes}`
 
   return {
-    setup: async () => undefined,
+    listen: async () => undefined,
     close: async () => undefined,
 
     getPlatformByUrlAndClientId: async (url: string, clientId: string) => {

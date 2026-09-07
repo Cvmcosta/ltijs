@@ -7,7 +7,7 @@ import type { CacheManager } from '#services/cache-manager/cache-manager.types'
 // `RedisCacheManager` (`ProviderOptions.cacheManager`), the same way `MongoLegacyDatabaseManager` is
 // opted into.
 export class MockCacheManager implements CacheManager {
-  public async setup(): Promise<void> {
+  public async listen(): Promise<void> {
     return undefined
   }
 

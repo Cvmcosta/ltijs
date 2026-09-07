@@ -47,8 +47,8 @@ const mongoUrl = (): string => {
 const ENCRYPTIONKEY = 'ENCRYPTIONKEY'
 
 const buildManager = async (): Promise<MongoLegacyDatabaseManager> => {
-  const manager = new MongoLegacyDatabaseManager({ url: mongoUrl() }, ENCRYPTIONKEY, logger)
-  await manager.setup()
+  const manager = new MongoLegacyDatabaseManager(logger, { url: mongoUrl() }, ENCRYPTIONKEY)
+  await manager.listen()
   return manager
 }
 
@@ -81,7 +81,7 @@ const platformAttributes: PlatformAttributes = {
 
 describe('MongoLegacyDatabaseManager', () => {
   it('throws MISSING_DATABASE_CONFIG when no url is provided', () => {
-    expect(() => new MongoLegacyDatabaseManager({ url: '' }, ENCRYPTIONKEY, logger)).toThrow('MISSING_DATABASE_CONFIG')
+    expect(() => new MongoLegacyDatabaseManager(logger, { url: '' }, ENCRYPTIONKEY)).toThrow('MISSING_DATABASE_CONFIG')
   })
 
   describe('platform operations', () => {

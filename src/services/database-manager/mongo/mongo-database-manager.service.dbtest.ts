@@ -32,8 +32,8 @@ const mongoUrl = (): string => {
 }
 
 const buildManager = async (): Promise<MongoDatabaseManager> => {
-  const manager = new MongoDatabaseManager({ url: mongoUrl() }, logger)
-  await manager.setup()
+  const manager = new MongoDatabaseManager(logger, { url: mongoUrl() })
+  await manager.listen()
   return manager
 }
 
@@ -65,12 +65,12 @@ const platformAttributes: PlatformAttributes = {
 
 describe('MongoDatabaseManager', () => {
   it('throws MISSING_DATABASE_CONFIG when no url is provided', () => {
-    expect(() => new MongoDatabaseManager({ url: '' }, logger)).toThrow('MISSING_DATABASE_CONFIG')
+    expect(() => new MongoDatabaseManager(logger, { url: '' })).toThrow('MISSING_DATABASE_CONFIG')
   })
 
-  it('connects to the database via setup()', async () => {
-    const manager = new MongoDatabaseManager({ url: mongoUrl() }, logger)
-    await expect(manager.setup()).resolves.toBeUndefined()
+  it('connects to the database via listen()', async () => {
+    const manager = new MongoDatabaseManager(logger, { url: mongoUrl() })
+    await expect(manager.listen()).resolves.toBeUndefined()
   })
 
   describe('platform operations', () => {

@@ -22,10 +22,10 @@ describe('MockCacheManager', () => {
     await expect(cache.delete('key')).resolves.toBeUndefined()
   })
 
-  it('setup() and close() resolve without throwing', async () => {
+  it('listen() and close() resolve without throwing', async () => {
     const cache = new MockCacheManager()
 
-    await expect(cache.setup()).resolves.toBeUndefined()
+    await expect(cache.listen()).resolves.toBeUndefined()
     await expect(cache.close()).resolves.toBeUndefined()
   })
 })

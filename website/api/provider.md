@@ -1,9 +1,9 @@
 # Provider
 
 The library's main entry point. Construct one per application (`new Provider(options)`), wire up launch
-handlers, then call `deploy()` to start listening. Everything else, platform registration, resuming a
-launch outside the original request, closing down cleanly, goes through this instance or the sub-services
-exposed on it.
+handlers, then call `listen()` to start listening (`deploy()` remains as a backwards-compatible alias).
+Everything else, platform registration, resuming a launch outside the original request, closing down
+cleanly, goes through this instance or the sub-services exposed on it.
 
 ## Constructor
 
@@ -111,15 +111,25 @@ Resumes a previously-issued launch by its `ltik`: the session-resumption entry p
 request (protecting a custom app route, or submitting a grade from a background job) using a `ltik`
 obtained from an earlier `LaunchContext`.
 
+### `listen(options?)`
+
+```ts
+listen(options?: DeployOptions): Promise<void>
+```
+
+Connects the database and cache backends, starts the HTTP listener, and registers a `SIGINT` handler that
+calls `close()` before exiting. Prints a startup banner unless `options.silent` is `true`. Port and TLS
+were already given to the `httpHandler` at construction time (`ProviderOptions.server` for the default
+`ExpressHttpHandler`, or your own constructor arguments for a custom `httpHandler`), not from `options`
+here.
+
 ### `deploy(options?)`
 
 ```ts
 deploy(options?: DeployOptions): Promise<void>
 ```
 
-Connects the database and cache backends, starts the HTTP listener, and registers a `SIGINT` handler that
-calls `close()` before exiting. Prints a startup banner unless `options.silent` is `true`. Port, TLS, and
-CORS are configured at construction time via `ProviderOptions.server`, not here.
+Alias of `listen()`, kept for backwards compatibility.
 
 ### `close()`
 
@@ -160,7 +170,7 @@ of each one.
   entirely, or just a `database` connection config to use the built-in `MongoDatabaseManager`.
 - `requestHandler`: how ltijs makes outbound HTTP requests. Defaults to the built-in `fetch`.
 - `httpHandler`: the HTTP framework adapter. Defaults to Express.
-- `server`: port, TLS, and CORS for the default `ExpressHttpHandler`. See `ProviderServerOptions` below.
+- `server`: port, TLS, and CORS for the HTTP server. See `ProviderServerOptions` below.
 - `cacheManager`: defaults to a no-op cache (nothing is ever cached), safe for any deployment topology
   including multiple ltijs instances behind a load balancer. Pass `RedisCacheManager` to opt into real
   caching shared across instances.
@@ -185,17 +195,17 @@ interface ProviderServerOptions {
 }
 ```
 
-`port` defaults to `3000`. `ssl` terminates TLS in-process (a PEM-encoded `key`/`cert` pair, see
-[`HttpHandler`](backends.md#httphandler)) instead of listening over plain HTTP -- most deployments leave
-this unset and terminate TLS at a reverse proxy or load balancer in front of the process instead. Both
-`port` and `ssl` apply no matter which `httpHandler` is active, since `deploy()` passes them to
-`httpHandler.listen(port, ssl)`, part of the `HttpHandler` interface itself.
+`Provider` passes all three straight to the default [`ExpressHttpHandler`'s
+constructor](backends.md#httphandler) when it builds one -- i.e. only when `ProviderOptions.httpHandler`
+is left unset. If you pass your own `httpHandler`, `ProviderOptions.server` is ignored entirely: a custom
+`httpHandler` is expected to already be fully configured (built with whatever options it needs) before
+being passed in.
 
-`cors` is different: it only takes effect on the default `ExpressHttpHandler`, the same way `database` is
-ignored once `databaseManager` is given. It defaults to reflecting any request origin with credentials
-allowed; pass `false` to disable CORS entirely, or a `CorsOptions` object to restrict it -- see
-[Configuring a Provider](/guides/configuring-a-provider.md) for an example. If you supply your own
-`httpHandler` instead, `server.cors` is ignored.
+`port` defaults to `3000`. `ssl` terminates TLS in-process (a PEM-encoded `key`/`cert` pair) instead of
+listening over plain HTTP -- most deployments leave this unset and terminate TLS at a reverse proxy or
+load balancer in front of the process instead. `cors` defaults to reflecting any request origin with
+credentials allowed; pass `false` to disable CORS entirely, or a `CorsOptions` object to restrict it -- see
+[Configuring a Provider](/guides/configuring-a-provider.md) for an example.
 
 ## `ProviderRoutes`
 
@@ -218,6 +228,5 @@ interface DeployOptions {
 }
 ```
 
-Suppresses the startup banner `deploy()` prints by default. Port, TLS, and CORS live on
-`ProviderOptions.server` instead, since they're startup configuration rather than a per-`deploy()`-call
-concern -- see `ProviderServerOptions` above.
+Suppresses the startup banner `listen()` prints by default. Port, TLS, and CORS live on
+`ProviderOptions.server` instead -- see `ProviderServerOptions` above.

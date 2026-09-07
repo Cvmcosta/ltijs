@@ -73,7 +73,7 @@ export class MongoLegacyDatabaseManager implements DatabaseManager {
    * constructor, this one requires the same key legacy's `Provider.setup('LTIKEY', ...)` used, so it can
    * decrypt the existing `publickey`/`privatekey`/`accesstoken` documents it reads.
    */
-  constructor(config: MongoConnectionConfig | undefined, encryptionKey: string, logger: Logger) {
+  constructor(logger: Logger, config: MongoConnectionConfig, encryptionKey: string) {
     if (config === undefined || config.url === '') throw new MissingDatabaseConfigError()
     this.url = config.url
     if (config.debug === true) mongoose.set('debug', true)
@@ -82,7 +82,7 @@ export class MongoLegacyDatabaseManager implements DatabaseManager {
     this.encryptionKey = encryptionKey
   }
 
-  public async setup(): Promise<void> {
+  public async listen(): Promise<void> {
     const connection = mongoose.connection
     connection.removeAllListeners(this.CONNECTED_EVENT)
     connection.removeAllListeners(this.ERROR_EVENT)

@@ -4,6 +4,7 @@ import request from 'supertest'
 import { LtijsError } from '#shared/errors'
 import type { Logger } from '#services/logger/logger.types'
 import { ExpressHttpHandler } from '#services/http-handler/express/express-http-handler.service'
+import type { ExpressHttpHandlerOptions } from '#services/http-handler/express/express-http-handler.types'
 import { HttpMethod } from '#services/http-handler/http-handler.types'
 
 jest.mock('node:https', () => ({ createServer: jest.fn() }))
@@ -16,9 +17,12 @@ class TestError extends LtijsError {
 
 const buildLogger = (): Logger => ({ debug: jest.fn(), warn: jest.fn(), error: jest.fn() })
 
+const buildHandler = (options: Partial<ExpressHttpHandlerOptions> = {}, logger = buildLogger()): ExpressHttpHandler =>
+  new ExpressHttpHandler(logger, { port: 0, ...options })
+
 describe('ExpressHttpHandler', () => {
   it('routes a request to the handler registered for that path and method', async () => {
-    const handler = new ExpressHttpHandler(buildLogger())
+    const handler = buildHandler()
     handler.registerRoute('/ping', [HttpMethod.Get], async (_request, response) => {
       response.json({ pong: true })
     })
@@ -30,7 +34,7 @@ describe('ExpressHttpHandler', () => {
   })
 
   it('does not match a route registered for a different method', async () => {
-    const handler = new ExpressHttpHandler(buildLogger())
+    const handler = buildHandler()
     handler.registerRoute('/ping', [HttpMethod.Post], async (_request, response) => {
       response.json({ pong: true })
     })
@@ -41,7 +45,7 @@ describe('ExpressHttpHandler', () => {
   })
 
   it('matches any method when registered with HttpMethod.All', async () => {
-    const handler = new ExpressHttpHandler(buildLogger())
+    const handler = buildHandler()
     handler.registerRoute('/ping', [HttpMethod.All], async (_request, response) => {
       response.json({ method: _request.method })
     })
@@ -54,7 +58,7 @@ describe('ExpressHttpHandler', () => {
   })
 
   it('extracts query and body parameters into HttpRequestParameters', async () => {
-    const handler = new ExpressHttpHandler(buildLogger())
+    const handler = buildHandler()
     handler.registerRoute('/echo', [HttpMethod.Post], async (request, response) => {
       response.json({ query: request.query, body: request.body })
     })
@@ -69,7 +73,7 @@ describe('ExpressHttpHandler', () => {
 
   it('maps a thrown LtijsError to a 400 response carrying its name and message', async () => {
     const logger = buildLogger()
-    const handler = new ExpressHttpHandler(logger)
+    const handler = buildHandler({}, logger)
     handler.registerRoute('/fail', [HttpMethod.Get], async () => {
       throw new TestError()
     })
@@ -83,7 +87,7 @@ describe('ExpressHttpHandler', () => {
 
   it('maps an unknown thrown error to a generic 500 response', async () => {
     const logger = buildLogger()
-    const handler = new ExpressHttpHandler(logger)
+    const handler = buildHandler({}, logger)
     handler.registerRoute('/fail', [HttpMethod.Get], async () => {
       throw new Error('unexpected')
     })
@@ -96,25 +100,25 @@ describe('ExpressHttpHandler', () => {
   })
 
   it('listen() resolves once the server is listening, and close() tears it down', async () => {
-    const handler = new ExpressHttpHandler(buildLogger())
+    const handler = buildHandler()
 
-    await handler.listen(0)
+    await handler.listen()
     await expect(handler.close()).resolves.toBeUndefined()
   })
 
   it('listen() rejects when the port is already in use', async () => {
     const port = 34_567
-    const occupant = new ExpressHttpHandler(buildLogger())
-    await occupant.listen(port)
+    const occupant = buildHandler({ port })
+    await occupant.listen()
 
-    const handler = new ExpressHttpHandler(buildLogger())
-    await expect(handler.listen(port)).rejects.toThrow()
+    const handler = buildHandler({ port })
+    await expect(handler.listen()).rejects.toThrow()
 
     await occupant.close()
   })
 
   it('close() resolves immediately when the server was never started', async () => {
-    const handler = new ExpressHttpHandler(buildLogger())
+    const handler = buildHandler()
 
     await expect(handler.close()).resolves.toBeUndefined()
   })
@@ -127,26 +131,26 @@ describe('ExpressHttpHandler', () => {
     })
     jest.mocked(https.createServer).mockReturnValue(fakeServer as unknown as https.Server)
 
-    const handler = new ExpressHttpHandler(buildLogger())
     const ssl = { key: 'fake-key', cert: 'fake-cert' }
+    const handler = buildHandler({ port: 4443, ssl })
 
-    await handler.listen(4443, ssl)
+    await handler.listen()
 
     expect(https.createServer).toHaveBeenCalledWith(ssl, handler.app)
     expect(fakeServer.listen).toHaveBeenCalledWith(4443)
   })
 
   it('listen() falls back to plain HTTP when no ssl options are given', async () => {
-    const handler = new ExpressHttpHandler(buildLogger())
+    const handler = buildHandler()
 
-    await handler.listen(0)
+    await handler.listen()
 
     expect(https.createServer).not.toHaveBeenCalled()
     await handler.close()
   })
 
   it('reflects any origin and allows credentials by default', async () => {
-    const handler = new ExpressHttpHandler(buildLogger())
+    const handler = buildHandler()
     handler.registerRoute('/ping', [HttpMethod.Get], async (_request, response) => {
       response.json({ pong: true })
     })
@@ -158,7 +162,7 @@ describe('ExpressHttpHandler', () => {
   })
 
   it('restricts CORS to an explicit origin allowlist when given', async () => {
-    const handler = new ExpressHttpHandler(buildLogger(), { cors: { origin: ['https://allowed.example.com'] } })
+    const handler = buildHandler({ cors: { origin: ['https://allowed.example.com'] } })
     handler.registerRoute('/ping', [HttpMethod.Get], async (_request, response) => {
       response.json({ pong: true })
     })
@@ -171,7 +175,7 @@ describe('ExpressHttpHandler', () => {
   })
 
   it('disables CORS entirely when cors is false', async () => {
-    const handler = new ExpressHttpHandler(buildLogger(), { cors: false })
+    const handler = buildHandler({ cors: false })
     handler.registerRoute('/ping', [HttpMethod.Get], async (_request, response) => {
       response.json({ pong: true })
     })

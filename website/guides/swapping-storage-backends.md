@@ -21,9 +21,9 @@ const logger = { debug: console.debug, warn: console.warn, error: console.error 
 
 const provider = new Provider({
   databaseManager: new MongoLegacyDatabaseManager(
+    logger,
     { url: 'mongodb://localhost/ltijs' },
     'the-same-key-your-v5-Provider.setup() call used',
-    logger,
   ),
 })
 ```
@@ -44,7 +44,7 @@ database, an ORM, a remote service.
 import type { DatabaseManager } from 'ltijs'
 
 class MyDatabaseManager implements DatabaseManager {
-  async setup() { /* ... */ }
+  async listen() { /* ... */ }
   async close() { /* ... */ }
   async getPlatforms(filter) { /* ... */ }
   // ...the rest of DatabaseManager, see the API Reference
@@ -64,12 +64,14 @@ with `RedisCacheManager`:
 ```ts
 import { Provider, RedisCacheManager } from 'ltijs'
 
+const logger = { debug: console.debug, warn: console.warn, error: console.error }
+
 new Provider({
-  cacheManager: new RedisCacheManager({ url: 'redis://localhost:6379' }),
+  cacheManager: new RedisCacheManager(logger, { url: 'redis://localhost:6379' }),
 })
 ```
 
-Or implement [`CacheManager`](../api/backends.md#cachemanager) yourself, just five methods (`setup`,
+Or implement [`CacheManager`](../api/backends.md#cachemanager) yourself, just five methods (`listen`,
 `close`, `get`, `set`, `delete`), for any other cache. See
 [`RedisCacheManager`](../api/backends.md#rediscachemanager) in the API reference for its constructor
 signature.

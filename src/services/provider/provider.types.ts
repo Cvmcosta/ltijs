@@ -54,10 +54,10 @@ export interface ProviderOptions {
   requestHandler?: RequestHandler
   httpHandler?: HttpHandler
   /**
-   * `port` and `ssl` apply regardless of which `httpHandler` is active -- `deploy()` passes them to
-   * `httpHandler.listen(port, ssl)`, part of the `HttpHandler` interface itself. `cors`, however, only
-   * takes effect on the default `ExpressHttpHandler`: it's ignored when `httpHandler` is given instead,
-   * the same way `database` is ignored once `databaseManager` is given.
+   * Port, TLS, and CORS for the default `ExpressHttpHandler`. Only applies when `httpHandler` above is
+   * left unset -- a custom `httpHandler` is assumed to already be fully configured (it was constructed
+   * with whatever options it needs before being passed in here), so this field is ignored entirely once
+   * `httpHandler` is given. See `ProviderServerOptions` below.
    */
   server?: ProviderServerOptions
   /**
@@ -96,6 +96,6 @@ export interface ProviderOptions {
 }
 
 export interface DeployOptions {
-  /** Suppresses the startup banner `deploy()` prints by default. */
+  /** Suppresses the startup banner `listen()` prints by default. */
   silent?: boolean
 }

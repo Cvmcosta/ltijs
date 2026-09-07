@@ -11,8 +11,9 @@ import { KeysetService } from '#services/keyset/keyset.service'
 import { DynamicRegistration } from '#services/dynamic-registration/dynamic-registration.service'
 import { DynamicRegistrationNotConfiguredError } from '#services/provider/errors'
 import type { DatabaseManager } from '#services/database-manager/database-manager.types'
+import type { MongoConnectionConfig } from '#services/database-manager/mongo/mongo-database-manager.types'
 import type { RequestHandler } from '#services/request-handler/request-handler.types'
-import type { HttpHandler, RouteHandler, SslOptions } from '#services/http-handler/http-handler.types'
+import type { HttpHandler, RouteHandler } from '#services/http-handler/http-handler.types'
 import type { CacheManager } from '#services/cache-manager/cache-manager.types'
 import type { Logger } from '#services/logger/logger.types'
 import type {
@@ -25,8 +26,8 @@ import type { DeployOptions, DynamicRegistrationSetup, ProviderOptions } from '#
 
 /**
  * The library's main entry point. Construct one per application (`new Provider(options)`), wire up
- * launch handlers, then call {@link Provider.deploy} to start listening. Everything else -- platform
- * registration, resuming a launch outside the original request, closing down cleanly -- goes through
+ * launch handlers, then call {@link Provider.listen} to start listening. Everything else, platform
+ * registration, resuming a launch outside the original request, closing down cleanly, goes through
  * this instance or the sub-services exposed on it.
  */
 export class Provider {
@@ -45,13 +46,13 @@ export class Provider {
     ' | |____| |   _| |_| |__| |____) |\n' +
     ' |______|_|  |_____|\\____/|_____/ \n'
 
-  /** The active storage backend -- defaults to `MongoDatabaseManager`; override via `ProviderOptions.databaseManager`. */
+  /** The active storage backend. Defaults to `MongoDatabaseManager`; override via `ProviderOptions.databaseManager`. */
   public readonly databaseManager: DatabaseManager
-  /** Register, look up, update, and (de)activate platforms -- see its own methods for the full CRUD surface. */
+  /** Register, look up, update, and (de)activate platforms. See its own methods for the full CRUD surface. */
   public readonly platformManager: PlatformManager
-  /** The active HTTP framework adapter -- defaults to `ExpressHttpHandler`; override via `ProviderOptions.httpHandler`. */
+  /** The active HTTP framework adapter. Ddefaults to `ExpressHttpHandler`; override via `ProviderOptions.httpHandler`. */
   public readonly httpHandler: HttpHandler
-  /** The active cache backend -- defaults to a no-op; override via `ProviderOptions.cacheManager` (e.g. `RedisCacheManager`). */
+  /** The active cache backend. Defaults to a no-op; override via `ProviderOptions.cacheManager` (e.g. `RedisCacheManager`). */
   public readonly cacheManager: CacheManager
   /** Serves the JWKS keyset route platforms fetch to verify this tool's signed responses. */
   public readonly keysetService: KeysetService
@@ -65,21 +66,22 @@ export class Provider {
   private readonly dynamicRegistrationRoute?: string
   private readonly launchService: LaunchService
   private readonly port: number
-  private readonly ssl?: SslOptions
 
   /**
    * Every dependency (`databaseManager`, `cacheManager`, `httpHandler`, `requestHandler`, `logger`) has a
-   * working default -- pass nothing beyond a database connection (or a full `databaseManager`) to get a
+   * working default: pass nothing beyond a database connection (or a full `databaseManager`) to get a
    * runnable provider. Route defaults are `/lti/login`, `/lti/launch`, `/lti/keys`, `/lti/register`.
    */
   constructor(options: ProviderOptions) {
     this.logger = options.logger ?? new DefaultLogger()
     const requestHandler: RequestHandler = options.requestHandler ?? new FetchRequestHandler()
     this.cacheManager = options.cacheManager ?? new MockCacheManager()
-    this.httpHandler = options.httpHandler ?? new ExpressHttpHandler(this.logger, { cors: options.server?.cors })
-    this.port = options.server?.port ?? this.DEFAULT_PORT
-    this.ssl = options.server?.ssl
-    this.databaseManager = options.databaseManager ?? new MongoDatabaseManager(options.database, this.logger)
+    this.databaseManager =
+      options.databaseManager ?? new MongoDatabaseManager(this.logger, options.database as MongoConnectionConfig)
+
+    const serverOptions = { port: this.DEFAULT_PORT, ...options.server }
+    this.httpHandler = options.httpHandler ?? new ExpressHttpHandler(this.logger, serverOptions)
+    this.port = serverOptions.port
 
     this.platformManager = new PlatformManager(this.databaseManager, this.logger, this.cacheManager)
     const accessTokenManager = new AccessTokenManager(this.databaseManager, requestHandler, this.logger)
@@ -120,7 +122,7 @@ export class Provider {
     this.dynamicRegistrationService = dynamicRegistration?.service
   }
 
-  /** Called on a standard resource-link launch (the common case -- a student/instructor opening the tool from the LMS). */
+  /** Called on a standard resource-link launch (the common case: a student/instructor opening the tool from the LMS). */
   public onResourceLink(handler: OnLaunchHandler): void {
     this.launchService.setOnResourceLinkHandler(handler)
   }
@@ -166,7 +168,7 @@ export class Provider {
   }
 
   /**
-   * Resumes a previously-issued launch by its ltik -- the session-resumption entry point for a
+   * Resumes a previously-issued launch by its ltik: the session-resumption entry point for a
    * follow-up request (e.g. protecting a custom app route, or submitting a grade from a background
    * job) using a ltik obtained from an earlier `LaunchContext`.
    */
@@ -196,18 +198,25 @@ export class Provider {
 
   /**
    * Connects the database and cache backends, starts the HTTP listener, and registers a `SIGINT` handler
-   * that calls {@link Provider.close} before exiting. Prints a startup banner unless `options.silent`. Port
-   * and TLS come from `ProviderOptions.server`, set at construction time, not from `options` here.
+   * that calls {@link Provider.close} before exiting. Prints a startup banner unless `options.silent`.
+   * Port and TLS were already given to the `httpHandler` at construction time (see
+   * `ProviderOptions.server`, which only applies to the default `ExpressHttpHandler`; a custom
+   * `httpHandler` is expected to already be fully configured).
    */
-  public async deploy(options: DeployOptions = {}): Promise<void> {
-    await this.databaseManager.setup()
-    await this.cacheManager.setup()
-    await this.httpHandler.listen(this.port, this.ssl)
+  public async listen(options: DeployOptions = {}): Promise<void> {
+    await this.databaseManager.listen()
+    await this.cacheManager.listen()
+    await this.httpHandler.listen()
     if (options.silent !== true) this.printStartupBanner(this.port)
 
     process.on('SIGINT', () => {
       void this.close().finally(() => process.exit())
     })
+  }
+
+  /** @deprecated Alias of {@link Provider.listen}, kept for backwards compatibility. */
+  public async deploy(options: DeployOptions = {}): Promise<void> {
+    await this.listen(options)
   }
 
   /** Stops the HTTP listener and closes the database and cache connections, in that order. */

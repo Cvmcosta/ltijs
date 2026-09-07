@@ -2,24 +2,29 @@ import IoredisMock from 'ioredis-mock'
 import { RedisCacheManager } from '#services/cache-manager/redis/redis-cache-manager.service'
 import { MissingCacheConfigError } from '#services/cache-manager/redis/errors'
 import type { Logger } from '#services/logger/logger.types'
+import type { RedisConnectionConfig } from '#services/cache-manager/redis/redis-cache-manager.types'
 
 jest.mock('ioredis', () => IoredisMock)
 
 const logger: Logger = { debug: jest.fn(), warn: jest.fn(), error: jest.fn() }
 
 const buildCache = async (): Promise<RedisCacheManager> => {
-  const cache = new RedisCacheManager({ url: 'redis://localhost:6379' }, logger)
-  await cache.setup()
+  const cache = new RedisCacheManager(logger, { url: 'redis://localhost:6379' })
+  await cache.listen()
   return cache
 }
 
 describe('RedisCacheManager constructor', () => {
   it('throws MISSING_CACHE_CONFIG when constructed without a config', () => {
-    expect(() => new RedisCacheManager(undefined, logger)).toThrow('MISSING_CACHE_CONFIG')
+    // Deliberately violating the constructor's type to exercise its runtime guard against a
+    // plain-JS caller (or parsed JSON/env config) that doesn't respect it.
+    expect(() => new RedisCacheManager(logger, undefined as unknown as RedisConnectionConfig)).toThrow(
+      'MISSING_CACHE_CONFIG',
+    )
   })
 
   it('throws MISSING_CACHE_CONFIG when the url is an empty string', () => {
-    expect(() => new RedisCacheManager({ url: '' }, logger)).toThrow(MissingCacheConfigError)
+    expect(() => new RedisCacheManager(logger, { url: '' })).toThrow(MissingCacheConfigError)
   })
 })
 
@@ -87,11 +92,11 @@ describe('RedisCacheManager.delete()', () => {
   })
 })
 
-describe('RedisCacheManager.setup() / close()', () => {
-  it('setup() resolves without throwing', async () => {
-    const cache = new RedisCacheManager({ url: 'redis://localhost:6379' }, logger)
+describe('RedisCacheManager.listen() / close()', () => {
+  it('listen() resolves without throwing', async () => {
+    const cache = new RedisCacheManager(logger, { url: 'redis://localhost:6379' })
 
-    await expect(cache.setup()).resolves.toBeUndefined()
+    await expect(cache.listen()).resolves.toBeUndefined()
   })
 
   it('close() resolves without throwing', async () => {

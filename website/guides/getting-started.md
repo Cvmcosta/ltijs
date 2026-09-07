@@ -25,10 +25,10 @@ provider.onResourceLink(async (context, request, response) => {
   response.html(`Hello, ${context.idToken.user.name ?? 'learner'}!`)
 })
 
-await provider.deploy()
+await provider.listen()
 ```
 
-That's a complete, launchable LTI 1.3 tool: `deploy()` connects the database, starts an HTTP server
+That's a complete, launchable LTI 1.3 tool: `listen()` connects the database, starts an HTTP server
 (Express by default) on port `3000`, and registers the standard `/lti/login`, `/lti/launch`, and
 `/lti/keys` routes. `onResourceLink` is called every time a user opens the tool from an LMS. See the
 [Provider API reference](../api/provider.md) for every constructor option and method.
