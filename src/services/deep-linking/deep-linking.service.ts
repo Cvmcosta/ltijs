@@ -6,6 +6,7 @@ import { signJwt } from '#utils/crypto/jwt'
 import { RS256_ALGORITHM } from '#utils/crypto/jwt.constants'
 import { randomJti } from '#utils/random/random'
 import { renderTemplate } from '#utils/templating/template-renderer'
+import { escapeHtmlAttribute } from '#utils/templating/html-escape'
 import { validate } from '#utils/validation/validation'
 import { ContentItemsInputSchema } from '#services/deep-linking/deep-linking.schemas'
 import { MissingDeepLinkSettingsError } from '#services/deep-linking/errors'
@@ -62,7 +63,7 @@ export class DeepLinking {
     const message = await this.signDeepLinkingMessage({ idToken, platform, settings, contentItems, options })
 
     return renderTemplate(this.DEEP_LINKING_SUBMISSION_FORM_TEMPLATE, {
-      action: settings.deep_link_return_url ?? '',
+      action: escapeHtmlAttribute(settings.deep_link_return_url ?? ''),
       message,
     })
   }
@@ -113,7 +114,7 @@ export class DeepLinking {
 
   private filterContentItems(items: ContentItem[], settings: DeepLinkingSettingsClaim): ContentItem[] {
     const acceptedTypes = settings.accept_types ?? []
-    // `accept_multiple` arrives from an external, platform-controlled id_token claim -- the declared
+    // `accept_multiple` arrives from an external, platform-controlled id_token claim; the declared
     // `boolean` type isn't a runtime guarantee. Some platforms send the string 'false' instead of the
     // boolean, so both must be treated the same way here, not just the boolean.
     const rawAcceptMultiple: unknown = settings.accept_multiple

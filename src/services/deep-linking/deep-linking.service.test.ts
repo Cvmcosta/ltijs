@@ -58,7 +58,7 @@ const acceptingAllTypesToken = buildIdToken({
 })
 
 // `idToken` is a getter, computed lazily, rather than eagerly at construction like the real
-// `LaunchContext` does -- so that tests asserting a raw claim is read a specific number of times
+// `LaunchContext` does, so that tests asserting a raw claim is read a specific number of times
 // (e.g. "reads only once") aren't thrown off by an extra read from building this fake itself.
 const buildLaunchContext = (platform: Platform, rawIdToken: IdTokenRecord): LaunchContext =>
   ({
@@ -210,6 +210,25 @@ describe('DeepLinking.createDeepLinkingForm()', () => {
 
     expect(form).toContain('<form')
     expect(form).toContain('https://platform.example.com/deep-link-return')
+  })
+
+  // Regression test for a real XSS: `deep_link_return_url` is a free-form claim from the platform's own
+  // id_token, and the template interpolates it unescaped into `action="{{action}}"`. A malicious or
+  // compromised platform could set it to break out of the attribute and inject a live element.
+  it('escapes a malicious deep_link_return_url instead of letting it break out of the action attribute', async () => {
+    const maliciousUrl = '"><img src=x onerror=alert(1)>'
+    const idToken = buildIdToken({
+      accept_types: ['ltiResourceLink'],
+      accept_multiple: true,
+      deep_link_return_url: maliciousUrl,
+    })
+    const service = buildService(basePlatform, idToken)
+
+    const form = await service.createDeepLinkingForm(contentItem)
+
+    expect(form).not.toContain(maliciousUrl)
+    expect(form).toContain('&quot;&gt;&lt;img src=x onerror=alert(1)&gt;')
+    expect(/action="[^"]*"/.exec(form)?.[0]).not.toContain('<img')
   })
 
   it('resolves the deepLinkingSettings claim only once, not once per internal validation pass', async () => {
