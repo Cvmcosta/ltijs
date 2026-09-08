@@ -3,6 +3,10 @@ export { Provider } from '#services/provider/provider.service'
 // Errors -- for catch (err) { if (err instanceof LtijsError) ... } style handling.
 export { LtijsError } from '#shared/errors'
 export { ValidationError } from '#utils/validation/errors'
+// Thrown when an outbound call to the platform itself fails (e.g. a rejected AGS score submission) --
+// not a LtijsError, since it originates from the platform's own response, not ltijs's own validation.
+export { HttpError } from '#services/request-handler/errors'
+export type { HttpErrorDetails } from '#services/request-handler/errors'
 
 // Provider construction/configuration/deployment.
 export type {

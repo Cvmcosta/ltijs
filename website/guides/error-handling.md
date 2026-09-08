@@ -1,19 +1,24 @@
 # Error Handling
 
-Every error ltijs throws extends [`LtijsError`](../api/errors-and-enums.md#ltijserror). Only `LtijsError`
+Most errors ltijs throws extend [`LtijsError`](../api/errors-and-enums.md#ltijserror). Only `LtijsError`
 and `ValidationError` themselves are exported, so the many specific subclasses (`TokenTooOldError`,
 `UnregisteredPlatformError`, and so on) aren't individually importable. Check `err.name` (the specific
 error class name) or `err.message` (a stable, `SCREAMING_SNAKE_CASE` code) instead of `instanceof`ing a
-specific subclass:
+specific subclass. The one exception is `HttpError` (below): it comes from the platform's own response,
+not from ltijs's own validation, so it isn't a `LtijsError`.
 
 ```ts
-import { LtijsError, ValidationError } from 'ltijs'
+import { LtijsError, ValidationError, HttpError } from 'ltijs'
 
 try {
   await context.grading.submitScore(lineItemId, score)
 } catch (err) {
   if (err instanceof ValidationError) {
     console.error(err.errors) // { "scoreGiven": ["Expected number, received string"] }
+    return
+  }
+  if (err instanceof HttpError) {
+    console.error(err.status, err.response) // the platform's own status code and response body
     return
   }
   if (err instanceof LtijsError) {
@@ -33,6 +38,20 @@ input fails schema validation: a malformed `registerPlatform` call, an invalid
 - `.issues`: the raw [Zod](https://zod.dev) issues, for detailed programmatic handling
 - `.errors`: the same issues grouped by field path (`Record<string, string[]>`), usually what you want
   for showing per-field feedback
+
+## `HttpError`
+
+Thrown whenever an outbound call to the platform itself fails: an AGS score submission it rejects, an
+expired access token exchange, a JWKS endpoint that times out. Beyond the inherited `.message`, it carries:
+
+- `.status` / `.statusText`: the platform's own HTTP status code and status text, when available
+- `.url`: the URL that was called
+- `.response`: the platform's parsed response body (JSON if it parsed as JSON, raw text otherwise)
+
+If it reaches an `HttpHandler` route unhandled, whether one of ltijs's own or a custom route you
+registered yourself, it's mapped to a `502` response carrying that same detail:
+`{ error: 'HttpError', message, platformStatus, platformResponse }`, rather than the opaque
+`{ error: 'INTERNAL_SERVER_ERROR' }` an unrecognized error gets.
 
 ## Common errors you'll actually handle
 

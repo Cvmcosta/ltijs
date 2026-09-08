@@ -6,6 +6,7 @@ import type { Express, Request, Response } from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
 import { LtijsError } from '#shared/errors'
+import { HttpError } from '#services/request-handler/errors'
 import type { Logger } from '#services/logger/logger.types'
 import { ExpressHttpResponse } from '#services/http-handler/express/express-http-response'
 import { HttpMethod } from '#services/http-handler/http-handler.types'
@@ -97,6 +98,16 @@ export class ExpressHttpHandler implements HttpHandler {
     if (error instanceof LtijsError) {
       this.logger.error(this.LOG_COMPONENT, error.message)
       response.status(400).json({ error: error.name, message: error.message })
+      return
+    }
+    if (error instanceof HttpError) {
+      this.logger.error(this.LOG_COMPONENT, error.message)
+      response.status(502).json({
+        error: error.name,
+        message: error.message,
+        platformStatus: error.status,
+        platformResponse: error.response,
+      })
       return
     }
     const message = error instanceof Error ? error.message : String(error)

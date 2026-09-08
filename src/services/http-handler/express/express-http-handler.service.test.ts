@@ -2,6 +2,7 @@ import { EventEmitter } from 'node:events'
 import * as https from 'node:https'
 import request from 'supertest'
 import { LtijsError } from '#shared/errors'
+import { HttpError } from '#services/request-handler/errors'
 import type { Logger } from '#services/logger/logger.types'
 import { ExpressHttpHandler } from '#services/http-handler/express/express-http-handler.service'
 import type { ExpressHttpHandlerOptions } from '#services/http-handler/express/express-http-handler.types'
@@ -83,6 +84,34 @@ describe('ExpressHttpHandler', () => {
     expect(response.status).toBe(400)
     expect(response.body).toEqual({ error: 'TestError', message: 'SOMETHING_WENT_WRONG' })
     expect(logger.error).toHaveBeenCalledWith('expressHttpHandler', 'SOMETHING_WENT_WRONG')
+  })
+
+  it('maps a thrown HttpError (a failed outbound call to the platform) to a 502 carrying the platform detail', async () => {
+    const logger = buildLogger()
+    const handler = buildHandler({}, logger)
+    handler.registerRoute('/fail', [HttpMethod.Get], async () => {
+      throw new HttpError({
+        message: 'HTTP request failed with status 400: Incorrect score received',
+        status: 400,
+        statusText: 'Incorrect score received',
+        url: 'https://platform.example.com/lineitem/scores',
+        response: { error: 'invalid_score' },
+      })
+    })
+
+    const response = await request(handler.app).get('/fail')
+
+    expect(response.status).toBe(502)
+    expect(response.body).toEqual({
+      error: 'HttpError',
+      message: 'HTTP request failed with status 400: Incorrect score received',
+      platformStatus: 400,
+      platformResponse: { error: 'invalid_score' },
+    })
+    expect(logger.error).toHaveBeenCalledWith(
+      'expressHttpHandler',
+      'HTTP request failed with status 400: Incorrect score received',
+    )
   })
 
   it('maps an unknown thrown error to a generic 500 response', async () => {
