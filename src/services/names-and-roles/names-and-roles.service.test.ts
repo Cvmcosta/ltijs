@@ -70,7 +70,7 @@ const TOKEN_URL = 'http://localhost/moodle/AccessTokenUrl'
 type RouteResponse = MockFetchResponseOptions | ((url: string) => MockFetchResponseOptions)
 
 // Routes by URL (ignoring any query string), mirroring axios-mock-adapter's
-// own per-URL matching -- always includes the token endpoint so callers only
+// own per-URL matching. Always includes the token endpoint so callers only
 // need to describe the NRPS-specific route(s) a given test cares about.
 const mockFetchRoutes = (routes: Partial<Record<string, RouteResponse>>): jest.SpiedFunction<typeof fetch> =>
   jest.spyOn(global, 'fetch').mockImplementation(async input => {
@@ -90,7 +90,7 @@ afterEach(() => {
 
 // A real LaunchContext also constructs its own NamesAndRoles internally, so
 // building one just to get a launch-context reference would redundantly
-// construct a second, unused NamesAndRoles -- NamesAndRoles only ever reads
+// construct a second, unused NamesAndRoles. NamesAndRoles only ever reads
 // `.platform`/`.rawIdToken`/`.idToken` off the reference it's given, so a
 // minimal object shaped like just those fields is enough here. `idToken` is a
 // getter, computed lazily (unlike the real LaunchContext, which computes it
@@ -195,6 +195,30 @@ describe('NamesAndRoles.getMembers()', () => {
 
     expect(result.members).toHaveLength(4)
     expect(result.next).toBeUndefined()
+  })
+
+  // Regression test for a real bug: page 2+'s URL comes straight from the platform's own "next" link
+  // and is already complete, but the fetch used to also re-extract and re-pass that URL's own query
+  // string as a separate `query` option, which then got appended a second time on the wire, duplicating
+  // every parameter (e.g. `?page=2` becoming `?page=2&page=2`). Real platforms (Moodle, Canvas) commonly
+  // put real query params on pagination links, unlike this suite's other tests, which use a bare
+  // `page2` URL and so never exercised this path.
+  it('does not duplicate the query string of a "next" link that already carries one', async () => {
+    const fetchSpy = mockFetchRoutes({
+      [TOKEN_URL]: { body: tokenResponse },
+      'http://localhost/moodle/members': {
+        body: membersResult,
+        headers: { link: '<http://localhost/moodle/page2?page=2&cursor=abc>; rel="next"' },
+      },
+      'http://localhost/moodle/page2': { body: membersResult },
+    })
+    const service = buildService()
+
+    await service.getMembers({ pages: false })
+
+    const page2Call = fetchSpy.mock.calls.find(([url]) => (url as string).startsWith('http://localhost/moodle/page2'))
+    if (page2Call === undefined) throw new Error('expected a fetch call to the "next" page URL')
+    expect(page2Call[0]).toBe('http://localhost/moodle/page2?page=2&cursor=abc')
   })
 
   it('uses options.url directly and skips query construction', async () => {

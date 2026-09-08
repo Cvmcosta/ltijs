@@ -115,11 +115,7 @@ export class NamesAndRoles {
       }
       this.logger.debug(this.LOG_COMPONENT, `Fetching membership page ${pageNumber}: ${pageUrl}`)
 
-      const page = await this.fetchPage(
-        pageUrl,
-        pageNumber === 1 ? request.query : new URL(pageUrl).searchParams,
-        accessToken,
-      )
+      const page = await this.fetchPage(pageUrl, pageNumber === 1 ? request.query : undefined, accessToken)
 
       if (result === undefined) result = page.memberships
       else result.members = [...result.members, ...page.memberships.members]
@@ -135,7 +131,11 @@ export class NamesAndRoles {
     return result
   }
 
-  private async fetchPage(pageUrl: string, query: URLSearchParams, accessToken: AccessToken): Promise<MembershipsPage> {
+  private async fetchPage(
+    pageUrl: string,
+    query: URLSearchParams | undefined,
+    accessToken: AccessToken,
+  ): Promise<MembershipsPage> {
     const headers = {
       authorization: buildBearerAuthorization(accessToken),
       accept: this.NRPS_ACCEPT,
