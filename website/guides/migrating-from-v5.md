@@ -12,6 +12,19 @@ Check this before anything else. v7 requires Node 24 or newer, up from legacy's 
 upgrading an existing deployment, upgrading its Node version is the actual first step, before touching any
 code.
 
+## Remove `@types/ltijs`
+
+v7 ships its own types, so the community `@types/ltijs` package isn't needed anymore:
+
+```bash
+npm uninstall @types/ltijs
+```
+
+Leaving it installed isn't just redundant, it globally augments Express's `Response` interface with v5's
+old `locals.token`/`locals.context` shapes, which don't match anything in v7. That augmentation applies
+whether or not anything actually resolves types through the package, so it's worth removing rather than
+leaving in place.
+
 ## Setting up a provider
 
 Construct a `Provider` once with everything it needs, wire up a launch handler, and start it:
