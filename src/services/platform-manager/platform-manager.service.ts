@@ -61,29 +61,32 @@ export class PlatformManager {
     if (record !== undefined) return buildPlatform(record)
   }
 
-  /** The lookup used at login time -- `url`/`clientId` together identify a platform, mirroring how the OIDC login request identifies it. */
+  /** The lookup used at login time: `url`/`clientId` together identify a platform, mirroring how the OIDC login request identifies it. */
   public async getPlatformByUrlAndClientId(url: string, clientId: string): Promise<Platform | undefined> {
     const record = await this.databaseManager.getPlatformByUrlAndClientId(url, clientId)
     if (record !== undefined) return buildPlatform(record)
   }
 
-  /** Merges `update` onto `platform`'s current fields. Throws `UrlClientIdCombinationAlreadyExistsError` if changing `url`/`clientId` would collide with another platform. */
+  /**
+   * Writes only the fields present in `update` (never the rest of `platform`'s current fields), so a
+   * concurrent update to a different field can't be silently reverted. Throws
+   * `UrlClientIdCombinationAlreadyExistsError` if changing `url`/`clientId` would collide with another
+   * platform.
+   */
   public async updatePlatform(platform: Platform, update: PlatformUpdateInput): Promise<Platform> {
     const validated = validate<PlatformUpdateInput>(PlatformUpdateInputSchema, update)
-    const merged = this.buildPlatformUpdate(platform, validated)
+    const changes = this.buildPlatformUpdate(platform, validated)
 
-    if (merged.url !== platform.url || merged.clientId !== platform.clientId) {
-      const collision = await this.databaseManager.getPlatformByUrlAndClientId(merged.url, merged.clientId)
+    const newUrl = changes.url ?? platform.url
+    const newClientId = changes.clientId ?? platform.clientId
+    if (newUrl !== platform.url || newClientId !== platform.clientId) {
+      const collision = await this.databaseManager.getPlatformByUrlAndClientId(newUrl, newClientId)
       if (collision !== undefined) throw new UrlClientIdCombinationAlreadyExistsError()
     }
 
-    await this.databaseManager.updatePlatformById(platform.id, merged)
+    await this.databaseManager.updatePlatformById(platform.id, changes)
     this.logger.debug(this.LOG_COMPONENT, `Platform updated: ${platform.id}`)
-    return buildPlatform({
-      id: platform.id,
-      keys: platform.keys,
-      ...merged,
-    })
+    return buildPlatform({ ...platform, ...changes })
   }
 
   public async deletePlatform(platform: Platform): Promise<void> {
@@ -105,7 +108,7 @@ export class PlatformManager {
     return buildPlatform({ ...platform, active: false })
   }
 
-  /** Generates a fresh RSA keypair for the platform and invalidates the cached keyset -- the old key stops being served immediately. */
+  /** Generates a fresh RSA keypair for the platform and invalidates the cached keyset: the old key stops being served immediately. */
   public async rotateKeys(platform: Platform): Promise<Platform> {
     const keys = await generateKeyPair()
     await this.databaseManager.updatePlatformById(platform.id, { keys })
@@ -137,7 +140,7 @@ export class PlatformManager {
   }
 
   // Reaches directly into KeysetService's cache key instead of taking a KeysetService dependency, since
-  // Provider constructs KeysetService *after* PlatformManager (which KeysetService itself depends on) --
+  // Provider constructs KeysetService *after* PlatformManager (which KeysetService itself depends on);
   // the reverse dependency would be circular. `cacheManager` is optional so invalidation is simply
   // skipped when absent.
   private async invalidateKeysetCache(): Promise<void> {
@@ -145,20 +148,30 @@ export class PlatformManager {
     await this.cacheManager.delete(KEYSET_CACHE_KEY)
   }
 
-  private buildPlatformUpdate(existing: Platform, update: PlatformUpdateInput): Omit<PlatformRecord, 'id' | 'keys'> {
-    return {
-      url: update.url ?? existing.url,
-      clientId: update.clientId ?? existing.clientId,
-      name: update.name ?? existing.name,
-      authenticationEndpoint: update.authenticationEndpoint ?? existing.authenticationEndpoint,
-      accessTokenEndpoint: update.accessTokenEndpoint ?? existing.accessTokenEndpoint,
-      authorizationServer: update.authorizationServer ?? existing.authorizationServer,
-      active: update.active ?? existing.active,
-      idTokenValidation: {
-        method: update.idTokenValidation?.method ?? existing.idTokenValidation.method,
-        key: update.idTokenValidation?.key ?? existing.idTokenValidation.key,
-      },
+  // Only includes a field when `update` actually provided it. `DatabaseManager.updatePlatformById`
+  // is already built to accept (and correctly write) a true partial update, so there's no need to fill
+  // in every other field from `existing` just to hand it a complete record. `idTokenValidation` is the
+  // one exception: since a `$set` on a nested object replaces it wholesale, a caller providing only one
+  // of its two sub-fields still needs the other filled in from `existing` to avoid wiping it out.
+  private buildPlatformUpdate(
+    existing: Platform,
+    update: PlatformUpdateInput,
+  ): Partial<Omit<PlatformRecord, 'id' | 'keys'>> {
+    const changes: Partial<Omit<PlatformRecord, 'id' | 'keys'>> = {}
+    if (update.url !== undefined) changes.url = update.url
+    if (update.clientId !== undefined) changes.clientId = update.clientId
+    if (update.name !== undefined) changes.name = update.name
+    if (update.authenticationEndpoint !== undefined) changes.authenticationEndpoint = update.authenticationEndpoint
+    if (update.accessTokenEndpoint !== undefined) changes.accessTokenEndpoint = update.accessTokenEndpoint
+    if (update.authorizationServer !== undefined) changes.authorizationServer = update.authorizationServer
+    if (update.active !== undefined) changes.active = update.active
+    if (update.idTokenValidation !== undefined) {
+      changes.idTokenValidation = {
+        method: update.idTokenValidation.method ?? existing.idTokenValidation.method,
+        key: update.idTokenValidation.key ?? existing.idTokenValidation.key,
+      }
     }
+    return changes
   }
 
   // Deprecated methods

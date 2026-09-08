@@ -35,7 +35,7 @@ const registrationInput = {
 }
 
 describe('PlatformManager.registerPlatform()', () => {
-  // A registration-input validation failure is a `ValidationError` -- no
+  // A registration-input validation failure is a `ValidationError`, no
   // longer mapped back onto a specific legacy error class (see standing
   // conventions), so these assert on `.errors`, the field-path-grouped map
   // every `ValidationError` carries, to confirm which field actually failed.
@@ -99,7 +99,7 @@ describe('PlatformManager.registerPlatform()', () => {
     expect(deleteSpy).toHaveBeenCalledWith(KEYSET_CACHE_KEY)
   })
 
-  it('does not throw when constructed without a cacheManager -- registration simply skips invalidation', async () => {
+  it('does not throw when constructed without a cacheManager: registration simply skips invalidation', async () => {
     const manager = new PlatformManager(buildMockDatabaseManager(), logger)
 
     await expect(manager.registerPlatform(registrationInput)).resolves.toBeDefined()
@@ -178,8 +178,8 @@ describe('PlatformManager.updatePlatform()', () => {
   })
 
   // updatePlatform() never touches `keys` (rotateKeys() is the only path that does), so the published
-  // /lti/keys response is never affected by it -- deliberately does not invalidate the keyset cache.
-  it('does not invalidate the keyset cache -- it never changes the keys the keyset publishes', async () => {
+  // /lti/keys response is never affected by it; deliberately does not invalidate the keyset cache.
+  it('does not invalidate the keyset cache: it never changes the keys the keyset publishes', async () => {
     const cacheManager = buildMockCacheManager()
     const manager = new PlatformManager(buildMockDatabaseManager(), logger, cacheManager)
     const platform = await manager.registerPlatform(registrationInput)
@@ -199,6 +199,39 @@ describe('PlatformManager.updatePlatform()', () => {
 
     expect(updated.authenticationEndpoint).toBe(registrationInput.authenticationEndpoint)
     expect(updated.idTokenValidation).toEqual(registrationInput.idTokenValidation)
+  })
+
+  // Regression test for a real lost-update race: updatePlatform() used to write every base field back
+  // to the database on every call (filled in from the caller's snapshot), so a concurrent update to a
+  // *different* field could be silently reverted by whichever write landed second. Asserting the exact
+  // database payload here is what actually catches that; a test that only checks the returned Platform
+  // (as the ones above do) can't tell a true partial write from a full-record one.
+  it('writes only the changed field to the database, not the whole record', async () => {
+    const database = buildMockDatabaseManager()
+    const manager = new PlatformManager(database, logger)
+    const platform = await manager.registerPlatform(registrationInput)
+    const updateSpy = jest.spyOn(database, 'updatePlatformById')
+
+    await manager.updatePlatform(platform, { name: 'New Name' })
+
+    expect(updateSpy).toHaveBeenCalledWith(platform.id, { name: 'New Name' })
+  })
+
+  // The actual failure scenario the finding described: two concurrent "GET then PUT" updates, each
+  // starting from the same stale snapshot, changing two different fields. Neither should revert the
+  // other's change.
+  it('does not revert a concurrent update to a different field', async () => {
+    const database = buildMockDatabaseManager()
+    const manager = new PlatformManager(database, logger)
+    const staleSnapshot = await manager.registerPlatform(registrationInput)
+
+    await manager.updatePlatform(staleSnapshot, { name: 'New Name' })
+    await manager.updatePlatform(staleSnapshot, { authenticationEndpoint: 'http://localhost/moodle/new-auth' })
+
+    await expect(manager.getPlatformById(staleSnapshot.id)).resolves.toMatchObject({
+      name: 'New Name',
+      authenticationEndpoint: 'http://localhost/moodle/new-auth',
+    })
   })
 
   it.each(['url', 'clientId', 'name', 'authenticationEndpoint', 'accessTokenEndpoint', 'authorizationServer'])(
