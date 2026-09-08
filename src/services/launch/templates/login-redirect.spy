@@ -3,7 +3,11 @@
 {{> _lti-storage-handshake.spy }}
 
 var data = JSON.parse(document.getElementById('ltijs-login-data').textContent);
-var stateValue = data.value;
+// storageKeySeed (the state JWT) is what both the login and launch pages can independently compute the
+// same storage key from. The launch page never sees recoveryValue until it's actually retrieved from
+// storage below, which is the whole point.
+var storageKeySeed = data.state;
+var recoveryValue = data.recoveryToken;
 var localStorageKey = data.key;
 var storageTarget = data.storageTarget;
 var platformLoginOrigin = data.platformLoginOrigin;
@@ -15,14 +19,14 @@ function redirectToLMS() {
 
 function storeState() {
   try {
-    localStorage.setItem(localStorageKey, stateValue);
-    if (localStorage.getItem(localStorageKey) === stateValue) return redirectToLMS();
+    localStorage.setItem(localStorageKey, recoveryValue);
+    if (localStorage.getItem(localStorageKey) === recoveryValue) return redirectToLMS();
   } catch (error) {}  // fall through to the postMessage fallback (or the final unconditional redirect) below
 
   if (!storageTarget) return redirectToLMS()
-  ltiSendStorageMessage(storageTarget, platformLoginOrigin, 'lti.put_data', 'state_' + stateValue, {
-    key: 'state_' + stateValue,
-    value: stateValue,
+  ltiSendStorageMessage(storageTarget, platformLoginOrigin, 'lti.put_data', 'state_' + storageKeySeed, {
+    key: 'state_' + storageKeySeed,
+    value: recoveryValue,
   })
     .then(redirectToLMS)
     .catch(redirectToLMS)

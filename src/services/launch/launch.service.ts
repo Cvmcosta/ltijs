@@ -4,6 +4,7 @@ import { LoginRequestPayloadSchema, LaunchCallbackPayloadSchema } from '#service
 import { validate } from '#utils/validation/validation'
 import { renderTemplate } from '#utils/templating/template-renderer'
 import { decodeToken, signJwt, verifyTokenSignature } from '#utils/crypto/jwt'
+import { randomUuid } from '#utils/random/random'
 import { RS256_ALGORITHM } from '#utils/crypto/jwt.constants'
 import {
   SessionNotFoundError,
@@ -57,7 +58,7 @@ export class LaunchService {
   private readonly httpHandler: HttpHandler
   private readonly logger: Logger
 
-  // Mutable, not `readonly` -- these are reassignable at any time via the
+  // Mutable, not `readonly`: these are reassignable at any time via the
   // public setters below (and, in turn, via `Provider`'s `on***` methods),
   // matching legacy's own default-callback-with-override-setter pattern.
   private onResourceLinkHandler: OnLaunchHandler = this.buildDefaultLaunchHandler()
@@ -187,7 +188,7 @@ export class LaunchService {
     try {
       loginResult = await this.processLogin(params)
     } catch (error) {
-      // These two overrides fully own the HTTP response themselves -- the login route always returns
+      // These two overrides fully own the HTTP response themselves: the login route always returns
       // immediately after invoking one, with no continuation of the OIDC flow. A handler always exists
       // now (real defaults, see `buildDefaultXHandler()`), so dispatch is unconditional.
       if (error instanceof UnregisteredPlatformError) {
@@ -201,12 +202,13 @@ export class LaunchService {
       throw error
     }
 
-    const { redirectUrl, state, storageTarget, platformLoginOrigin } = loginResult
+    const { redirectUrl, state, recoveryToken, storageTarget, platformLoginOrigin } = loginResult
 
     const html = renderTemplate(this.LOGIN_REDIRECT_TEMPLATE, {
       dataJson: this.toDataScript({
         key: this.buildLocalStorageKey(state),
-        value: state,
+        state,
+        recoveryToken,
         targetUrl: redirectUrl,
         storageTarget,
         platformLoginOrigin,
@@ -234,9 +236,14 @@ export class LaunchService {
       response.html(html)
       return
     }
-    if (recoveredState !== parameters.stateToken) throw new InvalidStateError()
 
-    const { idToken, state, platform } = await this.processLaunch(parameters)
+    const { payload } = decodeToken(parameters.rawIdToken)
+    const platform = await this.resolveIdTokenPlatform(payload.iss, payload.aud)
+
+    if (this.isSameOriginRequest(request) === false) throw new InvalidStateError()
+    this.oidcService.verifyRecoveredState(recoveredState, parameters.stateToken, platform)
+
+    const { idToken, state } = await this.processLaunch(parameters, platform)
     const ltik = this.buildLtik(idToken.id, platform)
     const context = this.buildLaunchContext(idToken, platform, ltik)
     const handler = this.resolveHandler(context.idToken.launch.type)
@@ -260,13 +267,11 @@ export class LaunchService {
     }
   }
 
-  private async processLaunch(parameters: LaunchCallbackParams): Promise<ProcessLaunchResult> {
+  private async processLaunch(parameters: LaunchCallbackParams, platform: Platform): Promise<ProcessLaunchResult> {
     const { stateToken, rawIdToken } = parameters
-    const { header, payload } = decodeToken(rawIdToken)
+    const { header } = decodeToken(rawIdToken)
 
-    const platform = await this.resolveIdTokenPlatform(payload.iss, payload.aud)
-
-    // Independent once `platform` is resolved -- validateIdToken is the expensive one (JWKS fetch,
+    // Independent once `platform` is resolved: validateIdToken is the expensive one (JWKS fetch,
     // nonce-consuming DB round-trip), so running both concurrently keeps validateStateToken's latency
     // off the critical path instead of paying for it strictly before the id-token check starts.
     const [state, idTokenClaims] = await Promise.all([
@@ -303,7 +308,9 @@ export class LaunchService {
       params.storageTarget === undefined || platformLoginOrigin === undefined
         ? undefined
         : { target: params.storageTarget, loginOrigin: platformLoginOrigin }
-    const state = this.oidcService.buildStateToken(platform, query, storage)
+    const stateId = randomUuid()
+    const state = this.oidcService.buildStateToken(platform, query, storage, stateId)
+    const recoveryToken = this.oidcService.buildRecoveryToken(stateId, platform)
 
     const redirectUrl = await this.oidcService.buildAuthenticationRequestUrl(platform, {
       loginHint: params.loginHint,
@@ -314,7 +321,7 @@ export class LaunchService {
     })
 
     this.logger.debug(this.LOG_COMPONENT, `Login request processed for [${params.iss}]`)
-    return { redirectUrl, state, storageTarget: params.storageTarget, platformLoginOrigin }
+    return { redirectUrl, state, recoveryToken, storageTarget: params.storageTarget, platformLoginOrigin }
   }
 
   private async resolvePlatform(url: string, clientId?: string): Promise<Platform> {
@@ -328,7 +335,7 @@ export class LaunchService {
   private async resolveIdTokenPlatform(iss: string, aud: string | string[]): Promise<Platform> {
     // A spec-permitted multi-value `aud` is resolved in one batched query (an `$in`-style clientId
     // match) instead of one sequential DB round-trip per candidate. The first candidate (in `aud`
-    // order) with a matching platform record wins -- same as the old loop, which stopped at the first
+    // order) with a matching platform record wins, same as the old loop, which stopped at the first
     // registered match and never looked past it even if that match turned out to be inactive.
     const clientIds = Array.isArray(aud) ? aud : [aud]
     const platforms = await this.platformManager.getPlatforms({ url: iss, clientId: clientIds })
@@ -343,28 +350,23 @@ export class LaunchService {
     return typeof bodyState === 'string' ? bodyState : undefined
   }
 
+  // `undefined` when the browser didn't send Sec-Fetch-Site at all (older Safari, some network
+  // middleboxes); the caller only rejects on an explicit `false`, not on `undefined`. Not an OIDC
+  // concern (OidcService has no notion of HTTP requests), so it stays here rather than there.
+  private isSameOriginRequest(request: HttpRequestParameters): boolean | undefined {
+    const secFetchSite = request.headers['sec-fetch-site']
+    if (secFetchSite === undefined) return undefined
+    return secFetchSite === 'same-origin'
+  }
+
   private buildLocalStorageKey(state: string): string {
     return `${this.LOCAL_STORAGE_KEY_PREFIX}${state}`
   }
 
-  // `stateToken`'s signature isn't verified here -- this only peeks at the postMessage-storage handshake
-  // info needed to render the recovery page, before the state's actual value is checked (that still
-  // happens later, exactly as today, in resolveRecoveredState/processLaunch). Mirrors how processLaunch
-  // already peeks at rawIdToken's iss/aud via decodeToken before its signature is verified.
   private peekStateToken(stateToken: string): Partial<State> {
     return decodeToken(stateToken).payload as unknown as Partial<State>
   }
 
-  // sprightly (the templating engine) does no HTML/JS escaping of its own -- storageTarget/
-  // platformLoginOrigin are the first platform-controlled values ever injected into a <script> context
-  // in these templates, so this guards against that regardless of how tightly the schema/derivation
-  // already constrains them.
-  // A single JSON data island covers every value a template's script needs in one escape step, read back
-  // client-side via JSON.parse -- rather than interpolating each value as its own JS string literal, which
-  // would require separately reasoning about (and escaping) every individual field. The `<` guard still
-  // matters even inside a `<script type="application/json">` tag: the HTML tokenizer looks for the literal
-  // text "</script" regardless of the script's type, so an unguarded value containing it could still
-  // terminate the tag early.
   private toDataScript(data: Record<string, string | undefined>): string {
     return JSON.stringify(data).replace(/</g, '\\u003c')
   }

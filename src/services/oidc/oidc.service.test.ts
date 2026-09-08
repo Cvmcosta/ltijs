@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken'
 import { OidcService } from '#services/oidc/oidc.service'
 import { decodeToken } from '#utils/crypto/jwt'
 import * as cryptoJwt from '#utils/crypto/jwt'
+import { signValue } from '#utils/crypto/signed-value'
 import { PlatformManager } from '#services/platform-manager/platform-manager.service'
 import { FetchRequestHandler } from '#services/request-handler/fetch/fetch-request-handler.service'
 import { buildMockCacheManager } from '#utils/tests/mock-cache-manager'
@@ -39,7 +40,7 @@ const buildClaims = (overrides: Record<string, unknown> = {}): Record<string, un
 })
 
 // A nonce not explicitly present in `claims` is auto-generated and
-// registered via saveNonce() -- matching what
+// registered via saveNonce(), matching what
 // OidcService.buildAuthenticationRequestUrl() does at real login-initiation
 // time, since validateToken() now only accepts a nonce that was actually
 // issued (and not yet consumed). Tests that pass their own explicit `nonce`
@@ -52,7 +53,7 @@ const signToken = async (
 ): Promise<string> => {
   // jsonwebtoken respects an `iat` already present in the payload (and bases
   // `expiresIn`'s computed `exp` off of it) as long as `noTimestamp` isn't
-  // set -- `noTimestamp: true` doesn't just skip auto-setting `iat`, it
+  // set. `noTimestamp: true` doesn't just skip auto-setting `iat`, it
   // deletes whatever `iat` the payload already had.
   const payload = { sub: 'user-1', nonce: crypto.randomUUID(), ...claims }
   if (!('nonce' in claims)) await databaseManager.saveNonce(payload.nonce)
@@ -75,7 +76,7 @@ const buildDatabaseManagerWithPlatform = async (
   const databaseManager = buildMockDatabaseManager()
   const platformManager = new PlatformManager(databaseManager, logger)
   // `savePlatform()` generates the id itself now (no more caller-supplied
-  // `id`, see `MongoDatabaseManager.savePlatform()`) -- resolved back into a
+  // `id`, see `MongoDatabaseManager.savePlatform()`), resolved back into a
   // full `Platform` here, since `OidcService`'s methods now all take an
   // already-resolved `Platform` instead of resolving one internally.
   const platformId = await databaseManager.savePlatform({
@@ -145,7 +146,7 @@ describe('OidcService.validateToken()', () => {
     )
   })
 
-  it('resolves for a single-element aud array with no azp -- azp is only spec-required for multiple audiences', async () => {
+  it('resolves for a single-element aud array with no azp, since azp is only spec-required for multiple audiences', async () => {
     const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
     const service = buildService(databaseManager)
     const token = await signToken(databaseManager, buildClaims(), {
@@ -217,7 +218,7 @@ describe('OidcService.validateToken()', () => {
     })
   })
 
-  it('caches the JWKS response -- a second launch for the same jwks_uri does not re-fetch it', async () => {
+  it('caches the JWKS response: a second launch for the same jwks_uri does not re-fetch it', async () => {
     const jwk = crypto.createPublicKey(publicKey).export({ format: 'jwk' })
     const fetchSpy = jest
       .spyOn(global, 'fetch')
@@ -243,7 +244,7 @@ describe('OidcService.validateToken()', () => {
     const { databaseManager, platform } = await buildDatabaseManagerWithPlatform({
       idTokenValidation: { method: IdTokenValidationMethod.JwkSet, key: 'http://localhost/moodle/jwks' },
     })
-    // tokenMaxAge disabled -- this test is about JWKS-cache expiry, not token freshness, and advancing
+    // tokenMaxAge disabled: this test is about JWKS-cache expiry, not token freshness, and advancing
     // Date.now() past the cache TTL would otherwise also trip the unrelated TOKEN_TOO_OLD check.
     const service = buildService(databaseManager, false)
     const tokenA = await signToken(databaseManager, buildClaims())
@@ -273,7 +274,7 @@ describe('OidcService.validateToken()', () => {
     await expect(service.validateIdToken(token, decodeToken(token).header, platform)).rejects.toThrow(
       'AUTHCONFIG_NOT_FOUND',
     )
-    // One initial fetch, one retry-after-cache-invalidation fetch -- bounded, not an infinite loop.
+    // One initial fetch, one retry-after-cache-invalidation fetch: bounded, not an infinite loop.
     expect(fetchSpy).toHaveBeenCalledTimes(2)
   })
 
@@ -289,7 +290,7 @@ describe('OidcService.validateToken()', () => {
     const cacheManager = buildMockCacheManager()
     const deleteSpy = jest.spyOn(cacheManager, 'delete')
     const service = buildService(databaseManager, 10, cacheManager)
-    // The platform's own signing key didn't change -- only which `kid` label the JWKS response
+    // The platform's own signing key didn't change; only which `kid` label the JWKS response
     // advertises it under, simulating the platform having rotated since the (still-cached) first fetch.
     const token = await signToken(databaseManager, buildClaims(), { keyid: 'fresh-kid' })
 
@@ -314,7 +315,7 @@ describe('OidcService.validateToken()', () => {
   it('throws TOKEN_TOO_OLD when the token exceeds the max age', async () => {
     const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
     const service = buildService(databaseManager)
-    // iat old enough to breach the max age, but exp still valid -- otherwise
+    // iat old enough to breach the max age, but exp still valid; otherwise
     // jsonwebtoken's own "jwt expired" check fires first, at the signature
     // step, before this max-age check is ever reached.
     const token = await signToken(
@@ -397,7 +398,7 @@ describe('OidcService.validateToken()', () => {
     it('throws a ValidationError when the verified payload is missing exp', async () => {
       const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
       const service = buildService(databaseManager)
-      // No `expiresIn` -- jsonwebtoken only sets `exp` when asked to, so this
+      // No `expiresIn`: jsonwebtoken only sets `exp` when asked to, so this
       // genuinely produces a token with no `exp` claim at all.
       const token = jwt.sign({ sub: 'user-1', nonce: crypto.randomUUID(), ...buildClaims() }, privateKey, {
         algorithm: 'RS256',
@@ -454,9 +455,9 @@ describe('OidcService.validateToken()', () => {
       )
     })
 
-    // Every other claim-validation failure is still a `ValidationError` --
+    // Every other claim-validation failure is still a `ValidationError`,
     // not mapped back onto a specific legacy error class (see standing
-    // conventions) -- so these assert on `.errors`, the field-path-grouped
+    // conventions), so these assert on `.errors`, the field-path-grouped
     // map every `ValidationError` carries, to confirm which claim failed.
 
     it('throws a ValidationError on target_link_uri when missing on a resource link request', async () => {
@@ -603,9 +604,9 @@ describe('OidcService.buildStateToken() / validateStateToken()', () => {
   })
 
   it('verifies via the shared verifyTokenSignature() wrapper, not a separate direct jsonwebtoken call', async () => {
-    // validateStateToken() and validateIdToken() both verify an RS256-signed token -- they must go
-    // through the same shared wrapper so clock/algorithm handling can't silently drift apart between
-    // the two call sites.
+    // validateStateToken() and validateIdToken() both verify an RS256-signed token, so they must go
+    // through the same shared wrapper: otherwise clock/algorithm handling could silently drift apart
+    // between the two call sites.
     const verifyTokenSignatureSpy = jest.spyOn(cryptoJwt, 'verifyTokenSignature')
     const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
     const service = buildService(databaseManager)
@@ -657,6 +658,134 @@ describe('OidcService.buildStateToken() / validateStateToken()', () => {
     const token = jwt.sign({ query: { a: '1' } }, platform.keys.private, { algorithm: 'RS256', expiresIn: -1 })
 
     await expect(service.validateStateToken(token, platform)).rejects.toThrow('INVALID_STATE')
+  })
+})
+
+describe('OidcService.buildRecoveryToken() / verifyRecoveryToken()', () => {
+  it('round-trips the stateId through the signed value', async () => {
+    const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
+    const service = buildService(databaseManager)
+
+    const token = service.buildRecoveryToken('state-id-1', platform)
+
+    expect(service.verifyRecoveryToken(token, platform)).toBe('state-id-1')
+  })
+
+  it('throws INVALID_STATE for a tampered signature', async () => {
+    const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
+    const service = buildService(databaseManager)
+    const token = service.buildRecoveryToken('state-id-1', platform)
+    const tampered = `${token.slice(0, -2)}xx`
+
+    expect(() => service.verifyRecoveryToken(tampered, platform)).toThrow('INVALID_STATE')
+  })
+
+  it('throws INVALID_STATE for a malformed token', async () => {
+    const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
+    const service = buildService(databaseManager)
+
+    expect(() => service.verifyRecoveryToken('not-a-signed-value', platform)).toThrow('INVALID_STATE')
+  })
+
+  it('throws INVALID_STATE for an expired recovery token', async () => {
+    const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
+    const service = buildService(databaseManager)
+    const expiredToken = signValue(`state-id-1:${Date.now() - 1000}`, platform.keys.private)
+
+    expect(() => service.verifyRecoveryToken(expiredToken, platform)).toThrow('INVALID_STATE')
+  })
+
+  it('throws INVALID_STATE for a recovery token verified against a different platform', async () => {
+    const { databaseManager, platform: platformA } = await buildDatabaseManagerWithPlatform()
+    const platformManager = new PlatformManager(databaseManager, logger)
+    const otherKeyPair = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 2048,
+      publicKeyEncoding: { type: 'spki', format: 'pem' },
+      privateKeyEncoding: { type: 'pkcs1', format: 'pem' },
+    })
+    const otherPlatformId = await databaseManager.savePlatform({
+      url: 'http://localhost/other',
+      clientId: 'OtherClientId',
+      name: 'Other Moodle',
+      authenticationEndpoint: 'http://localhost/other/auth',
+      accessTokenEndpoint: 'http://localhost/other/AccessTokenUrl',
+      authorizationServer: 'http://localhost/other/AccessTokenUrl',
+      idTokenValidation: { method: IdTokenValidationMethod.RsaKey, key: 'unused-in-this-flow' },
+      active: true,
+      keys: { public: otherKeyPair.publicKey, private: otherKeyPair.privateKey },
+    })
+    const platformB = await platformManager.getPlatformById(otherPlatformId)
+    if (platformB === undefined) throw new Error('expected the just-registered platform to exist')
+    const service = buildService(databaseManager)
+    const token = service.buildRecoveryToken('state-id-1', platformA)
+
+    expect(() => service.verifyRecoveryToken(token, platformB)).toThrow('INVALID_STATE')
+  })
+
+  // Regression test: state and the recovery token used to both be RS256 JWTs signed with the same
+  // platform key, so a state token could be resubmitted in place of a recovery token (and vice versa)
+  // and still verify: exactly the bypass this two-token design exists to prevent. HMAC-signing the
+  // recovery token instead makes the two structurally incompatible, not just conventionally different.
+  it('rejects a real state token when verified as a recovery token', async () => {
+    const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
+    const service = buildService(databaseManager)
+    const state = service.buildStateToken(platform)
+
+    expect(() => service.verifyRecoveryToken(state, platform)).toThrow('INVALID_STATE')
+  })
+
+  it('rejects a real recovery token when verified as a state token', async () => {
+    const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
+    const service = buildService(databaseManager)
+    const recoveryToken = service.buildRecoveryToken('state-id-1', platform)
+
+    await expect(service.validateStateToken(recoveryToken, platform)).rejects.toThrow('INVALID_STATE')
+  })
+})
+
+describe('OidcService.verifyRecoveredState()', () => {
+  it('does not throw when the recovery token is valid and its stateId matches the state token', async () => {
+    const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
+    const service = buildService(databaseManager)
+    const state = service.buildStateToken(platform, undefined, undefined, 'state-id-1')
+    const recoveryToken = service.buildRecoveryToken('state-id-1', platform)
+
+    expect(() => {
+      service.verifyRecoveredState(recoveryToken, state, platform)
+    }).not.toThrow()
+  })
+
+  it('throws INVALID_STATE when the recovery token is invalid', async () => {
+    const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
+    const service = buildService(databaseManager)
+    const state = service.buildStateToken(platform, undefined, undefined, 'state-id-1')
+
+    expect(() => {
+      service.verifyRecoveredState('not-a-signed-value', state, platform)
+    }).toThrow('INVALID_STATE')
+  })
+
+  it('throws INVALID_STATE when the recovery token is valid but its stateId does not match the state token', async () => {
+    const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
+    const service = buildService(databaseManager)
+    const state = service.buildStateToken(platform, undefined, undefined, 'state-id-1')
+    const recoveryToken = service.buildRecoveryToken('state-id-2', platform)
+
+    expect(() => {
+      service.verifyRecoveredState(recoveryToken, state, platform)
+    }).toThrow('INVALID_STATE')
+  })
+
+  // Regression test for the CSRF bypass this design replaced: resubmitting the raw state token itself
+  // as the "recovered" value must not verify, even though it's a validly-signed token overall.
+  it('throws INVALID_STATE when the state token itself is passed as the recovered value', async () => {
+    const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
+    const service = buildService(databaseManager)
+    const state = service.buildStateToken(platform, undefined, undefined, 'state-id-1')
+
+    expect(() => {
+      service.verifyRecoveredState(state, state, platform)
+    }).toThrow('INVALID_STATE')
   })
 })
 

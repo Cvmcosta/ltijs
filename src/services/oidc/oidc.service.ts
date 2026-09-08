@@ -1,8 +1,9 @@
 import type { JsonWebKey, KeyObject } from 'node:crypto'
 import type { z } from 'zod'
-import { signJwt, verifyTokenSignature } from '#utils/crypto/jwt'
+import { decodeToken, signJwt, verifyTokenSignature } from '#utils/crypto/jwt'
 import { RS256_ALGORITHM } from '#utils/crypto/jwt.constants'
 import { jwkToRsa } from '#utils/crypto/keys'
+import { signValue, verifySignedValue } from '#utils/crypto/signed-value'
 import { validate } from '#utils/validation/validation'
 import { randomUuid } from '#utils/random/random'
 import {
@@ -72,9 +73,17 @@ export class OidcService {
     return validatedToken
   }
 
-  public buildStateToken(platform: Platform, query?: Record<string, string>, storage?: StorageTarget): string {
+  // `stateId` defaults to a fresh random value when the caller doesn't already have one to correlate --
+  // callers that also mint a matching buildRecoveryToken() (LaunchService.processLogin) generate it
+  // themselves first and pass it to both, so the two tokens share the same id.
+  public buildStateToken(
+    platform: Platform,
+    query?: Record<string, string>,
+    storage?: StorageTarget,
+    stateId: string = randomUuid(),
+  ): string {
     return signJwt(
-      { query, storageTarget: storage?.target, platformLoginOrigin: storage?.loginOrigin },
+      { stateId, query, storageTarget: storage?.target, platformLoginOrigin: storage?.loginOrigin },
       resolvePlatformPrivateKey(platform),
       {
         algorithm: RS256_ALGORITHM,
@@ -89,6 +98,42 @@ export class OidcService {
     } catch {
       throw new InvalidStateError()
     }
+  }
+
+  // A second, independently-signed value carrying the same stateId as buildStateToken()'s. Unlike
+  // `state`, this one is never sent to the platform, only ever delivered to the browser for client-side
+  // storage (localStorage/postMessage) and echoed back on launch. Verifying it proves the recovered value
+  // was actually issued by this server at login time, not just copied from the state field of the same
+  // forged request. HMAC-signed rather than a JWT: nothing but this server ever verifies it, so there's
+  // no need for asymmetric signing, and as a side effect, an HMAC token can never be mistaken for a
+  // JWT (or vice versa), so there's no risk of `state` itself being replayed in its place.
+  public buildRecoveryToken(stateId: string, platform: Platform): string {
+    const expiresAt = Date.now() + this.STATE_TTL_SECONDS * 1000
+    return signValue(`${stateId}:${expiresAt}`, resolvePlatformPrivateKey(platform))
+  }
+
+  public verifyRecoveryToken(token: string, platform: Platform): string {
+    const value = verifySignedValue(token, resolvePlatformPrivateKey(platform))
+    if (value === undefined) throw new InvalidStateError()
+
+    const [stateId, expiresAtRaw] = value.split(':')
+    const expiresAt = Number(expiresAtRaw)
+    if (stateId === undefined || stateId === '' || !Number.isFinite(expiresAt) || Date.now() > expiresAt) {
+      throw new InvalidStateError()
+    }
+    return stateId
+  }
+
+  // The full "is this recovered value acceptable for this launch" check, kept in one place rather than
+  // split between here and LaunchService: verifies the recovery token itself, then confirms its stateId
+  // matches the state token's. `stateToken`'s own signature isn't verified here (it's checked
+  // separately, in validateStateToken, as part of the normal launch flow); this is only reading its
+  // stateId claim back out, mirroring how peekStateToken() already peeks at state before its signature
+  // is checked.
+  public verifyRecoveredState(recoveredToken: string, stateToken: string, platform: Platform): void {
+    const recoveredStateId = this.verifyRecoveryToken(recoveredToken, platform)
+    const { stateId } = decodeToken(stateToken).payload as unknown as Partial<State>
+    if (recoveredStateId !== stateId) throw new InvalidStateError()
   }
 
   public async buildAuthenticationRequestUrl(
@@ -207,7 +252,7 @@ export class OidcService {
 
   private async validateAud(token: DecodedToken, platform: Platform): Promise<void> {
     // azp is only spec-required (and only meaningfully checked) when aud actually names more than one
-    // audience -- a single-element array is equivalent to a bare string aud, where a platform sending
+    // audience. A single-element array is equivalent to a bare string aud, where a platform sending
     // no azp at all is spec-valid and must not be rejected.
     const hasMultipleAudiences = Array.isArray(token.aud) && token.aud.length > 1
     if (hasMultipleAudiences && token.azp !== platform.clientId) {

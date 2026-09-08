@@ -40,7 +40,7 @@ const buildClaims = (overrides: Record<string, unknown> = {}): Record<string, un
 
 // The nonce must be registered via saveNonce() first, matching what
 // OidcService.buildAuthenticationRequestUrl() does at real login-initiation
-// time -- validateToken() now only accepts a nonce that was actually issued
+// time; validateToken() now only accepts a nonce that was actually issued
 // (and not yet consumed), not merely one it hasn't seen before.
 const signToken = async (
   databaseManager: DatabaseManager,
@@ -68,7 +68,7 @@ const buildDatabaseManagerWithPlatform = async (
   const databaseManager = buildMockDatabaseManager()
   const platformManager = new PlatformManager(databaseManager, logger)
   // `savePlatform()` generates the id itself now (no more caller-supplied
-  // `id`, see `MongoDatabaseManager.savePlatform()`) -- resolved back into a
+  // `id`, see `MongoDatabaseManager.savePlatform()`), resolved back into a
   // full `Platform` here, since `OidcService.buildStateToken()`/
   // `verifyStateToken()` now both require an already-resolved `Platform`.
   const platformId = await databaseManager.savePlatform({
@@ -137,24 +137,42 @@ const buildFakeHttpResponse = (): FakeHttpResponse => {
   return response
 }
 
+// Sec-Fetch-Site defaults to 'same-origin', representing the ordinary case: the recovery page's own JS
+// resubmitting itself back to this same server. Tests exercising a cross-site forgery override `headers`
+// explicitly with a different value (or omit the header, for the "no signal" fail-open case).
 const buildRequest = (overrides: Partial<HttpRequestParameters> = {}): HttpRequestParameters => ({
   method: 'GET',
   path: '/',
   query: {},
   body: {},
-  headers: {},
+  headers: { 'sec-fetch-site': 'same-origin' },
   ...overrides,
 })
 
-// `processLoginRequest()`/`processLaunch()` are `private` -- only reachable
-// through the routes `prepareHttpRoutes()` registers -- so every scenario
+// `state` (sent to the platform) and the recovery token (only ever delivered to the browser, never to
+// the platform) must share the same stateId to verify together. This mirrors what
+// LaunchService.processLogin() does internally, for tests that fabricate a state/recovery pair directly
+// instead of driving the real /lti/login route.
+const buildStateAndRecovery = (
+  oidcService: OidcService,
+  platform: Platform,
+  query?: Record<string, string>,
+): { state: string; recoveryToken: string } => {
+  const stateId = crypto.randomUUID()
+  const state = oidcService.buildStateToken(platform, query, undefined, stateId)
+  const recoveryToken = oidcService.buildRecoveryToken(stateId, platform)
+  return { state, recoveryToken }
+}
+
+// `processLoginRequest()`/`processLaunch()` are `private`, only reachable
+// through the routes `prepareHttpRoutes()` registers, so every scenario
 // that used to call them directly now drives the actual registered route
 // handler instead, via the fake `HttpHandler`/`HttpResponse` pair above.
 
 type OnLaunchMock = jest.Mock<Promise<void>, [LaunchContext, HttpRequestParameters, HttpResponse]>
 
 // `LaunchService` now bakes in a real default for each launch handler and
-// exposes them as settable instance state -- this wires jest mocks in via
+// exposes them as settable instance state. This wires jest mocks in via
 // the public setters instead of building a `LaunchHandlers` bag for a
 // `prepareHttpRoutes(handlers)` call that no longer accepts one.
 const applyLaunchHandlers = (
@@ -190,7 +208,7 @@ const DEFAULT_LOGIN_PARAMS: Required<Omit<LoginParams, 'clientId' | 'storageTarg
 }
 
 // The OIDC login-initiation request itself uses the spec's own snake_case
-// query param names -- this is what a real platform request looks like.
+// query param names: this is what a real platform request looks like.
 const toLoginQuery = (params: LoginParams): Record<string, string> => {
   const query: Record<string, string> = {}
   if (params.iss !== undefined) query.iss = params.iss
@@ -202,7 +220,7 @@ const toLoginQuery = (params: LoginParams): Record<string, string> => {
 }
 
 // Both templates render their data as a single JSON island (`<script type="application/json" id="...">`)
-// rather than as individual interpolated JS variables -- this pulls it back out for assertions.
+// rather than as individual interpolated JS variables. This pulls it back out for assertions.
 interface RenderedTemplateData {
   key?: string
   value?: string
@@ -248,6 +266,7 @@ const runLaunch = async (
   httpHandler: MockHttpHandler,
   rawIdToken: string,
   state: string,
+  recoveryToken: string,
   overrides: Partial<HttpRequestParameters> = {},
   // eslint-disable-next-line @typescript-eslint/max-params -- test helper driving the launch route end to end
 ): Promise<LaunchContext> => {
@@ -257,7 +276,7 @@ const runLaunch = async (
 
   await launchHandler(
     buildRequest({
-      body: { id_token: rawIdToken, state, ltijs_recovered_state: state },
+      body: { id_token: rawIdToken, state, ltijs_recovered_state: recoveryToken },
       ...overrides,
     }),
     buildFakeHttpResponse(),
@@ -273,9 +292,9 @@ describe('LaunchService.getLaunchContext()', () => {
   it('resumes a previously-processed launch by its ltik', async () => {
     const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
     const { launchService: service, oidcService, httpHandler } = buildServices(databaseManager)
-    const state = oidcService.buildStateToken(platform)
+    const { state, recoveryToken } = buildStateAndRecovery(oidcService, platform)
     const token = await signToken(databaseManager, buildClaims())
-    const original = await runLaunch(service, httpHandler, token, state)
+    const original = await runLaunch(service, httpHandler, token, state, recoveryToken)
 
     const resumed = await service.getLaunchContext(original.ltik)
 
@@ -303,9 +322,9 @@ describe('LaunchService.getLaunchContext()', () => {
   it('throws PLATFORM_NOT_FOUND when the stored id token points at a platform that no longer exists', async () => {
     const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
     const { launchService: service, oidcService, httpHandler } = buildServices(databaseManager)
-    const state = oidcService.buildStateToken(platform)
+    const { state, recoveryToken } = buildStateAndRecovery(oidcService, platform)
     const token = await signToken(databaseManager, buildClaims())
-    const context = await runLaunch(service, httpHandler, token, state)
+    const context = await runLaunch(service, httpHandler, token, state, recoveryToken)
     await databaseManager.deletePlatformById(platform.id)
 
     await expect(service.getLaunchContext(context.ltik)).rejects.toThrow('PLATFORM_NOT_FOUND')
@@ -319,9 +338,9 @@ describe('LaunchService.getLaunchContext()', () => {
       privateKeyEncoding: { type: 'pkcs1', format: 'pem' },
     })
     const { launchService: service, oidcService, httpHandler } = buildServices(databaseManager)
-    const state = oidcService.buildStateToken(platform)
+    const { state, recoveryToken } = buildStateAndRecovery(oidcService, platform)
     const token = await signToken(databaseManager, buildClaims())
-    const context = await runLaunch(service, httpHandler, token, state)
+    const context = await runLaunch(service, httpHandler, token, state, recoveryToken)
     const forgedLtik = jwt.sign({ tid: context.rawIdToken.id }, otherKeyPair.privateKey, { algorithm: 'RS256' })
 
     await expect(service.getLaunchContext(forgedLtik)).rejects.toThrow('INVALID_LTIK')
@@ -570,14 +589,14 @@ describe('LaunchService.prepareHttpRoutes()', () => {
     it('completes a resource-link launch and dispatches to onResourceLink only', async () => {
       const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
       const { launchService: service, oidcService, httpHandler } = buildServices(databaseManager)
-      const state = oidcService.buildStateToken(platform, { course: '1' })
+      const { state, recoveryToken } = buildStateAndRecovery(oidcService, platform, { course: '1' })
       const token = await signToken(databaseManager, buildClaims())
       const { onResourceLink, onDeepLinking, onSubmissionReview } = applyLaunchHandlers(service)
       service.prepareHttpRoutes()
       const launchHandler = httpHandler.getHandler('/lti/launch', HttpMethod.Post)
 
       await launchHandler(
-        buildRequest({ body: { id_token: token, state, ltijs_recovered_state: state } }),
+        buildRequest({ body: { id_token: token, state, ltijs_recovered_state: recoveryToken } }),
         buildFakeHttpResponse(),
       )
 
@@ -596,7 +615,7 @@ describe('LaunchService.prepareHttpRoutes()', () => {
     it('runs state-token and id-token validation concurrently, not sequentially', async () => {
       const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
       const { launchService: service, oidcService, httpHandler } = buildServices(databaseManager)
-      const state = oidcService.buildStateToken(platform)
+      const { state, recoveryToken } = buildStateAndRecovery(oidcService, platform)
       const token = await signToken(databaseManager, buildClaims())
       applyLaunchHandlers(service)
       service.prepareHttpRoutes()
@@ -623,22 +642,25 @@ describe('LaunchService.prepareHttpRoutes()', () => {
         })
 
       await launchHandler(
-        buildRequest({ body: { id_token: token, state, ltijs_recovered_state: state } }),
+        buildRequest({ body: { id_token: token, state, ltijs_recovered_state: recoveryToken } }),
         buildFakeHttpResponse(),
       )
 
-      // idToken validation starts before state validation finishes -- proves they run concurrently
+      // idToken validation starts before state validation finishes: proves they run concurrently
       // rather than one strictly waiting for the other to finish first.
       expect(events.indexOf('idToken:start')).toBeLessThan(events.indexOf('state:end'))
     })
 
     it('throws PRIVATE_KEY_NOT_FOUND instead of signing a ltik with an empty key when the platform has none', async () => {
-      // The private key must exist at login time (OidcService.buildStateToken() requires it too), so
-      // the only way a launch reaches buildLtik() with no private key is a race: valid keys at login,
-      // then rotated/cleared before the launch callback completes.
+      // The private key must exist at login time (both buildStateToken() and buildRecoveryToken()
+      // require it too), so the only way a launch reaches buildLtik() with no private key is a race:
+      // valid keys at login, then rotated/cleared before the launch callback completes. (The recovery
+      // token is also verified against the platform's private key (HMAC is symmetric), so a cleared
+      // key surfaces this same error there first, before buildLtik() is ever reached; either way, the
+      // right error comes out.)
       const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
       const { launchService: service, oidcService, httpHandler } = buildServices(databaseManager)
-      const state = oidcService.buildStateToken(platform)
+      const { state, recoveryToken } = buildStateAndRecovery(oidcService, platform)
       const token = await signToken(databaseManager, buildClaims())
       applyLaunchHandlers(service)
       service.prepareHttpRoutes()
@@ -647,7 +669,7 @@ describe('LaunchService.prepareHttpRoutes()', () => {
 
       await expect(
         launchHandler(
-          buildRequest({ body: { id_token: token, state, ltijs_recovered_state: state } }),
+          buildRequest({ body: { id_token: token, state, ltijs_recovered_state: recoveryToken } }),
           buildFakeHttpResponse(),
         ),
       ).rejects.toThrow('PRIVATE_KEY_NOT_FOUND')
@@ -656,13 +678,16 @@ describe('LaunchService.prepareHttpRoutes()', () => {
     it('sends the default 200 "It works!" response for a resource-link launch when no handler is set', async () => {
       const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
       const { launchService: service, oidcService, httpHandler } = buildServices(databaseManager)
-      const state = oidcService.buildStateToken(platform)
+      const { state, recoveryToken } = buildStateAndRecovery(oidcService, platform)
       const token = await signToken(databaseManager, buildClaims())
       service.prepareHttpRoutes()
       const launchHandler = httpHandler.getHandler('/lti/launch', HttpMethod.Post)
       const response = buildFakeHttpResponse()
 
-      await launchHandler(buildRequest({ body: { id_token: token, state, ltijs_recovered_state: state } }), response)
+      await launchHandler(
+        buildRequest({ body: { id_token: token, state, ltijs_recovered_state: recoveryToken } }),
+        response,
+      )
 
       expect(response.statusCode).toBe(200)
       expect(response.htmlBody).toBe('It works!')
@@ -671,14 +696,14 @@ describe('LaunchService.prepareHttpRoutes()', () => {
     it('setOnResourceLinkHandler() called after prepareHttpRoutes() still takes effect on the next request', async () => {
       const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
       const { launchService: service, oidcService, httpHandler } = buildServices(databaseManager)
-      const state = oidcService.buildStateToken(platform)
+      const { state, recoveryToken } = buildStateAndRecovery(oidcService, platform)
       const token = await signToken(databaseManager, buildClaims())
       service.prepareHttpRoutes()
       const launchHandler = httpHandler.getHandler('/lti/launch', HttpMethod.Post)
       const { onResourceLink } = applyLaunchHandlers(service)
 
       await launchHandler(
-        buildRequest({ body: { id_token: token, state, ltijs_recovered_state: state } }),
+        buildRequest({ body: { id_token: token, state, ltijs_recovered_state: recoveryToken } }),
         buildFakeHttpResponse(),
       )
 
@@ -688,7 +713,7 @@ describe('LaunchService.prepareHttpRoutes()', () => {
     it('dispatches a deep-linking launch to onDeepLinking only', async () => {
       const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
       const { launchService: service, oidcService, httpHandler } = buildServices(databaseManager)
-      const state = oidcService.buildStateToken(platform)
+      const { state, recoveryToken } = buildStateAndRecovery(oidcService, platform)
       const token = await signToken(
         databaseManager,
         buildClaims({ [IdTokenClaim.MessageType]: LtiMessageType.DeepLinkingRequest }),
@@ -698,7 +723,7 @@ describe('LaunchService.prepareHttpRoutes()', () => {
       const launchHandler = httpHandler.getHandler('/lti/launch', HttpMethod.Post)
 
       await launchHandler(
-        buildRequest({ body: { id_token: token, state, ltijs_recovered_state: state } }),
+        buildRequest({ body: { id_token: token, state, ltijs_recovered_state: recoveryToken } }),
         buildFakeHttpResponse(),
       )
 
@@ -710,7 +735,7 @@ describe('LaunchService.prepareHttpRoutes()', () => {
     it('dispatches a submission-review launch to onSubmissionReview only', async () => {
       const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
       const { launchService: service, oidcService, httpHandler } = buildServices(databaseManager)
-      const state = oidcService.buildStateToken(platform)
+      const { state, recoveryToken } = buildStateAndRecovery(oidcService, platform)
       const token = await signToken(
         databaseManager,
         buildClaims({
@@ -724,7 +749,7 @@ describe('LaunchService.prepareHttpRoutes()', () => {
       const launchHandler = httpHandler.getHandler('/lti/launch', HttpMethod.Post)
 
       await launchHandler(
-        buildRequest({ body: { id_token: token, state, ltijs_recovered_state: state } }),
+        buildRequest({ body: { id_token: token, state, ltijs_recovered_state: recoveryToken } }),
         buildFakeHttpResponse(),
       )
 
@@ -736,14 +761,14 @@ describe('LaunchService.prepareHttpRoutes()', () => {
     it('restores the login-time query params onto target_link_uri and the handler request', async () => {
       const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
       const { launchService: service, oidcService, httpHandler } = buildServices(databaseManager)
-      const state = oidcService.buildStateToken(platform, { course: '1' })
+      const { state, recoveryToken } = buildStateAndRecovery(oidcService, platform, { course: '1' })
       const token = await signToken(databaseManager, buildClaims())
       const { onResourceLink } = applyLaunchHandlers(service)
       service.prepareHttpRoutes()
       const launchHandler = httpHandler.getHandler('/lti/launch', HttpMethod.Post)
 
       await launchHandler(
-        buildRequest({ body: { id_token: token, state, ltijs_recovered_state: state } }),
+        buildRequest({ body: { id_token: token, state, ltijs_recovered_state: recoveryToken } }),
         buildFakeHttpResponse(),
       )
 
@@ -755,12 +780,12 @@ describe('LaunchService.prepareHttpRoutes()', () => {
     it('leaves target_link_uri and the handler request untouched when the login had no query to restore', async () => {
       const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
       const { launchService: service, oidcService, httpHandler } = buildServices(databaseManager)
-      const state = oidcService.buildStateToken(platform)
+      const { state, recoveryToken } = buildStateAndRecovery(oidcService, platform)
       const token = await signToken(databaseManager, buildClaims())
       const { onResourceLink } = applyLaunchHandlers(service)
       service.prepareHttpRoutes()
       const launchHandler = httpHandler.getHandler('/lti/launch', HttpMethod.Post)
-      const request = buildRequest({ body: { id_token: token, state, ltijs_recovered_state: state } })
+      const request = buildRequest({ body: { id_token: token, state, ltijs_recovered_state: recoveryToken } })
 
       await launchHandler(request, buildFakeHttpResponse())
 
@@ -772,10 +797,10 @@ describe('LaunchService.prepareHttpRoutes()', () => {
     it('persists the id token, retrievable via its opaque ID', async () => {
       const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
       const { launchService: service, oidcService, httpHandler } = buildServices(databaseManager)
-      const state = oidcService.buildStateToken(platform)
+      const { state, recoveryToken } = buildStateAndRecovery(oidcService, platform)
       const token = await signToken(databaseManager, buildClaims())
 
-      const context = await runLaunch(service, httpHandler, token, state)
+      const context = await runLaunch(service, httpHandler, token, state, recoveryToken)
 
       await expect(databaseManager.getIdToken(context.rawIdToken.id)).resolves.toMatchObject({
         iss: 'http://localhost/moodle',
@@ -789,13 +814,13 @@ describe('LaunchService.prepareHttpRoutes()', () => {
       // field from each shape.
       const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
       const { launchService: service, oidcService, httpHandler } = buildServices(databaseManager)
-      const state = oidcService.buildStateToken(platform)
+      const { state, recoveryToken } = buildStateAndRecovery(oidcService, platform)
       const token = await signToken(
         databaseManager,
         buildClaims({ [IdTokenClaim.Context]: { id: 'context-1' }, [IdTokenClaim.ResourceLink]: { id: 'resource-1' } }),
       )
 
-      const context = await runLaunch(service, httpHandler, token, state)
+      const context = await runLaunch(service, httpHandler, token, state, recoveryToken)
 
       expect(context.idToken.launch.context).toMatchObject({ id: 'context-1' })
       expect(context.legacyIdToken.platformContext?.contextId).toBe('context-1')
@@ -804,12 +829,12 @@ describe('LaunchService.prepareHttpRoutes()', () => {
     it('resolves the platform from a multi-value aud id_token when the first candidate is unregistered', async () => {
       const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
       const { launchService: service, oidcService, httpHandler } = buildServices(databaseManager)
-      const state = oidcService.buildStateToken(platform)
+      const { state, recoveryToken } = buildStateAndRecovery(oidcService, platform)
       const token = await signToken(databaseManager, buildClaims({ azp: 'ClientId1' }), {
         audience: ['UnknownClient', 'ClientId1'],
       })
 
-      const context = await runLaunch(service, httpHandler, token, state)
+      const context = await runLaunch(service, httpHandler, token, state, recoveryToken)
 
       expect(context.platform.id).toBe(platform.id)
     })
@@ -817,13 +842,13 @@ describe('LaunchService.prepareHttpRoutes()', () => {
     it('resolves a multi-value aud id_token with a single batched platform query, not one per candidate', async () => {
       const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
       const { launchService: service, oidcService, httpHandler } = buildServices(databaseManager)
-      const state = oidcService.buildStateToken(platform)
+      const { state, recoveryToken } = buildStateAndRecovery(oidcService, platform)
       const token = await signToken(databaseManager, buildClaims({ azp: 'ClientId1' }), {
         audience: ['UnknownClientA', 'UnknownClientB', 'ClientId1'],
       })
       const getPlatformsSpy = jest.spyOn(databaseManager, 'getPlatforms')
 
-      await runLaunch(service, httpHandler, token, state)
+      await runLaunch(service, httpHandler, token, state, recoveryToken)
 
       expect(getPlatformsSpy).toHaveBeenCalledTimes(1)
     })
@@ -844,25 +869,29 @@ describe('LaunchService.prepareHttpRoutes()', () => {
         keys: activePlatform.keys,
       })
       const { launchService: service, oidcService, httpHandler } = buildServices(databaseManager)
-      const state = oidcService.buildStateToken(activePlatform)
+      const { state, recoveryToken } = buildStateAndRecovery(oidcService, activePlatform)
       const token = await signToken(databaseManager, buildClaims({ azp: 'InactiveClient' }), {
         audience: ['InactiveClient', 'ActiveClient'],
       })
 
-      await expect(runLaunch(service, httpHandler, token, state)).rejects.toThrow('PLATFORM_NOT_ACTIVATED')
+      await expect(runLaunch(service, httpHandler, token, state, recoveryToken)).rejects.toThrow(
+        'PLATFORM_NOT_ACTIVATED',
+      )
     })
 
     it('propagates platform-resolution errors from an id_token pointing at an unregistered platform', async () => {
       // The state token itself is valid (built against a real, registered
-      // platform) -- platform resolution now happens from the id_token
+      // platform); platform resolution now happens from the id_token
       // before the state is even checked, so an id_token whose `iss` no
       // platform matches fails with UNREGISTERED_PLATFORM regardless.
       const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
       const { launchService: service, oidcService, httpHandler } = buildServices(databaseManager)
-      const state = oidcService.buildStateToken(platform)
+      const { state, recoveryToken } = buildStateAndRecovery(oidcService, platform)
       const token = await signToken(databaseManager, buildClaims(), { issuer: 'http://localhost/unregistered' })
 
-      await expect(runLaunch(service, httpHandler, token, state)).rejects.toThrow('UNREGISTERED_PLATFORM')
+      await expect(runLaunch(service, httpHandler, token, state, recoveryToken)).rejects.toThrow(
+        'UNREGISTERED_PLATFORM',
+      )
     })
 
     it('renders the localStorage recovery page when no recovered state was posted back', async () => {
@@ -903,17 +932,65 @@ describe('LaunchService.prepareHttpRoutes()', () => {
       })
     })
 
-    it('completes the launch once the localStorage-recovered state is echoed back and matches', async () => {
+    it('completes the launch once the recovered token is verified and its stateId matches', async () => {
       const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
       const { launchService: service, oidcService, httpHandler } = buildServices(databaseManager)
-      const state = oidcService.buildStateToken(platform)
+      const { state, recoveryToken } = buildStateAndRecovery(oidcService, platform)
       const token = await signToken(databaseManager, buildClaims())
 
-      const context = await runLaunch(service, httpHandler, token, state, {
-        body: { id_token: token, state, ltijs_recovered_state: state },
-      })
+      const context = await runLaunch(service, httpHandler, token, state, recoveryToken)
 
       expect(context.platform.id).toBe(platform.id)
+    })
+
+    it('completes the launch even with no Sec-Fetch-Site header at all (fails open on missing signal)', async () => {
+      const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
+      const { launchService: service, oidcService, httpHandler } = buildServices(databaseManager)
+      const { state, recoveryToken } = buildStateAndRecovery(oidcService, platform)
+      const token = await signToken(databaseManager, buildClaims())
+
+      const context = await runLaunch(service, httpHandler, token, state, recoveryToken, { headers: {} })
+
+      expect(context.platform.id).toBe(platform.id)
+    })
+
+    it('throws INVALID_STATE for a cross-site Sec-Fetch-Site, even with an otherwise-valid recovered token (CSRF)', async () => {
+      const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
+      const { launchService: service, oidcService, httpHandler } = buildServices(databaseManager)
+      const { state, recoveryToken } = buildStateAndRecovery(oidcService, platform)
+      const token = await signToken(databaseManager, buildClaims())
+
+      await expect(
+        runLaunch(service, httpHandler, token, state, recoveryToken, {
+          headers: { 'sec-fetch-site': 'cross-site' },
+        }),
+      ).rejects.toThrow('INVALID_STATE')
+    })
+
+    // Regression test for the actual CSRF bypass this design replaced: `ltijs_recovered_state` used to
+    // be compared for plain string equality against `state`, so an attacker who captured any one valid
+    // (id_token, state) pair (trivially available to any legitimate platform user launching once)
+    // could resubmit `state` as its own recovered value and pass. The recovery token is now a
+    // separately-signed value never sent to the platform, so reusing `state` in its place must fail.
+    it('throws INVALID_STATE when the raw state value is resubmitted as the recovered state', async () => {
+      const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
+      const { launchService: service, oidcService, httpHandler } = buildServices(databaseManager)
+      const { state } = buildStateAndRecovery(oidcService, platform)
+      const token = await signToken(databaseManager, buildClaims())
+
+      await expect(runLaunch(service, httpHandler, token, state, state)).rejects.toThrow('INVALID_STATE')
+    })
+
+    it('throws INVALID_STATE when the recovery token was signed for a different stateId', async () => {
+      const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
+      const { launchService: service, oidcService, httpHandler } = buildServices(databaseManager)
+      const { state } = buildStateAndRecovery(oidcService, platform)
+      const { recoveryToken: mismatchedRecoveryToken } = buildStateAndRecovery(oidcService, platform)
+      const token = await signToken(databaseManager, buildClaims())
+
+      await expect(runLaunch(service, httpHandler, token, state, mismatchedRecoveryToken)).rejects.toThrow(
+        'INVALID_STATE',
+      )
     })
 
     it('the recovery page actually posts the recovered state under the field name the server reads back', async () => {
@@ -926,7 +1003,7 @@ describe('LaunchService.prepareHttpRoutes()', () => {
       const { launchService: service, oidcService, httpHandler } = buildServices(databaseManager)
       service.prepareHttpRoutes()
       const launchHandler = httpHandler.getHandler('/lti/launch', HttpMethod.Post)
-      const state = oidcService.buildStateToken(platform)
+      const { state, recoveryToken } = buildStateAndRecovery(oidcService, platform)
       const token = await signToken(databaseManager, buildClaims())
 
       const recoveryResponse = buildFakeHttpResponse()
@@ -938,7 +1015,7 @@ describe('LaunchService.prepareHttpRoutes()', () => {
 
       const { onResourceLink } = applyLaunchHandlers(service)
       await launchHandler(
-        buildRequest({ body: { id_token: token, state, [recoveredStateFieldName]: state } }),
+        buildRequest({ body: { id_token: token, state, [recoveredStateFieldName]: recoveryToken } }),
         buildFakeHttpResponse(),
       )
 
@@ -950,7 +1027,9 @@ describe('LaunchService.prepareHttpRoutes()', () => {
       const { launchService: service, httpHandler } = buildServices(databaseManager)
       const token = await signToken(databaseManager, buildClaims())
 
-      await expect(runLaunch(service, httpHandler, token, 'not-a-real-state')).rejects.toThrow('INVALID_STATE')
+      await expect(
+        runLaunch(service, httpHandler, token, 'not-a-real-state', 'not-a-real-recovery-token'),
+      ).rejects.toThrow('INVALID_STATE')
     })
 
     it('surfaces a ValidationError when id_token/state are missing from the callback body', async () => {
@@ -964,14 +1043,14 @@ describe('LaunchService.prepareHttpRoutes()', () => {
       )
     })
 
-    it('throws INVALID_STATE when the localStorage-recovered state does not match', async () => {
+    it('throws INVALID_STATE when the recovered value is not a validly-signed token at all', async () => {
       const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
       const { launchService: service, oidcService, httpHandler } = buildServices(databaseManager)
-      const state = oidcService.buildStateToken(platform)
+      const { state, recoveryToken } = buildStateAndRecovery(oidcService, platform)
       const token = await signToken(databaseManager, buildClaims())
 
       await expect(
-        runLaunch(service, httpHandler, token, state, {
+        runLaunch(service, httpHandler, token, state, recoveryToken, {
           body: { id_token: token, state, ltijs_recovered_state: 'a-different-state' },
         }),
       ).rejects.toThrow('INVALID_STATE')
@@ -1005,14 +1084,14 @@ describe('LaunchService.registerLaunchRoute()', () => {
   it('runs the full launch pipeline on the registered path, dispatching through the same shared handlers', async () => {
     const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
     const { launchService: service, oidcService, httpHandler } = buildServices(databaseManager)
-    const state = oidcService.buildStateToken(platform, { course: '1' })
+    const { state, recoveryToken } = buildStateAndRecovery(oidcService, platform, { course: '1' })
     const token = await signToken(databaseManager, buildClaims())
     const { onResourceLink, onDeepLinking, onSubmissionReview } = applyLaunchHandlers(service)
     service.registerLaunchRoute('/assignment/42')
     const launchHandler = httpHandler.getHandler('/assignment/42', HttpMethod.Post)
 
     await launchHandler(
-      buildRequest({ body: { id_token: token, state, ltijs_recovered_state: state } }),
+      buildRequest({ body: { id_token: token, state, ltijs_recovered_state: recoveryToken } }),
       buildFakeHttpResponse(),
     )
 

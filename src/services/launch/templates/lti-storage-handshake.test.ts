@@ -41,22 +41,22 @@ const extractScript = (html: string): string => {
 }
 
 // Both templates render a `<script type="application/json">` data island before their executable
-// `<script>` -- the real script reads it back via `document.getElementById(...).textContent`, so it has
+// `<script>`. The real script reads it back via `document.getElementById(...).textContent`, so it has
 // to actually be in the document (mirroring how a real browser parses the file top to bottom) before the
 // executable script runs. The launch template's tests insert this (and its `<form>` markup) themselves
 // via `renderIntoDocument` before mocking the form's `.submit`, so only the login template's helpers need
-// to do it here -- doing it again in `runScript` would recreate the form and wipe out that mock.
+// to do it here; doing it again in `runScript` would recreate the form and wipe out that mock.
 const insertDataIsland = (html: string): void => {
   const [markup] = html.split('<script>')
   document.body.innerHTML = markup
 }
 
-// Executes the real shipped template's script verbatim -- not attacker-controlled input.
+// Executes the real shipped template's script verbatim, not attacker-controlled input.
 const runScript = (html: string): void => {
   window.eval(extractScript(html))
 }
 
-// login-redirect.spy ends with a bare `storeState();` that self-invokes on eval -- stripped here so the
+// login-redirect.spy ends with a bare `storeState();` that self-invokes on eval, stripped here so the
 // test controls exactly when it runs, after installing its own spies/fakes, instead of it firing
 // immediately (and for real, with the real redirectToLMS) as a side effect of just defining the functions.
 const runLoginScriptWithoutAutorun = (html: string): void => {
@@ -66,20 +66,25 @@ const runLoginScriptWithoutAutorun = (html: string): void => {
 
 interface TemplateData {
   key?: string
-  value?: string
+  state?: string
+  recoveryToken?: string
   targetUrl?: string
   id_token?: string
-  state?: string
   storageTarget?: string
   platformLoginOrigin?: string
 }
 
 describe('login-redirect.spy', () => {
+  // `state` is the shared key-seed (both login and launch independently compute the same localStorage
+  // key from it); `recoveryToken` is the separate, never-sent-to-the-platform value actually stored --
+  // real Provider code has state !== recoveryToken, kept distinct here too so a regression that
+  // accidentally stores `state` itself again would fail these assertions.
   const render = (dataOverrides: TemplateData = {}): string =>
     renderTemplate(LOGIN_TEMPLATE, {
       dataJson: JSON.stringify({
         key: 'ltijs_state_state-1',
-        value: 'state-1',
+        state: 'state-1',
+        recoveryToken: 'recovery-token-1',
         targetUrl: 'https://platform.example.com/auth',
         ...dataOverrides,
       }),
@@ -101,7 +106,7 @@ describe('login-redirect.spy', () => {
 
     expect(redirectToLMS).toHaveBeenCalledTimes(1)
     expect(received).toHaveLength(0)
-    expect(localStorage.getItem('ltijs_state_state-1')).toBe('state-1')
+    expect(localStorage.getItem('ltijs_state_state-1')).toBe('recovery-token-1')
   })
 
   it('falls back to postMessage put_data when localStorage fails, and redirects once it succeeds', async () => {
@@ -125,7 +130,11 @@ describe('login-redirect.spy', () => {
     await new Promise(resolve => setTimeout(resolve, 10))
 
     expect(received).toHaveLength(1)
-    expect(received[0].payload).toMatchObject({ subject: 'lti.put_data', key: 'state_state-1', value: 'state-1' })
+    expect(received[0].payload).toMatchObject({
+      subject: 'lti.put_data',
+      key: 'state_state-1',
+      value: 'recovery-token-1',
+    })
     expect(received[0].targetOrigin).toBe('https://platform.example.com')
     expect(redirectToLMS).toHaveBeenCalledTimes(1)
   })

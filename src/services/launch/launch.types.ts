@@ -12,6 +12,8 @@ export type LaunchCallbackParams = z.infer<typeof LaunchCallbackPayloadSchema>
 export interface LoginRequestResult {
   redirectUrl: string
   state: string
+  /** Never sent to the platform; only ever delivered to the browser for client-side storage. */
+  recoveryToken: string
   /** Only set when the platform declared postMessage storage support (`lti_storage_target`) at login. */
   storageTarget?: string
   platformLoginOrigin?: string
@@ -38,7 +40,7 @@ export interface LaunchRoutes {
   launchRoute: string
 }
 
-/** A launch handler -- given the resolved `LaunchContext` plus the raw request/response, for reading extra headers or sending a custom response. */
+/** A launch handler, given the resolved `LaunchContext` plus the raw request/response, for reading extra headers or sending a custom response. */
 export type OnLaunchHandler = (
   context: LaunchContext,
   request: HttpRequestParameters,
@@ -48,7 +50,7 @@ export type OnLaunchHandler = (
 // Raw route-handler overrides, matching legacy's `onUnregisteredPlatform`/
 // `onInactivePlatform` exactly: given `(request, response)`, expected to
 // send the response itself. The login route always returns immediately
-// after invoking one -- there is no mechanism to resolve a `Platform` and
+// after invoking one; there is no mechanism to resolve a `Platform` and
 // have the OIDC flow continue automatically, on either side of the port.
 export type UnregisteredPlatformHandler = RouteHandler
 export type InactivePlatformHandler = RouteHandler

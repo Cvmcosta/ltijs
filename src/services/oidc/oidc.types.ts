@@ -7,6 +7,8 @@ export interface AuthenticationRequestParams {
 }
 
 export interface State {
+  /** Ties this state token to the separate, never-sent-to-the-platform recovery token stored client-side. */
+  stateId: string
   query?: Record<string, string>
   /** The platform's declared postMessage storage target frame name (`lti_storage_target`), if it sent one at login. */
   storageTarget?: string
