@@ -2,7 +2,7 @@ import type { Server } from 'node:http'
 import { createServer as createHttpsServer } from 'node:https'
 import type { Server as HttpsServer } from 'node:https'
 import express from 'express'
-import type { Express, Request, Response } from 'express'
+import type { Express, NextFunction, Request, Response } from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
 import { LtijsError } from '#shared/errors'
@@ -80,6 +80,15 @@ export class ExpressHttpHandler implements HttpHandler {
     }
     this.app.use(express.json())
     this.app.use(express.urlencoded({ extended: false }))
+
+    // Catches errors thrown by the middleware above (a malformed JSON body, say) before any route ever
+    // runs. Route handlers already get this same mapping via buildAdapter()'s own try/catch, so this
+    // only needs to sit after the middleware registered here, regardless of what registerRoute() adds
+    // later: Express only propagates an error forward through the stack from where it was thrown, and a
+    // route handler's own errors never reach `next()` at all.
+    this.app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+      this.handleRouteError(err, new ExpressHttpResponse(res))
+    })
   }
 
   private buildAdapter(handler: RouteHandler): (req: Request, res: Response) => Promise<void> {
@@ -103,7 +112,7 @@ export class ExpressHttpHandler implements HttpHandler {
     if (error instanceof HttpError) {
       this.logger.error(this.LOG_COMPONENT, error.message)
       // The platform rejected the outbound call, so its own status best describes what went wrong (e.g. a
-      // 400 for a bad score submission) -- 502 is only a fallback for when the call failed before a status
+      // 400 for a bad score submission). 502 is only a fallback for when the call failed before a status
       // was ever received (e.g. a network error). `external: true` tells the caller this status came from
       // the platform, not from this tool validating the caller's own request.
       response.status(error.status ?? 502).json({
@@ -116,7 +125,25 @@ export class ExpressHttpHandler implements HttpHandler {
     }
     const message = error instanceof Error ? error.message : String(error)
     this.logger.error(this.LOG_COMPONENT, message)
+
+    // A handful of libraries (body-parser among them, for a malformed request body) throw a plain Error
+    // carrying its own `.status`/`.statusCode`, deliberately meant to be shown to the caller. Trusting
+    // only the 4xx range keeps a genuine 5xx-ish or absent status falling through to the generic case
+    // below, rather than exposing an arbitrary internal error's shape to the client.
+    const clientErrorStatus = this.resolveClientErrorStatus(error)
+    if (clientErrorStatus !== undefined && error instanceof Error) {
+      response.status(clientErrorStatus).json({ error: error.name, message })
+      return
+    }
     response.status(500).json({ error: this.INTERNAL_SERVER_ERROR })
+  }
+
+  private resolveClientErrorStatus(error: unknown): number | undefined {
+    if (typeof error !== 'object' || error === null) return undefined
+    const { status, statusCode } = error as { status?: unknown; statusCode?: unknown }
+    const candidate = typeof status === 'number' ? status : statusCode
+    if (typeof candidate !== 'number' || candidate < 400 || candidate >= 500) return undefined
+    return candidate
   }
 
   private buildRequestParameters(req: Request): HttpRequestParameters {

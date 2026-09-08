@@ -146,6 +146,55 @@ describe('ExpressHttpHandler', () => {
     expect(logger.error).toHaveBeenCalledWith('expressHttpHandler', 'unexpected')
   })
 
+  it('maps an unknown error carrying its own 4xx status (e.g. body-parser style) to that status', async () => {
+    const logger = buildLogger()
+    const handler = buildHandler({}, logger)
+    handler.registerRoute('/fail', [HttpMethod.Get], async () => {
+      const error = new Error('payload too large') as Error & { status: number }
+      error.status = 413
+      throw error
+    })
+
+    const response = await request(handler.app).get('/fail')
+
+    expect(response.status).toBe(413)
+    expect(response.body).toEqual({ error: 'Error', message: 'payload too large' })
+  })
+
+  it('falls through to the generic 500 response for an unknown error carrying a 5xx status', async () => {
+    const handler = buildHandler()
+    handler.registerRoute('/fail', [HttpMethod.Get], async () => {
+      const error = new Error('upstream unavailable') as Error & { status: number }
+      error.status = 503
+      throw error
+    })
+
+    const response = await request(handler.app).get('/fail')
+
+    expect(response.status).toBe(500)
+    expect(response.body).toEqual({ error: 'INTERNAL_SERVER_ERROR' })
+  })
+
+  // Regression test for a real gap: a malformed request body throws inside express.json() itself, before
+  // any route handler (and so before buildAdapter()'s own try/catch) ever runs. Only a global Express
+  // error-handling middleware catches this.
+  it('maps a malformed JSON request body to a 400, not Express default HTML error page', async () => {
+    const logger = buildLogger()
+    const handler = buildHandler({}, logger)
+    handler.registerRoute('/echo', [HttpMethod.Post], async (_request, response) => {
+      response.json({ ok: true })
+    })
+
+    const response = await request(handler.app)
+      .post('/echo')
+      .set('Content-Type', 'application/json')
+      .send('{ this is not valid json')
+
+    expect(response.status).toBe(400)
+    expect(response.body).toMatchObject({ error: 'SyntaxError' })
+    expect(logger.error).toHaveBeenCalled()
+  })
+
   it('listen() resolves once the server is listening, and close() tears it down', async () => {
     const handler = buildHandler()
 
