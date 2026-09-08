@@ -86,7 +86,7 @@ describe('ExpressHttpHandler', () => {
     expect(logger.error).toHaveBeenCalledWith('expressHttpHandler', 'SOMETHING_WENT_WRONG')
   })
 
-  it('maps a thrown HttpError (a failed outbound call to the platform) to a 502 carrying the platform detail', async () => {
+  it('maps a thrown HttpError (a failed outbound call to the platform) to the platform’s own status, marked external', async () => {
     const logger = buildLogger()
     const handler = buildHandler({}, logger)
     handler.registerRoute('/fail', [HttpMethod.Get], async () => {
@@ -101,17 +101,35 @@ describe('ExpressHttpHandler', () => {
 
     const response = await request(handler.app).get('/fail')
 
-    expect(response.status).toBe(502)
+    expect(response.status).toBe(400)
     expect(response.body).toEqual({
       error: 'HttpError',
       message: 'HTTP request failed with status 400: Incorrect score received',
-      platformStatus: 400,
+      external: true,
       platformResponse: { error: 'invalid_score' },
     })
     expect(logger.error).toHaveBeenCalledWith(
       'expressHttpHandler',
       'HTTP request failed with status 400: Incorrect score received',
     )
+  })
+
+  it('maps a thrown HttpError with no status (e.g. a network failure) to a 502, marked external', async () => {
+    const logger = buildLogger()
+    const handler = buildHandler({}, logger)
+    handler.registerRoute('/fail', [HttpMethod.Get], async () => {
+      throw new HttpError({ message: 'Failed to reach platform' })
+    })
+
+    const response = await request(handler.app).get('/fail')
+
+    expect(response.status).toBe(502)
+    expect(response.body).toEqual({
+      error: 'HttpError',
+      message: 'Failed to reach platform',
+      external: true,
+      platformResponse: undefined,
+    })
   })
 
   it('maps an unknown thrown error to a generic 500 response', async () => {

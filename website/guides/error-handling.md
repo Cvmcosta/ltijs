@@ -49,9 +49,11 @@ expired access token exchange, a JWKS endpoint that times out. Beyond the inheri
 - `.response`: the platform's parsed response body (JSON if it parsed as JSON, raw text otherwise)
 
 If it reaches an `HttpHandler` route unhandled, whether one of ltijs's own or a custom route you
-registered yourself, it's mapped to a `502` response carrying that same detail:
-`{ error: 'HttpError', message, platformStatus, platformResponse }`, rather than the opaque
-`{ error: 'INTERNAL_SERVER_ERROR' }` an unrecognized error gets.
+registered yourself, it's mapped to a response using that same status code (`502` only when the platform
+call failed before any status was received, e.g. a network error) carrying:
+`{ error: 'HttpError', message, external: true, platformResponse }`, rather than the opaque
+`{ error: 'INTERNAL_SERVER_ERROR' }` an unrecognized error gets. `external: true` tells the caller the
+status came from the platform's own response, not from ltijs validating the request to this tool.
 
 ## Common errors you'll actually handle
 

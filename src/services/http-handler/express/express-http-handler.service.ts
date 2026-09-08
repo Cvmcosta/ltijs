@@ -102,10 +102,14 @@ export class ExpressHttpHandler implements HttpHandler {
     }
     if (error instanceof HttpError) {
       this.logger.error(this.LOG_COMPONENT, error.message)
-      response.status(502).json({
+      // The platform rejected the outbound call, so its own status best describes what went wrong (e.g. a
+      // 400 for a bad score submission) -- 502 is only a fallback for when the call failed before a status
+      // was ever received (e.g. a network error). `external: true` tells the caller this status came from
+      // the platform, not from this tool validating the caller's own request.
+      response.status(error.status ?? 502).json({
         error: error.name,
         message: error.message,
-        platformStatus: error.status,
+        external: true,
         platformResponse: error.response,
       })
       return
