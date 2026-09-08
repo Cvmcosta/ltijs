@@ -279,7 +279,7 @@ describe('DynamicRegistration.performRegistration()', () => {
   })
 })
 
-const buildRequest = (query: Record<string, string> = {}): HttpRequestParameters => ({
+const buildRequest = (query: Record<string, string | string[]> = {}): HttpRequestParameters => ({
   method: 'GET',
   path: '/lti/register',
   query,
@@ -324,6 +324,31 @@ describe('DynamicRegistration.prepareHttpRoutes()', () => {
     )
 
     expect(response.htmlBody).toBe(service.FINALIZE_REGISTRATION_HTML_SNIPPET)
+  })
+
+  it('throws a ValidationError when openid_configuration is missing from the query', async () => {
+    const httpHandler = buildMockHttpHandler()
+    const service = buildService(buildMockDatabaseManager(), registrationOptions, httpHandler)
+    service.prepareHttpRoutes()
+    const handler = httpHandler.getHandler('/lti/register', HttpMethod.Get)
+
+    await expectValidationErrorOnField(handler(buildRequest(), buildFakeHttpResponse()), 'openid_configuration')
+  })
+
+  // Regression test for a real gap: Express produces an array, not a string, for a repeated query key
+  // (?openid_configuration=a&openid_configuration=b). Reaching register() with an array used to crash
+  // with a confusing "Failed to parse URL" 500 instead of a clean validation error, since the only check
+  // in register() itself was `=== undefined`, which an array doesn't satisfy either way.
+  it('throws a ValidationError when openid_configuration is an array (a repeated query key)', async () => {
+    const httpHandler = buildMockHttpHandler()
+    const service = buildService(buildMockDatabaseManager(), registrationOptions, httpHandler)
+    service.prepareHttpRoutes()
+    const handler = httpHandler.getHandler('/lti/register', HttpMethod.Get)
+
+    await expectValidationErrorOnField(
+      handler(buildRequest({ openid_configuration: ['a', 'b'] }), buildFakeHttpResponse()),
+      'openid_configuration',
+    )
   })
 
   it('registers the route on a custom path when one is given', () => {

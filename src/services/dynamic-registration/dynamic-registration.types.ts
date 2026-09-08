@@ -1,8 +1,11 @@
 import type { z } from 'zod'
-import type { RegistrationResponseSchema } from '#services/dynamic-registration/dynamic-registration.schemas'
+import type {
+  DynamicRegistrationQuerySchema,
+  RegistrationResponseSchema,
+} from '#services/dynamic-registration/dynamic-registration.schemas'
 
 // Hand-written rather than `z.infer`'d, purely so `claims_supported` can be
-// typed `readonly string[]` -- matching what `deepFreeze()` actually produces
+// typed `readonly string[]`, matching what `deepFreeze()` actually produces
 // in `dynamic-registration.serializer.ts`. Deriving it via `z.infer` +
 // `Omit` instead silently degrades every other property to `unknown`, since
 // `OpenIDConfigurationSchema`'s `.loose()` catchall makes `keyof` resolve to
@@ -19,6 +22,7 @@ export interface OpenIDConfiguration {
 }
 
 export type RegistrationResponse = z.infer<typeof RegistrationResponseSchema>
+export type DynamicRegistrationQuery = z.infer<typeof DynamicRegistrationQuerySchema>
 
 export interface DynamicRegistrationMessageOptions {
   targetLinkUri?: string

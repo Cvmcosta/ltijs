@@ -17,6 +17,7 @@ import { randomUuid } from '#utils/random/random'
 import { validate } from '#utils/validation/validation'
 import { buildBearerAuthorization } from '#utils/request/authorization-header'
 import {
+  DynamicRegistrationQuerySchema,
   OpenIDConfigurationSchema,
   RegistrationResponseSchema,
 } from '#services/dynamic-registration/dynamic-registration.schemas'
@@ -25,6 +26,7 @@ import { buildOpenIDConfiguration } from '#services/dynamic-registration/dynamic
 import type {
   DynamicRegistrationMessageOptions,
   DynamicRegistrationOptions,
+  DynamicRegistrationQuery,
   DynamicRegistrationRoutes,
   OpenIDConfiguration,
   RegistrationOverrides,
@@ -86,9 +88,10 @@ export class DynamicRegistration {
 
   private buildDefaultRouteHandler(): RouteHandler {
     return async (request, response) => {
+      const query = validate<DynamicRegistrationQuery>(DynamicRegistrationQuerySchema, request.query)
       const html = await this.register(
-        request.query[this.OPENID_CONFIGURATION_QUERY_PARAM],
-        request.query[this.REGISTRATION_TOKEN_QUERY_PARAM],
+        query[this.OPENID_CONFIGURATION_QUERY_PARAM],
+        query[this.REGISTRATION_TOKEN_QUERY_PARAM],
       )
       response.html(html)
     }

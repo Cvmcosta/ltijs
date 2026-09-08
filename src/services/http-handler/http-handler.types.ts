@@ -14,7 +14,7 @@ export interface SslOptions {
 export interface CorsOptions {
   /**
    * A single string always sets that exact value on every response, regardless of the request's actual
-   * origin (safe -- a browser on a different origin still rejects the mismatched response itself) but not
+   * origin (safe, since a browser on a different origin still rejects the mismatched response itself), but not
    * a real allowlist. To allow a specific set of origins and omit the header for everyone else, pass an
    * array, even with a single entry.
    */
@@ -25,9 +25,9 @@ export interface CorsOptions {
 export interface HttpRequestParameters {
   method: string
   path: string
-  query: Record<string, string>
+  query: Record<string, string | string[]>
   body: Record<string, unknown>
-  headers: Record<string, string>
+  headers: Record<string, string | string[]>
 }
 
 export interface HttpResponse {

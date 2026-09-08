@@ -150,9 +150,9 @@ export class ExpressHttpHandler implements HttpHandler {
     return {
       method: req.method,
       path: req.path,
-      query: req.query as Record<string, string>,
+      query: req.query as Record<string, string | string[]>,
       body: (req.body as Record<string, unknown> | undefined) ?? {},
-      headers: req.headers as Record<string, string>,
+      headers: req.headers as Record<string, string | string[]>,
     }
   }
 

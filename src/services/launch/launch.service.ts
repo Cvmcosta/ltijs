@@ -250,7 +250,7 @@ export class LaunchService {
     await handler(context, request, response)
   }
 
-  private updateQueryWithState(request: HttpRequestParameters, state: State): Record<string, string> {
+  private updateQueryWithState(request: HttpRequestParameters, state: State): Record<string, string | string[]> {
     if (state.query === undefined) return request.query
     return { ...request.query, ...state.query }
   }

@@ -17,3 +17,8 @@ export const RegistrationResponseSchema = z
     client_id: z.string(),
   })
   .loose()
+
+export const DynamicRegistrationQuerySchema = z.object({
+  openid_configuration: z.string().min(1),
+  registration_token: z.string().min(1).optional(),
+})
