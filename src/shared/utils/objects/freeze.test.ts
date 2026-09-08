@@ -49,4 +49,12 @@ describe('deepFreeze()', () => {
 
     expect(() => deepFreeze(original)).not.toThrow()
   })
+
+  it('handles a circular reference without stack-overflowing', () => {
+    const node: { self?: unknown } = {}
+    node.self = node
+
+    expect(() => deepFreeze(node)).not.toThrow()
+    expect(Object.isFrozen(node)).toBe(true)
+  })
 })

@@ -161,6 +161,34 @@ describe('NamesAndRoles.getMembers()', () => {
     expect(result).toMatchObject(membersResult)
   })
 
+  // Regression test: `pages: 0` used to be passed straight through to the fetch loop, which broke
+  // before ever making a request (its "have I fetched enough pages yet" check treats page 1 as already
+  // past a limit of 0), throwing MembersNotFoundError with nothing fetched. Matches legacy's own
+  // fallback for this falsy-but-not-`false` case: treated the same as not specifying `pages` at all.
+  it('treats pages: 0 the same as not specifying pages, fetching a single page', async () => {
+    mockFetchRoutes({
+      [TOKEN_URL]: { body: tokenResponse },
+      'http://localhost/moodle/members': { body: membersResult },
+    })
+    const service = buildService()
+
+    const result = await service.getMembers({ pages: 0 })
+
+    expect(result).toMatchObject(membersResult)
+  })
+
+  it('treats a negative pages value the same as not specifying pages, fetching a single page', async () => {
+    mockFetchRoutes({
+      [TOKEN_URL]: { body: tokenResponse },
+      'http://localhost/moodle/members': { body: membersResult },
+    })
+    const service = buildService()
+
+    const result = await service.getMembers({ pages: -1 })
+
+    expect(result).toMatchObject(membersResult)
+  })
+
   it('follows "next" link-header pagination and merges members, up to the page limit', async () => {
     mockFetchRoutes({
       [TOKEN_URL]: { body: tokenResponse },

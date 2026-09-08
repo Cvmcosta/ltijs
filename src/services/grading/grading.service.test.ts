@@ -84,7 +84,7 @@ const baseIdToken: IdTokenRecord = {
 }
 
 // `idToken` is a getter, computed lazily, rather than eagerly at construction like the real
-// `LaunchContext` does -- so that tests asserting a raw claim is read a specific number of times
+// `LaunchContext` does, so that tests asserting a raw claim is read a specific number of times
 // aren't thrown off by an extra read from building this fake itself.
 const buildLaunchContext = (platform: Platform, rawIdToken: IdTokenRecord): LaunchContext =>
   ({
@@ -251,7 +251,7 @@ describe('Grading.getLineItems()', () => {
     await expect(grading.getLineItems({ resourceLinkId: true })).rejects.toThrow('MISSING_OR_INVALID_RESOURCE_LINK_ID')
   })
 
-  it('throws the shared MissingOrInvalidResourceLinkIdError -- the same class NamesAndRoles throws, not a duplicate', async () => {
+  it('throws the shared MissingOrInvalidResourceLinkIdError, the same class NamesAndRoles throws, not a duplicate', async () => {
     const grading = buildService(basePlatform, { ...baseIdToken, [IdTokenClaim.ResourceLink]: undefined })
     await expect(grading.getLineItems({ resourceLinkId: true })).rejects.toBeInstanceOf(
       MissingOrInvalidResourceLinkIdError,
@@ -394,6 +394,27 @@ describe('Grading.submitScore()', () => {
 
     expect(result.scoreMaximum).toBe(100)
     expect(fetchSpy.mock.calls.some(([url]) => url === lineItem.id)).toBe(true)
+  })
+
+  // Regression test: a naive implementation fetches a read-only-scoped token for the line item lookup,
+  // then a second, separately-scoped token for the score POST, two token-endpoint round trips where a
+  // single token scoped to both is enough, as legacy does.
+  it('requests a single combined-scope token when backfilling scoreMaximum', async () => {
+    const fetchSpy = mockFetchRoutes({
+      [TOKEN_URL]: { body: tokenResponse },
+      [lineItem.id]: { body: lineItem },
+      [`${lineItem.id}/scores`]: { body: {} },
+    })
+    const grading = buildService()
+
+    await grading.submitScore(lineItem.id, { scoreGiven: 10 })
+
+    const tokenCalls = fetchSpy.mock.calls.filter(([url]) => url === TOKEN_URL)
+    expect(tokenCalls).toHaveLength(1)
+    const body = tokenCalls[0][1]?.body as URLSearchParams
+    expect(body.get('scope')).toBe(
+      'https://purl.imsglobal.org/spec/lti-ags/scope/score https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly',
+    )
   })
 
   it('backfills scoreMaximum when scoreGiven is exactly 0 (not just truthy)', async () => {

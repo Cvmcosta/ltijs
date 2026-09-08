@@ -76,6 +76,17 @@ describe('AccessTokenManager.getAccessToken()', () => {
     expect(typeof body.get('client_assertion')).toBe('string')
   })
 
+  it('sends an explicit Accept header on the token request', async () => {
+    const fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValue(buildMockFetchResponse({ body: tokenResponse }))
+    const manager = new AccessTokenManager(buildMockDatabaseManager(), requestHandler, logger)
+
+    await manager.getAccessToken(buildPlatform(), 'scope-a')
+
+    const [, calledInit] = fetchSpy.mock.calls[0]
+    const headers = calledInit?.headers as Record<string, string>
+    expect(headers.Accept).toBe('application/json')
+  })
+
   it('returns the cached token without an HTTP call when it has not expired', async () => {
     const fetchSpy = jest.spyOn(global, 'fetch')
     const databaseManager = buildMockDatabaseManager()
@@ -99,6 +110,21 @@ describe('AccessTokenManager.getAccessToken()', () => {
       ...tokenResponse,
       token_type: 'Bearer',
       createdAt: Date.now() - (tokenResponse.expires_in + 60) * 1000,
+    })
+    const manager = new AccessTokenManager(databaseManager, requestHandler, logger)
+
+    await manager.getAccessToken(buildPlatform(), 'scope-a')
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('treats a token as expired once it is within the safety margin of its real expiry, even if not past it yet', async () => {
+    const fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValue(buildMockFetchResponse({ body: tokenResponse }))
+    const databaseManager = buildMockDatabaseManager()
+    await databaseManager.saveAccessToken('http://localhost/moodle', 'ClientId1', 'scope-a', {
+      ...tokenResponse,
+      token_type: 'Bearer',
+      createdAt: Date.now() - (tokenResponse.expires_in - 30) * 1000, // only 30s of real lifetime left
     })
     const manager = new AccessTokenManager(databaseManager, requestHandler, logger)
 

@@ -61,8 +61,13 @@ export class NamesAndRoles {
     const accessToken = await this.accessTokenManager.getAccessToken(platform, NRPS_CONTEXT_MEMBERSHIP_READONLY_SCOPE)
     this.logger.debug(this.LOG_COMPONENT, 'Access_token retrieved for [' + idToken.iss + ']')
 
-    const result = await this.fetchPages(request, accessToken, options?.pages ?? 1)
+    const result = await this.fetchPages(request, accessToken, this.resolveNumberOfPages(options?.pages))
     return buildMemberships(result)
+  }
+
+  private resolveNumberOfPages(pages: number | false | undefined): number | false {
+    if (pages === false) return false
+    return pages === undefined || pages < 1 ? 1 : pages
   }
 
   private buildMembershipsRequest(idToken: IdTokenRecord, options?: GetMembersOptions): MembershipsRequest {

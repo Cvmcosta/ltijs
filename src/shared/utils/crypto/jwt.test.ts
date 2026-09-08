@@ -49,6 +49,18 @@ describe('verifyTokenSignature()', () => {
 
     expect(() => verifyTokenSignature(token, publicKey, ['RS384'])).toThrow()
   })
+
+  it('throws for an already-expired token', () => {
+    const token = jwt.sign({ foo: 'bar' }, privateKey, { algorithm: 'RS256', expiresIn: -60 })
+
+    expect(() => verifyTokenSignature(token, publicKey, ['RS256'])).toThrow(jwt.TokenExpiredError)
+  })
+
+  it('throws for a not-yet-valid token (nbf in the future)', () => {
+    const token = jwt.sign({ foo: 'bar' }, privateKey, { algorithm: 'RS256', notBefore: 60 })
+
+    expect(() => verifyTokenSignature(token, publicKey, ['RS256'])).toThrow(jwt.NotBeforeError)
+  })
 })
 
 describe('signJwt()', () => {

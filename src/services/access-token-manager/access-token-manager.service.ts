@@ -14,6 +14,8 @@ export class AccessTokenManager {
   private readonly LOG_COMPONENT = 'accessTokenManager'
   private readonly CLIENT_ASSERTION_TYPE = 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'
   private readonly GRANT_TYPE = 'client_credentials'
+  private readonly ACCEPT = 'application/json'
+  private readonly EXPIRY_SAFETY_MARGIN_SECONDS = 60
 
   private readonly databaseManager: DatabaseManager
   private readonly requestHandler: RequestHandler
@@ -37,7 +39,9 @@ export class AccessTokenManager {
 
   private async getCachedToken(platform: Platform, scopes: string): Promise<AccessToken | undefined> {
     const record = await this.databaseManager.getAccessToken(platform.url, platform.clientId, scopes)
-    const isExpired = record !== undefined && (Date.now() - record.createdAt) / 1000 > record.expires_in
+    const isExpired =
+      record !== undefined &&
+      (Date.now() - record.createdAt) / 1000 > record.expires_in - this.EXPIRY_SAFETY_MARGIN_SECONDS
     if (record === undefined || isExpired) return undefined
     this.logger.debug(this.LOG_COMPONENT, `Cached access token found for ${platform.url}`)
     const { createdAt: _createdAt, ...token } = record
@@ -64,7 +68,9 @@ export class AccessTokenManager {
       scope: scopes,
     })
 
-    const response = await this.requestHandler.post(platform.accessTokenEndpoint, body)
+    const response = await this.requestHandler.post(platform.accessTokenEndpoint, body, {
+      headers: { accept: this.ACCEPT },
+    })
     return validate<AccessToken>(AccessTokenSchema, response.data)
   }
 

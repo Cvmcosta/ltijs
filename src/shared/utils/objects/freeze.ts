@@ -7,10 +7,12 @@ export type DeepReadonly<T> =
 
 export function deepFreeze<T>(value: T): DeepReadonly<T> {
   if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
+    // Freezing before recursing means a circular reference hits the `isFrozen` guard above instead of
+    // recursing forever.
+    Object.freeze(value)
     for (const key of Object.keys(value)) {
       deepFreeze((value as Record<string, unknown>)[key])
     }
-    Object.freeze(value)
   }
   return value as DeepReadonly<T>
 }

@@ -112,7 +112,11 @@ export class Grading {
     this.logger.debug(this.LOG_COMPONENT, `Attempting to retrieve line item: ${validatedLineItemId}`)
 
     const accessToken = await this.accessTokenManager.getAccessToken(platform, AGS_LINEITEM_READONLY_SCOPE)
-    const response = await this.requestHandler.get(validatedLineItemId, {
+    return await this.fetchLineItemById(validatedLineItemId, accessToken)
+  }
+
+  private async fetchLineItemById(lineItemId: string, accessToken: AccessToken): Promise<LineItem> {
+    const response = await this.requestHandler.get(lineItemId, {
       headers: { authorization: buildBearerAuthorization(accessToken), accept: this.LINEITEM_MEDIA_TYPE },
     })
 
@@ -153,14 +157,17 @@ export class Grading {
     this.logger.debug(this.LOG_COMPONENT, `Attempting to submit score to line item: ${validatedLineItemId}`)
 
     const built: Score = { ...validatedScore }
-    if (built.scoreGiven !== undefined && built.scoreMaximum === undefined) {
-      const lineItem = await this.getLineItemById(validatedLineItemId)
+    const needsScoreMaximum = built.scoreGiven !== undefined && built.scoreMaximum === undefined
+    const scope = needsScoreMaximum ? `${AGS_SCORE_SCOPE} ${AGS_LINEITEM_READONLY_SCOPE}` : AGS_SCORE_SCOPE
+    const accessToken = await this.accessTokenManager.getAccessToken(platform, scope)
+
+    if (needsScoreMaximum) {
+      const lineItem = await this.fetchLineItemById(validatedLineItemId, accessToken)
       built.scoreMaximum = lineItem.scoreMaximum
     }
     built.userId ??= idToken.sub
     built.timestamp = new Date().toISOString()
 
-    const accessToken = await this.accessTokenManager.getAccessToken(platform, AGS_SCORE_SCOPE)
     await this.requestHandler.post(this.appendPathSegment(validatedLineItemId, 'scores'), built, {
       headers: { authorization: buildBearerAuthorization(accessToken), contentType: this.SCORE_CONTENT_TYPE },
     })
@@ -211,7 +218,7 @@ export class Grading {
       query.append(this.RESOURCE_LINK_ID_PARAM, this.resolveResourceLinkId(idToken))
     }
     // limit is either sent to the server (here) or applied client-side after an id/label filter
-    // (filterLineItems) -- never both, since the id/label filter can only run after the fetch,
+    // (filterLineItems), never both, since the id/label filter can only run after the fetch,
     // which would make a server-side limit truncate results before they're ever filtered.
     if (options?.limit !== undefined && !this.filtersByIdOrLabel(options)) {
       query.append(this.LIMIT_PARAM, String(options.limit))
