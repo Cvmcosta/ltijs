@@ -52,7 +52,7 @@ export class DynamicRegistration {
   private readonly httpHandler: HttpHandler
   private readonly logger: Logger
 
-  // Mutable, not `readonly` -- reassignable at any time via `setHandler()`
+  // Mutable, not `readonly`: reassignable at any time via `setHandler()`
   // (and, in turn, via `Provider.onDynamicRegistration()`), matching the
   // same default-callback-with-override-setter pattern as `LaunchService`.
   private handler: RouteHandler = this.buildDefaultRouteHandler()
@@ -205,8 +205,14 @@ export class DynamicRegistration {
     }
   }
 
+  // `new URL(path, baseUrl)` would treat a leading-slash `path` as an absolute-path reference, replacing
+  // the base's entire path instead of appending to it, silently dropping any path prefix a tool
+  // deployed behind a reverse proxy or subpath is configured with. Parsing baseUrl and concatenating the
+  // pathname manually preserves that prefix, matching legacy's own approach.
   private buildUrl(baseUrl: string, path: string): string {
-    return new URL(path, baseUrl).toString()
+    const url = new URL(baseUrl)
+    url.pathname = url.pathname.replace(/\/$/, '') + path
+    return url.toString()
   }
 
   private getHostname(url: string): string {

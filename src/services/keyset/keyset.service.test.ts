@@ -119,7 +119,7 @@ describe('KeysetService.prepareHttpRoutes()', () => {
     })
   })
 
-  it('caches the built keyset -- a second request within the TTL does not re-query platforms', async () => {
+  it('caches the built keyset: a second request within the TTL does not re-query platforms', async () => {
     const databaseManager = buildMockDatabaseManager()
     await savePlatform(databaseManager)
     const { service, httpHandler } = buildService(databaseManager)
@@ -147,6 +147,48 @@ describe('KeysetService.prepareHttpRoutes()', () => {
 
     expect(getPlatformsSpy).toHaveBeenCalledTimes(2)
     nowSpy.mockRestore()
+  })
+
+  // Regression test for a real bug: a CacheManager.get() rejection (a transient Redis blip, say) used
+  // to propagate and take down the whole /lti/keys route, instead of degrading to a cache miss the same
+  // way a normal "not cached yet" outcome does.
+  it('still serves the keyset by fetching fresh when the cache manager rejects on get()', async () => {
+    const databaseManager = buildMockDatabaseManager()
+    const id = await savePlatform(databaseManager)
+    const cacheManager: CacheManager = {
+      listen: jest.fn(),
+      close: jest.fn(),
+      get: jest.fn().mockRejectedValue(new Error('connection lost')),
+      set: jest.fn(),
+      delete: jest.fn(),
+    }
+    const { service, httpHandler } = buildService(databaseManager, cacheManager)
+    service.prepareHttpRoutes()
+
+    await expect(buildKeyset(httpHandler, '/lti/keys')).resolves.toEqual({
+      keys: [expect.objectContaining({ kid: id, kty: 'RSA', alg: 'RS256', use: 'sig' })],
+    })
+  })
+
+  // Regression test for the same class of bug as the get() one above: buildKeyset() already has the
+  // freshly-built keyset in hand by the time it calls set(), so a rejected write here shouldn't fail
+  // the request that doesn't actually need the write to succeed.
+  it('still serves the keyset by returning the freshly built one when the cache manager rejects on set()', async () => {
+    const databaseManager = buildMockDatabaseManager()
+    const id = await savePlatform(databaseManager)
+    const cacheManager: CacheManager = {
+      listen: jest.fn(),
+      close: jest.fn(),
+      get: jest.fn().mockResolvedValue(undefined),
+      set: jest.fn().mockRejectedValue(new Error('connection lost')),
+      delete: jest.fn(),
+    }
+    const { service, httpHandler } = buildService(databaseManager, cacheManager)
+    service.prepareHttpRoutes()
+
+    await expect(buildKeyset(httpHandler, '/lti/keys')).resolves.toEqual({
+      keys: [expect.objectContaining({ kid: id, kty: 'RSA', alg: 'RS256', use: 'sig' })],
+    })
   })
 
   it('registers the route on a custom path when one is given', async () => {

@@ -236,6 +236,58 @@ describe('OidcService.validateToken()', () => {
     expect(fetchSpy).toHaveBeenCalledTimes(1)
   })
 
+  // Regression test for a real bug: a CacheManager.get() rejection (a transient Redis blip, say) used
+  // to propagate and fail id-token validation outright, instead of degrading to a cache miss the same
+  // way a normal "not cached yet" outcome does.
+  it('still validates the token by fetching the JWKS fresh when the cache manager rejects on get()', async () => {
+    const jwk = crypto.createPublicKey(publicKey).export({ format: 'jwk' })
+    jest
+      .spyOn(global, 'fetch')
+      .mockResolvedValue(buildMockFetchResponse({ body: { keys: [{ ...jwk, kid: 'kid-1' }] } }))
+    const { databaseManager, platform } = await buildDatabaseManagerWithPlatform({
+      idTokenValidation: { method: IdTokenValidationMethod.JwkSet, key: 'http://localhost/moodle/jwks' },
+    })
+    const cacheManager: CacheManager = {
+      listen: jest.fn(),
+      close: jest.fn(),
+      get: jest.fn().mockRejectedValue(new Error('connection lost')),
+      set: jest.fn(),
+      delete: jest.fn(),
+    }
+    const service = buildService(databaseManager, 10, cacheManager)
+    const token = await signToken(databaseManager, buildClaims())
+
+    await expect(service.validateIdToken(token, decodeToken(token).header, platform)).resolves.toMatchObject({
+      sub: 'user-1',
+    })
+  })
+
+  // Regression test for the same class of bug as the get() one above: resolveJwks() already has the
+  // freshly-fetched JWKS in hand by the time it calls set(), so a rejected write here shouldn't fail
+  // token validation, which doesn't actually need the write to succeed.
+  it('still validates the token by using the freshly-fetched JWKS when the cache manager rejects on set()', async () => {
+    const jwk = crypto.createPublicKey(publicKey).export({ format: 'jwk' })
+    jest
+      .spyOn(global, 'fetch')
+      .mockResolvedValue(buildMockFetchResponse({ body: { keys: [{ ...jwk, kid: 'kid-1' }] } }))
+    const { databaseManager, platform } = await buildDatabaseManagerWithPlatform({
+      idTokenValidation: { method: IdTokenValidationMethod.JwkSet, key: 'http://localhost/moodle/jwks' },
+    })
+    const cacheManager: CacheManager = {
+      listen: jest.fn(),
+      close: jest.fn(),
+      get: jest.fn().mockResolvedValue(undefined),
+      set: jest.fn().mockRejectedValue(new Error('connection lost')),
+      delete: jest.fn(),
+    }
+    const service = buildService(databaseManager, 10, cacheManager)
+    const token = await signToken(databaseManager, buildClaims())
+
+    await expect(service.validateIdToken(token, decodeToken(token).header, platform)).resolves.toMatchObject({
+      sub: 'user-1',
+    })
+  })
+
   it('re-fetches the JWKS once its cache entry has expired', async () => {
     const jwk = crypto.createPublicKey(publicKey).export({ format: 'jwk' })
     const fetchSpy = jest
@@ -443,7 +495,7 @@ describe('OidcService.validateToken()', () => {
     })
 
     // message_type itself is checked manually (not via Zod) since it's what
-    // selects which schema to validate the rest of the claims against --
+    // selects which schema to validate the rest of the claims against;
     // resolveClaimSchema()'s own switch/default throws this directly.
     it('throws INVALID_MESSAGE_TYPE when message_type is missing or unrecognized', async () => {
       const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()

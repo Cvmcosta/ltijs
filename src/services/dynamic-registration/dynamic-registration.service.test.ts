@@ -142,6 +142,29 @@ describe('DynamicRegistration.performRegistration()', () => {
     )
   })
 
+  // Regression test for a real bug: `new URL(path, baseUrl)` treats a leading-slash path as an
+  // absolute-path reference, which replaces the base URL's entire path rather than appending to it, so
+  // a tool deployed behind a reverse proxy or subpath (e.g. mounted at /mytool) had its own path
+  // prefix silently dropped from every URL sent to the platform. Every other test in this suite uses a
+  // root-domain `url` (no path prefix), which is exactly why this went uncaught.
+  it("preserves the tool's own URL path prefix when building initiate_login_uri/jwks_uri/redirect_uris", async () => {
+    const fetchSpy = jest
+      .spyOn(global, 'fetch')
+      .mockResolvedValue(buildMockFetchResponse({ body: { client_id: 'ClientId1' } }))
+    const service = buildService(buildMockDatabaseManager(), {
+      ...registrationOptions,
+      url: 'https://school.example.com/mytool',
+    })
+
+    await service.performRegistration(openIdConfiguration)
+
+    const [, calledInit] = fetchSpy.mock.calls[0]
+    const body = JSON.parse(calledInit?.body as string) as Record<string, unknown>
+    expect(body.initiate_login_uri).toBe('https://school.example.com/mytool/login')
+    expect(body.jwks_uri).toBe('https://school.example.com/mytool/keys')
+    expect(body.redirect_uris).toContain('https://school.example.com/mytool/')
+  })
+
   it('includes an Authorization header when a registrationToken is provided', async () => {
     const fetchSpy = jest
       .spyOn(global, 'fetch')

@@ -5,6 +5,7 @@ import type { Platform } from '#services/platform-manager/platform-manager.types
 import { rsaToJwk } from '#utils/crypto/keys'
 import { RS256_ALGORITHM } from '#utils/crypto/jwt.constants'
 import type { CacheManager } from '#services/cache-manager/cache-manager.types'
+import { safeCacheGet, safeCacheSet } from '#services/cache-manager/cache-manager.utils'
 import type { Logger } from '#services/logger/logger.types'
 import type { Jwk, Keyset } from '#services/keyset/keyset.types'
 import { KEYSET_CACHE_KEY } from '#services/keyset/keyset.constants'
@@ -35,19 +36,19 @@ export class KeysetService {
     })
   }
 
-  // Short-TTL cache (via the injected CacheManager) -- this endpoint is polled by every registered
+  // Short-TTL cache (via the injected CacheManager): this endpoint is polled by every registered
   // platform verifying a signed response, and buildKeyset() would otherwise re-scan the full platform
   // table (plus, on the mongo-legacy store, 3 additional queries per returned platform) on every single
-  // hit. The TTL is a safety net, not the primary invalidation mechanism -- PlatformManager actively
+  // hit. The TTL is a safety net, not the primary invalidation mechanism; PlatformManager actively
   // deletes this same KEYSET_CACHE_KEY entry on register/delete/rotateKeys, so a change is normally
   // visible immediately, not just once the TTL happens to expire.
   private async buildKeyset(): Promise<Keyset> {
-    const cached = await this.cacheManager.get<Keyset>(KEYSET_CACHE_KEY)
+    const cached = await safeCacheGet<Keyset>(this.cacheManager, KEYSET_CACHE_KEY)
     if (cached !== undefined) return cached
 
     const platforms = await this.platformManager.getPlatforms()
     const keyset: Keyset = { keys: platforms.map(platform => this.buildJwk(platform)) }
-    await this.cacheManager.set(KEYSET_CACHE_KEY, keyset, this.KEYSET_CACHE_TTL_MS)
+    await safeCacheSet(this.cacheManager, KEYSET_CACHE_KEY, keyset, this.KEYSET_CACHE_TTL_MS)
     return keyset
   }
 

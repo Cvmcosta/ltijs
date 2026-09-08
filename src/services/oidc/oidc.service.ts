@@ -6,6 +6,7 @@ import { jwkToRsa } from '#utils/crypto/keys'
 import { signValue, verifySignedValue } from '#utils/crypto/signed-value'
 import { validate } from '#utils/validation/validation'
 import { randomUuid } from '#utils/random/random'
+import { safeCacheGet, safeCacheSet } from '#services/cache-manager/cache-manager.utils'
 import {
   JwksResponseSchema,
   ResourceLinkRequestSchema,
@@ -73,7 +74,7 @@ export class OidcService {
     return validatedToken
   }
 
-  // `stateId` defaults to a fresh random value when the caller doesn't already have one to correlate --
+  // `stateId` defaults to a fresh random value when the caller doesn't already have one to correlate;
   // callers that also mint a matching buildRecoveryToken() (LaunchService.processLogin) generate it
   // themselves first and pass it to both, so the two tokens share the same id.
   public buildStateToken(
@@ -228,12 +229,12 @@ export class OidcService {
 
   private async resolveJwks(jwksUri: string): Promise<Array<Record<string, unknown>>> {
     const cacheKey = this.buildJwksCacheKey(jwksUri)
-    const cached = await this.cacheManager.get<Array<Record<string, unknown>>>(cacheKey)
+    const cached = await safeCacheGet<Array<Record<string, unknown>>>(this.cacheManager, cacheKey)
     if (cached !== undefined) return cached
 
     const response = await this.requestHandler.get(jwksUri)
     const jwks = validate<{ keys: Array<Record<string, unknown>> }>(JwksResponseSchema, response.data)
-    await this.cacheManager.set(cacheKey, jwks.keys, this.JWKS_CACHE_TTL_MS)
+    await safeCacheSet(this.cacheManager, cacheKey, jwks.keys, this.JWKS_CACHE_TTL_MS)
     return jwks.keys
   }
 
