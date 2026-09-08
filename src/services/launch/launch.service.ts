@@ -224,10 +224,9 @@ export class LaunchService {
     if (recoveredState === undefined) {
       const { storageTarget, platformLoginOrigin } = this.peekStateToken(parameters.stateToken)
       const html = renderTemplate(this.SIGNED_STATE_FORM_TEMPLATE, {
-        id_token: parameters.rawIdToken,
-        state: parameters.stateToken,
         dataJson: this.toDataScript({
           key: this.buildLocalStorageKey(parameters.stateToken),
+          idToken: parameters.rawIdToken,
           state: parameters.stateToken,
           storageTarget,
           platformLoginOrigin,

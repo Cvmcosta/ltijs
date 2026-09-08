@@ -69,7 +69,7 @@ interface TemplateData {
   state?: string
   recoveryToken?: string
   targetUrl?: string
-  id_token?: string
+  idToken?: string
   storageTarget?: string
   platformLoginOrigin?: string
 }
@@ -154,12 +154,14 @@ describe('login-redirect.spy', () => {
 })
 
 describe('signed-state-form.spy', () => {
+  // id_token/state are delivered via the JSON data island and written onto the form's hidden inputs by
+  // the script (a DOM property assignment, immune to HTML injection), not interpolated into the template
+  // as `value="{{...}}"` attributes; see the test below that exercises a value containing `"><script>`.
   const render = (dataOverrides: TemplateData = {}): string =>
     renderTemplate(LAUNCH_TEMPLATE, {
-      id_token: 'raw-id-token',
-      state: 'state-1',
       dataJson: JSON.stringify({
         key: 'ltijs_state_state-1',
+        idToken: 'raw-id-token',
         state: 'state-1',
         ...dataOverrides,
       }),
@@ -186,9 +188,43 @@ describe('signed-state-form.spy', () => {
     runScript(html)
 
     expect(submit).toHaveBeenCalledTimes(1)
+    expect((document.getElementById('ltijs_id_token') as HTMLInputElement).value).toBe('raw-id-token')
+    expect((document.getElementById('ltijs_state') as HTMLInputElement).value).toBe('state-1')
     expect((document.getElementById('ltijs_recovered_state') as HTMLInputElement).value).toBe('recovered-state-1')
     expect(localStorage.getItem('ltijs_state_state-1')).toBeNull()
     expect(received).toHaveLength(0)
+  })
+
+  // Regression test for a real XSS: id_token/state used to be interpolated directly into
+  // value="{{id_token}}" attributes, so a value containing `"><img src=x onerror=...>` broke out of the
+  // attribute and injected a live element into the page. They're now delivered only through the JSON
+  // data island and written onto the form via a DOM property assignment (`.value = ...`), which never
+  // touches HTML parsing. This checks the claim at both levels: the raw rendered markup never embeds the
+  // value as an attribute at all (so nothing can break out of it), and the value still correctly reaches
+  // the form field once the script runs.
+  it('never embeds a malicious id_token/state value as raw HTML, only ever as a DOM property assignment', () => {
+    const maliciousValue = '"><img src=x onerror=window.xssFired=true>'
+    localStorage.setItem('ltijs_state_state-1', 'recovered-state-1')
+    const html = render({ idToken: maliciousValue, state: maliciousValue })
+
+    // The static markup itself: these inputs' `value` attributes are always empty at render time,
+    // regardless of what id_token/state contain, since there's no `{{id_token}}`/`{{state}}` placeholder
+    // left in the template for a value to be interpolated into in the first place.
+    expect(/<input[^>]*id="ltijs_id_token"[^>]*value=""/.exec(html)).not.toBeNull()
+    expect(/<input[^>]*id="ltijs_state"[^>]*value=""/.exec(html)).not.toBeNull()
+
+    renderIntoDocument(html)
+    const submit = jest.fn()
+    ;(document.getElementById('ltijs_launch') as HTMLFormElement).submit = submit
+
+    runScript(html)
+
+    // No injected element ever made it into the document, and the value still round-trips correctly.
+    expect(document.querySelectorAll('img').length).toBe(0)
+    expect((window as unknown as { xssFired?: boolean }).xssFired).toBeUndefined()
+    expect((document.getElementById('ltijs_id_token') as HTMLInputElement).value).toBe(maliciousValue)
+    expect((document.getElementById('ltijs_state') as HTMLInputElement).value).toBe(maliciousValue)
+    expect(submit).toHaveBeenCalledTimes(1)
   })
 
   it('falls back to postMessage get_data when localStorage has nothing stored', async () => {

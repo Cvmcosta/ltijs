@@ -1,6 +1,6 @@
 <form id="ltijs_launch" style="display: none;" action="" method="post">
-	<input type="hidden" name="id_token" value="{{id_token}}" />
-	<input type="hidden" name="state" value="{{state}}" />
+	<input type="hidden" name="id_token" id="ltijs_id_token" value="" />
+	<input type="hidden" name="state" id="ltijs_state" value="" />
 	<input type="hidden" name="ltijs_recovered_state" id="ltijs_recovered_state" value="" />
 </form>
 <script type="application/json" id="ltijs-launch-data">{{dataJson}}</script>
@@ -14,7 +14,12 @@
   var storageTarget = data.storageTarget;
   var platformLoginOrigin = data.platformLoginOrigin;
 
+  // Setting .value here is a DOM property assignment, not an HTML-source insertion, so it's safe
+  // regardless of what idToken/state contain, unlike the value="{{id_token}}" template interpolation
+  // this replaced (sprightly does no HTML escaping of its own).
   function submitWith(recoveredState) {
+    document.getElementById('ltijs_id_token').value = data.idToken;
+    document.getElementById('ltijs_state').value = data.state;
     document.getElementById('ltijs_recovered_state').value = recoveredState;
     localStorage.removeItem(localStorageKey);
     document.getElementById('ltijs_launch').submit();
