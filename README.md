@@ -1,7 +1,5 @@
 <div align="center">
   <a href="https://github.com/Cvmcosta/ltijs"><img width="300" src="website/assets/logo.svg" alt="ltijs"></a>
-  <br>
-  <img src="https://img.shields.io/badge/status-beta-023e73" alt="beta">
 </div>
 
 > Easily turn your web application into a LTI® 1.3 Learning Tool.
@@ -11,9 +9,9 @@
 [![NPM downloads](https://img.shields.io/npm/dm/ltijs)](https://www.npmjs.com/package/ltijs)
 [![APACHE2 License](https://img.shields.io/github/license/cvmcosta/ltijs)](https://github.com/Cvmcosta/ltijs/blob/master/LICENSE)
 
-> **v7 is currently in beta.** The API described here is the new, TypeScript-first `Provider` class.
-> See [Migrating from ltijs v5](website/guides/migrating-from-v5.md) if you're coming from an earlier
-> version, or the [Legacy docs](website/legacy-docs.md) for the full v5 and earlier documentation.
+> **v7 is a full rewrite**, with a new, TypeScript-first `Provider` class. Coming from an earlier version?
+> See [Migrating from ltijs v5](website/guides/migrating-from-v5.md), or the
+> [Legacy docs](website/legacy-docs.md) for the full v5 and earlier documentation.
 
 The Learning Tools Interoperability (LTI®) protocol is a standard for integrating rich learning
 applications within educational environments ([spec](https://www.imsglobal.org/spec/lti/v1p3/)). ltijs
@@ -23,10 +21,8 @@ working learning tool without implementing any of the underlying security and va
 
 ## Quick start
 
-v7 is currently published under the `beta` npm tag, not `latest`, so install it explicitly:
-
 ```bash
-npm install ltijs@beta
+npm install ltijs
 ```
 
 ```ts

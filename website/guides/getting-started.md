@@ -2,10 +2,8 @@
 
 ## Install
 
-v7 is currently published under the `beta` npm tag, not `latest`, so install it explicitly:
-
 ```bash
-npm install ltijs@beta
+npm install ltijs
 ```
 
 You'll also need somewhere to store platform registrations, id tokens, and OIDC nonces. By default
