@@ -10,8 +10,8 @@
 [![APACHE2 License](https://img.shields.io/github/license/cvmcosta/ltijs)](https://github.com/Cvmcosta/ltijs/blob/master/LICENSE)
 
 > **v7 is a full rewrite**, with a new, TypeScript-first `Provider` class. Coming from an earlier version?
-> See [Migrating from ltijs v5](website/guides/migrating-from-v5.md), or the
-> [Legacy docs](website/legacy-docs.md) for the full v5 and earlier documentation.
+> See [Migrating from ltijs v5](https://cvmcosta.me/ltijs/#/guides/migrating-from-v5), or the
+> [Legacy docs](https://cvmcosta.me/ltijs/#/legacy-docs) for the full v5 and earlier documentation.
 
 The Learning Tools Interoperability (LTI®) protocol is a standard for integrating rich learning
 applications within educational environments ([spec](https://www.imsglobal.org/spec/lti/v1p3/)). ltijs
@@ -39,14 +39,16 @@ provider.onResourceLink(async (context, request, response) => {
 await provider.listen()
 ```
 
-Continue with [Getting Started](website/guides/getting-started.md) for the full walkthrough, including
-registering a platform.
+Continue with [Getting Started](https://cvmcosta.me/ltijs/#/guides/getting-started) for the full
+walkthrough, including registering a platform.
 
 ## Documentation
 
-- **[Guides](website/guides/getting-started.md)**: walkthroughs for setting up a Provider, handling
-  launches, and using every LTI 1.3 service ltijs supports.
-- **[API Reference](website/api/README.md)**: every exported class, method, and type ltijs ships.
+Full documentation lives at **[cvmcosta.me/ltijs](https://cvmcosta.me/ltijs)**:
+
+- **[Guides](https://cvmcosta.me/ltijs/#/guides/getting-started)**: walkthroughs for setting up a Provider,
+  handling launches, and using every LTI 1.3 service ltijs supports.
+- **[API Reference](https://cvmcosta.me/ltijs/#/api/README)**: every exported class, method, and type ltijs ships.
 
 ## LTI As A Service
 
