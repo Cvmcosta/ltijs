@@ -53,4 +53,10 @@ export interface DynamicRegistrationRoutes {
   keysetRoute: string
 }
 
-export type RegistrationOverrides = Partial<DynamicRegistrationOptions>
+// A known field (matching DynamicRegistrationOptions) drives the typed config path, same as before, and
+// is also deep-merged onto the constructed OAuth registration body right before it's sent, alongside
+// anything else in here. None of DynamicRegistrationOptions's own field names collide with a real
+// registration-body field name, so known fields just ride along as inert extra keys, while anything else
+// (a non-standard `scope`, a different `token_endpoint_auth_method`, a vendor-specific field) actually
+// reaches the platform. Objects merge recursively; everything else, including arrays, replaces outright.
+export type RegistrationOverrides = Partial<DynamicRegistrationOptions> & Record<string, unknown>

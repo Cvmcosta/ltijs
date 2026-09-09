@@ -156,6 +156,35 @@ lineItemId, score)`, and so on), and some of which also took an access token you
 handles both internally. See [Grading](grading.md), [Names and Roles](names-and-roles.md), and
 [Deep Linking](deep-linking.md) for each service's full method list.
 
+A few of `lti.Grade`'s convenience methods don't carry over directly: `scorePublish` (already deprecated in
+v5 itself, in favor of resolving a line item and submitting to it directly, the pattern shown above), bulk
+`deleteLineItems`, and cross-line-item `result`. All three are straightforward to rebuild from
+`getLineItems`/`getScores`/`deleteLineItemById`:
+
+```ts
+// v5's result(idtoken, options): scores across every line item matching a filter
+const { lineItems } = await context.grading.getLineItems(options)
+const scoresByItem = await Promise.all(lineItems.map(item => context.grading.getScores(item.id)))
+const scores = scoresByItem.flatMap(result => result.scores)
+```
+
+```ts
+// v5's deleteLineItems(idtoken, options): bulk-delete every line item matching a filter
+const { lineItems } = await context.grading.getLineItems(options)
+await Promise.all(lineItems.map(item => context.grading.deleteLineItemById(item.id)))
+```
+
+### Storing your own data
+
+Legacy exposed `provider.Database` as a generic accessor (`Get`/`Insert`/`Replace`/`Modify`/`Delete`), so a
+tool could keep its own app data in the same database alongside ltijs's own collections. v7's
+`DatabaseManager` interface only covers what ltijs itself needs (platforms, tokens, id-tokens, nonces),
+there's no generic pass-through on `provider.databaseManager`. That's not actually a gap in practice: you
+already control how ltijs connects to your database, so you have full access to it on your own terms,
+either by holding onto your own connection alongside the one you gave `Provider`, or by writing your own
+`DatabaseManager` that exposes whatever extra methods you need beyond the interface. See
+[A custom database](swapping-backends.md#a-custom-database) for the pattern.
+
 ## Route protection is now opt-in
 
 There's no global middleware anymore, and no whitelist. A route only gets LTI protection if you

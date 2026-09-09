@@ -277,6 +277,38 @@ describe('DynamicRegistration.performRegistration()', () => {
       custom_parameters: { mode: 'select' },
     })
   })
+
+  it('overrides replaces a top-level field of the constructed registration body', async () => {
+    const fetchSpy = jest
+      .spyOn(global, 'fetch')
+      .mockResolvedValue(buildMockFetchResponse({ body: { client_id: 'ClientId1' } }))
+    const service = buildService()
+
+    await service.performRegistration(openIdConfiguration, undefined, {
+      token_endpoint_auth_method: 'client_secret_post',
+    })
+
+    const [, calledInit] = fetchSpy.mock.calls[0]
+    const body = JSON.parse(calledInit?.body as string) as Record<string, unknown>
+    expect(body.token_endpoint_auth_method).toBe('client_secret_post')
+  })
+
+  it('overrides deep-merges into a nested claim without dropping its other fields', async () => {
+    const fetchSpy = jest
+      .spyOn(global, 'fetch')
+      .mockResolvedValue(buildMockFetchResponse({ body: { client_id: 'ClientId1' } }))
+    const service = buildService()
+
+    await service.performRegistration(openIdConfiguration, undefined, {
+      'https://purl.imsglobal.org/spec/lti-tool-configuration': { vendor_specific: 'value' },
+    })
+
+    const [, calledInit] = fetchSpy.mock.calls[0]
+    const body = JSON.parse(calledInit?.body as string) as Record<string, Record<string, unknown>>
+    const toolConfiguration = body['https://purl.imsglobal.org/spec/lti-tool-configuration']
+    expect(toolConfiguration.vendor_specific).toBe('value')
+    expect(toolConfiguration.domain).toBe('tool.example.com')
+  })
 })
 
 const buildRequest = (query: Record<string, string | string[]> = {}): HttpRequestParameters => ({

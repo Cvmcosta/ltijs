@@ -112,6 +112,8 @@ export class DynamicRegistration {
     const appUrl = this.buildUrl(options.url, this.routes.appRoute)
     const body = this.buildRegistrationRequestBody(configuration, options, appUrl)
 
+    this.deepMerge(body, overrides)
+
     this.logger.debug(this.LOG_COMPONENT, `Registering with platform at ${configuration.registration_endpoint}`)
     const response = await this.requestHandler.post(configuration.registration_endpoint, body, {
       headers:
@@ -220,6 +222,25 @@ export class DynamicRegistration {
 
   private getHostname(url: string): string {
     return new URL(url).host
+  }
+
+  // Recursively merges `source` onto `target` in place: nested plain objects merge key by key,
+  // everything else (primitives, arrays, `null`) replaces the existing value outright. Matches legacy's
+  // own `deepMergeObjects`, since `overrides` is meant to reproduce its exact merge behavior.
+  private deepMerge(target: Record<string, unknown>, source: Record<string, unknown>): void {
+    for (const key of Object.keys(source)) {
+      const sourceValue = source[key]
+      const targetValue = target[key]
+      if (this.isPlainObject(sourceValue) && this.isPlainObject(targetValue)) {
+        this.deepMerge(targetValue, sourceValue)
+      } else {
+        target[key] = sourceValue
+      }
+    }
+  }
+
+  private isPlainObject(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null && !Array.isArray(value)
   }
 }
 
