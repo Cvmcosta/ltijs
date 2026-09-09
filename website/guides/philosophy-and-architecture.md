@@ -1,6 +1,16 @@
 # Philosophy & Architecture
 
-ltijs is built around one idea: **every external dependency is a small, swappable interface, with a
+v7 was designed around three goals: a **simplified API** that's easier and more intuitive to use, a **less
+opinionated design** that does what it needs to do without forcing additional things on you, and **much
+greater customizability**, giving you a lot of flexibility in how you build with ltijs.
+
+The first two show up throughout the public API: setup is `new Provider(options)`, a launch handler, and
+`listen()`; every service on `context` (`context.grading`, `context.namesAndRoles`, `context.deepLinking`)
+is already scoped to the current launch, with no id_token or access token to look up and pass around
+yourself; and ltijs never dictates your database, HTTP framework, logging setup, or how the rest of your
+application is structured, it sits inside your app rather than being the app.
+
+The third comes down to one idea: **every external dependency is a small, swappable interface, with a
 sensible default already wired in.** You can go from `npm install` to a running tool with nothing but a
 database URL. Later on you can swap any single piece (storage, caching, the HTTP framework, even how
 outbound requests are made) without touching the rest.
