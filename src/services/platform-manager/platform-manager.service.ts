@@ -146,30 +146,25 @@ export class PlatformManager {
     await this.cacheManager.delete(KEYSET_CACHE_KEY)
   }
 
-  // Only includes a field when `update` actually provided it. `DatabaseManager.updatePlatformById`
-  // is already built to accept (and correctly write) a true partial update, so there's no need to fill
-  // in every other field from `existing` just to hand it a complete record. `idTokenValidation` is the
-  // one exception: since a `$set` on a nested object replaces it wholesale, a caller providing only one
-  // of its two sub-fields still needs the other filled in from `existing` to avoid wiping it out.
+  // `update` is already a true partial: Zod omits an absent optional field from its parsed output
+  // entirely, rather than including it as `undefined`, so every field here already matches
+  // `PlatformRecord`'s shape one-for-one. `idTokenValidation` is the one exception: `update`'s version
+  // is itself partial (only one of `method`/`key` may be given), but a `$set` on a nested object
+  // replaces it wholesale, so the other sub-field still needs filling in from `existing` to avoid
+  // wiping it out.
   private buildPlatformUpdate(
     existing: Platform,
     update: PlatformUpdateInput,
   ): Partial<Omit<PlatformRecord, 'id' | 'keys'>> {
-    const changes: Partial<Omit<PlatformRecord, 'id' | 'keys'>> = {}
-    if (update.url !== undefined) changes.url = update.url
-    if (update.clientId !== undefined) changes.clientId = update.clientId
-    if (update.name !== undefined) changes.name = update.name
-    if (update.authenticationEndpoint !== undefined) changes.authenticationEndpoint = update.authenticationEndpoint
-    if (update.accessTokenEndpoint !== undefined) changes.accessTokenEndpoint = update.accessTokenEndpoint
-    if (update.authorizationServer !== undefined) changes.authorizationServer = update.authorizationServer
-    if (update.active !== undefined) changes.active = update.active
-    if (update.idTokenValidation !== undefined) {
-      changes.idTokenValidation = {
-        method: update.idTokenValidation.method ?? existing.idTokenValidation.method,
-        key: update.idTokenValidation.key ?? existing.idTokenValidation.key,
-      }
+    const { idTokenValidation, ...rest } = update
+    if (idTokenValidation === undefined) return rest
+    return {
+      ...rest,
+      idTokenValidation: {
+        method: idTokenValidation.method ?? existing.idTokenValidation.method,
+        key: idTokenValidation.key ?? existing.idTokenValidation.key,
+      },
     }
-    return changes
   }
 
   // Deprecated methods
