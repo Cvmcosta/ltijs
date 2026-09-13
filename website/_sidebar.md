@@ -8,6 +8,7 @@
   * [Handling Launches](/guides/handling-launches.md)
   * [Grading (AGS)](/guides/grading.md)
   * [Names and Roles (NRPS)](/guides/names-and-roles.md)
+  * [Pagination](/guides/pagination.md)
   * [Deep Linking](/guides/deep-linking.md)
   * [Swapping Backends](/guides/swapping-backends.md)
   * [Error Handling](/guides/error-handling.md)

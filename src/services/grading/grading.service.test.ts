@@ -382,6 +382,41 @@ describe('Grading.submitScore()', () => {
     expect(body.userId).toBe('user-1')
   })
 
+  it('defaults timestamp to the current time when not provided', async () => {
+    const fetchSpy = mockFetchRoutes({
+      [TOKEN_URL]: { body: tokenResponse },
+      [`${lineItem.id}/scores`]: { body: {} },
+    })
+    const grading = buildService()
+    const before = Date.now()
+
+    await grading.submitScore(lineItem.id, { scoreGiven: 10, scoreMaximum: 10 })
+
+    const scoresCall = fetchSpy.mock.calls.find(([url]) => (url as string) === `${lineItem.id}/scores`)
+    const body = JSON.parse(scoresCall?.[1]?.body as string) as Record<string, unknown>
+    const timestampMs = Date.parse(body.timestamp as string)
+    expect(timestampMs).toBeGreaterThanOrEqual(before)
+    expect(timestampMs).toBeLessThanOrEqual(Date.now())
+  })
+
+  it('respects a caller-provided timestamp instead of defaulting it', async () => {
+    const fetchSpy = mockFetchRoutes({
+      [TOKEN_URL]: { body: tokenResponse },
+      [`${lineItem.id}/scores`]: { body: {} },
+    })
+    const grading = buildService()
+
+    await grading.submitScore(lineItem.id, {
+      scoreGiven: 10,
+      scoreMaximum: 10,
+      timestamp: '2020-01-01T00:00:00.000Z',
+    })
+
+    const scoresCall = fetchSpy.mock.calls.find(([url]) => (url as string) === `${lineItem.id}/scores`)
+    const body = JSON.parse(scoresCall?.[1]?.body as string) as Record<string, unknown>
+    expect(body.timestamp).toBe('2020-01-01T00:00:00.000Z')
+  })
+
   it('backfills scoreMaximum from the line item when scoreGiven is provided without it', async () => {
     const fetchSpy = mockFetchRoutes({
       [TOKEN_URL]: { body: tokenResponse },

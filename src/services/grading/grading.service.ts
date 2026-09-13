@@ -166,7 +166,7 @@ export class Grading {
       built.scoreMaximum = lineItem.scoreMaximum
     }
     built.userId ??= idToken.sub
-    built.timestamp = new Date().toISOString()
+    built.timestamp ??= new Date().toISOString()
 
     await this.requestHandler.post(this.appendPathSegment(validatedLineItemId, 'scores'), built, {
       headers: { authorization: buildBearerAuthorization(accessToken), contentType: this.SCORE_CONTENT_TYPE },

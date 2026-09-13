@@ -40,7 +40,8 @@ const { lineItems } = await context.grading.getLineItems({ resourceLinkId: true 
 ```
 
 `getLineItems` also accepts `id`/`label` (exact-match filters, applied client-side after fetching),
-`tag`/`resourceId` (sent to the platform as query filters), and `limit`.
+`tag`/`resourceId` (sent to the platform as query filters), and `limit`. A platform with more line items
+than fit in one response is covered in [Pagination](pagination.md).
 
 ## Submitting scores
 
@@ -53,12 +54,14 @@ await context.grading.submitScore(lineItemId, {
 })
 ```
 
-`userId` defaults to the current launch's user if omitted, and `timestamp` is always set to the current
-time. Both can still be overridden explicitly, for example when submitting on behalf of a different user
-from a background job via `getLaunchContext`.
+`userId` defaults to the current launch's user if omitted, and `timestamp` defaults to the current time.
+Both can still be provided explicitly, for example when submitting on behalf of a different user from a
+background job via `getLaunchContext`, or backdating a score to when it was actually earned.
 
 ## Reading scores
 
 ```ts
 const { scores } = await context.grading.getScores(lineItemId, { limit: 50 })
 ```
+
+More results than fit in one response? See [Pagination](pagination.md).

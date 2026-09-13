@@ -41,7 +41,8 @@ await context.namesAndRoles.getMembers({
 
 Pass `url` to fetch a specific page directly, such as a `next`/`differences` link from a previous call.
 `memberships.next` and `memberships.differences` carry those links forward when more pages remain than
-`pages` requested.
+`pages` requested. See [Pagination](pagination.md) for the full pattern, including how `pages` compares to
+fetching pages yourself.
 
 Each `Member` is normalized to camelCase (`givenName`, `familyName`, `userId`, `lisPersonSourcedid`).
 The platform's original snake_case fields are kept alongside them as `@deprecated` aliases for anyone
