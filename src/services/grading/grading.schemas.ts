@@ -59,4 +59,4 @@ export const LineItemsListSchema = z.array(LineItemSchema)
 
 export const ResultsListSchema = z.array(ResultSchema)
 
-export const LineItemIdSchema = z.string().min(1)
+export const LineItemIdSchema = z.string().min(1, 'Line item ID should be a non-empty string.')
