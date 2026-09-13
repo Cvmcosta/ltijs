@@ -3,6 +3,7 @@ import { DynamicRegistration } from '#services/dynamic-registration/dynamic-regi
 import { PlatformManager } from '#services/platform-manager/platform-manager.service'
 import { FetchRequestHandler } from '#services/request-handler/fetch/fetch-request-handler.service'
 import { buildMockDatabaseManager } from '#utils/tests/mock-database-manager'
+import { buildMockCacheManager } from '#utils/tests/mock-cache-manager'
 import { buildMockFetchResponse } from '#utils/tests/mock-fetch-response'
 import { buildMockHttpHandler } from '#utils/tests/mock-http-handler'
 import { expectValidationErrorOnField } from '#utils/tests/expect-validation-error'
@@ -47,7 +48,7 @@ const buildService = (
   options: DynamicRegistrationOptions = registrationOptions,
   httpHandler: ReturnType<typeof buildMockHttpHandler> = buildMockHttpHandler(),
 ): DynamicRegistration => {
-  const platformManager = new PlatformManager(databaseManager, logger)
+  const platformManager = new PlatformManager(databaseManager, logger, buildMockCacheManager())
   return new DynamicRegistration(options, routes, platformManager, requestHandler, httpHandler, logger)
 }
 

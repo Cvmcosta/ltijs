@@ -40,12 +40,12 @@ describe('PlatformManager.registerPlatform()', () => {
   // conventions), so these assert on `.errors`, the field-path-grouped map
   // every `ValidationError` carries, to confirm which field actually failed.
   it('throws a ValidationError on url when url or clientId is missing', async () => {
-    const manager = new PlatformManager(buildMockDatabaseManager(), logger)
+    const manager = new PlatformManager(buildMockDatabaseManager(), logger, buildMockCacheManager())
     await expectValidationErrorOnField(manager.registerPlatform({ ...registrationInput, url: '' }), 'url')
   })
 
   it('throws a ValidationError when required registration fields are missing for a new platform', async () => {
-    const manager = new PlatformManager(buildMockDatabaseManager(), logger)
+    const manager = new PlatformManager(buildMockDatabaseManager(), logger, buildMockCacheManager())
     const incompleteInput = {
       url: registrationInput.url,
       clientId: registrationInput.clientId,
@@ -54,7 +54,7 @@ describe('PlatformManager.registerPlatform()', () => {
   })
 
   it('throws a ValidationError on idTokenValidation.method for an invalid method', async () => {
-    const manager = new PlatformManager(buildMockDatabaseManager(), logger)
+    const manager = new PlatformManager(buildMockDatabaseManager(), logger, buildMockCacheManager())
     await expectValidationErrorOnField(
       manager.registerPlatform({
         ...registrationInput,
@@ -65,7 +65,7 @@ describe('PlatformManager.registerPlatform()', () => {
   })
 
   it('throws a ValidationError on idTokenValidation.key when it is empty', async () => {
-    const manager = new PlatformManager(buildMockDatabaseManager(), logger)
+    const manager = new PlatformManager(buildMockDatabaseManager(), logger, buildMockCacheManager())
     await expectValidationErrorOnField(
       manager.registerPlatform({
         ...registrationInput,
@@ -76,7 +76,7 @@ describe('PlatformManager.registerPlatform()', () => {
   })
 
   it('registers a brand-new platform, generating a key pair and persisting it', async () => {
-    const manager = new PlatformManager(buildMockDatabaseManager(), logger)
+    const manager = new PlatformManager(buildMockDatabaseManager(), logger, buildMockCacheManager())
 
     const platform = await manager.registerPlatform(registrationInput)
 
@@ -100,14 +100,14 @@ describe('PlatformManager.registerPlatform()', () => {
   })
 
   it('does not throw when constructed without a cacheManager: registration simply skips invalidation', async () => {
-    const manager = new PlatformManager(buildMockDatabaseManager(), logger)
+    const manager = new PlatformManager(buildMockDatabaseManager(), logger, buildMockCacheManager())
 
     await expect(manager.registerPlatform(registrationInput)).resolves.toBeDefined()
   })
 
   it('throws PlatformAlreadyRegisteredError when a platform with the same url/clientId is already registered', async () => {
     const database = buildMockDatabaseManager()
-    const manager = new PlatformManager(database, logger)
+    const manager = new PlatformManager(database, logger, buildMockCacheManager())
     await manager.registerPlatform(registrationInput)
 
     await expect(manager.registerPlatform(registrationInput)).rejects.toThrow('PLATFORM_ALREADY_REGISTERED')
@@ -117,7 +117,7 @@ describe('PlatformManager.registerPlatform()', () => {
 describe('PlatformManager.getPlatform()', () => {
   it('resolves the single matching Platform when a clientId is given', async () => {
     const database = buildMockDatabaseManager()
-    const manager = new PlatformManager(database, logger)
+    const manager = new PlatformManager(database, logger, buildMockCacheManager())
     await manager.registerPlatform(registrationInput)
 
     const platform = await manager.getPlatform(registrationInput.url, registrationInput.clientId)
@@ -126,13 +126,13 @@ describe('PlatformManager.getPlatform()', () => {
   })
 
   it('resolves false when a clientId is given but nothing matches', async () => {
-    const manager = new PlatformManager(buildMockDatabaseManager(), logger)
+    const manager = new PlatformManager(buildMockDatabaseManager(), logger, buildMockCacheManager())
     await expect(manager.getPlatform('http://localhost/unknown', 'ClientId1')).resolves.toBe(false)
   })
 
   it('resolves an array of every platform matching the url when no clientId is given', async () => {
     const database = buildMockDatabaseManager()
-    const manager = new PlatformManager(database, logger)
+    const manager = new PlatformManager(database, logger, buildMockCacheManager())
     await manager.registerPlatform(registrationInput)
 
     const platforms = await manager.getPlatform(registrationInput.url)
@@ -141,27 +141,27 @@ describe('PlatformManager.getPlatform()', () => {
   })
 
   it('resolves false when no clientId is given and nothing matches', async () => {
-    const manager = new PlatformManager(buildMockDatabaseManager(), logger)
+    const manager = new PlatformManager(buildMockDatabaseManager(), logger, buildMockCacheManager())
     await expect(manager.getPlatform('http://localhost/unknown')).resolves.toBe(false)
   })
 })
 
 describe('PlatformManager.getPlatformById()', () => {
   it('resolves undefined when platformId is empty', async () => {
-    const manager = new PlatformManager(buildMockDatabaseManager(), logger)
+    const manager = new PlatformManager(buildMockDatabaseManager(), logger, buildMockCacheManager())
     await expect(manager.getPlatformById('')).resolves.toBeUndefined()
   })
 
   it('resolves the Platform by id', async () => {
     const database = buildMockDatabaseManager()
-    const manager = new PlatformManager(database, logger)
+    const manager = new PlatformManager(database, logger, buildMockCacheManager())
     const platform = await manager.registerPlatform(registrationInput)
 
     await expect(manager.getPlatformById(platform.id)).resolves.toMatchObject({ id: platform.id })
   })
 
   it('resolves undefined when no platform matches the id', async () => {
-    const manager = new PlatformManager(buildMockDatabaseManager(), logger)
+    const manager = new PlatformManager(buildMockDatabaseManager(), logger, buildMockCacheManager())
     await expect(manager.getPlatformById('missing-kid')).resolves.toBeUndefined()
   })
 })
@@ -169,7 +169,7 @@ describe('PlatformManager.getPlatformById()', () => {
 describe('PlatformManager.updatePlatform()', () => {
   it('updates the given fields and returns the updated Platform', async () => {
     const database = buildMockDatabaseManager()
-    const manager = new PlatformManager(database, logger)
+    const manager = new PlatformManager(database, logger, buildMockCacheManager())
     const platform = await manager.registerPlatform(registrationInput)
 
     const updated = await manager.updatePlatform(platform, { name: 'New Name' })
@@ -192,7 +192,7 @@ describe('PlatformManager.updatePlatform()', () => {
 
   it('keeps existing values for fields not included in the update', async () => {
     const database = buildMockDatabaseManager()
-    const manager = new PlatformManager(database, logger)
+    const manager = new PlatformManager(database, logger, buildMockCacheManager())
     const platform = await manager.registerPlatform(registrationInput)
 
     const updated = await manager.updatePlatform(platform, { name: 'New Name' })
@@ -208,7 +208,7 @@ describe('PlatformManager.updatePlatform()', () => {
   // (as the ones above do) can't tell a true partial write from a full-record one.
   it('writes only the changed field to the database, not the whole record', async () => {
     const database = buildMockDatabaseManager()
-    const manager = new PlatformManager(database, logger)
+    const manager = new PlatformManager(database, logger, buildMockCacheManager())
     const platform = await manager.registerPlatform(registrationInput)
     const updateSpy = jest.spyOn(database, 'updatePlatformById')
 
@@ -222,7 +222,7 @@ describe('PlatformManager.updatePlatform()', () => {
   // other's change.
   it('does not revert a concurrent update to a different field', async () => {
     const database = buildMockDatabaseManager()
-    const manager = new PlatformManager(database, logger)
+    const manager = new PlatformManager(database, logger, buildMockCacheManager())
     const staleSnapshot = await manager.registerPlatform(registrationInput)
 
     await manager.updatePlatform(staleSnapshot, { name: 'New Name' })
@@ -238,7 +238,7 @@ describe('PlatformManager.updatePlatform()', () => {
     'throws a ValidationError on %s when it is an empty string',
     async field => {
       const database = buildMockDatabaseManager()
-      const manager = new PlatformManager(database, logger)
+      const manager = new PlatformManager(database, logger, buildMockCacheManager())
       const platform = await manager.registerPlatform(registrationInput)
 
       await expectValidationErrorOnField(manager.updatePlatform(platform, { [field]: '' }), field)
@@ -247,7 +247,7 @@ describe('PlatformManager.updatePlatform()', () => {
 
   it('merges idTokenValidation field-by-field instead of replacing it wholesale', async () => {
     const database = buildMockDatabaseManager()
-    const manager = new PlatformManager(database, logger)
+    const manager = new PlatformManager(database, logger, buildMockCacheManager())
     const platform = await manager.registerPlatform(registrationInput)
 
     const updated = await manager.updatePlatform(platform, { idTokenValidation: { key: 'new-key' } })
@@ -257,7 +257,7 @@ describe('PlatformManager.updatePlatform()', () => {
 
   it('persists the update, not just the returned object', async () => {
     const database = buildMockDatabaseManager()
-    const manager = new PlatformManager(database, logger)
+    const manager = new PlatformManager(database, logger, buildMockCacheManager())
     const platform = await manager.registerPlatform(registrationInput)
 
     await manager.updatePlatform(platform, { name: 'New Name' })
@@ -267,7 +267,7 @@ describe('PlatformManager.updatePlatform()', () => {
 
   it('does not throw a collision error when url/clientId are provided but unchanged', async () => {
     const database = buildMockDatabaseManager()
-    const manager = new PlatformManager(database, logger)
+    const manager = new PlatformManager(database, logger, buildMockCacheManager())
     const platform = await manager.registerPlatform(registrationInput)
 
     await expect(
@@ -277,7 +277,7 @@ describe('PlatformManager.updatePlatform()', () => {
 
   it('throws URL_CLIENT_ID_COMBINATION_ALREADY_EXISTS when the new url/clientId collides with another platform', async () => {
     const database = buildMockDatabaseManager()
-    const manager = new PlatformManager(database, logger)
+    const manager = new PlatformManager(database, logger, buildMockCacheManager())
     const platform = await manager.registerPlatform(registrationInput)
     await manager.registerPlatform({ ...registrationInput, url: 'http://localhost/other', clientId: 'OtherClient' })
 
@@ -288,7 +288,7 @@ describe('PlatformManager.updatePlatform()', () => {
 
   it('throws a ValidationError on idTokenValidation.method for an invalid method', async () => {
     const database = buildMockDatabaseManager()
-    const manager = new PlatformManager(database, logger)
+    const manager = new PlatformManager(database, logger, buildMockCacheManager())
     const platform = await manager.registerPlatform(registrationInput)
 
     await expectValidationErrorOnField(
@@ -301,7 +301,7 @@ describe('PlatformManager.updatePlatform()', () => {
 describe('PlatformManager.deletePlatform()', () => {
   it('deletes a matching platform', async () => {
     const database = buildMockDatabaseManager()
-    const manager = new PlatformManager(database, logger)
+    const manager = new PlatformManager(database, logger, buildMockCacheManager())
     const platform = await manager.registerPlatform(registrationInput)
 
     await manager.deletePlatform(platform)
@@ -311,7 +311,7 @@ describe('PlatformManager.deletePlatform()', () => {
 
   it('does not throw when the platform no longer exists', async () => {
     const database = buildMockDatabaseManager()
-    const manager = new PlatformManager(database, logger)
+    const manager = new PlatformManager(database, logger, buildMockCacheManager())
     const platform = await manager.registerPlatform(registrationInput)
     await manager.deletePlatform(platform)
 
@@ -333,7 +333,7 @@ describe('PlatformManager.deletePlatform()', () => {
 describe('PlatformManager.getPlatforms()', () => {
   it('resolves every registered platform when no filter is given', async () => {
     const database = buildMockDatabaseManager()
-    const manager = new PlatformManager(database, logger)
+    const manager = new PlatformManager(database, logger, buildMockCacheManager())
     await manager.registerPlatform(registrationInput)
     await manager.registerPlatform({ ...registrationInput, url: 'http://localhost/other', clientId: 'OtherClient' })
 
@@ -342,7 +342,7 @@ describe('PlatformManager.getPlatforms()', () => {
 
   it('filters by url', async () => {
     const database = buildMockDatabaseManager()
-    const manager = new PlatformManager(database, logger)
+    const manager = new PlatformManager(database, logger, buildMockCacheManager())
     await manager.registerPlatform(registrationInput)
     await manager.registerPlatform({ ...registrationInput, url: 'http://localhost/other', clientId: 'OtherClient' })
 
@@ -354,7 +354,7 @@ describe('PlatformManager.getPlatforms()', () => {
 
   it('filters by name', async () => {
     const database = buildMockDatabaseManager()
-    const manager = new PlatformManager(database, logger)
+    const manager = new PlatformManager(database, logger, buildMockCacheManager())
     await manager.registerPlatform(registrationInput)
     await manager.registerPlatform({
       ...registrationInput,
@@ -370,20 +370,20 @@ describe('PlatformManager.getPlatforms()', () => {
   })
 
   it('resolves an empty array when nothing matches the filter', async () => {
-    const manager = new PlatformManager(buildMockDatabaseManager(), logger)
+    const manager = new PlatformManager(buildMockDatabaseManager(), logger, buildMockCacheManager())
     await expect(manager.getPlatforms({ url: 'http://localhost/unknown' })).resolves.toEqual([])
   })
 })
 
 describe('PlatformManager.getAllPlatforms()', () => {
   it('resolves an empty array when no platforms are registered', async () => {
-    const manager = new PlatformManager(buildMockDatabaseManager(), logger)
+    const manager = new PlatformManager(buildMockDatabaseManager(), logger, buildMockCacheManager())
     await expect(manager.getAllPlatforms()).resolves.toEqual([])
   })
 
   it('resolves every registered platform', async () => {
     const database = buildMockDatabaseManager()
-    const manager = new PlatformManager(database, logger)
+    const manager = new PlatformManager(database, logger, buildMockCacheManager())
     await manager.registerPlatform(registrationInput)
     await manager.registerPlatform({ ...registrationInput, url: 'http://localhost/other', clientId: 'OtherClient' })
 
@@ -394,7 +394,7 @@ describe('PlatformManager.getAllPlatforms()', () => {
 describe('PlatformManager.activatePlatform() / deactivatePlatform()', () => {
   it('persists and returns a new, frozen platform with active: false', async () => {
     const database = buildMockDatabaseManager()
-    const manager = new PlatformManager(database, logger)
+    const manager = new PlatformManager(database, logger, buildMockCacheManager())
     const platform = await manager.registerPlatform(registrationInput)
 
     const deactivated = await manager.deactivatePlatform(platform)
@@ -407,7 +407,7 @@ describe('PlatformManager.activatePlatform() / deactivatePlatform()', () => {
 
   it('persists and returns a new, frozen platform with active: true', async () => {
     const database = buildMockDatabaseManager()
-    const manager = new PlatformManager(database, logger)
+    const manager = new PlatformManager(database, logger, buildMockCacheManager())
     const platform = await manager.registerPlatform(registrationInput)
     await manager.deactivatePlatform(platform)
 
@@ -423,7 +423,7 @@ describe('PlatformManager.activatePlatform() / deactivatePlatform()', () => {
 describe('PlatformManager.rotateKeys()', () => {
   it('persists and returns a new, frozen platform with new keys', async () => {
     const database = buildMockDatabaseManager()
-    const manager = new PlatformManager(database, logger)
+    const manager = new PlatformManager(database, logger, buildMockCacheManager())
     const platform = await manager.registerPlatform(registrationInput)
 
     const rotated = await manager.rotateKeys(platform)
@@ -448,21 +448,21 @@ describe('PlatformManager.rotateKeys()', () => {
 
 describe('PlatformManager.getPublicKey() / getPrivateKey()', () => {
   it('returns the stored public key', async () => {
-    const manager = new PlatformManager(buildMockDatabaseManager(), logger)
+    const manager = new PlatformManager(buildMockDatabaseManager(), logger, buildMockCacheManager())
     const platform = await manager.registerPlatform(registrationInput)
 
     await expect(manager.getPublicKey(platform)).resolves.toBe('public-key-generated-kid')
   })
 
   it('returns the stored private key', async () => {
-    const manager = new PlatformManager(buildMockDatabaseManager(), logger)
+    const manager = new PlatformManager(buildMockDatabaseManager(), logger, buildMockCacheManager())
     const platform = await manager.registerPlatform(registrationInput)
 
     await expect(manager.getPrivateKey(platform)).resolves.toBe('private-key-generated-kid')
   })
 
   it('throws PUBLIC_KEY_NOT_FOUND when the platform has no public key', async () => {
-    const manager = new PlatformManager(buildMockDatabaseManager(), logger)
+    const manager = new PlatformManager(buildMockDatabaseManager(), logger, buildMockCacheManager())
     const platform = await manager.registerPlatform(registrationInput)
 
     await expect(manager.getPublicKey({ ...platform, keys: { ...platform.keys, public: '' } })).rejects.toThrow(
@@ -471,7 +471,7 @@ describe('PlatformManager.getPublicKey() / getPrivateKey()', () => {
   })
 
   it('throws PRIVATE_KEY_NOT_FOUND when the platform has no private key', async () => {
-    const manager = new PlatformManager(buildMockDatabaseManager(), logger)
+    const manager = new PlatformManager(buildMockDatabaseManager(), logger, buildMockCacheManager())
     const platform = await manager.registerPlatform(registrationInput)
 
     await expect(manager.getPrivateKey({ ...platform, keys: { ...platform.keys, private: '' } })).rejects.toThrow(

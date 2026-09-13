@@ -66,7 +66,7 @@ const buildDatabaseManagerWithPlatform = async (
   overrides: Partial<PlatformAttributes> = {},
 ): Promise<{ databaseManager: DatabaseManager; platform: Platform }> => {
   const databaseManager = buildMockDatabaseManager()
-  const platformManager = new PlatformManager(databaseManager, logger)
+  const platformManager = new PlatformManager(databaseManager, logger, buildMockCacheManager())
   // `savePlatform()` generates the id itself now (no more caller-supplied
   // `id`, see `MongoDatabaseManager.savePlatform()`), resolved back into a
   // full `Platform` here, since `OidcService.buildStateToken()`/
@@ -95,7 +95,7 @@ const buildDatabaseManagerWithPlatform = async (
 const buildServices = (
   databaseManager: DatabaseManager,
 ): { launchService: LaunchService; oidcService: OidcService; httpHandler: MockHttpHandler } => {
-  const platformManager = new PlatformManager(databaseManager, logger)
+  const platformManager = new PlatformManager(databaseManager, logger, buildMockCacheManager())
   const accessTokenManager = new AccessTokenManager(databaseManager, requestHandler, logger)
   const oidcService = new OidcService(databaseManager, requestHandler, buildMockCacheManager(), logger, 10)
   const httpHandler = buildMockHttpHandler()
@@ -808,7 +808,7 @@ describe('LaunchService.prepareHttpRoutes()', () => {
     })
 
     it('wires the raw record through to both formatted representations (idToken/legacyIdToken)', async () => {
-      // Detailed field-mapping coverage lives in id-token.serializer.test.ts --
+      // Detailed field-mapping coverage lives in id-token.serializer.test.ts,
       // this just confirms LaunchService actually calls the serializer and
       // threads its output through to LaunchContext, using one representative
       // field from each shape.

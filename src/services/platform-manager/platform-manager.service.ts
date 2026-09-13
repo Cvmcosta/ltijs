@@ -32,9 +32,9 @@ export class PlatformManager {
 
   private readonly databaseManager: DatabaseManager
   private readonly logger: Logger
-  private readonly cacheManager: CacheManager | undefined
+  private readonly cacheManager: CacheManager
 
-  constructor(databaseManager: DatabaseManager, logger: Logger, cacheManager?: CacheManager) {
+  constructor(databaseManager: DatabaseManager, logger: Logger, cacheManager: CacheManager) {
     this.databaseManager = databaseManager
     this.logger = logger
     this.cacheManager = cacheManager
@@ -141,10 +141,8 @@ export class PlatformManager {
 
   // Reaches directly into KeysetService's cache key instead of taking a KeysetService dependency, since
   // Provider constructs KeysetService *after* PlatformManager (which KeysetService itself depends on);
-  // the reverse dependency would be circular. `cacheManager` is optional so invalidation is simply
-  // skipped when absent.
+  // the reverse dependency would be circular.
   private async invalidateKeysetCache(): Promise<void> {
-    if (this.cacheManager === undefined) return
     await this.cacheManager.delete(KEYSET_CACHE_KEY)
   }
 

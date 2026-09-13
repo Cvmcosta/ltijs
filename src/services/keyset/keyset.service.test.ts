@@ -43,7 +43,7 @@ const buildService = (
   databaseManager: DatabaseManager,
   cacheManager: CacheManager = buildMockCacheManager(),
 ): { service: KeysetService; httpHandler: ReturnType<typeof buildMockHttpHandler> } => {
-  const platformManager = new PlatformManager(databaseManager, logger)
+  const platformManager = new PlatformManager(databaseManager, logger, buildMockCacheManager())
   const httpHandler = buildMockHttpHandler()
   return { service: new KeysetService(platformManager, httpHandler, cacheManager, logger), httpHandler }
 }

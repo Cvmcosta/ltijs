@@ -74,7 +74,7 @@ const buildDatabaseManagerWithPlatform = async (
   overrides: Partial<PlatformAttributes> = {},
 ): Promise<{ databaseManager: DatabaseManager; platform: Platform }> => {
   const databaseManager = buildMockDatabaseManager()
-  const platformManager = new PlatformManager(databaseManager, logger)
+  const platformManager = new PlatformManager(databaseManager, logger, buildMockCacheManager())
   // `savePlatform()` generates the id itself now (no more caller-supplied
   // `id`, see `MongoDatabaseManager.savePlatform()`), resolved back into a
   // full `Platform` here, since `OidcService`'s methods now all take an
@@ -672,7 +672,7 @@ describe('OidcService.buildStateToken() / validateStateToken()', () => {
 
   it('throws INVALID_STATE for a state token verified against a different platform', async () => {
     const { databaseManager, platform: platformA } = await buildDatabaseManagerWithPlatform()
-    const platformManager = new PlatformManager(databaseManager, logger)
+    const platformManager = new PlatformManager(databaseManager, logger, buildMockCacheManager())
     const otherKeyPair = crypto.generateKeyPairSync('rsa', {
       modulusLength: 2048,
       publicKeyEncoding: { type: 'spki', format: 'pem' },
@@ -749,7 +749,7 @@ describe('OidcService.buildRecoveryToken() / verifyRecoveryToken()', () => {
 
   it('throws INVALID_STATE for a recovery token verified against a different platform', async () => {
     const { databaseManager, platform: platformA } = await buildDatabaseManagerWithPlatform()
-    const platformManager = new PlatformManager(databaseManager, logger)
+    const platformManager = new PlatformManager(databaseManager, logger, buildMockCacheManager())
     const otherKeyPair = crypto.generateKeyPairSync('rsa', {
       modulusLength: 2048,
       publicKeyEncoding: { type: 'spki', format: 'pem' },
