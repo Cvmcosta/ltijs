@@ -70,7 +70,7 @@ export interface LegacyIdTokenDoc {
   user: string
   clientId: string
   deploymentId: string
-  userInfo: Record<string, unknown>
+  userInfo?: Record<string, unknown>
   platformInfo: Record<string, unknown>
   platformId: string
   createdAt: Date
