@@ -40,7 +40,8 @@ await provider.listen()
 ```
 
 Continue with [Getting Started](guides/getting-started.md) for the full walkthrough, including
-registering a platform.
+registering a platform. Or see a full working example in
+[ltijs-demo-server](https://github.com/Cvmcosta/ltijs-demo-server).
 
 ## Documentation
 
