@@ -101,7 +101,7 @@ function buildServicesInfo(record: IdTokenRecord): IdTokenServices {
         ? { available: false }
         : {
             available: true,
-            lineItemId: assignmentAndGradesSettings.lineitem,
+            lineItemId: assignmentAndGradesSettings.lineitem === '' ? undefined : assignmentAndGradesSettings.lineitem,
             scopes: assignmentAndGradesSettings.scope,
           },
     deepLinking:

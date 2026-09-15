@@ -157,6 +157,20 @@ describe('buildIdToken()', () => {
     })
   })
 
+  it('normalizes an empty-string lineitem claim to undefined while keeping assignmentAndGrades available', () => {
+    const idToken = buildIdToken(
+      buildRecord({
+        [IdTokenClaim.Endpoint]: { lineitem: '', scope: ['scope-1'] },
+      }),
+    )
+
+    expect(idToken.services.assignmentAndGrades).toEqual({
+      available: true,
+      lineItemId: undefined,
+      scopes: ['scope-1'],
+    })
+  })
+
   it('marks services as unavailable when the corresponding claims are absent', () => {
     const idToken = buildIdToken(buildRecord())
 
