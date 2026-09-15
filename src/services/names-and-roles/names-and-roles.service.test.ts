@@ -123,12 +123,19 @@ describe('NamesAndRoles.isAvailable()', () => {
 })
 
 describe('NamesAndRoles.getMembers()', () => {
-  it('throws MISSING_NAMES_ROLES_SERVICE_URL when the idToken has no namesRoles claim', async () => {
+  it('throws NAMES_AND_ROLES_NOT_AVAILABLE when the idToken has no namesRoles claim', async () => {
     const service = buildService(basePlatform, { ...baseIdToken, [IdTokenClaim.NamesRoleService]: undefined })
+    await expect(service.getMembers()).rejects.toThrow('NAMES_AND_ROLES_NOT_AVAILABLE')
+  })
+
+  it('throws MISSING_NAMES_ROLES_SERVICE_URL when the namesRoles claim is present but lacks a context_memberships_url', async () => {
+    const service = buildService(basePlatform, { ...baseIdToken, [IdTokenClaim.NamesRoleService]: {} })
     await expect(service.getMembers()).rejects.toThrow('MISSING_NAMES_ROLES_SERVICE_URL')
   })
 
-  it('resolves the namesRoles claim only once, not once per internal validation pass', async () => {
+  // Read twice, not once: ensureServiceAvailability() reads it once (via isAvailable()) to confirm NRPS
+  // is declared, and buildMembershipsRequest reads it again to get the context_memberships_url.
+  it('resolves the namesRoles claim exactly twice, not once per internal validation pass', async () => {
     let namesRolesReadCount = 0
     const idToken = { ...baseIdToken }
     Object.defineProperty(idToken, IdTokenClaim.NamesRoleService, {
@@ -146,7 +153,7 @@ describe('NamesAndRoles.getMembers()', () => {
 
     await service.getMembers()
 
-    expect(namesRolesReadCount).toBe(1)
+    expect(namesRolesReadCount).toBe(2)
   })
 
   it('returns a valid single page of members', async () => {

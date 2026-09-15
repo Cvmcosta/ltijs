@@ -11,7 +11,11 @@ import type { LaunchContext } from '#services/launch/launch-context.service'
 import type { IdTokenRecord } from '#services/database-manager/database-manager.types'
 import { MembershipContainerSchema } from '#services/names-and-roles/names-and-roles.schemas'
 import { buildMemberships } from '#services/names-and-roles/names-and-roles.serializer'
-import { MissingNamesRolesServiceUrlError, MembersNotFoundError } from '#services/names-and-roles/errors'
+import {
+  MissingNamesRolesServiceUrlError,
+  MembersNotFoundError,
+  NamesAndRolesNotAvailableError,
+} from '#services/names-and-roles/errors'
 import { MissingOrInvalidResourceLinkIdError } from '#shared/errors'
 import type {
   GetMembersOptions,
@@ -52,6 +56,7 @@ export class NamesAndRoles {
   }
 
   public async getMembers(options?: GetMembersOptions): Promise<Memberships> {
+    this.ensureServiceAvailability()
     const { platform, rawIdToken: idToken } = this.launchContext
     const request = this.buildMembershipsRequest(idToken, options)
 
@@ -63,6 +68,10 @@ export class NamesAndRoles {
 
     const result = await this.fetchPages(request, accessToken, this.resolveNumberOfPages(options?.pages))
     return buildMemberships(result)
+  }
+
+  private ensureServiceAvailability(): void {
+    if (!this.isAvailable()) throw new NamesAndRolesNotAvailableError()
   }
 
   private resolveNumberOfPages(pages: number | false | undefined): number | false {

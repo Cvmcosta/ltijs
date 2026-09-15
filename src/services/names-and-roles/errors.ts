@@ -11,3 +11,9 @@ export class MembersNotFoundError extends LtijsError {
     super('MEMBERS_NOT_FOUND')
   }
 }
+
+export class NamesAndRolesNotAvailableError extends LtijsError {
+  constructor() {
+    super('NAMES_AND_ROLES_NOT_AVAILABLE')
+  }
+}

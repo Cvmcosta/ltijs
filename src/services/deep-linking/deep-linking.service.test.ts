@@ -89,9 +89,9 @@ describe('DeepLinking.isAvailable()', () => {
 })
 
 describe('DeepLinking.createDeepLinkingMessage()', () => {
-  it('throws MISSING_DEEP_LINK_SETTINGS when the token has no deepLinkingSettings', async () => {
+  it('throws DEEP_LINKING_NOT_AVAILABLE when the token has no deepLinkingSettings', async () => {
     const service = buildService(basePlatform, buildIdToken(undefined))
-    await expect(service.createDeepLinkingMessage(contentItem)).rejects.toThrow('MISSING_DEEP_LINK_SETTINGS')
+    await expect(service.createDeepLinkingMessage(contentItem)).rejects.toThrow('DEEP_LINKING_NOT_AVAILABLE')
   })
 
   it('throws a ValidationError when no content items are provided', async () => {
@@ -231,7 +231,9 @@ describe('DeepLinking.createDeepLinkingForm()', () => {
     expect(/action="[^"]*"/.exec(form)?.[0]).not.toContain('<img')
   })
 
-  it('resolves the deepLinkingSettings claim only once, not once per internal validation pass', async () => {
+  // Read twice, not once: ensureServiceAvailability() reads it once (via isAvailable()) to confirm this
+  // is a deep-linking launch, and resolveDeepLinkingSettings reads it again to get the settings value.
+  it('resolves the deepLinkingSettings claim exactly twice, not once per internal validation pass', async () => {
     let settingsReadCount = 0
     const idToken = buildIdToken(undefined)
     Object.defineProperty(idToken, IdTokenClaim.DeepLinkingSettings, {
@@ -249,6 +251,6 @@ describe('DeepLinking.createDeepLinkingForm()', () => {
 
     await service.createDeepLinkingForm(contentItem)
 
-    expect(settingsReadCount).toBe(1)
+    expect(settingsReadCount).toBe(2)
   })
 })

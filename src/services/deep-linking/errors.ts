@@ -5,3 +5,9 @@ export class MissingDeepLinkSettingsError extends LtijsError {
     super('MISSING_DEEP_LINK_SETTINGS')
   }
 }
+
+export class DeepLinkingNotAvailableError extends LtijsError {
+  constructor() {
+    super('DEEP_LINKING_NOT_AVAILABLE')
+  }
+}

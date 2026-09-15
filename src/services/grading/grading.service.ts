@@ -23,7 +23,7 @@ import {
   ScoreSchema,
 } from '#services/grading/grading.schemas'
 import { buildLineItem, buildLineItems, buildScore, buildScores } from '#services/grading/grading.serializer'
-import { MissingLineItemsEndpointError } from '#services/grading/errors'
+import { AssignmentAndGradesNotAvailableError, MissingLineItemsEndpointError } from '#services/grading/errors'
 import { MissingOrInvalidResourceLinkIdError } from '#shared/errors'
 import type {
   GetLineItemsOptions,
@@ -73,8 +73,9 @@ export class Grading {
   }
 
   public async getLineItems(options?: GetLineItemsOptions): Promise<GetLineItemsResult> {
+    this.ensureServiceAvailability()
     const { platform, rawIdToken: idToken } = this.launchContext
-    if (options?.url === undefined) this.ensureServiceAvailability(idToken)
+    if (options?.url === undefined) this.ensureLineItemsAvailable(idToken)
     this.logger.debug(this.LOG_COMPONENT, 'Attempting to retrieve line items')
 
     const url = options?.url ?? this.resolveLineItemsEndpoint(idToken)
@@ -87,8 +88,9 @@ export class Grading {
   }
 
   public async createLineItem(lineItem: LineItem, options?: GetLineItemsOptions): Promise<LineItem> {
+    this.ensureServiceAvailability()
     const { platform, rawIdToken: idToken } = this.launchContext
-    this.ensureServiceAvailability(idToken)
+    this.ensureLineItemsAvailable(idToken)
     const validatedLineItem = validate<LineItem>(LineItemSchema, lineItem)
     this.logger.debug(this.LOG_COMPONENT, 'Attempting to create a line item')
 
@@ -107,6 +109,7 @@ export class Grading {
   }
 
   public async getLineItemById(lineItemId: string): Promise<LineItem> {
+    this.ensureServiceAvailability()
     const validatedLineItemId = validate<string>(LineItemIdSchema, lineItemId)
     const { platform } = this.launchContext
     this.logger.debug(this.LOG_COMPONENT, `Attempting to retrieve line item: ${validatedLineItemId}`)
@@ -124,6 +127,7 @@ export class Grading {
   }
 
   public async updateLineItemById(lineItemId: string, lineItem: LineItem): Promise<LineItem> {
+    this.ensureServiceAvailability()
     const validatedLineItemId = validate<string>(LineItemIdSchema, lineItemId)
     const validatedLineItem = validate<LineItem>(LineItemSchema, lineItem)
     const { platform } = this.launchContext
@@ -138,6 +142,7 @@ export class Grading {
   }
 
   public async deleteLineItemById(lineItemId: string): Promise<boolean> {
+    this.ensureServiceAvailability()
     const validatedLineItemId = validate<string>(LineItemIdSchema, lineItemId)
     const { platform } = this.launchContext
     this.logger.debug(this.LOG_COMPONENT, `Attempting to delete line item: ${validatedLineItemId}`)
@@ -151,6 +156,7 @@ export class Grading {
   }
 
   public async submitScore(lineItemId: string, score: Score): Promise<Score> {
+    this.ensureServiceAvailability()
     const validatedLineItemId = validate<string>(LineItemIdSchema, lineItemId)
     const validatedScore = validate<Score>(ScoreSchema, score)
     const { platform, rawIdToken: idToken } = this.launchContext
@@ -176,6 +182,7 @@ export class Grading {
   }
 
   public async getScores(lineItemId: string, options?: GetScoresOptions): Promise<GetScoresResult> {
+    this.ensureServiceAvailability()
     const validatedLineItemId = validate<string>(LineItemIdSchema, lineItemId)
     const { platform } = this.launchContext
     this.logger.debug(this.LOG_COMPONENT, `Attempting to retrieve scores for line item: ${validatedLineItemId}`)
@@ -253,7 +260,11 @@ export class Grading {
     return { next: links?.next?.url, prev: links?.prev?.url, first: links?.first?.url, last: links?.last?.url }
   }
 
-  private ensureServiceAvailability(idToken: IdTokenRecord): void {
+  private ensureServiceAvailability(): void {
+    if (!this.isAvailable()) throw new AssignmentAndGradesNotAvailableError()
+  }
+
+  private ensureLineItemsAvailable(idToken: IdTokenRecord): void {
     if (idToken[IdTokenClaim.Endpoint]?.lineitems === undefined) {
       throw new MissingLineItemsEndpointError()
     }

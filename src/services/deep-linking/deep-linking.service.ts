@@ -9,7 +9,7 @@ import { renderTemplate } from '#utils/templating/template-renderer'
 import { escapeHtmlAttribute } from '#utils/templating/html-escape'
 import { validate } from '#utils/validation/validation'
 import { ContentItemsInputSchema } from '#services/deep-linking/deep-linking.schemas'
-import { MissingDeepLinkSettingsError } from '#services/deep-linking/errors'
+import { DeepLinkingNotAvailableError, MissingDeepLinkSettingsError } from '#services/deep-linking/errors'
 import { resolvePlatformPrivateKey } from '#services/platform-manager/platform-keys'
 import type { ContentItem, DeepLinkingOptions } from '#services/deep-linking/deep-linking.types'
 import type { DeepLinkingSettingsClaim, IdTokenRecord } from '#services/database-manager/database-manager.types'
@@ -49,6 +49,7 @@ export class DeepLinking {
     contentItems: ContentItem | ContentItem[],
     options?: DeepLinkingOptions,
   ): Promise<string> {
+    this.ensureServiceAvailability()
     const { platform, rawIdToken: idToken } = this.launchContext
     const settings = this.resolveDeepLinkingSettings(idToken)
     return await this.signDeepLinkingMessage({ idToken, platform, settings, contentItems, options })
@@ -58,6 +59,7 @@ export class DeepLinking {
     contentItems: ContentItem | ContentItem[],
     options?: DeepLinkingOptions,
   ): Promise<string> {
+    this.ensureServiceAvailability()
     const { platform, rawIdToken: idToken } = this.launchContext
     const settings = this.resolveDeepLinkingSettings(idToken)
     const message = await this.signDeepLinkingMessage({ idToken, platform, settings, contentItems, options })
@@ -104,6 +106,10 @@ export class DeepLinking {
       expiresIn: this.RESPONSE_TTL_SECONDS,
       keyid: platform.id,
     })
+  }
+
+  private ensureServiceAvailability(): void {
+    if (!this.isAvailable()) throw new DeepLinkingNotAvailableError()
   }
 
   private resolveDeepLinkingSettings(idToken: IdTokenRecord): DeepLinkingSettingsClaim {

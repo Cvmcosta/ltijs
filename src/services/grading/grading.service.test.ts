@@ -241,8 +241,13 @@ describe('Grading.getLineItems()', () => {
     })
   })
 
-  it('throws MISSING_LINEITEMS_ENDPOINT when the idToken has no endpoint claim and no options.url', async () => {
+  it('throws ASSIGNMENT_AND_GRADES_NOT_AVAILABLE when the idToken has no endpoint claim and no options.url', async () => {
     const grading = buildService(basePlatform, { ...baseIdToken, [IdTokenClaim.Endpoint]: undefined })
+    await expect(grading.getLineItems()).rejects.toThrow('ASSIGNMENT_AND_GRADES_NOT_AVAILABLE')
+  })
+
+  it('throws MISSING_LINEITEMS_ENDPOINT when the endpoint claim is present but lacks a lineitems url', async () => {
+    const grading = buildService(basePlatform, { ...baseIdToken, [IdTokenClaim.Endpoint]: { scope: [] } })
     await expect(grading.getLineItems()).rejects.toThrow('MISSING_LINEITEMS_ENDPOINT')
   })
 
@@ -260,6 +265,11 @@ describe('Grading.getLineItems()', () => {
 })
 
 describe('Grading.createLineItem()', () => {
+  it('throws ASSIGNMENT_AND_GRADES_NOT_AVAILABLE when the idToken has no endpoint claim', async () => {
+    const grading = buildService(basePlatform, { ...baseIdToken, [IdTokenClaim.Endpoint]: undefined })
+    await expect(grading.createLineItem(lineItem)).rejects.toThrow('ASSIGNMENT_AND_GRADES_NOT_AVAILABLE')
+  })
+
   it('throws a ValidationError when no lineItem is provided', async () => {
     const grading = buildService()
     await expectValidationErrorOnField(grading.createLineItem(undefined as unknown as LineItem), '(root)')
@@ -296,6 +306,11 @@ describe('Grading.createLineItem()', () => {
 })
 
 describe('Grading.getLineItemById()', () => {
+  it('throws ASSIGNMENT_AND_GRADES_NOT_AVAILABLE when the idToken has no endpoint claim', async () => {
+    const grading = buildService(basePlatform, { ...baseIdToken, [IdTokenClaim.Endpoint]: undefined })
+    await expect(grading.getLineItemById(lineItem.id)).rejects.toThrow('ASSIGNMENT_AND_GRADES_NOT_AVAILABLE')
+  })
+
   it('throws a ValidationError when no lineItemId is provided', async () => {
     const grading = buildService()
     await expectValidationErrorOnField(grading.getLineItemById(undefined as unknown as string), '(root)')
@@ -315,6 +330,13 @@ describe('Grading.getLineItemById()', () => {
 })
 
 describe('Grading.updateLineItemById()', () => {
+  it('throws ASSIGNMENT_AND_GRADES_NOT_AVAILABLE when the idToken has no endpoint claim', async () => {
+    const grading = buildService(basePlatform, { ...baseIdToken, [IdTokenClaim.Endpoint]: undefined })
+    await expect(grading.updateLineItemById(lineItem.id, lineItem)).rejects.toThrow(
+      'ASSIGNMENT_AND_GRADES_NOT_AVAILABLE',
+    )
+  })
+
   it('throws a ValidationError when no lineItemId is provided', async () => {
     const grading = buildService()
     await expectValidationErrorOnField(grading.updateLineItemById(undefined as unknown as string, lineItem), '(root)')
@@ -338,6 +360,11 @@ describe('Grading.updateLineItemById()', () => {
 })
 
 describe('Grading.deleteLineItemById()', () => {
+  it('throws ASSIGNMENT_AND_GRADES_NOT_AVAILABLE when the idToken has no endpoint claim', async () => {
+    const grading = buildService(basePlatform, { ...baseIdToken, [IdTokenClaim.Endpoint]: undefined })
+    await expect(grading.deleteLineItemById(lineItem.id)).rejects.toThrow('ASSIGNMENT_AND_GRADES_NOT_AVAILABLE')
+  })
+
   it('throws a ValidationError when no lineItemId is provided', async () => {
     const grading = buildService()
     await expectValidationErrorOnField(grading.deleteLineItemById(undefined as unknown as string), '(root)')
@@ -355,6 +382,13 @@ describe('Grading.deleteLineItemById()', () => {
 })
 
 describe('Grading.submitScore()', () => {
+  it('throws ASSIGNMENT_AND_GRADES_NOT_AVAILABLE when the idToken has no endpoint claim', async () => {
+    const grading = buildService(basePlatform, { ...baseIdToken, [IdTokenClaim.Endpoint]: undefined })
+    await expect(grading.submitScore(lineItem.id, { scoreGiven: 10 })).rejects.toThrow(
+      'ASSIGNMENT_AND_GRADES_NOT_AVAILABLE',
+    )
+  })
+
   it('throws a ValidationError when no lineItemId is provided', async () => {
     const grading = buildService()
     await expectValidationErrorOnField(
@@ -486,6 +520,11 @@ describe('Grading.submitScore()', () => {
 })
 
 describe('Grading.getScores()', () => {
+  it('throws ASSIGNMENT_AND_GRADES_NOT_AVAILABLE when the idToken has no endpoint claim', async () => {
+    const grading = buildService(basePlatform, { ...baseIdToken, [IdTokenClaim.Endpoint]: undefined })
+    await expect(grading.getScores(lineItem.id)).rejects.toThrow('ASSIGNMENT_AND_GRADES_NOT_AVAILABLE')
+  })
+
   it('throws a ValidationError when no lineItemId is provided', async () => {
     const grading = buildService()
     await expectValidationErrorOnField(grading.getScores(undefined as unknown as string), '(root)')
