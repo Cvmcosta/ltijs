@@ -23,13 +23,11 @@ reads and writes the exact collection structure v5 used (including its own encry
 point it at your existing database as-is:
 
 ```ts
-import { Provider, MongoLegacyDatabaseManager } from 'ltijs'
-
-const logger = { debug: console.debug, warn: console.warn, error: console.error }
+import { Provider, MongoLegacyDatabaseManager, DefaultLogger } from 'ltijs'
 
 const provider = new Provider({
   databaseManager: new MongoLegacyDatabaseManager(
-    logger,
+    new DefaultLogger(),
     { url: 'mongodb://localhost/ltijs' },
     'the-same-key-your-v5-Provider.setup() call used',
   ),
@@ -70,12 +68,10 @@ running (see [Philosophy & Architecture](philosophy-and-architecture.md)). Opt i
 with `RedisCacheManager`:
 
 ```ts
-import { Provider, RedisCacheManager } from 'ltijs'
-
-const logger = { debug: console.debug, warn: console.warn, error: console.error }
+import { Provider, RedisCacheManager, DefaultLogger } from 'ltijs'
 
 new Provider({
-  cacheManager: new RedisCacheManager(logger, { url: 'redis://localhost:6379' }),
+  cacheManager: new RedisCacheManager(new DefaultLogger(), { url: 'redis://localhost:6379' }),
 })
 ```
 
@@ -90,10 +86,9 @@ Defaults to `ExpressHttpHandler`. Construct your own to register middleware or s
 ltijs's own routes, or to change the port/TLS/CORS configuration it's built with:
 
 ```ts
-import { Provider, ExpressHttpHandler } from 'ltijs'
+import { Provider, ExpressHttpHandler, DefaultLogger } from 'ltijs'
 
-const logger = { debug: console.debug, warn: console.warn, error: console.error }
-const httpHandler = new ExpressHttpHandler(logger, { port: 3000 })
+const httpHandler = new ExpressHttpHandler(new DefaultLogger(), { port: 3000 })
 httpHandler.app.use(myCustomMiddleware)
 
 new Provider({ httpHandler })
@@ -145,8 +140,17 @@ new Provider({ requestHandler: new MyRequestHandler() })
 
 ## Logger
 
-Defaults to `DefaultLogger`, which writes to `console`. `Logger` is three methods, so a plain object
-satisfies it, no class required, the same pattern used throughout these guides:
+Defaults to `DefaultLogger`, which writes to `console`. It's exported so you can construct it directly,
+the same as `ExpressHttpHandler`:
+
+```ts
+import { Provider, DefaultLogger } from 'ltijs'
+
+new Provider({ logger: new DefaultLogger() })
+```
+
+`Logger` is three methods, so a plain object satisfies it too, no class required, for routing debug output
+anywhere else (a log aggregator, a file, a no-op):
 
 ```ts
 new Provider({

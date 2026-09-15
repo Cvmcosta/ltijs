@@ -109,3 +109,8 @@ export type { RedisConnectionConfig } from '#services/cache-manager/redis/redis-
 // construction, not by grabbing `provider.httpHandler` afterward.
 export { ExpressHttpHandler } from '#services/http-handler/express/express-http-handler.service'
 export type { ExpressHttpHandlerOptions } from '#services/http-handler/express/express-http-handler.types'
+
+// `DefaultLogger` is the *default* `logger`, exported for the same reason as `ExpressHttpHandler`: so a
+// consumer can construct it directly (e.g. to pass into another default implementation's constructor,
+// like `RedisCacheManager`, that also takes a `Logger`).
+export { DefaultLogger } from '#services/logger/default/default-logger.service'

@@ -80,13 +80,11 @@ If you're moving an existing deployment without migrating its data, reach for
 your existing database keeps working as-is, no data migration required.
 
 ```ts
-import { Provider, MongoLegacyDatabaseManager } from 'ltijs'
-
-const logger = { debug: console.debug, warn: console.warn, error: console.error }
+import { Provider, MongoLegacyDatabaseManager, DefaultLogger } from 'ltijs'
 
 const provider = new Provider({
   databaseManager: new MongoLegacyDatabaseManager(
-    logger,
+    new DefaultLogger(),
     { url: 'mongodb://localhost/database' },
     'the-same-key-your-v5-Provider.setup() call used',
   ),

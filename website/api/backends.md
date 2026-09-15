@@ -211,9 +211,9 @@ CORS entirely, or a `CorsOptions` object to restrict it.
 and pass the already-configured instance in as `httpHandler`:
 
 ```ts
-import { Provider, ExpressHttpHandler } from 'ltijs'
+import { Provider, ExpressHttpHandler, DefaultLogger } from 'ltijs'
 
-const httpHandler = new ExpressHttpHandler(myLogger, { port: 3000 })
+const httpHandler = new ExpressHttpHandler(new DefaultLogger(), { port: 3000 })
 httpHandler.app.use(myCustomMiddleware)
 
 const provider = new Provider({ ...options, httpHandler })
@@ -230,10 +230,10 @@ your middleware ahead of ltijs's routes in the stack, so it runs for every reque
 The same pattern serves static files, matching legacy's `staticPath` option:
 
 ```ts
-import { Provider, ExpressHttpHandler } from 'ltijs'
+import { Provider, ExpressHttpHandler, DefaultLogger } from 'ltijs'
 import express from 'express'
 
-const httpHandler = new ExpressHttpHandler(myLogger, { port: 3000 })
+const httpHandler = new ExpressHttpHandler(new DefaultLogger(), { port: 3000 })
 httpHandler.app.use(express.static('public', { index: '_' }))
 
 const provider = new Provider({ ...options, httpHandler })

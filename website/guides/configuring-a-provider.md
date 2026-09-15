@@ -43,12 +43,10 @@ new Provider({
 ## Cache
 
 ```ts
-import { Provider, RedisCacheManager } from 'ltijs'
-
-const logger = { debug: console.debug, warn: console.warn, error: console.error }
+import { Provider, RedisCacheManager, DefaultLogger } from 'ltijs'
 
 new Provider({
-  cacheManager: new RedisCacheManager(logger, { url: 'redis://localhost:6379' }),
+  cacheManager: new RedisCacheManager(new DefaultLogger(), { url: 'redis://localhost:6379' }),
 })
 ```
 
