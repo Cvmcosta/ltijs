@@ -156,7 +156,7 @@ export class MongoDatabaseManager implements DatabaseManager {
     const doc = await AccessTokenModel.findOneAndReplace(
       { platformUrl, clientId, scopes },
       { platformUrl, clientId, scopes, value },
-      { upsert: true, new: true },
+      { upsert: true, returnDocument: 'after' },
     )
     return doc._id.toString()
   }

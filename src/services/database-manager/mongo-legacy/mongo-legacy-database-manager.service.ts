@@ -255,7 +255,7 @@ export class MongoLegacyDatabaseManager implements DatabaseManager {
     const doc = await LegacyAccessTokenModel.findOneAndReplace(
       { platformUrl, clientId, scopes },
       { platformUrl, clientId, scopes, ...encrypted },
-      { upsert: true, new: true },
+      { upsert: true, returnDocument: 'after' },
     )
     return doc._id.toString()
   }
