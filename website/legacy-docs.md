@@ -50,6 +50,8 @@
   - [Assignment and Grades](#assignment-and-grades-service-with-ltijs)
   - [Names and Roles Provisioning](#names-and-roles-provisioning-service-with-ltijs)
   - [Dynamic Registration Service](#dynamic-registration-service-with-ltijs)
+    - [Setting up dynamic registration](#setting-up-dynamic-registration)
+    - [Using the Dynamic Registration Service](#using-the-dynamic-registration-service)
 - [Debugging](#debugging)
 
 ---
@@ -68,11 +70,11 @@ This library implements a tool provider as an [Express](https://expressjs.com/) 
 
 | Feature | Implementation | Documentation |
 | --------- | - | - |
-| [Keyset endpoint support](https://cvmcosta.me/ltijs/#/provider?id=keyset-endpoint) | <center>✔️</center> | <center>✔️</center> |
-| [Deep Linking Service Class](https://cvmcosta.me/ltijs/#/deeplinking) | <center>✔️</center> | <center>✔️</center> |
-| [Grading Service Class](https://cvmcosta.me/ltijs/#/grading) | <center>✔️</center> | <center>✔️</center> |
-| [Names and Roles Service Class](https://cvmcosta.me/ltijs/#/namesandroles) | <center>✔️</center> | <center>✔️</center> |
-| [Dynamic Registration Service ](https://cvmcosta.me/ltijs/#/dynamicregistration) | <center>✔️</center> | <center>✔️</center> |
+| Keyset endpoint support | <center>✔️</center> | <center>✔️</center> |
+| [Deep Linking Service Class](#deep-linking-service-with-ltijs) | <center>✔️</center> | <center>✔️</center> |
+| [Grading Service Class](#assignment-and-grades-service-with-ltijs) | <center>✔️</center> | <center>✔️</center> |
+| [Names and Roles Service Class](#names-and-roles-provisioning-service-with-ltijs) | <center>✔️</center> | <center>✔️</center> |
+| [Dynamic Registration Service](#dynamic-registration-service-with-ltijs) | <center>✔️</center> | <center>✔️</center> |
 | Database plugins | <center>✔️</center> | <center>✔️</center> |
 | Revised usability tutorials | <center></center> | <center></center> |
 | Key Rotation | <center></center> | <center></center> |
@@ -190,17 +192,17 @@ Database object. Allows you to perform the database operations using the same me
 
 
 #### Provider.Grade
-[Grade Class](https://cvmcosta.github.io/ltijs/#/grading), implementing the Assignment and Grade service of the LTI® 1.3 protocol.
+[Grade Class](#assignment-and-grades-service-with-ltijs), implementing the Assignment and Grade service of the LTI® 1.3 protocol.
 
 **Type**: ```Grade```
 
 #### Provider.DeepLinking
-[DeepLinking Class](https://cvmcosta.github.io/ltijs/#/deeplinking), implementing the Deep Linking service of the LTI® 1.3 protocol.
+[DeepLinking Class](#deep-linking-service-with-ltijs), implementing the Deep Linking service of the LTI® 1.3 protocol.
 
 **Type**: ```DeepLinking```
 
 #### Provider.NamesAndRoles
-[NamesAndRoles Class](https://cvmcosta.github.io/ltijs/#/namesandroles), implementing the Names and Roles Provisioning service of the LTI® 1.3 protocol.
+[NamesAndRoles Class](#names-and-roles-provisioning-service-with-ltijs), implementing the Names and Roles Provisioning service of the LTI® 1.3 protocol.
 
 **Type**: ```NamesAndRoles```
 
@@ -1155,7 +1157,7 @@ lti.onDeepLinking(async (token, req, res, next) => {
 )
 ```
 
-> [See more about the Deep Linking Service](https://cvmcosta.me/ltijs/#/deeplinking)
+> [See more about the Deep Linking Service](#deep-linking-service-with-ltijs)
 
 
 #### onInvalidToken
@@ -1222,7 +1224,7 @@ lti.onUnregisteredPlatform((req, res) => {
 
 #### onInactivePlatform
 
-The `onInactivePlatform` callback is called whenever the Platform attempting to start a LTI launch was registered through [Dynamic Registration](https://cvmcosta.me/ltijs/#/dynamicregistration) and is not active.
+The `onInactivePlatform` callback is called whenever the Platform attempting to start a LTI launch was registered through [Dynamic Registration](#dynamic-registration-service-with-ltijs) and is not active.
 
 The callback route will be given the two Express route parameters (request, response).
 
@@ -1567,7 +1569,7 @@ authConfig: { method: 'RSA_KEY',
                   '-----END PUBLIC KEY-----' }
 ```
 
-Platforms can also be registered by utilizing the [Dynamic Registration Service](https://cvmcosta.me/ltijs/#/dynamicregistration).
+Platforms can also be registered by utilizing the [Dynamic Registration Service](#dynamic-registration-service-with-ltijs).
 
 #### Retrieving a Platform
 
@@ -2040,22 +2042,579 @@ ___
 
 ### Deep Linking Service with Ltijs
 
-The Deep Linking Service class documentation can be accessed [here](https://cvmcosta.me/ltijs/#/deeplinking).
+Ltijs implements the [LTI® 1.3 Deep Linking Service Specification](https://www.imsglobal.org/spec/lti-dl/v2p0/) in the form of the **DeepLinking Class**, available as `lti.DeepLinking`.
+
+Deep Linking consists of using an LTI® launch to select specific resources within a tool to be displayed to the user. This class provides two methods for generating the deep linking messages, and works alongside the [onDeepLinking](#ondeeplinking) callback, which is called whenever there is a successful deep linking launch.
+
+The usual working flow is:
+
+- The Platform initiates a deep linking launch.
+- The [onDeepLinking](#ondeeplinking) callback is called and redirects to the resource selection view.
+- In the resource selection view, the user selects one or more resources and makes a request with the result.
+- The tool uses the `DeepLinking` class to generate the self-submitting form containing the signed JWT message of the deep linking request, and returns the form to the client.
+- The client embeds the form in the page, submitting the deep linking request back to the Platform.
+
+**Deep linking launches use the same endpoint as regular launches**, so they are routed through the [onDeepLinking](#ondeeplinking) callback instead of [onConnect](#onconnect):
+
+```javascript
+// Deep Linking callback
+lti.onDeepLinking((token, req, res) => {
+  // Call redirect function to deep linking view
+  lti.redirect(res, '/deeplink')
+})
+
+// Deep Linking route, displays the resource selection view
+lti.app.get('/deeplink', async (req, res) => {
+  return res.sendFile(path.join(__dirname, '/public/resources.html'))
+})
+```
+
+#### Creating a Deep Linking message
+
+After resources are selected, the tool creates a deep linking request message and sends it to the Platform, using one of two methods:
+
+- **`lti.DeepLinking.createDeepLinkingForm(idtoken, contentItems, options)`** returns a self-submitting Deep Linking form containing the signed JWT message, meant to be embedded directly in the tool client's HTML in order to finish the deep linking request.
+
+```javascript
+// Handles deep linking request generation with the selected resource
+lti.app.post('/deeplink', async (req, res) => {
+  const resource = req.body
+
+  const items = [
+    {
+      type: 'ltiResourceLink',
+      title: resource.title,
+      url: resource.url,
+      custom: {
+        resourceurl: resource.path,
+        resourcename: resource.title
+      }
+    }
+  ]
+
+  // Creates the deep linking request form
+  const form = await lti.DeepLinking.createDeepLinkingForm(res.locals.token, items, { message: 'Successfully registered resource!' })
+
+  return res.send(form)
+})
+```
+
+- **`lti.DeepLinking.createDeepLinkingMessage(idtoken, contentItems, options)`** returns just the signed JWT message, which the client is then responsible for submitting in a form in order to finish the deep linking request.
+
+```javascript
+// Handles deep linking request generation with the selected resource
+lti.app.post('/deeplink', async (req, res) => {
+  const resource = req.body
+
+  const items = [
+    {
+      type: 'ltiResourceLink',
+      title: resource.title,
+      url: resource.url,
+      custom: {
+        resourceurl: resource.path,
+        resourcename: resource.title
+      }
+    }
+  ]
+
+  // Creates the deep linking request JWT message
+  const message = await lti.DeepLinking.createDeepLinkingMessage(res.locals.token, items, { message: 'Successfully registered resource!' })
+
+  return res.send(message)
+})
+```
+
+**idtoken:** since most of the information necessary to create a deep linking request is present in the idtoken, it must always be passed as the first parameter (usually retrieved from `res.locals.token`).
+
+**contentItems:** either a single content item object or an array of content item objects, following the [LTI® 1.3 content item specification](https://www.imsglobal.org/spec/lti-dl/v2p0/#content-item-types). Passing this parameter **does not guarantee that all content items will be sent in the request**: to avoid errors, Ltijs only sends content items that fit within the Platform's accepted item types and allowed quantity. For instance, if a Platform only allows one content item per deep linking request, only the first content item passed will actually be sent.
+
+**options:** the [Deep Linking specification](https://www.imsglobal.org/spec/lti-dl/v2p0) allows custom messages to be set that are displayed to the user, or logged by the Platform, in case of success or failure:
+
+- `options.message` - message the Platform may show the end user upon return to the Platform. Ex: `'Successfully registered the resources!'`
+- `options.errMessage` - message the Platform may show the end user in case of failure. Ex: `'Resource registration failed!'`
+- `options.log` - message the Platform may log in its system upon success. Ex: `'registered_lti_resource'`
+- `options.errLog` - message the Platform may log in its system in case of failure. Ex: `'resource_registration_failed'`
+
+##### Documentation
+
+###### async DeepLinking.createDeepLinkingForm(idtoken, contentItems, options)
+
+Creates a self-submitting form containing the signed JWT message of the deep linking request.
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| idtoken | `Object` | Id token. |
+| contentItems | `Object` \| `Array<Object>` | One or more contentItem objects. |
+| options | `Object` | Options object. |
+| options.message | `String` | Message the Platform may show to the end user upon return to the Platform. |
+| options.errMessage | `String` | Message the Platform may show to the end user upon return to the Platform if some error has occurred. |
+| options.log | `String` | Message the Platform may log in its system upon return to the Platform. |
+| options.errLog | `String` | Message the Platform may log in its system upon return to the Platform if some error has occurred. |
+
+**Returns:** self-submitting Deep Linking form containing the signed JWT message.
+
+###### async DeepLinking.createDeepLinkingMessage(idtoken, contentItems, options)
+
+Creates a signed JWT message of the deep linking request.
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| idtoken | `Object` | Id token. |
+| contentItems | `Object` \| `Array<Object>` | One or more contentItem objects. |
+| options | `Object` | Options object. |
+| options.message | `String` | Message the Platform may show to the end user upon return to the Platform. |
+| options.errMessage | `String` | Message the Platform may show to the end user upon return to the Platform if some error has occurred. |
+| options.log | `String` | Message the Platform may log in its system upon return to the Platform. |
+| options.errLog | `String` | Message the Platform may log in its system upon return to the Platform if some error has occurred. |
+
+**Returns:** signed JWT message of the deep linking request.
 
 
 ### Assignment and Grades Service with Ltijs
 
-The Assignment and Grades Service class documentation can be accessed [here](https://cvmcosta.me/ltijs/#/grading).
+Ltijs implements the [LTI® 1.3 Assignment and Grading Service Specification](https://www.imsglobal.org/spec/lti-ags/v2p0/) in the form of the **Grade Class**, available as `lti.Grade`.
 
+#### Sending grades to a Platform
+
+Ltijs can send grades to a Platform in the [application/vnd.ims.lis.v1.score+json](https://www.imsglobal.org/spec/lti-ags/v2p0/#score-publish-service) LTI® standard, using the `lti.Grade.submitScore()` method:
+
+```javascript
+{
+  "userId" : "200",
+  "scoreGiven" : 83,
+  "scoreMaximum" : 100,
+  "comment" : "This is exceptional work.",
+  "activityProgress" : "Completed",
+  "gradingProgress": "FullyGraded"
+}
+```
+
+> This excludes the *timestamp* field of the specification, because `submitScore` generates it automatically. If `scoreGiven` is set without a `scoreMaximum`, Ltijs also fetches the line item's `scoreMaximum` automatically, and if no `userId` is given, the score is sent for the user that originated the request.
+
+```javascript
+const lti = require('ltijs').Provider
+
+lti.app.post('/grade', async (req, res) => {
+  try {
+    const idtoken = res.locals.token // IdToken
+    const score = req.body.grade // User numeric score sent in the body
+    // Creating Grade object
+    const gradeObj = {
+      userId: idtoken.user,
+      scoreGiven: score,
+      scoreMaximum: 100,
+      activityProgress: 'Completed',
+      gradingProgress: 'FullyGraded'
+    }
+
+    // Selecting lineItem ID
+    let lineItemId = idtoken.platformContext.endpoint.lineitem // Attempting to retrieve it from idtoken
+    if (!lineItemId) {
+      const response = await lti.Grade.getLineItems(idtoken, { resourceLinkId: true })
+      const lineItems = response.lineItems
+      if (lineItems.length === 0) {
+        // Creating line item if there is none
+        const newLineItem = {
+          scoreMaximum: 100,
+          label: 'Grade',
+          tag: 'grade',
+          resourceLinkId: idtoken.platformContext.resource.id
+        }
+        const lineItem = await lti.Grade.createLineItem(idtoken, newLineItem)
+        lineItemId = lineItem.id
+      } else lineItemId = lineItems[0].id
+    }
+
+    // Sending Grade
+    const responseGrade = await lti.Grade.submitScore(idtoken, lineItemId, gradeObj)
+    return res.send(responseGrade)
+  } catch (err) {
+    return res.status(500).send({ err: err.message })
+  }
+})
+```
+
+#### Retrieving grades from a Platform
+
+Grades (results) can be retrieved from a Platform through the `lti.Grade.getScores()` method:
+
+```javascript
+lti.app.get('/grade', async (req, res) => {
+  // Retrieves grades from a platform, only for the current user
+  const idtoken = res.locals.token // IdToken
+  const result = await lti.Grade.getScores(idtoken, idtoken.platformContext.endpoint.lineitem, { userId: idtoken.user })
+  return res.send(result)
+})
+```
+
+#### Line item creation, retrieval, update and deletion
+
+```javascript
+// Retrieving lineitems
+lti.app.get('/lineitem', async (req, res) => {
+  // Retrieves lineitems from a platform
+  const result = await lti.Grade.getLineItems(res.locals.token)
+  return res.send(result)
+})
+
+// Creating lineitem
+lti.app.post('/lineitem', async (req, res) => {
+  const lineItem = {
+    scoreMaximum: 100,
+    label: 'Grade',
+    tag: 'grade'
+  }
+  // Sends lineitem to a platform
+  const created = await lti.Grade.createLineItem(res.locals.token, lineItem)
+  return res.send(created)
+})
+
+// Deleting a lineitem by its ID
+lti.app.delete('/lineitem', async (req, res) => {
+  await lti.Grade.deleteLineItemById(res.locals.token, req.body.lineItemId)
+  return res.sendStatus(204)
+})
+```
+
+##### Documentation
+
+###### async Grade.getLineItems(idtoken, options)
+
+Gets line items from a given Platform.
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| idtoken | `Object` | Id token. |
+| options | `Object` | *Optional.* Options object. |
+| options.resourceLinkId | `Boolean` | Filters line items based on the resourceLinkId of the resource that originated the request. |
+| options.resourceId | `String` | Filters line items based on the resourceId. |
+| options.tag | `String` | Filters line items based on the tag. |
+| options.limit | `Number` | Sets a maximum number of line items to be returned. |
+| options.id | `String` | Filters line items based on the id. |
+| options.label | `String` | Filters line items based on the label. |
+| options.url | `String` | Retrieves line items from a specific URL, usually the `next` link of a previous request. |
+
+**Returns:** an object containing a `lineItems` array, plus `next`/`prev`/`first`/`last` pagination links when available.
+
+###### async Grade.createLineItem(idtoken, lineItem, options)
+
+Creates a new line item for the given context.
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| idtoken | `Object` | Id token. |
+| lineItem | `Object` | LineItem object, following the `application/vnd.ims.lis.v2.lineitem+json` specification. |
+| options | `Object` | *Optional.* Additional configuration for the line item. |
+| options.resourceLinkId | `Boolean` | If true, binds the created line item to the resource that originated the request. |
+
+**Returns:** the created LineItem object.
+
+###### async Grade.getLineItemById(idtoken, lineItemId)
+
+Gets a line item by its ID.
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| idtoken | `Object` | Id token. |
+| lineItemId | `String` | LineItem ID. |
+
+**Returns:** the LineItem object.
+
+###### async Grade.updateLineItemById(idtoken, lineItemId, lineItem)
+
+Updates a line item by its ID.
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| idtoken | `Object` | Id token. |
+| lineItemId | `String` | LineItem ID. |
+| lineItem | `Object` | Updated fields. |
+
+**Returns:** the updated LineItem object.
+
+###### async Grade.deleteLineItemById(idtoken, lineItemId)
+
+Deletes a line item by its ID.
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| idtoken | `Object` | Id token. |
+| lineItemId | `String` | LineItem ID. |
+
+**Returns:** `true`.
+
+###### async Grade.submitScore(idtoken, lineItemId, score)
+
+Publishes a score or grade to a line item. Represents the Score Publish service described in the LTI® 1.3 specification.
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| idtoken | `Object` | Id token. |
+| lineItemId | `String` | LineItem ID. |
+| score | `Object` | Score/Grade following the `application/vnd.ims.lis.v1.score+json` standard. |
+
+**Returns:** the score object that was sent (with `timestamp` and, if omitted, `userId`/`scoreMaximum` filled in).
+
+###### async Grade.getScores(idtoken, lineItemId, options)
+
+Retrieves scores from a line item. Represents the Result service described in the LTI® 1.3 specification.
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| idtoken | `Object` | Id token. |
+| lineItemId | `String` | LineItem ID. |
+| options | `Object` | *Optional.* Options object. |
+| options.userId | `String` | Filters based on the userId. |
+| options.limit | `Number` | Sets a maximum number of scores to be returned. |
+| options.url | `String` | Retrieves scores from a specific URL, usually the `next` link of a previous request. |
+
+**Returns:** an object containing a `scores` array, plus `next`/`prev`/`first`/`last` pagination links when available.
 
 
 ### Names and Roles Provisioning Service with Ltijs
 
-The Names and Roles Provisioning Service class documentation can be accessed [here](https://cvmcosta.me/ltijs/#/namesandroles).
+Ltijs implements the [LTI® 1.3 Names and Roles Provisioning Service](https://www.imsglobal.org/spec/lti-nrps/v2p0) in the form of the **NamesAndRoles Class**, available as `lti.NamesAndRoles`.
+
+The Names and Roles Provisioning Service is used by a tool to access a list of a Platform's users (referred to as members) and their roles within the context of a course, program or other grouping. This class provides a single method, `getMembers()`, for retrieving membership information, along with a set of filters.
+
+#### Retrieving members from a Platform
+
+All members of a Platform within the context can be retrieved by calling `getMembers()`. Since the information necessary to make the request is present in the idtoken, it must be passed along as the first parameter:
+
+```javascript
+const response = await lti.NamesAndRoles.getMembers(res.locals.token) // Gets context members
+```
+
+Example standard response:
+
+```javascript
+{
+  "id" : "https://lms.example.com/sections/2923/memberships",
+  "context": {
+    "id": "2923-abc",
+    "label": "CPS 435",
+    "title": "CPS 435 Learning Analytics"
+  },
+  "members" : [
+    {
+      "status" : "Active",
+      "name": "Jane Q. Public",
+      "picture" : "https://platform.example.edu/jane.jpg",
+      "given_name" : "Jane",
+      "family_name" : "Doe",
+      "middle_name" : "Marie",
+      "email": "jane@platform.example.edu",
+      "user_id" : "0ae836b9-7fc9-4060-006f-27b2066ac545",
+      "lis_person_sourcedid": "59254-6782-12ab",
+      "roles": [
+        "http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor"
+      ]
+    }
+  ]
+}
+```
+
+#### Adding filters
+
+The `getMembers()` method allows filters to be applied to the request through the `options` parameter:
+
+- **options.role** - specifies that only members with a certain role should be included in the list.
+
+  ```javascript
+  const members = await lti.NamesAndRoles.getMembers(res.locals.token, { role: 'Learner' })
+  ```
+
+- **options.limit** - specifies the number of members per page that should be returned per members page. **By default only one members page is returned.**
+
+- **options.pages** - specifies the number of pages that should be returned. Defaults to `1`. If set to `false`, retrieves every available page.
+
+  ```javascript
+  // Returns up to 20 members
+  const result = await lti.NamesAndRoles.getMembers(res.locals.token, { role: 'Learner', limit: 10, pages: 2 })
+  ```
+
+- **options.resourceLinkId** - accesses the Platform's Resource Link level membership service. This only takes effect if the current context has a `resourceLinkId`.
+
+  ```javascript
+  const result = await lti.NamesAndRoles.getMembers(res.locals.token, { resourceLinkId: true, role: 'Learner', limit: 10, pages: 2 })
+  ```
+
+- **options.url** - in case not all members were retrieved when the page limit was reached, the returned object contains a `next` field holding a URL that can be used to retrieve the remaining members. This URL can be passed through `options.url`. **If `options.url` is present, the `limit`, `role` and `resourceLinkId` filters are ignored: the filters applied on the initial request are maintained instead.**
+
+  ```javascript
+  {
+    "id" : "https://lms.example.com/sections/2923/memberships",
+    "context": { "id": "2923-abc", "label": "CPS 435", "title": "CPS 435 Learning Analytics" },
+    "members" : [ /* ... */ ],
+    "next": "https://lms.example.com/sections/2923/memberships/page/2"
+  }
+  ```
+
+  ```javascript
+  const result = await lti.NamesAndRoles.getMembers(res.locals.token, { role: 'Learner', limit: 10, pages: 2 })
+  const next = result.next
+  // Maintains the "limit" and "role" parameters of the initial request
+  const remaining = await lti.NamesAndRoles.getMembers(res.locals.token, { pages: 2, url: next })
+  ```
+
+  The same behaviour applies to the [differences url](https://www.imsglobal.org/spec/lti-nrps/v2p0#membership-differences), if present in the response:
+
+  ```javascript
+  {
+    "id" : "https://lms.example.com/sections/2923/memberships",
+    "context": { "id": "2923-abc", "label": "CPS 435", "title": "CPS 435 Learning Analytics" },
+    "members" : [ /* ... */ ],
+    "differences": "https://lms.example.com/sections/2923/memberships?since=672638723"
+  }
+  ```
+
+  ```javascript
+  const result = await lti.NamesAndRoles.getMembers(res.locals.token, { role: 'Learner', limit: 10, pages: 2 })
+  const differencesUrl = result.differences
+  const differences = await lti.NamesAndRoles.getMembers(res.locals.token, { url: differencesUrl })
+  ```
+
+##### Documentation
+
+###### async NamesAndRoles.getMembers(idtoken, options)
+
+Retrieves members from a Platform.
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| idtoken | `Object` | Id token. |
+| options | `Object` | Options object. |
+| options.role | `String` | Specific role to be returned. |
+| options.limit | `Number` | Specifies maximum number of members per page. |
+| options.pages | `Number` | Specifies maximum number of pages returned. Defaults to 1. If set to false, retrieves every available page. |
+| options.url | `String` | Specifies the initial members endpoint, usually retrieved from a previous incomplete request. |
+| options.resourceLinkId | `Boolean` | If set to true, retrieves resource Link level memberships. |
+
+**Returns:** an object containing an array of members, in the shape of the example response above.
+
 
 ### Dynamic Registration Service with Ltijs
 
-The Dynamic Registration Service documentation can be accessed [here](https://cvmcosta.me/ltijs/#/dynamicregistration).
+Ltijs was the first LTI library to implement the **Dynamic Registration Service**. Dynamic registration turns the LTI registration flow into a fast, automatic process: Ltijs exposes a registration endpoint through which Platforms can initiate the registration flow.
+
+Currently the following LMSs support Dynamic Registration:
+
+| **LMS** | **Version** |
+| ---- | ---|
+| Moodle | ^3.10 |
+
+#### Setting up dynamic registration
+
+Dynamic registration is set up through the `Provider.setup` method, with the `options.dynReg` and `options.dynRegRoute` fields:
+
+- **dynRegRoute** - dynamic registration route. Defaults to `/register`.
+- **dynReg** - dynamic registration configuration object. **The service is disabled if this object is not present in the setup options.**
+  - **url** - Tool Provider URL. Required. Ex: `http://tool.example.com`.
+  - **name** - Tool Provider name. Required. Ex: `Tool Provider`.
+  - **logo** - Tool Provider logo URL. Ex: `http://tool.example.com/assets/logo.svg`.
+  - **description** - Tool Provider description.
+  - **redirectUris** - additional redirection URLs. The main URL is added by default. Ex: `['http://tool.example.com/launch']`.
+  - **customParameters** - custom parameters. Ex: `{ key: 'value' }`.
+  - **autoActivate** - whether dynamically registered Platforms should be automatically activated. Defaults to `false`.
+  - **useDeepLinking** - Deep Linking usage flag. If `true`, sets up deep linking in the Platform. Defaults to `true`.
+
+```javascript
+// Require Provider
+const lti = require('ltijs').Provider
+
+// Setup provider
+lti.setup('LTIKEY', // Key used to sign cookies and tokens
+  { // Database configuration
+    url: 'mongodb://localhost/database',
+    connection: { user: 'user', pass: 'password' }
+  },
+  { // Options
+    appRoute: '/', loginRoute: '/login', // Optionally, specify some of the reserved routes
+    cookies: {
+      secure: false, // Set secure to true if the testing platform is in a different domain and https is being used
+      sameSite: '' // Set sameSite to 'None' if the testing platform is in a different domain and https is being used
+    },
+    devMode: true, // Set DevMode to false if running in a production environment with https
+    dynRegRoute: '/register', // Setting up dynamic registration route. Defaults to '/register'
+    dynReg: {
+      url: 'http://tool.example.com', // Tool Provider URL. Required field.
+      name: 'Tool Provider', // Tool Provider name. Required field.
+      logo: 'http://tool.example.com/assets/logo.svg', // Tool Provider logo URL.
+      description: 'Tool Description', // Tool Provider description.
+      redirectUris: ['http://tool.example.com/launch'], // Additional redirection URLs. The main URL is added by default.
+      customParameters: { key: 'value' }, // Custom parameters.
+      autoActivate: false // Whether or not dynamically registered Platforms should be automatically activated. Defaults to false.
+    }
+  }
+)
+```
+
+#### Using the Dynamic Registration Service
+
+Dynamic Registration is used when a Platform makes a **registration request** to the Tool's **dynamic registration endpoint** (`/register` by default). Both parties then exchange information and create the registration.
+
+Platform registrations created dynamically, by default, have to be manually activated, using the `Platform.platformActive` method:
+
+```javascript
+// Retrieve Platform
+const platform = await lti.getPlatform('http://platform.example.com', 'CLIENTID')
+// Activate Platform
+await platform.platformActive(true)
+```
+
+Setting `options.dynReg.autoActivate` to `true` in `Provider.setup` makes dynamically registered Platforms activate automatically.
+
+##### Custom flow
+
+The Dynamic Registration flow can be customized through the `lti.onDynamicRegistration` method, which allows extra screens or checks to be added to the registration flow. The registration is finalized by calling `lti.DynamicRegistration.register`, passing the necessary query parameters, and then sending the resulting message as the page HTML.
+
+The following example represents the default Dynamic Registration flow:
+
+```javascript
+lti.onDynamicRegistration(async (req, res, next) => {
+  try {
+    if (!req.query.openid_configuration) return res.status(400).send({ status: 400, error: 'Bad Request', details: { message: 'Missing parameter: "openid_configuration".' } })
+    const message = await lti.DynamicRegistration.register(req.query.openid_configuration, req.query.registration_token)
+    res.setHeader('Content-type', 'text/html')
+    res.send(message)
+  } catch (err) {
+    if (err.message === 'PLATFORM_ALREADY_REGISTERED') return res.status(403).send({ status: 403, error: 'Forbidden', details: { message: 'Platform already registered.' } })
+    return res.status(500).send({ status: 500, error: 'Internal Server Error', details: { message: err.message } })
+  }
+})
+```
+
+`lti.DynamicRegistration.register` also accepts a third parameter containing overrides for the default dynamic registration options, for example to add custom parameters:
+
+```javascript
+lti.onDynamicRegistration(async (req, res, next) => {
+  try {
+    if (!req.query.openid_configuration) return res.status(400).send({ status: 400, error: 'Bad Request', details: { message: 'Missing parameter: "openid_configuration".' } })
+    const message = await lti.DynamicRegistration.register(req.query.openid_configuration, req.query.registration_token, {
+      'https://purl.imsglobal.org/spec/lti-tool-configuration': {
+        custom_parameters: {
+          custom1: 'value1',
+          custom2: 'value2'
+        }
+      }
+    })
+    res.setHeader('Content-type', 'text/html')
+    res.send(message)
+  } catch (err) {
+    if (err.message === 'PLATFORM_ALREADY_REGISTERED') return res.status(403).send({ status: 403, error: 'Forbidden', details: { message: 'Platform already registered.' } })
+    return res.status(500).send({ status: 500, error: 'Internal Server Error', details: { message: err.message } })
+  }
+})
+```
+
+##### Moodle LMS
+
+To use the Dynamic Registration Service with the Moodle LMS:
+
+- Go to `Site administration / Plugins / Activity modules / External tool / Manage tools`.
+- Fill in the `Tool URL` field with your Tool's registration URL. Ex: `http://tool.example.com/register`.
+- Click `Add LTI Advantage`.
 
 ---
 
