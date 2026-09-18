@@ -1,6 +1,6 @@
 {
   "name": "ltijs",
-  "version": "7.0.5",
+  "version": "7.0.6",
   "description": "Easily turn your web application into a LTI 1.3 Learning Tool.",
   "main": "dist/index.js",
   "exports": {
@@ -41,15 +41,16 @@
     "build:clean": "del-cli dist",
     "build:compile": "node_modules/typescript-native/bin/tsc -p tsconfig.build.json",
     "build:copy-templates": "node scripts/copy-templates.js",
+    "build:publish-manifest": "node scripts/generate-publish-manifest.js",
     "check:format": "prettier . --write",
     "check:lint": "eslint src",
     "check:tests:unit": "jest -c jest.config.ts",
     "check:tests:db": "MONGOMS_VERSION=7.0.3 NODE_TLS_REJECT_UNAUTHORIZED=0 jest -c jest.dbconfig.ts --runInBand --passWithNoTests --forceExit",
     "test": "npm-run-all check:format check:lint check:tests:unit check:tests:db",
     "start": "tsx --conditions development src/index.ts",
-    "build": "npm-run-all build:clean build:compile build:copy-templates",
-    "deploy:beta": "npm-run-all test build && npm publish --tag beta",
-    "deploy": "npm-run-all test build && npm publish",
+    "build": "npm-run-all build:clean build:compile build:copy-templates build:publish-manifest",
+    "deploy:beta": "npm-run-all test build && npm publish ./dist --tag beta",
+    "deploy": "npm-run-all test build && npm publish ./dist",
     "docs:install": "cd website && npm install",
     "docs:dev": "cd website && npm run dev"
   },

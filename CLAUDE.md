@@ -27,7 +27,7 @@ npm run check:lint            # eslint src
 npm run check:tests:unit      # jest -c jest.config.ts (mocked HTTP, no real DB)
 npm run check:tests:db        # jest -c jest.dbconfig.ts (real mongodb-memory-server, --runInBand)
 npm run test                  # format + lint + unit tests + db tests, in that order
-npm run build                 # clean dist/, tsc compile (tsconfig.build.json), copy html templates
+npm run build                 # clean dist/, tsc compile (tsconfig.build.json), copy html templates, generate dist/package.json
 ```
 
 Single test file / pattern: `npx jest -c jest.config.ts path/to/file.test.ts` (or `-t "test name"`). DB
@@ -45,9 +45,10 @@ files on every commit.
 ## Releasing
 
 Bump with `npm version X.Y.Z --no-git-tag-version` (no auto-commit/tag), run `npm run test` + `npm run
-build` + `npm pack --dry-run` as a final gate, commit and push, then `git tag vX.Y.Z && git push origin
-vX.Y.Z`. `npm run deploy` (test + build + `npm publish`, `deploy:beta` for the `beta` dist-tag) is the
-actual publish step. Always manual, and never run it without being explicitly asked to.
+build` + `npm pack ./dist --dry-run` as a final gate, commit and push, then `git tag vX.Y.Z && git push
+origin vX.Y.Z`. `npm run deploy` (test + build + `npm publish ./dist`, `deploy:beta` for the `beta`
+dist-tag) is the actual publish step, publishing from `dist/` rather than the repo root, see "Path
+aliases" below for why. Always manual, and never run it without being explicitly asked to.
 
 ## Path aliases
 
@@ -58,6 +59,15 @@ Imports use `#`-prefixed Node subpath imports declared once in `package.json`'s 
 `customConditions`), `default` resolves to the compiled `dist/**/*.js` for real `node` execution with no
 custom condition active. When adding a new top-level directory under `src/`, add its alias here, not to
 `tsconfig.json`.
+
+The `development` condition must never reach a published consumer: the npm tarball only ships `dist/`, so
+a consumer whose own tooling sets the `development` condition (Vitest does, unconditionally) would try to
+resolve into a `src/*.ts` that was never shipped. Publishing is therefore done as `npm publish ./dist`
+(not from the repo root, and not via a `publishConfig.directory` field, which is a pnpm-only convention
+the npm CLI ignores) against a generated `dist/package.json` (written by
+`scripts/generate-publish-manifest.js`, the last step of `npm run build`) where every `imports` entry is
+collapsed to a single rebased path with no `development` key at all. The root `package.json` above stays
+untouched for local dev/test/typecheck.
 
 ## Architecture
 
