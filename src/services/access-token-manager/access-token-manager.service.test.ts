@@ -16,7 +16,7 @@ afterEach(() => {
   jest.restoreAllMocks()
 })
 
-const { privateKey } = crypto.generateKeyPairSync('rsa', {
+const { privateKey: privateKeyPem } = crypto.generateKeyPairSync('rsa', {
   modulusLength: 2048,
   publicKeyEncoding: { type: 'spki', format: 'pem' },
   privateKeyEncoding: { type: 'pkcs1', format: 'pem' },
@@ -34,9 +34,9 @@ const buildPlatform = (overrides: Partial<Platform> = {}): Platform => ({
   idTokenValidation: { method: IdTokenValidationMethod.RsaKey, key: 'public-key-pem' },
   authConfig: { method: IdTokenValidationMethod.RsaKey, key: 'public-key-pem' },
   active: true,
-  keys: { public: 'public-key-pem', private: privateKey },
+  keys: { public: 'public-key-pem', private: privateKeyPem },
   publicKey: 'public-key-pem',
-  privateKey,
+  privateKey: privateKeyPem,
   ...overrides,
 })
 

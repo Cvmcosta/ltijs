@@ -224,6 +224,7 @@ describe('Provider.listen() / Provider.close()', () => {
     const httpListenSpy = jest.spyOn(httpHandler, 'listen')
     const provider = new Provider(buildOptions({ databaseManager, httpHandler, dynamicRegistration: undefined }))
 
+    // eslint-disable-next-line @typescript-eslint/no-deprecated
     await provider.deploy({ silent: true })
 
     expect(httpListenSpy).toHaveBeenCalledWith()

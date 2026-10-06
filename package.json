@@ -45,7 +45,7 @@
     "check:format": "prettier . --write",
     "check:lint": "eslint src",
     "check:tests:unit": "jest -c jest.config.ts",
-    "check:tests:db": "MONGOMS_VERSION=7.0.3 NODE_TLS_REJECT_UNAUTHORIZED=0 jest -c jest.dbconfig.ts --runInBand --passWithNoTests --forceExit",
+    "check:tests:db": "MONGOMS_VERSION=7.0.3 NODE_OPTIONS=--experimental-vm-modules jest -c jest.dbconfig.ts --runInBand --passWithNoTests --forceExit",
     "test": "npm-run-all check:format check:lint check:tests:unit check:tests:db",
     "start": "tsx --conditions development src/index.ts",
     "build": "npm-run-all build:clean build:compile build:copy-templates build:publish-manifest",

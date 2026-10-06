@@ -6,7 +6,7 @@ module.exports = {
   collectCoverage: true,
   coverageProvider: 'v8',
   coverageDirectory: 'coverage',
-  roots: ['<rootDir>'],
+  roots: ['<rootDir>/src'],
   testEnvironmentOptions: {
     customExportConditions: ['development'],
   },
