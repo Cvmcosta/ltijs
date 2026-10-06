@@ -3,6 +3,7 @@ import crypto from 'node:crypto'
 import jwt from 'jsonwebtoken'
 import { LaunchService } from '#services/launch/launch.service'
 import { OidcService } from '#services/oidc/oidc.service'
+import type { TargetLinkUriState } from '#services/oidc/oidc.types'
 import { PlatformManager } from '#services/platform-manager/platform-manager.service'
 import { AccessTokenManager } from '#services/access-token-manager/access-token-manager.service'
 import { FetchRequestHandler } from '#services/request-handler/fetch/fetch-request-handler.service'
@@ -156,10 +157,10 @@ const buildRequest = (overrides: Partial<HttpRequestParameters> = {}): HttpReque
 const buildStateAndRecovery = (
   oidcService: OidcService,
   platform: Platform,
-  query?: Record<string, string>,
+  target?: TargetLinkUriState,
 ): { state: string; recoveryToken: string } => {
   const stateId = crypto.randomUUID()
-  const state = oidcService.buildStateToken(platform, query, undefined, stateId)
+  const state = oidcService.buildStateToken(platform, target, undefined, stateId)
   const recoveryToken = oidcService.buildRecoveryToken(stateId, platform)
   return { state, recoveryToken }
 }
@@ -395,6 +396,22 @@ describe('LaunchService.prepareHttpRoutes()', () => {
       })
     })
 
+    it('cuts the fragment out of redirect_uri and into the state, before splitting off the query', async () => {
+      const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
+      const { launchService: service, oidcService, httpHandler } = buildServices(databaseManager)
+
+      const { state, redirectUrl } = await runLogin(service, httpHandler, {
+        ...DEFAULT_LOGIN_PARAMS,
+        targetLinkUri: 'https://tool.example.com?course=1#/page?tab=2',
+      })
+
+      expect(redirectUrl.searchParams.get('redirect_uri')).toBe('https://tool.example.com')
+      await expect(oidcService.validateStateToken(state, platform)).resolves.toMatchObject({
+        query: { course: '1' },
+        fragment: '/page?tab=2',
+      })
+    })
+
     it('threads a valid lti_storage_target into the rendered page, via the JSON data island', async () => {
       const { databaseManager } = await buildDatabaseManagerWithPlatform()
       const { launchService: service, httpHandler } = buildServices(databaseManager)
@@ -589,7 +606,7 @@ describe('LaunchService.prepareHttpRoutes()', () => {
     it('completes a resource-link launch and dispatches to onResourceLink only', async () => {
       const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
       const { launchService: service, oidcService, httpHandler } = buildServices(databaseManager)
-      const { state, recoveryToken } = buildStateAndRecovery(oidcService, platform, { course: '1' })
+      const { state, recoveryToken } = buildStateAndRecovery(oidcService, platform, { query: { course: '1' } })
       const token = await signToken(databaseManager, buildClaims())
       const { onResourceLink, onDeepLinking, onSubmissionReview } = applyLaunchHandlers(service)
       service.prepareHttpRoutes()
@@ -761,7 +778,7 @@ describe('LaunchService.prepareHttpRoutes()', () => {
     it('restores the login-time query params onto target_link_uri and the handler request', async () => {
       const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
       const { launchService: service, oidcService, httpHandler } = buildServices(databaseManager)
-      const { state, recoveryToken } = buildStateAndRecovery(oidcService, platform, { course: '1' })
+      const { state, recoveryToken } = buildStateAndRecovery(oidcService, platform, { query: { course: '1' } })
       const token = await signToken(databaseManager, buildClaims())
       const { onResourceLink } = applyLaunchHandlers(service)
       service.prepareHttpRoutes()
@@ -776,6 +793,37 @@ describe('LaunchService.prepareHttpRoutes()', () => {
       expect(context.idToken.launch.target).toBe('https://tool.example.com/launch?course=1')
       expect(request.query).toMatchObject({ course: '1' })
     })
+
+    it.each<[string, TargetLinkUriState, string]>([
+      ['https://tool.example.com', { query: { course: '1' } }, 'https://tool.example.com?course=1'],
+      [
+        'https://tool.example.com?course=0&tab=2',
+        { query: { course: '1' } },
+        'https://tool.example.com?course=1&tab=2',
+      ],
+      ['https://tool.example.com/#/page', { query: { course: '1' } }, 'https://tool.example.com/?course=1#/page'],
+      ['https://tool.example.com/', { fragment: '/page' }, 'https://tool.example.com/#/page'],
+      ['https://tool.example.com/#/claim', { fragment: '/login' }, 'https://tool.example.com/#/claim'],
+    ])(
+      'restores the login-time %s target parts %j without otherwise rewriting it',
+      async (target, stateTarget, expected) => {
+        const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
+        const { launchService: service, oidcService, httpHandler } = buildServices(databaseManager)
+        const { state, recoveryToken } = buildStateAndRecovery(oidcService, platform, stateTarget)
+        const token = await signToken(databaseManager, buildClaims({ [IdTokenClaim.TargetLinkUri]: target }))
+        const { onResourceLink } = applyLaunchHandlers(service)
+        service.prepareHttpRoutes()
+        const launchHandler = httpHandler.getHandler('/lti/launch', HttpMethod.Post)
+
+        await launchHandler(
+          buildRequest({ body: { id_token: token, state, ltijs_recovered_state: recoveryToken } }),
+          buildFakeHttpResponse(),
+        )
+
+        const [context] = onResourceLink.mock.calls[0]
+        expect(context.idToken.launch.target).toBe(expected)
+      },
+    )
 
     it('leaves target_link_uri and the handler request untouched when the login had no query to restore', async () => {
       const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
@@ -1084,7 +1132,7 @@ describe('LaunchService.registerLaunchRoute()', () => {
   it('runs the full launch pipeline on the registered path, dispatching through the same shared handlers', async () => {
     const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
     const { launchService: service, oidcService, httpHandler } = buildServices(databaseManager)
-    const { state, recoveryToken } = buildStateAndRecovery(oidcService, platform, { course: '1' })
+    const { state, recoveryToken } = buildStateAndRecovery(oidcService, platform, { query: { course: '1' } })
     const token = await signToken(databaseManager, buildClaims())
     const { onResourceLink, onDeepLinking, onSubmissionReview } = applyLaunchHandlers(service)
     service.registerLaunchRoute('/assignment/42')

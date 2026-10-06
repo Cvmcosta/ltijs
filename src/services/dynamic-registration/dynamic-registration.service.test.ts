@@ -163,7 +163,8 @@ describe('DynamicRegistration.performRegistration()', () => {
     const body = JSON.parse(calledInit?.body as string) as Record<string, unknown>
     expect(body.initiate_login_uri).toBe('https://school.example.com/mytool/login')
     expect(body.jwks_uri).toBe('https://school.example.com/mytool/keys')
-    expect(body.redirect_uris).toContain('https://school.example.com/mytool/')
+    expect(body.redirect_uris).toContain('https://school.example.com/mytool')
+    expect(body.redirect_uris).not.toContain('https://school.example.com/mytool/')
   })
 
   it('includes an Authorization header when a registrationToken is provided', async () => {

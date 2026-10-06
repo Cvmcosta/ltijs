@@ -28,6 +28,7 @@ export interface ProcessLaunchResult {
 export interface TargetLinkUriParts {
   targetLinkUri: string
   query?: Record<string, string>
+  fragment?: string
 }
 
 /** Extra query parameters to merge into the redirect URL, in addition to the ltik `LaunchContext.redirect` always appends. */

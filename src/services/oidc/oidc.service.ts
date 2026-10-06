@@ -31,7 +31,7 @@ import type { RequestHandler } from '#services/request-handler/request-handler.t
 import type { CacheManager } from '#services/cache-manager/cache-manager.types'
 import type { Logger } from '#services/logger/logger.types'
 import type { DecodedToken, TokenHeader } from '#utils/crypto/jwt.types'
-import type { AuthenticationRequestParams, State, StorageTarget } from '#services/oidc/oidc.types'
+import type { AuthenticationRequestParams, State, StorageTarget, TargetLinkUriState } from '#services/oidc/oidc.types'
 
 export class OidcService {
   private readonly LOG_COMPONENT = 'oidcService'
@@ -79,12 +79,18 @@ export class OidcService {
   // themselves first and pass it to both, so the two tokens share the same id.
   public buildStateToken(
     platform: Platform,
-    query?: Record<string, string>,
+    target: TargetLinkUriState = {},
     storage?: StorageTarget,
     stateId: string = randomUuid(),
   ): string {
     return signJwt(
-      { stateId, query, storageTarget: storage?.target, platformLoginOrigin: storage?.loginOrigin },
+      {
+        stateId,
+        query: target.query,
+        fragment: target.fragment,
+        storageTarget: storage?.target,
+        platformLoginOrigin: storage?.loginOrigin,
+      },
       resolvePlatformPrivateKey(platform),
       {
         algorithm: RS256_ALGORITHM,

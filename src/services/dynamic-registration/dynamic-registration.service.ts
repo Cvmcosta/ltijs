@@ -215,6 +215,7 @@ export class DynamicRegistration {
   // deployed behind a reverse proxy or subpath is configured with. Parsing baseUrl and concatenating the
   // pathname manually preserves that prefix, matching legacy's own approach.
   private buildUrl(baseUrl: string, path: string): string {
+    if (path === '/') return baseUrl
     const url = new URL(baseUrl)
     url.pathname = url.pathname.replace(/\/$/, '') + path
     return url.toString()

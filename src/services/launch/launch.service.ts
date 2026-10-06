@@ -292,15 +292,19 @@ export class LaunchService {
   private resolveTargetLinkUri(token: IdTokenClaims, state: State): string | undefined {
     const targetLinkUri = token[IdTokenClaim.TargetLinkUri]
     if (targetLinkUri === undefined) return undefined
-    if (state.query === undefined) return targetLinkUri
-    const url = new URL(targetLinkUri)
-    for (const [key, value] of Object.entries(state.query)) url.searchParams.set(key, value)
-    return url.toString()
+    const parts = this.splitTargetLinkUri(targetLinkUri)
+    const restoresFragment = parts.fragment === undefined && state.fragment !== undefined
+    if (state.query === undefined && !restoresFragment) return targetLinkUri
+    return this.joinTargetLinkUri({
+      targetLinkUri: parts.targetLinkUri,
+      query: { ...parts.query, ...state.query },
+      fragment: parts.fragment ?? state.fragment,
+    })
   }
 
   private async processLogin(params: LoginRequestParams): Promise<LoginRequestResult> {
     const platform = await this.resolvePlatform(params.iss, params.clientId)
-    const { targetLinkUri, query } = this.splitTargetLinkUri(params.targetLinkUri)
+    const { targetLinkUri, ...target } = this.splitTargetLinkUri(params.targetLinkUri)
     const platformLoginOrigin =
       params.storageTarget === undefined ? undefined : new URL(platform.authenticationEndpoint).origin
     const storage =
@@ -308,7 +312,7 @@ export class LaunchService {
         ? undefined
         : { target: params.storageTarget, loginOrigin: platformLoginOrigin }
     const stateId = randomUuid()
-    const state = this.oidcService.buildStateToken(platform, query, storage, stateId)
+    const state = this.oidcService.buildStateToken(platform, target, storage, stateId)
     const recoveryToken = this.oidcService.buildRecoveryToken(stateId, platform)
 
     const redirectUrl = await this.oidcService.buildAuthenticationRequestUrl(platform, {
@@ -371,14 +375,23 @@ export class LaunchService {
   }
 
   private splitTargetLinkUri(targetLinkUri: string): TargetLinkUriParts {
-    const queryIndex = targetLinkUri.indexOf('?')
-    if (queryIndex === -1) return { targetLinkUri }
+    // The fragment is cut first: a `?` inside it (hash routing, e.g. `/#/page?a=1`) is not a query.
+    const fragmentIndex = targetLinkUri.indexOf('#')
+    const fragment = fragmentIndex === -1 ? undefined : targetLinkUri.slice(fragmentIndex + 1)
+    const withoutFragment = fragmentIndex === -1 ? targetLinkUri : targetLinkUri.slice(0, fragmentIndex)
 
-    const uri = targetLinkUri.slice(0, queryIndex)
-    const rawQuery = targetLinkUri.slice(queryIndex + 1)
-    const query: Record<string, string> = {}
-    for (const [key, value] of new URLSearchParams(rawQuery)) query[key] = value
-    return { targetLinkUri: uri, query }
+    const queryIndex = withoutFragment.indexOf('?')
+    if (queryIndex === -1) return { targetLinkUri: withoutFragment, fragment }
+
+    const query = Object.fromEntries(new URLSearchParams(withoutFragment.slice(queryIndex + 1)))
+    return { targetLinkUri: withoutFragment.slice(0, queryIndex), query, fragment }
+  }
+
+  private joinTargetLinkUri(parts: TargetLinkUriParts): string {
+    const query = new URLSearchParams(parts.query).toString()
+    const querySuffix = query === '' ? '' : `?${query}`
+    const fragmentSuffix = parts.fragment === undefined ? '' : `#${parts.fragment}`
+    return parts.targetLinkUri + querySuffix + fragmentSuffix
   }
 }
 

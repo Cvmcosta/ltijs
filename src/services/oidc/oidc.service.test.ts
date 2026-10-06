@@ -630,7 +630,7 @@ describe('OidcService.buildStateToken() / validateStateToken()', () => {
     const { databaseManager, platform } = await buildDatabaseManagerWithPlatform()
     const service = buildService(databaseManager)
 
-    const token = service.buildStateToken(platform, { a: '1', b: '2' })
+    const token = service.buildStateToken(platform, { query: { a: '1', b: '2' } })
 
     await expect(service.validateStateToken(token, platform)).resolves.toMatchObject({ query: { a: '1', b: '2' } })
   })
@@ -692,7 +692,7 @@ describe('OidcService.buildStateToken() / validateStateToken()', () => {
     const platformB = await platformManager.getPlatformById(otherPlatformId)
     if (platformB === undefined) throw new Error('expected the just-registered platform to exist')
     const service = buildService(databaseManager)
-    const token = service.buildStateToken(platformA, { a: '1' })
+    const token = service.buildStateToken(platformA, { query: { a: '1' } })
 
     await expect(service.validateStateToken(token, platformB)).rejects.toThrow('INVALID_STATE')
   })
